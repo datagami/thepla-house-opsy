@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
-import { authOptions } from '@/lib/auth';
+import {auth} from "@/auth";
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
     // Check if user is authorized (MANAGEMENT or HR)
     if (!session || !['MANAGEMENT', 'HR'].includes(session.user.role)) {
