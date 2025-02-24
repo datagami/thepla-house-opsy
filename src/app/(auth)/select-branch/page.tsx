@@ -10,22 +10,28 @@ export default async function SelectBranchPage() {
     redirect("/login");
   }
 
-  // For BRANCH_MANAGER, get their assigned branch
+  // For BRANCH_MANAGER, automatically select their managed branch and redirect
   if (session.user.role === "BRANCH_MANAGER") {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { managedBranch: true },
+      select: {
+        managedBranchId: true,
+      },
     });
 
-    if (!user?.managedBranch) {
-      // If branch manager has no branch assigned, redirect to dashboard
+    if (user?.managedBranchId) {
+      // Update user's selected branch
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: { selectedBranchId: user.managedBranchId },
+      });
+      
+      // Redirect to dashboard
       redirect("/dashboard");
     }
 
-    return <BranchSelector 
-      branches={[user.managedBranch]} 
-      userRole={session.user.role} 
-    />;
+    // If no managed branch, redirect to dashboard
+    redirect("/dashboard");
   }
 
   // For MANAGEMENT, get all branches
@@ -33,7 +39,6 @@ export default async function SelectBranchPage() {
     const branches = await prisma.branch.findMany({
       orderBy: { name: "asc" },
     });
-    console.log(branches);
 
     return <BranchSelector branches={branches} userRole={session.user.role} />;
   }

@@ -22,6 +22,7 @@ enum UserStatus {
 
 model Account {
   id                 String  @id @default(cuid())
+  numId              Int     @default(autoincrement()) @map("num_id")
   userId             String  @map("user_id")
   type               String
   provider           String
@@ -42,6 +43,7 @@ model Account {
 
 model Session {
   id           String   @id @default(cuid())
+  numId        Int      @default(autoincrement()) @map("num_id")
   sessionToken String   @unique @map("session_token")
   userId       String   @map("user_id")
   expires      DateTime
@@ -52,41 +54,45 @@ model Session {
 
 model User {
   id              String      @id @default(cuid())
-  name            String
-  email           String      @unique
+  numId           Int         @default(autoincrement()) @map("num_id")
+  name            String?
+  email           String?     @unique
   emailVerified   DateTime?   @map("email_verified")
-  password        String
+  password        String?
   role            UserRole    @default(EMPLOYEE)
   status          UserStatus  @default(PENDING)
   image           String?
   branchId        String?     @map("branch_id")
   managedBranchId String?     @map("managed_branch_id")
   selectedBranchId String?    @map("selected_branch_id")
+  approvedById    String?     @map("approved_by_id")
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
 
   // Relations
   accounts      Account[]
   sessions      Session[]
-  branch        Branch?     @relation(fields: [branchId], references: [id])
+  branch        Branch?     @relation("BranchUsers", fields: [branchId], references: [id])
   managedBranch Branch?    @relation("BranchManagers", fields: [managedBranchId], references: [id])
   selectedBranch Branch?    @relation("SelectedBranch", fields: [selectedBranchId], references: [id])
-  attendance    Attendance[]
+  attendance    Attendance[]  @relation("UserAttendance")
   leaveRequests LeaveRequest[]
-  approvedBy    User?       @relation("UserApproval", fields: [approvedById], references: [id])
-  approvedById  String?     @map("approved_by_id")
+  approvedBy    User?       @relation("UserApproval", fields: [approvedById], references: [id], onDelete: SetNull)
   approvedUsers User[]      @relation("UserApproval")
+  verifiedAttendance  Attendance[] @relation("AttendanceVerifications")
 
   @@map("users")
   @@index([branchId])
   @@index([managedBranchId])
   @@index([selectedBranchId])
+  @@index([approvedById])
 }
 
 model VerificationToken {
   identifier String
   token      String
   expires    DateTime
+  numId      Int     @default(autoincrement()) @map("num_id")
 
   @@unique([identifier, token])
   @@map("verification_tokens")
@@ -94,6 +100,7 @@ model VerificationToken {
 
 model Branch {
   id        String   @id @default(cuid())
+  numId     Int      @default(autoincrement()) @map("num_id")
   name      String
   address   String?
   city      String
@@ -102,8 +109,8 @@ model Branch {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  users          User[]
-  managers       User[]  @relation("BranchManagers")
+  users          User[] @relation("BranchUsers")
+  managers       User[] @relation("BranchManagers")
   selectedByUsers User[] @relation("SelectedBranch")
 
   @@map("branches")
@@ -111,24 +118,35 @@ model Branch {
 
 model Attendance {
   id          String   @id @default(cuid())
+  numId       Int      @default(autoincrement()) @map("num_id")
   userId      String   @map("user_id")
   date        DateTime
-  checkIn     DateTime @map("check_in")
+  isPresent   Boolean  @default(false) @map("is_present")
+  checkIn     DateTime? @map("check_in")
   checkOut    DateTime? @map("check_out")
   isHalfDay   Boolean  @default(false) @map("is_half_day")
-  overtime    Int      @default(0) // in minutes
-  isLocked    Boolean  @default(false) @map("is_locked")
-  isVerified  Boolean  @default(false) @map("is_verified")
+  overtime    Boolean  @default(false)
+  shift1      Boolean  @default(false) @map("shift_1")
+  shift2      Boolean  @default(false) @map("shift_2")
+  shift3      Boolean  @default(false) @map("shift_3")
+  status      String   @default("PENDING") @map("status") // PENDING, APPROVED, REJECTED
+  verifiedById String? @map("verified_by_id")
+  verifiedAt  DateTime? @map("verified_at")
+  verificationNote String? @map("verification_note")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  user        User     @relation(fields: [userId], references: [id])
+  // Relations
+  user        User     @relation("UserAttendance", fields: [userId], references: [id])
+  verifiedBy  User?    @relation("AttendanceVerifications", fields: [verifiedById], references: [id])
 
   @@map("attendance")
+  @@index([verifiedById])
 }
 
 model LeaveRequest {
   id          String   @id @default(cuid())
+  numId       Int      @default(autoincrement()) @map("num_id")
   userId      String   @map("user_id")
   startDate   DateTime @map("start_date")
   endDate     DateTime @map("end_date")
@@ -137,6 +155,7 @@ model LeaveRequest {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  // Relations
   user        User     @relation(fields: [userId], references: [id])
 
   @@map("leave_requests")

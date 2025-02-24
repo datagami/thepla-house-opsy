@@ -3,15 +3,16 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
 import Credentials from "next-auth/providers/credentials"
 import { compare } from "bcryptjs"
-import { UserRole, UserStatus } from "@prisma/client"
+import type { UserRole, UserStatus } from "@prisma/client"
 
 export type User = {
   id: string;
-  name: string;
-  email: string;
+  name: string | null;
+  email: string | null;
   role: UserRole;
   status: UserStatus;
-  selectedBranchId?: string | null;
+  branchId?: string | null;
+  managedBranchId?: string | null;
 };
 
 export const {
@@ -50,7 +51,8 @@ export const {
             password: true,
             role: true,
             status: true,
-            selectedBranchId: true,
+            branchId: true,
+            managedBranchId: true,
           },
         });
 
@@ -76,7 +78,9 @@ export const {
           email: user.email,
           name: user.name,
           role: user.role,
-          selectedBranchId: user.selectedBranchId,
+          status: user.status,
+          branchId: user.branchId,
+          managedBranchId: user.managedBranchId,
         };
       },
     }),
@@ -85,15 +89,17 @@ export const {
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role;
-        token.branchId = user.selectedBranchId;
+        token.branchId = user.branchId;
+        token.managedBranchId = user.managedBranchId;
       }
       return token;
     },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.sub as string;
-        session.user.role = token.role as string;
+        session.user.role = token.role as UserRole;
         session.user.branchId = token.branchId as string | null;
+        session.user.managedBranchId = token.managedBranchId as string | null;
       }
       return session;
     },

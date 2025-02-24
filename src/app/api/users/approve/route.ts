@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import {auth} from "@/auth";
+import { auth } from "@/auth";
+import type { UserRole, UserStatus } from "@prisma/client";
 
 export async function POST(req: Request) {
   try {
@@ -16,17 +17,67 @@ export async function POST(req: Request) {
 
     const { userId, role, status, branchId } = await req.json();
 
-    const updateData: any = {
-      approvedById: session.user.id,
-    };
+    // First verify both users exist
+    const [userToUpdate, approver] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+      }),
+      prisma.user.findUnique({
+        where: { id: session.user.id },
+      }),
+    ]);
 
+    if (!userToUpdate) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    if (!approver) {
+      return NextResponse.json(
+        { error: 'Approver not found' },
+        { status: 401 }
+      );
+    }
+
+    // Build update data
+    const updateData: any = {};
+    
     if (role) updateData.role = role;
     if (status) updateData.status = status;
     if (branchId) updateData.branchId = branchId;
 
+    // Only set approvedById if status is being set to ACTIVE and approver exists
+    if (status === 'ACTIVE' && approver) {
+      updateData.approvedById = approver.id;
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: updateData,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        branchId: true,
+        branch: {
+          select: {
+            id: true,
+            name: true,
+            city: true,
+          },
+        },
+        approvedBy: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        createdAt: true,
+      },
     });
 
     return NextResponse.json(updatedUser);

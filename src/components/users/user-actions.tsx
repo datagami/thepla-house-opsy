@@ -16,11 +16,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Check, X, UserCog, Building } from "lucide-react";
 import { toast } from "sonner";
+import { hasAccess } from "@/lib/access-control";
 
 interface Branch {
   id: string;
   name: string;
-  city: string;
 }
 
 interface UserActionsProps {
@@ -28,42 +28,96 @@ interface UserActionsProps {
     id: string;
     status: string;
     role: string;
-    branch?: Branch | null;
   };
   branches: Branch[];
+  currentUserRole: string;
 }
 
-export function UserActions({ user, branches }: UserActionsProps) {
+export function UserActions({ user, branches = [], currentUserRole }: UserActionsProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  const updateUser = async (data: { status?: string; role?: string; branchId?: string }) => {
+  const handleApprove = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/users/approve`, {
+      const response = await fetch("/api/users/approve", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           userId: user.id,
-          ...data,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update user");
+        throw new Error("Failed to approve user");
       }
 
-      toast.success("User updated successfully");
+      toast.success("User approved successfully");
       router.refresh();
     } catch (error) {
-      toast.error("Failed to update user");
-      console.error(error);
+      toast.error("Failed to approve user");
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleAssignBranch = async (branchId: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/users/${user.id}/assign-branch`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          branchId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to assign branch");
+      }
+
+      toast.success("Branch assigned successfully");
+      router.refresh();
+    } catch (error) {
+      toast.error("Failed to assign branch");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChangeRole = async (newRole: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/users/${user.id}/change-role`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          role: newRole,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to change user role");
+      }
+
+      toast.success("User role updated successfully");
+      router.refresh();
+    } catch (error) {
+      toast.error("Failed to change user role");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const canApproveUser = hasAccess(currentUserRole, "users.approve");
+  const canAssignBranch = hasAccess(currentUserRole, "users.assign_branch");
+  const canChangeRole = hasAccess(currentUserRole, "users.change_role");
 
   return (
     <DropdownMenu>
@@ -75,68 +129,71 @@ export function UserActions({ user, branches }: UserActionsProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-        {user.status === "PENDING" && (
+        {user.status === "PENDING" && canApproveUser && (
           <>
             <DropdownMenuItem
-              onClick={() => updateUser({ status: "ACTIVE" })}
+              onClick={handleApprove}
               disabled={isLoading}
             >
-              <Check className="mr-2 h-4 w-4" />
-              Approve
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => updateUser({ status: "INACTIVE" })}
-              disabled={isLoading}
-            >
-              <X className="mr-2 h-4 w-4" />
-              Reject
+              Approve User
             </DropdownMenuItem>
             <DropdownMenuSeparator />
           </>
         )}
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <UserCog className="mr-2 h-4 w-4" />
-            Change Role
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent>
-            <DropdownMenuItem
-              onClick={() => updateUser({ role: "EMPLOYEE" })}
-              disabled={isLoading}
-            >
-              Employee
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => updateUser({ role: "BRANCH_MANAGER" })}
-              disabled={isLoading}
-            >
-              Branch Manager
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => updateUser({ role: "HR" })}
-              disabled={isLoading}
-            >
-              HR
-            </DropdownMenuItem>
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <Building className="mr-2 h-4 w-4" />
-            Assign Branch
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent>
-            {branches.map((branch) => (
+        {canChangeRole && (
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <UserCog className="mr-2 h-4 w-4" />
+              Change Role
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
               <DropdownMenuItem
-                key={branch.id}
-                onClick={() => updateUser({ branchId: branch.id })}
+                onClick={() => handleChangeRole("EMPLOYEE")}
                 disabled={isLoading}
               >
-                {branch.name} - {branch.city}
+                Employee
               </DropdownMenuItem>
-            ))}
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
+              <DropdownMenuItem
+                onClick={() => handleChangeRole("BRANCH_MANAGER")}
+                disabled={isLoading}
+              >
+                Branch Manager
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleChangeRole("HR")}
+                disabled={isLoading}
+              >
+                HR
+              </DropdownMenuItem>
+              {currentUserRole === "MANAGEMENT" && (
+                <DropdownMenuItem
+                  onClick={() => handleChangeRole("MANAGEMENT")}
+                  disabled={isLoading}
+                >
+                  Management
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        )}
+        {canAssignBranch && (
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              Assign Branch
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              {branches.map((branch) => (
+                <DropdownMenuItem
+                  key={branch.id}
+                  onClick={() => handleAssignBranch(branch.id)}
+                  disabled={isLoading}
+                >
+                  {branch.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

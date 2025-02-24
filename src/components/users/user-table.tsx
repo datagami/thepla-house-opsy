@@ -10,53 +10,100 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { UserActions } from "./user-actions";
-import { formatDate } from "@/lib/utils";
-import { useTableState } from "@/hooks/use-table-state";
-import { Pagination } from "@/components/ui/pagination";
 
 interface Branch {
   id: string;
   name: string;
-  city: string;
 }
 
 interface User {
   id: string;
-  name: string;
-  email: string;
+  name: string | null;
+  email: string | null;
   role: string;
   status: string;
-  branch?: Branch | null;
-  approvedBy?: { name: string } | null;
-  createdAt: Date;
+  branch: {
+    name: string;
+  } | null;
 }
 
 interface UserTableProps {
   users: User[];
   branches: Branch[];
-  currentPage: number;
-  totalPages: number;
+  currentUserRole: string;
 }
 
 const roleColors = {
-  EMPLOYEE: "bg-blue-100 text-blue-800",
-  BRANCH_MANAGER: "bg-purple-100 text-purple-800",
-  HR: "bg-green-100 text-green-800",
-  MANAGEMENT: "bg-orange-100 text-orange-800",
-};
+  EMPLOYEE: "text-blue-600 bg-blue-100",
+  BRANCH_MANAGER: "text-purple-600 bg-purple-100",
+  HR: "text-green-600 bg-green-100",
+  MANAGEMENT: "text-orange-600 bg-orange-100",
+} as const;
 
 const statusColors = {
-  PENDING: "bg-yellow-100 text-yellow-800",
-  ACTIVE: "bg-green-100 text-green-800",
-  INACTIVE: "bg-red-100 text-red-800",
-};
+  PENDING: "text-yellow-600 bg-yellow-100",
+  ACTIVE: "text-green-600 bg-green-100",
+  INACTIVE: "text-red-600 bg-red-100",
+} as const;
 
-export function UserTable({ users, branches, currentPage, totalPages }: UserTableProps) {
-  const { updateTable } = useTableState();
+export function UserTable({ users, branches, currentUserRole }: UserTableProps) {
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.name?.toLowerCase().includes(search.toLowerCase()) ||
+      user.email?.toLowerCase().includes(search.toLowerCase());
+
+    const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
+    const matchesStatus = statusFilter === "ALL" || user.status === statusFilter;
+
+    return matchesSearch && matchesRole && matchesStatus;
+  });
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center gap-4">
+        <Input
+          placeholder="Search users..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-sm"
+        />
+        <Select value={roleFilter} onValueChange={setRoleFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by role" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Roles</SelectItem>
+            <SelectItem value="EMPLOYEE">Employee</SelectItem>
+            <SelectItem value="BRANCH_MANAGER">Branch Manager</SelectItem>
+            <SelectItem value="HR">HR</SelectItem>
+            <SelectItem value="MANAGEMENT">Management</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Status</SelectItem>
+            <SelectItem value="PENDING">Pending</SelectItem>
+            <SelectItem value="ACTIVE">Active</SelectItem>
+            <SelectItem value="INACTIVE">Inactive</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -66,44 +113,37 @@ export function UserTable({ users, branches, currentPage, totalPages }: UserTabl
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Branch</TableHead>
-              <TableHead>Approved By</TableHead>
-              <TableHead>Created</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
+            {filteredUsers.map((user) => (
               <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.name}</TableCell>
+                <TableCell>{user.name}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>
-                  <Badge variant="secondary" className={roleColors[user.role]}>
+                  <Badge variant="secondary" className={roleColors[user.role as keyof typeof roleColors]}>
                     {user.role}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="secondary" className={statusColors[user.status]}>
+                  <Badge variant="secondary" className={statusColors[user.status as keyof typeof statusColors]}>
                     {user.status}
                   </Badge>
                 </TableCell>
-                <TableCell>
-                  {user.branch ? `${user.branch.name} - ${user.branch.city}` : "-"}
-                </TableCell>
-                <TableCell>{user.approvedBy?.name || "-"}</TableCell>
-                <TableCell>{formatDate(user.createdAt)}</TableCell>
+                <TableCell>{user.branch?.name || "-"}</TableCell>
                 <TableCell className="text-right">
-                  <UserActions user={user} branches={branches} />
+                  <UserActions 
+                    user={user} 
+                    branches={branches}
+                    currentUserRole={currentUserRole}
+                  />
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={(page) => updateTable({ page })}
-      />
     </div>
   );
 } 
