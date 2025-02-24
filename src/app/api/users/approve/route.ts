@@ -14,15 +14,19 @@ export async function POST(req: Request) {
       );
     }
 
-    const { userId, role, status } = await req.json();
+    const { userId, role, status, branchId } = await req.json();
+
+    const updateData: any = {
+      approvedById: session.user.id,
+    };
+
+    if (role) updateData.role = role;
+    if (status) updateData.status = status;
+    if (branchId) updateData.branchId = branchId;
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: {
-        role,
-        status,
-        approvedById: session.user.id,
-      },
+      data: updateData,
     });
 
     return NextResponse.json(updatedUser);

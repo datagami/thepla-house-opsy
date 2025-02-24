@@ -9,24 +9,35 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Check, X, UserCog } from "lucide-react";
+import { MoreHorizontal, Check, X, UserCog, Building } from "lucide-react";
 import { toast } from "sonner";
+
+interface Branch {
+  id: string;
+  name: string;
+  city: string;
+}
 
 interface UserActionsProps {
   user: {
     id: string;
     status: string;
     role: string;
+    branch?: Branch | null;
   };
+  branches: Branch[];
 }
 
-export function UserActions({ user }: UserActionsProps) {
+export function UserActions({ user, branches }: UserActionsProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  const updateUser = async (data: { status?: string; role?: string }) => {
+  const updateUser = async (data: { status?: string; role?: string; branchId?: string }) => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/users/approve`, {
@@ -83,20 +94,49 @@ export function UserActions({ user }: UserActionsProps) {
             <DropdownMenuSeparator />
           </>
         )}
-        <DropdownMenuItem
-          onClick={() => updateUser({ role: "EMPLOYEE" })}
-          disabled={isLoading}
-        >
-          <UserCog className="mr-2 h-4 w-4" />
-          Set as Employee
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => updateUser({ role: "BRANCH_MANAGER" })}
-          disabled={isLoading}
-        >
-          <UserCog className="mr-2 h-4 w-4" />
-          Set as Branch Manager
-        </DropdownMenuItem>
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <UserCog className="mr-2 h-4 w-4" />
+            Change Role
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            <DropdownMenuItem
+              onClick={() => updateUser({ role: "EMPLOYEE" })}
+              disabled={isLoading}
+            >
+              Employee
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => updateUser({ role: "BRANCH_MANAGER" })}
+              disabled={isLoading}
+            >
+              Branch Manager
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => updateUser({ role: "HR" })}
+              disabled={isLoading}
+            >
+              HR
+            </DropdownMenuItem>
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <Building className="mr-2 h-4 w-4" />
+            Assign Branch
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            {branches.map((branch) => (
+              <DropdownMenuItem
+                key={branch.id}
+                onClick={() => updateUser({ branchId: branch.id })}
+                disabled={isLoading}
+              >
+                {branch.name} - {branch.city}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
       </DropdownMenuContent>
     </DropdownMenu>
   );

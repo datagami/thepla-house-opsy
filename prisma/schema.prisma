@@ -51,22 +51,26 @@ model Session {
 }
 
 model User {
-  id            String      @id @default(cuid())
-  name          String
-  email         String      @unique
-  emailVerified DateTime?   @map("email_verified")
-  password      String
-  role          UserRole    @default(EMPLOYEE)
-  status        UserStatus  @default(PENDING)
-  image         String?
-  branchId      String?     @map("branch_id")
-  createdAt     DateTime    @default(now()) @map("created_at")
-  updatedAt     DateTime    @updatedAt @map("updated_at")
+  id              String      @id @default(cuid())
+  name            String
+  email           String      @unique
+  emailVerified   DateTime?   @map("email_verified")
+  password        String
+  role            UserRole    @default(EMPLOYEE)
+  status          UserStatus  @default(PENDING)
+  image           String?
+  branchId        String?     @map("branch_id")
+  managedBranchId String?     @map("managed_branch_id")
+  selectedBranchId String?    @map("selected_branch_id")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
 
   // Relations
   accounts      Account[]
   sessions      Session[]
   branch        Branch?     @relation(fields: [branchId], references: [id])
+  managedBranch Branch?    @relation("BranchManagers", fields: [managedBranchId], references: [id])
+  selectedBranch Branch?    @relation("SelectedBranch", fields: [selectedBranchId], references: [id])
   attendance    Attendance[]
   leaveRequests LeaveRequest[]
   approvedBy    User?       @relation("UserApproval", fields: [approvedById], references: [id])
@@ -74,6 +78,9 @@ model User {
   approvedUsers User[]      @relation("UserApproval")
 
   @@map("users")
+  @@index([branchId])
+  @@index([managedBranchId])
+  @@index([selectedBranchId])
 }
 
 model VerificationToken {
@@ -88,10 +95,16 @@ model VerificationToken {
 model Branch {
   id        String   @id @default(cuid())
   name      String
-  location  String
+  address   String?
+  city      String
+  state     String
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  users     User[]
+
+  // Relations
+  users          User[]
+  managers       User[]  @relation("BranchManagers")
+  selectedByUsers User[] @relation("SelectedBranch")
 
   @@map("branches")
 }

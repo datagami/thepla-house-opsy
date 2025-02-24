@@ -15,19 +15,26 @@ import { formatDate } from "@/lib/utils";
 import { useTableState } from "@/hooks/use-table-state";
 import { Pagination } from "@/components/ui/pagination";
 
+interface Branch {
+  id: string;
+  name: string;
+  city: string;
+}
+
 interface User {
   id: string;
   name: string;
   email: string;
   role: string;
   status: string;
-  branch?: { name: string } | null;
+  branch?: Branch | null;
   approvedBy?: { name: string } | null;
   createdAt: Date;
 }
 
 interface UserTableProps {
   users: User[];
+  branches: Branch[];
   currentPage: number;
   totalPages: number;
 }
@@ -45,7 +52,7 @@ const statusColors = {
   INACTIVE: "bg-red-100 text-red-800",
 };
 
-export function UserTable({ users, currentPage, totalPages }: UserTableProps) {
+export function UserTable({ users, branches, currentPage, totalPages }: UserTableProps) {
   const { updateTable } = useTableState();
 
   return (
@@ -79,11 +86,13 @@ export function UserTable({ users, currentPage, totalPages }: UserTableProps) {
                     {user.status}
                   </Badge>
                 </TableCell>
-                <TableCell>{user.branch?.name || "-"}</TableCell>
+                <TableCell>
+                  {user.branch ? `${user.branch.name} - ${user.branch.city}` : "-"}
+                </TableCell>
                 <TableCell>{user.approvedBy?.name || "-"}</TableCell>
                 <TableCell>{formatDate(user.createdAt)}</TableCell>
                 <TableCell className="text-right">
-                  <UserActions user={user} />
+                  <UserActions user={user} branches={branches} />
                 </TableCell>
               </TableRow>
             ))}

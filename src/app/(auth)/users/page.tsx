@@ -32,6 +32,10 @@ export default async function UsersPage({ searchParams }: PageProps) {
   // Create filter conditions
   const where = {
     AND: [
+      // Add branch filter for non-management or when branch is selected
+      session.user.role !== "MANAGEMENT" || session.user.branchId
+        ? { branchId: session.user.branchId }
+        : {},
       searchParams.search
         ? {
             OR: [
@@ -71,14 +75,33 @@ export default async function UsersPage({ searchParams }: PageProps) {
     take: perPage,
   });
 
+  // Get all branches for management users
+  const branches = session.user.role === "MANAGEMENT"
+    ? await prisma.branch.findMany({
+        orderBy: { name: "asc" },
+      })
+    : [];
+
   return (
     <div className="flex-1 space-y-4">
       <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">User Management</h2>
+        <h2 className="text-3xl font-bold tracking-tight">
+          User Management
+          {session.user.branchId && (
+            <span className="text-muted-foreground ml-2 text-lg">
+              {users[0]?.branch?.name}
+            </span>
+          )}
+        </h2>
       </div>
       <div className="space-y-4">
         <UserTableFilters />
-        <UserTable users={users} currentPage={page} totalPages={totalPages} />
+        <UserTable 
+          users={users} 
+          branches={branches}
+          currentPage={page} 
+          totalPages={totalPages} 
+        />
       </div>
     </div>
   );

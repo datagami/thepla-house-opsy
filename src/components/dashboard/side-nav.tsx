@@ -9,9 +9,11 @@ import {
   Clock,
   UserCog,
   Menu,
+  Building,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useSession } from "next-auth/react"
 
 const routes = [
   {
@@ -43,6 +45,7 @@ const routes = [
 export function SideNav() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { data: session } = useSession();
 
   return (
     <div className={cn(
@@ -73,9 +76,20 @@ export function SideNav() {
                 {!isCollapsed && <span>{route.label}</span>}
               </Link>
             ))}
+            {session?.user.role === "MANAGEMENT" && (
+              <li>
+                <Link
+                  href="/branches"
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
+                >
+                  <Building className="h-4 w-4" />
+                  Branch Management
+                </Link>
+              </li>
+            )}
           </div>
         </div>
       </div>
     </div>
   );
-} 
+}

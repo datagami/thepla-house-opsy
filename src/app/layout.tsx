@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { Toaster } from "sonner";
-import { ThemeProvider } from "@/components/providers/theme-provider";
 import "./globals.css";
+import { Toaster } from "@/components/ui/sonner";
+import { SessionProvider } from "@/components/session-provider";
+import {ThemeProvider} from "next-themes";
 
 const inter = Inter({ subsets: ["latin"] });
+
+export const metadata: Metadata = {
+  title: "HRMS",
+  description: "Human Resource Management System",
+};
 
 export default function RootLayout({
   children,
@@ -13,16 +20,18 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-          suppressHydrationWarning
-        >
-          {children}
-          <Toaster />
-        </ThemeProvider>
+        <SessionProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+            suppressHydrationWarning
+          >
+            {children}
+            <Toaster />
+          </ThemeProvider>
+        </SessionProvider>
       </body>
     </html>
   );
