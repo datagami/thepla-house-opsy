@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {toast} from "sonner";
+import { toast } from "sonner";
 
 const SignUpForm = () => {
   const router = useRouter();
@@ -18,28 +18,30 @@ const SignUpForm = () => {
       const formData = new FormData(event.currentTarget);
       const response = await fetch("/api/auth/signup", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           name: formData.get("name"),
           email: formData.get("email"),
           password: formData.get("password"),
         }),
-        headers: {
-          "Content-Type": "application/json",
-        },
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error("Failed to create account");
+        throw new Error(data.error || "Failed to create account");
       }
 
-      toast("Account created successfully", {
+      toast.success("Account created successfully", {
         description: "Please wait for HR/Management approval to login",
       });
       
       router.push("/login");
     } catch (error) {
-      toast("Error", {
-        description: "Something went wrong. Please try again.",
+      toast.error("Error", {
+        description: error instanceof Error ? error.message : "Something went wrong",
       });
       console.error(error);
     } finally {
