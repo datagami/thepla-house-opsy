@@ -2,7 +2,7 @@
 
 ## Overview
 Develop a Next.js application using Auth.js for authentication and Prisma as the ORM for managing HRMS operations in a cloud kitchen. The primary feature is an Attendance module with the following capabilities:
-- **Attendance Tracking:** Mark daily attendance via a Calendar-like UI.
+- **Attendance Tracking:** Mark daily attendance via a Calendar-like UI built with shadcn UI components.
 - **Overtime & Half Days:** Allow marking overtime hours and half-day entries.
 - **Time-Based Locking:** Attendance cannot be updated after 8pm IST by default. If a branch manager misses the update, they must submit an unlock request.
 - **Unlock Requests:** Provide functionality to unlock a specific day, including logging all such requests.
@@ -15,17 +15,17 @@ Develop a Next.js application using Auth.js for authentication and Prisma as the
 - **Employees:** Can see only their own attendance and leave records.
 
 ## Technology Stack
-- **Frontend:** Next.js (React-based UI)
+- **Frontend:** Next.js with shadcn UI and related libraries for a consistent, responsive UI
 - **Authentication:** Auth.js
 - **Database & ORM:** Prisma
-- **UI Components:** Calendar UI for attendance tracking
+- **UI Components:** Calendar UI for attendance tracking built using shadcn UI components
 
 ## Key Requirements
 1. **User Roles & Access Control**
    - Implement strict role-based permissions.
    - Validate endpoints and UI components to ensure data isolation.
 2. **Attendance Module**
-   - Calendar-like UI for marking daily attendance.
+   - Calendar-like UI for marking daily attendance, built with shadcn UI components.
    - Options for overtime, half days, and normal entries.
    - Attendance updates locked after 8pm IST unless an unlock request is approved.
    - **HR Verification:** HR must verify locked attendance records within 24 hours after the lock.
@@ -50,7 +50,7 @@ Develop a Next.js application using Auth.js for authentication and Prisma as the
   "project": "Cloud Kitchen HRMS",
   "modules": {
     "attendance": {
-      "ui": "calendar",
+      "ui": "calendar using shadcn UI components",
       "features": [
         "daily attendance marking",
         "overtime support",
@@ -80,6 +80,10 @@ Develop a Next.js application using Auth.js for authentication and Prisma as the
   "database": {
     "orm": "prisma",
     "schemaPath": "./prisma/schema.prisma"
+  },
+  "uiLibrary": {
+    "name": "shadcn UI",
+    "relatedLibraries": ["Tailwind CSS", "Radix UI"]
   },
   "codingStandards": {
     "eslint": {

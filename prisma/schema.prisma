@@ -7,6 +7,19 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum UserRole {
+  EMPLOYEE
+  BRANCH_MANAGER
+  HR
+  MANAGEMENT
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+}
+
 model Account {
   id                 String  @id @default(cuid())
   userId             String  @map("user_id")
@@ -38,13 +51,27 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime? @map("email_verified")
+  id            String      @id @default(cuid())
+  name          String
+  email         String      @unique
+  emailVerified DateTime?   @map("email_verified")
+  password      String
+  role          UserRole    @default(EMPLOYEE)
+  status        UserStatus  @default(PENDING)
   image         String?
+  branchId      String?     @map("branch_id")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  // Relations
   accounts      Account[]
   sessions      Session[]
+  branch        Branch?     @relation(fields: [branchId], references: [id])
+  attendance    Attendance[]
+  leaveRequests LeaveRequest[]
+  approvedBy    User?       @relation("UserApproval", fields: [approvedById], references: [id])
+  approvedById  String?     @map("approved_by_id")
+  approvedUsers User[]      @relation("UserApproval")
 
   @@map("users")
 }
@@ -56,4 +83,48 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@map("verification_tokens")
+}
+
+model Branch {
+  id        String   @id @default(cuid())
+  name      String
+  location  String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  users     User[]
+
+  @@map("branches")
+}
+
+model Attendance {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  date        DateTime
+  checkIn     DateTime @map("check_in")
+  checkOut    DateTime? @map("check_out")
+  isHalfDay   Boolean  @default(false) @map("is_half_day")
+  overtime    Int      @default(0) // in minutes
+  isLocked    Boolean  @default(false) @map("is_locked")
+  isVerified  Boolean  @default(false) @map("is_verified")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@map("attendance")
+}
+
+model LeaveRequest {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  startDate   DateTime @map("start_date")
+  endDate     DateTime @map("end_date")
+  reason      String
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@map("leave_requests")
 }
