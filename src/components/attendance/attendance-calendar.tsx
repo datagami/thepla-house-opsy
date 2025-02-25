@@ -1,159 +1,103 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { AttendanceStatus } from "./attendance-status";
-import { AttendanceEditDialog } from "./attendance-edit-dialog";
 
-interface User {
+interface Attendance {
   id: string;
-  name: string;
-  attendance: Array<{
-    date: Date;
-    checkIn: Date;
-    checkOut: Date | null;
-    isHalfDay: boolean;
-    overtime: number;
-    shift1: boolean;
-    shift2: boolean;
-    shift3: boolean;
-  }>;
+  date: Date;
+  isPresent: boolean;
+  isHalfDay: boolean;
+  overtime: boolean;
+  checkIn: string | null;
+  checkOut: string | null;
+  shift1: boolean;
+  shift2: boolean;
+  shift3: boolean;
+  status: string;
 }
 
 interface AttendanceCalendarProps {
-  users: User[];
+  attendance: Attendance[];
+  month: Date;
 }
 
-export function AttendanceCalendar({ users }: AttendanceCalendarProps) {
-  const [selectedDate, setSelectedDate] = useState(new Date());
+export function AttendanceCalendar({ attendance, month }: AttendanceCalendarProps) {
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
-  const goToPreviousDay = () => {
-    const newDate = new Date(selectedDate);
-    newDate.setDate(newDate.getDate() - 1);
-    setSelectedDate(newDate);
-  };
+  const attendanceMap = new Map(
+    attendance.map(a => [format(new Date(a.date), "yyyy-MM-dd"), a])
+  );
 
-  const goToNextDay = () => {
-    const newDate = new Date(selectedDate);
-    newDate.setDate(newDate.getDate() + 1);
-    setSelectedDate(newDate);
+  const getDayClass = (date: Date) => {
+    const dateStr = format(date, "yyyy-MM-dd");
+    const attendance = attendanceMap.get(dateStr);
+    
+    if (!attendance) return "";
+
+    if (attendance.isHalfDay) return "bg-blue-100";
+    if (attendance.overtime) return "bg-purple-100";
+    return attendance.isPresent ? "bg-green-100" : "bg-red-100";
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={goToPreviousDay}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-[240px] justify-start text-left font-normal",
+      <Calendar
+        mode="single"
+        selected={selectedDate}
+        onSelect={setSelectedDate}
+        month={month}
+        className="rounded-md border"
+        classNames={{
+          day_today: "bg-accent text-accent-foreground",
+          day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+          day: (date) => cn(
+            "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
+            getDayClass(date)
+          ),
+        }}
+      />
+
+      {selectedDate && (
+        <div className="rounded-md border p-4">
+          <h4 className="font-medium mb-2">
+            {format(selectedDate, "dd MMMM yyyy")}
+          </h4>
+          {(() => {
+            const attendance = attendanceMap.get(format(selectedDate, "yyyy-MM-dd"));
+            if (!attendance) return <p>No attendance record</p>;
+
+            return (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant={attendance.isPresent ? "success" : "destructive"}>
+                    {attendance.isPresent ? "Present" : "Absent"}
+                  </Badge>
+                  {attendance.isHalfDay && <Badge>Half Day</Badge>}
+                  {attendance.overtime && <Badge variant="outline">Overtime</Badge>}
+                </div>
+                {attendance.isPresent && (
+                  <>
+                    <p className="text-sm">
+                      Time: {attendance.checkIn} - {attendance.checkOut}
+                    </p>
+                    <p className="text-sm">
+                      Shifts: {[
+                        attendance.shift1 && "Morning",
+                        attendance.shift2 && "Afternoon",
+                        attendance.shift3 && "Night",
+                      ].filter(Boolean).join(", ")}
+                    </p>
+                  </>
                 )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {format(selectedDate, "EEEE, MMMM d, yyyy")}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={goToNextDay}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+              </div>
+            );
+          })()}
         </div>
-      </div>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[200px]">Employee</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Check In</TableHead>
-              <TableHead>Check Out</TableHead>
-              <TableHead>Shifts</TableHead>
-              <TableHead>Overtime</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((user) => {
-              const attendance = user.attendance.find(
-                (a) => new Date(a.date).toDateString() === selectedDate.toDateString()
-              );
-
-              const getShifts = (attendance: typeof user.attendance[0]) => {
-                if (!attendance) return "-";
-                const shifts = [];
-                if (attendance.shift1) shifts.push("1");
-                if (attendance.shift2) shifts.push("2");
-                if (attendance.shift3) shifts.push("3");
-                return shifts.length ? `Shift ${shifts.join(", ")}` : "-";
-              };
-
-              return (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>
-                    <AttendanceStatus
-                      attendance={attendance}
-                      userId={user.id}
-                      date={selectedDate}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {attendance?.checkIn ? format(new Date(attendance.checkIn), "hh:mm a") : "-"}
-                  </TableCell>
-                  <TableCell>
-                    {attendance?.checkOut ? format(new Date(attendance.checkOut), "hh:mm a") : "-"}
-                  </TableCell>
-                  <TableCell>{getShifts(attendance)}</TableCell>
-                  <TableCell>
-                    {attendance?.overtime ? "Yes" : "No"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <AttendanceEditDialog attendance={attendance} />
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
+      )}
     </div>
   );
 } 

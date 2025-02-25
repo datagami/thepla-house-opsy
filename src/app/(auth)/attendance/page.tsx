@@ -2,7 +2,8 @@ import { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { AttendanceCalendar } from "@/components/attendance/attendance-calendar";
+import { AttendanceTable } from "@/components/attendance/attendance-table";
+import { DailyAttendanceView } from "@/components/attendance/daily-attendance-view";
 
 export const metadata: Metadata = {
   title: "Attendance Management - HRMS",
@@ -12,44 +13,73 @@ export const metadata: Metadata = {
 export default async function AttendancePage() {
   const session = await auth();
 
-  if (!session) {
-    redirect("/login");
+  if (!session || !session.user.branchId) {
+    redirect("/dashboard");
   }
 
   const today = new Date();
-  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  today.setHours(0, 0, 0, 0);
 
-  let users = [];
-
-  if (session.user.role === "BRANCH_MANAGER") {
-    // Get users from managed branch
-    users = await prisma.user.findMany({
-      where: {
-        branchId: session.user.branchId,
-        role: "EMPLOYEE",
-      },
-      select: {
-        id: true,
-        name: true,
-        attendance: {
-          where: {
-            date: {
-              gte: firstDayOfMonth,
-              lte: lastDayOfMonth,
+  const users = await prisma.user.findMany({
+    where: {
+      branchId: session.user.branchId,
+      role: "EMPLOYEE",
+      status: "ACTIVE",
+    },
+    select: {
+      id: true,
+      name: true,
+      attendance: {
+        where: {
+          date: today,
+        },
+        select: {
+          id: true,
+          isPresent: true,
+          checkIn: true,
+          checkOut: true,
+          isHalfDay: true,
+          overtime: true,
+          shift1: true,
+          shift2: true,
+          shift3: true,
+          status: true,
+          verifiedAt: true,
+          verifiedBy: {
+            select: {
+              name: true,
             },
           },
         },
       },
-    });
-  }
+    },
+    orderBy: {
+      name: "asc",
+    },
+  });
+
+  // Separate users with pending attendance
+  const pendingUsers = users.filter(user => !user.attendance.length);
+  const markedUsers = users.filter(user => user.attendance.length);
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
+    <div className="flex-1 space-y-8 p-8 pt-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Attendance Management</h2>
       </div>
-      <AttendanceCalendar users={users} />
+
+      {pendingUsers.length > 0 && (
+        <div>
+          <h3 className="text-lg font-medium mb-4">Pending Attendance ({pendingUsers.length})</h3>
+          <div className="rounded-md border">
+            <AttendanceTable users={pendingUsers} date={today} />
+          </div>
+        </div>
+      )}
+
+      {markedUsers.length > 0 && (
+        <DailyAttendanceView users={markedUsers} />
+      )}
     </div>
   );
 } 

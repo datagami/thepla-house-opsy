@@ -1,15 +1,14 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma";
-import { SideNav } from "@/components/dashboard/side-nav";
-import { TopNav } from "@/components/dashboard/top-nav";
+import { SideNav } from "@/components/layout/side-nav";
+import { Header } from "@/components/layout/header";
 
 export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-
   const session = await auth();
 
   if (!session) {
@@ -30,12 +29,12 @@ export default async function AuthLayout({
 
   return (
     <div className="min-h-screen">
-      <TopNav />
-      <div className="flex h-[calc(100vh-4rem)]">
-        <SideNav />
-        <main className="flex-1 overflow-y-auto p-8">
-          {children}
-        </main>
+      <Header />
+      <div className="flex">
+        <aside className="hidden w-64 border-r bg-muted/10 lg:block p-6">
+          <SideNav userRole={session.user.role} />
+        </aside>
+        <main className="flex-1">{children}</main>
       </div>
     </div>
   );

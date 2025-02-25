@@ -6,7 +6,7 @@ export async function POST(req: Request) {
   try {
     const session = await auth();
 
-    if (!session || !["BRANCH_MANAGER"].includes(session.user.role)) {
+    if (!session) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -16,6 +16,7 @@ export async function POST(req: Request) {
     const {
       userId,
       date,
+      isPresent,
       checkIn,
       checkOut,
       isHalfDay,
@@ -23,20 +24,42 @@ export async function POST(req: Request) {
       shift1,
       shift2,
       shift3,
+      verificationNote, // For HR verification
     } = await req.json();
 
     // Convert date string to Date object
     const attendanceDate = new Date(date);
-    // Set time to start of day
     attendanceDate.setHours(0, 0, 0, 0);
 
-    // Check if attendance already exists for this date
+    // Check if attendance record exists for this date
     const existingAttendance = await prisma.attendance.findFirst({
       where: {
         userId,
         date: attendanceDate,
       },
     });
+
+    // Base attendance data
+    const attendanceData = {
+      isPresent,
+      checkIn,
+      checkOut,
+      isHalfDay,
+      overtime,
+      shift1,
+      shift2,
+      shift3,
+    };
+
+    // Add verification data if HR is verifying
+    if (session.user.role === "HR" && verificationNote) {
+      Object.assign(attendanceData, {
+        status: "APPROVED",
+        verifiedById: session.user.id,
+        verifiedAt: new Date(),
+        verificationNote,
+      });
+    }
 
     if (existingAttendance) {
       // Update existing attendance
@@ -45,39 +68,68 @@ export async function POST(req: Request) {
           id: existingAttendance.id,
         },
         data: {
-          checkIn: checkIn ? new Date(`${date}T${checkIn}`) : null,
-          checkOut: checkOut ? new Date(`${date}T${checkOut}`) : null,
-          isHalfDay,
-          overtime,
-          shift1,
-          shift2,
-          shift3,
+          ...attendanceData,
+          updatedAt: new Date(),
         },
       });
 
       return NextResponse.json(updatedAttendance);
+    } else {
+      // Create new attendance record
+      const newAttendance = await prisma.attendance.create({
+        data: {
+          userId,
+          date: attendanceDate,
+          ...attendanceData,
+        },
+      });
+
+      return NextResponse.json(newAttendance);
+    }
+  } catch (error) {
+    console.error("Error in attendance API:", error);
+    return NextResponse.json(
+      { error: "Failed to process attendance" },
+      { status: 500 }
+    );
+  }
+}
+
+// Add a verification endpoint for HR
+export async function PATCH(req: Request) {
+  try {
+    const session = await auth();
+
+    if (!session || session.user.role !== "HR") {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
-    // Create new attendance
-    const attendance = await prisma.attendance.create({
+    const {
+      attendanceId,
+      status,
+      verificationNote,
+    } = await req.json();
+
+    const updatedAttendance = await prisma.attendance.update({
+      where: {
+        id: attendanceId,
+      },
       data: {
-        userId,
-        date: attendanceDate,
-        checkIn: checkIn ? new Date(`${date}T${checkIn}`) : null,
-        checkOut: checkOut ? new Date(`${date}T${checkOut}`) : null,
-        isHalfDay,
-        overtime,
-        shift1,
-        shift2,
-        shift3,
+        status,
+        verifiedById: session.user.id,
+        verifiedAt: new Date(),
+        verificationNote,
       },
     });
 
-    return NextResponse.json(attendance);
+    return NextResponse.json(updatedAttendance);
   } catch (error) {
-    console.error("Error marking attendance:", error);
+    console.error("Error verifying attendance:", error);
     return NextResponse.json(
-      { error: "Failed to mark attendance" },
+      { error: "Failed to verify attendance" },
       { status: 500 }
     );
   }

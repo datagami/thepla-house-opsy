@@ -122,8 +122,8 @@ model Attendance {
   userId      String   @map("user_id")
   date        DateTime
   isPresent   Boolean  @default(false) @map("is_present")
-  checkIn     DateTime? @map("check_in")
-  checkOut    DateTime? @map("check_out")
+  checkIn     String?  @map("check_in")
+  checkOut    String?  @map("check_out")
   isHalfDay   Boolean  @default(false) @map("is_half_day")
   overtime    Boolean  @default(false)
   shift1      Boolean  @default(false) @map("shift_1")
@@ -140,6 +140,7 @@ model Attendance {
   user        User     @relation("UserAttendance", fields: [userId], references: [id])
   verifiedBy  User?    @relation("AttendanceVerifications", fields: [verifiedById], references: [id])
 
+  @@unique([userId, date])
   @@map("attendance")
   @@index([verifiedById])
 }

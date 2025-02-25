@@ -20,7 +20,8 @@ export type Feature =
   | "leave.request"
   | "leave.approve"
   | "dashboard.view"
-  | "dashboard.stats";
+  | "dashboard.stats"
+  | "employees.view";
 
 type RolePermissions = {
   [key in Feature]: string[];
@@ -58,6 +59,9 @@ const permissions: RolePermissions = {
   // Dashboard
   "dashboard.view": ["HR", "MANAGEMENT", "BRANCH_MANAGER", "EMPLOYEE"],
   "dashboard.stats": ["HR", "MANAGEMENT", "BRANCH_MANAGER"],
+
+  // Employees
+  "employees.view": ["BRANCH_MANAGER", "HR", "MANAGEMENT"],
 };
 
 export function hasAccess(userRole: string, feature: Feature): boolean {

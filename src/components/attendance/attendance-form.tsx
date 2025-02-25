@@ -6,30 +6,58 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 interface AttendanceFormProps {
   userId: string;
+  userName: string;
   date: Date;
-  onSuccess: () => void;
+  currentAttendance?: {
+    isPresent: boolean;
+    checkIn?: string | null;
+    checkOut?: string | null;
+    isHalfDay: boolean;
+    overtime: boolean;
+    shift1: boolean;
+    shift2: boolean;
+    shift3: boolean;
+    status: string;
+    verificationNote?: string;
+  };
+  isOpen: boolean;
+  onClose: () => void;
+  isHR?: boolean;
 }
 
-export function AttendanceForm({ userId, date, onSuccess }: AttendanceFormProps) {
+export function AttendanceForm({
+  userId,
+  userName,
+  date,
+  currentAttendance,
+  isOpen,
+  onClose,
+  isHR,
+}: AttendanceFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [isPresent, setIsPresent] = useState(false);
-  const [isHalfDay, setIsHalfDay] = useState(false);
-  const [isOvertime, setIsOvertime] = useState(false);
+  const [isPresent, setIsPresent] = useState(currentAttendance?.isPresent ?? true);
+  const [isHalfDay, setIsHalfDay] = useState(currentAttendance?.isHalfDay ?? false);
+  const [isOvertime, setIsOvertime] = useState(currentAttendance?.overtime ?? false);
+  const [shift1, setShift1] = useState(currentAttendance?.shift1 ?? false);
+  const [shift2, setShift2] = useState(currentAttendance?.shift2 ?? false);
+  const [shift3, setShift3] = useState(currentAttendance?.shift3 ?? false);
+  const [checkIn, setCheckIn] = useState(currentAttendance?.checkIn || "");
+  const [checkOut, setCheckOut] = useState(currentAttendance?.checkOut || "");
 
-  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = async () => {
     setIsLoading(true);
-
     try {
-      const formData = new FormData(event.currentTarget);
-      const checkIn = formData.get("checkIn") as string;
-      const checkOut = formData.get("checkOut") as string;
-
       const response = await fetch("/api/attendance", {
         method: "POST",
         headers: {
@@ -37,25 +65,28 @@ export function AttendanceForm({ userId, date, onSuccess }: AttendanceFormProps)
         },
         body: JSON.stringify({
           userId,
-          date,
-          checkIn: isPresent && checkIn ? checkIn : null,
-          checkOut: isPresent && checkOut ? checkOut : null,
+          date: date.toISOString(),
+          isPresent,
+          checkIn: checkIn || null,
+          checkOut: checkOut || null,
           isHalfDay: isPresent && isHalfDay,
           overtime: isPresent && isOvertime,
-          shift1: isPresent && formData.get("shift1") === "true",
-          shift2: isPresent && formData.get("shift2") === "true",
-          shift3: isPresent && formData.get("shift3") === "true",
+          shift1: isPresent && shift1,
+          shift2: isPresent && shift2,
+          shift3: isPresent && shift3,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to mark attendance");
+        const error = await response.json();
+        throw new Error(error.message || "Failed to mark attendance");
       }
 
       toast.success("Attendance marked successfully");
       router.refresh();
-      onSuccess();
+      onClose();
     } catch (error) {
+      console.error("Error marking attendance:", error);
       toast.error("Failed to mark attendance");
     } finally {
       setIsLoading(false);
@@ -67,108 +98,113 @@ export function AttendanceForm({ userId, date, onSuccess }: AttendanceFormProps)
     if (!checked) {
       setIsHalfDay(false);
       setIsOvertime(false);
-    }
-  };
-
-  const handleHalfDayChange = (checked: boolean) => {
-    setIsHalfDay(checked);
-    if (checked) {
-      setIsOvertime(false);
-    }
-  };
-
-  const handleOvertimeChange = (checked: boolean) => {
-    setIsOvertime(checked);
-    if (checked) {
-      setIsHalfDay(false);
+      setShift1(false);
+      setShift2(false);
+      setShift3(false);
     }
   };
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
-      <div className="flex items-center justify-between">
-        <Label htmlFor="isPresent">Present</Label>
-        <Switch 
-          id="isPresent" 
-          checked={isPresent}
-          onCheckedChange={handlePresentChange}
-        />
-      </div>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Mark Attendance for {userName}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="isPresent">Present</Label>
+            <Switch 
+              id="isPresent" 
+              checked={isPresent}
+              onCheckedChange={handlePresentChange}
+            />
+          </div>
 
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="checkIn">Check In Time (Optional)</Label>
-          <Input
-            id="checkIn"
-            name="checkIn"
-            type="time"
-            disabled={!isPresent}
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <Label htmlFor="checkOut">Check Out Time (Optional)</Label>
-          <Input
-            id="checkOut"
-            name="checkOut"
-            type="time"
-            disabled={!isPresent}
-            className="mt-1"
-          />
-        </div>
-      </div>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="checkIn">Check In Time</Label>
+              <Input
+                id="checkIn"
+                type="time"
+                value={checkIn}
+                onChange={(e) => setCheckIn(e.target.value)}
+                disabled={!isPresent}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="checkOut">Check Out Time</Label>
+              <Input
+                id="checkOut"
+                type="time"
+                value={checkOut}
+                onChange={(e) => setCheckOut(e.target.value)}
+                disabled={!isPresent}
+                className="mt-1"
+              />
+            </div>
+          </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="shift1">Shift 1 (Morning)</Label>
-          <Switch 
-            id="shift1" 
-            name="shift1" 
-            disabled={!isPresent}
-          />
-        </div>
-        <div className="flex items-center justify-between">
-          <Label htmlFor="shift2">Shift 2 (Afternoon)</Label>
-          <Switch 
-            id="shift2" 
-            name="shift2" 
-            disabled={!isPresent}
-          />
-        </div>
-        <div className="flex items-center justify-between">
-          <Label htmlFor="shift3">Shift 3 (Night)</Label>
-          <Switch 
-            id="shift3" 
-            name="shift3" 
-            disabled={!isPresent}
-          />
-        </div>
-      </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="shift1">Shift 1 (Morning)</Label>
+              <Switch 
+                id="shift1"
+                checked={shift1}
+                onCheckedChange={setShift1}
+                disabled={!isPresent}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="shift2">Shift 2 (Afternoon)</Label>
+              <Switch 
+                id="shift2"
+                checked={shift2}
+                onCheckedChange={setShift2}
+                disabled={!isPresent}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="shift3">Shift 3 (Night)</Label>
+              <Switch 
+                id="shift3"
+                checked={shift3}
+                onCheckedChange={setShift3}
+                disabled={!isPresent}
+              />
+            </div>
+          </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="isHalfDay">Half Day</Label>
-          <Switch 
-            id="isHalfDay" 
-            checked={isHalfDay}
-            onCheckedChange={handleHalfDayChange}
-            disabled={!isPresent || isOvertime}
-          />
-        </div>
-        <div className="flex items-center justify-between">
-          <Label htmlFor="overtime">Overtime</Label>
-          <Switch 
-            id="overtime" 
-            checked={isOvertime}
-            onCheckedChange={handleOvertimeChange}
-            disabled={!isPresent || isHalfDay}
-          />
-        </div>
-      </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="isHalfDay">Half Day</Label>
+              <Switch 
+                id="isHalfDay" 
+                checked={isHalfDay}
+                onCheckedChange={setIsHalfDay}
+                disabled={!isPresent || isOvertime}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="overtime">Overtime</Label>
+              <Switch 
+                id="overtime" 
+                checked={isOvertime}
+                onCheckedChange={setIsOvertime}
+                disabled={!isPresent || isHalfDay}
+              />
+            </div>
+          </div>
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? "Marking..." : "Mark Attendance"}
-      </Button>
-    </form>
+          <Button 
+            onClick={handleSubmit} 
+            className="w-full" 
+            disabled={isLoading}
+          >
+            {isLoading ? "Saving..." : "Save Attendance"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 } 

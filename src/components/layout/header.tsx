@@ -1,13 +1,14 @@
 import { auth } from "@/auth";
-import { MainNav } from "@/components/layout/main-nav";
-import { UserNav } from "@/components/layout/user-nav";
+import { NavWrapper } from "./nav-wrapper";
 import { prisma } from "@/lib/prisma";
 
 export async function Header() {
   const session = await auth();
 
+  if (!session?.user) return null;
+
   let branchName = null;
-  if (session?.user) {
+  if (session.user) {
     if (session.user.role === "BRANCH_MANAGER") {
       const user = await prisma.user.findUnique({
         where: { id: session.user.id },
@@ -30,22 +31,13 @@ export async function Header() {
   }
 
   return (
-    <div className="border-b">
-      <div className="flex h-16 items-center px-4">
-        <MainNav />
-        <div className="ml-auto flex items-center space-x-4">
-          {session?.user && (
-            <UserNav
-              user={{
-                name: session.user.name,
-                email: session.user.email,
-                role: session.user.role,
-                branchName,
-              }}
-            />
-          )}
-        </div>
-      </div>
-    </div>
+    <NavWrapper 
+      user={{
+        role: session.user.role,
+        name: session.user.name,
+        email: session.user.email,
+        branchName,
+      }} 
+    />
   );
 } 
