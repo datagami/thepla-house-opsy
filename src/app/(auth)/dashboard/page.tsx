@@ -1,11 +1,12 @@
-import { Metadata } from "next";
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { DashboardStats } from "@/components/dashboard/dashboard-stats";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, CalendarCheck, Users } from "lucide-react";
+import {Metadata} from "next";
+import {auth} from "@/auth";
+import {redirect} from "next/navigation";
+import {prisma} from "@/lib/prisma";
+import {DashboardStats} from "@/components/dashboard/dashboard-stats";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Clock, CalendarCheck, Users, AlertCircle} from "lucide-react";
 import Link from "next/link";
+import {Badge} from "@/components/ui/badge";
 
 export const metadata: Metadata = {
   title: "Dashboard - HRMS",
@@ -56,11 +57,32 @@ export default async function DashboardPage() {
       },
     });
 
+    // Get rejected attendance records for the branch
+    const rejectedAttendance = await prisma.attendance.findMany({
+      where: {
+        status: "REJECTED",
+        user: {
+          branchId: session.user.branchId,
+        },
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        date: "desc",
+      },
+    });
+
     stats = {
       totalEmployees,
       markedAttendance,
       pendingAttendance: totalEmployees - markedAttendance,
       pendingLeaveRequests,
+      rejectedAttendance
     };
   }
 
@@ -88,19 +110,19 @@ export default async function DashboardPage() {
       manager => manager.attendance.length === 0
     ).length;
 
-    // Get pending attendance verifications
+    // Get pending attendance verifications - updated query
     const pendingVerifications = await prisma.attendance.count({
       where: {
-        status: "PENDING",
-        date: {
-          lt: today,
-        },
-        user: {
-          role: "EMPLOYEE",
-          NOT: {
-            status: "INACTIVE",
+        AND: [
+          { status: "PENDING" },
+          {
+            user: {
+              NOT: {
+                status: "INACTIVE",
+              },
+            },
           },
-        },
+        ],
       },
     });
 
@@ -111,10 +133,18 @@ export default async function DashboardPage() {
       },
     });
 
+    // Get rejected attendance count
+    const rejectedAttendance = await prisma.attendance.count({
+      where: {
+        status: "REJECTED",
+      },
+    });
+
     stats = {
       pendingManagerAttendance,
       pendingVerifications,
       pendingApprovals,
+      rejectedAttendance,
     };
   }
 
@@ -132,7 +162,7 @@ export default async function DashboardPage() {
                   <CardTitle className="text-sm font-medium">
                     Pending Attendance
                   </CardTitle>
-                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <Clock className="h-4 w-4 text-muted-foreground"/>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{stats.pendingAttendance}</div>
@@ -149,7 +179,7 @@ export default async function DashboardPage() {
                   <CardTitle className="text-sm font-medium">
                     Leave Requests
                   </CardTitle>
-                  <CalendarCheck className="h-4 w-4 text-muted-foreground" />
+                  <CalendarCheck className="h-4 w-4 text-muted-foreground"/>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{stats.pendingLeaveRequests}</div>
@@ -165,7 +195,7 @@ export default async function DashboardPage() {
                 <CardTitle className="text-sm font-medium">
                   Total Employees
                 </CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <Users className="h-4 w-4 text-muted-foreground"/>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.totalEmployees}</div>
@@ -177,9 +207,79 @@ export default async function DashboardPage() {
           </>
         )}
         {session.user.role === "HR" && (
-          <DashboardStats stats={stats} userRole={session.user.role} />
+          <>
+            <Link href="/hr/attendance-verification" className="block">
+              <Card className="hover:bg-accent/5 transition-colors">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Pending Verifications
+                  </CardTitle>
+                  <Clock className="h-4 w-4 text-muted-foreground"/>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.pendingVerifications}</div>
+                  <p className="text-xs text-muted-foreground">
+                    attendance records need verification
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link href="/hr/users" className="block">
+              <Card className="hover:bg-accent/5 transition-colors">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Pending Approvals
+                  </CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground"/>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.pendingApprovals}</div>
+                  <p className="text-xs text-muted-foreground">
+                    new user registrations
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link href="/hr/attendance" className="block">
+              <Card className="hover:bg-accent/5 transition-colors">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Manager Attendance
+                  </CardTitle>
+                  <CalendarCheck className="h-4 w-4 text-muted-foreground"/>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.pendingManagerAttendance}</div>
+                  <p className="text-xs text-muted-foreground">
+                    managers haven't marked attendance
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            {stats.rejectedAttendance > 0 && (
+              <Link href="/hr/attendance-verification?status=REJECTED" className="block">
+                <Card className="hover:bg-accent/5 transition-colors">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Rejected Records
+                    </CardTitle>
+                    <AlertCircle className="h-4 w-4 text-red-500"/>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-red-500">{stats.rejectedAttendance}</div>
+                    <p className="text-xs text-muted-foreground">
+                      attendance records rejected
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            )}
+          </>
         )}
       </div>
     </div>
   );
-} 
+}

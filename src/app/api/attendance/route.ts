@@ -24,62 +24,36 @@ export async function POST(req: Request) {
       shift1,
       shift2,
       shift3,
+      status,
+      verifiedById,
+      verifiedAt,
+      verificationNote,
     } = await req.json();
 
-    // Convert date string to Date object
-    const attendanceDate = new Date(date);
-    attendanceDate.setHours(0, 0, 0, 0);
-
-    // Check if attendance record exists for this date
-    const existingAttendance = await prisma.attendance.findFirst({
-      where: {
-        userId,
-        date: attendanceDate,
-      },
-    });
-
-    // Base attendance data
-    const attendanceData = {
-      isPresent,
-      checkIn: isPresent ? checkIn : null,
-      checkOut: isPresent ? checkOut : null,
-      isHalfDay: isPresent ? isHalfDay : false,
-      overtime: isPresent ? overtime : false,
-      shift1: isPresent ? shift1 : false,
-      shift2: isPresent ? shift2 : false,
-      shift3: isPresent ? shift3 : false,
-      status: "PENDING", // All attendance records need verification
-    };
-
-    if (existingAttendance) {
-      // Update existing attendance
-      const updatedAttendance = await prisma.attendance.update({
-        where: {
-          id: existingAttendance.id,
-        },
-        data: {
-          ...attendanceData,
-          updatedAt: new Date(),
-        },
-      });
-
-      return NextResponse.json(updatedAttendance);
-    }
-
-    // Create new attendance
-    const newAttendance = await prisma.attendance.create({
+    const attendance = await prisma.attendance.create({
       data: {
         userId,
-        date: attendanceDate,
-        ...attendanceData,
+        date: new Date(date),
+        isPresent,
+        checkIn: checkIn && isPresent ? new Date(`${date}T${checkIn}`) : null,
+        checkOut: checkOut && isPresent ? new Date(`${date}T${checkOut}`) : null,
+        isHalfDay: isPresent && isHalfDay,
+        overtime: isPresent && overtime,
+        shift1: isPresent && shift1,
+        shift2: isPresent && shift2,
+        shift3: isPresent && shift3,
+        status,
+        verifiedById,
+        verifiedAt: verifiedAt ? new Date(verifiedAt) : null,
+        verificationNote,
       },
     });
 
-    return NextResponse.json(newAttendance);
+    return NextResponse.json(attendance);
   } catch (error) {
-    console.error("Error in attendance API:", error);
+    console.error("Error marking attendance:", error);
     return NextResponse.json(
-      { error: "Failed to process attendance" },
+      { error: "Failed to mark attendance" },
       { status: 500 }
     );
   }

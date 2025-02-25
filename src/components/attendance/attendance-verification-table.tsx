@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { AttendanceStatusFilter } from "./attendance-status-filter";
 import { Loader2 } from "lucide-react";
+import { AttendanceDateFilter } from "./attendance-date-filter";
 
 interface AttendanceRecord {
   id: string;
@@ -40,11 +41,13 @@ interface AttendanceRecord {
 interface AttendanceVerificationTableProps {
   records: AttendanceRecord[];
   currentStatus: string;
+  currentDate: Date;
 }
 
 export function AttendanceVerificationTable({ 
   records, 
-  currentStatus 
+  currentStatus,
+  currentDate,
 }: AttendanceVerificationTableProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -59,8 +62,13 @@ export function AttendanceVerificationTable({
     } else {
       params.set("status", status);
     }
-    
-    // Force a server refresh
+    window.location.href = `${pathname}?${params.toString()}`;
+  };
+
+  const handleDateChange = (date: Date) => {
+    setIsLoading('filter');
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("date", format(date, "yyyy-MM-dd"));
     window.location.href = `${pathname}?${params.toString()}`;
   };
 
@@ -117,11 +125,17 @@ export function AttendanceVerificationTable({
 
   return (
     <div className="space-y-4">
-      <div className="p-4 flex justify-between items-center">
-        <AttendanceStatusFilter 
-          value={currentStatus}
-          onChange={handleStatusChange}
-        />
+      <div className="p-4 flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <AttendanceStatusFilter 
+            value={currentStatus}
+            onChange={handleStatusChange}
+          />
+          <AttendanceDateFilter 
+            date={currentDate}
+            onChange={handleDateChange}
+          />
+        </div>
         <div className="text-sm text-muted-foreground">
           Showing attendance for {format(new Date(), "PPP")}
         </div>

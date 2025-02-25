@@ -19,6 +19,7 @@ interface AttendanceFormProps {
   userName: string;
   date: Date;
   currentAttendance?: {
+    id?: string;
     isPresent: boolean;
     checkIn?: string | null;
     checkOut?: string | null;
@@ -42,7 +43,7 @@ export function AttendanceForm({
   currentAttendance,
   isOpen,
   onClose,
-  isHR,
+  isHR = false,
 }: AttendanceFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -58,35 +59,50 @@ export function AttendanceForm({
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/attendance", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId,
-          date: date.toISOString(),
-          isPresent,
-          checkIn: checkIn || null,
-          checkOut: checkOut || null,
-          isHalfDay: isPresent && isHalfDay,
-          overtime: isPresent && isOvertime,
-          shift1: isPresent && shift1,
-          shift2: isPresent && shift2,
-          shift3: isPresent && shift3,
-        }),
-      });
+      const attendanceData = {
+        userId,
+        date: date.toISOString(),
+        isPresent,
+        checkIn: checkIn || null,
+        checkOut: checkOut || null,
+        isHalfDay: isPresent && isHalfDay,
+        overtime: isPresent && isOvertime,
+        shift1: isPresent && shift1,
+        shift2: isPresent && shift2,
+        shift3: isPresent && shift3,
+        status: isHR ? "APPROVED" : "PENDING",
+        verifiedById: isHR ? userId : undefined,
+        verifiedAt: isHR ? new Date().toISOString() : undefined,
+        verificationNote: isHR ? "Marked and approved by HR" : undefined,
+      };
+
+      const response = await fetch(
+        currentAttendance?.id 
+          ? `/api/attendance/${currentAttendance.id}` 
+          : "/api/attendance", 
+        {
+          method: currentAttendance?.id ? "PUT" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(attendanceData),
+        }
+      );
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to mark attendance");
+        throw new Error("Failed to mark attendance");
       }
 
-      toast.success("Attendance marked successfully");
-      router.refresh();
+      toast.success(
+        currentAttendance?.id
+          ? "Attendance updated successfully"
+          : isHR 
+            ? "Attendance marked and approved" 
+            : "Attendance marked successfully"
+      );
       onClose();
+      router.refresh();
     } catch (error) {
-      console.error("Error marking attendance:", error);
       toast.error("Failed to mark attendance");
     } finally {
       setIsLoading(false);

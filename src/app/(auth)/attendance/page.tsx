@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { AttendanceTable } from "@/components/attendance/attendance-table";
 import { DailyAttendanceView } from "@/components/attendance/daily-attendance-view";
+import { SharedAttendanceTable } from "@/components/attendance/shared-attendance-table";
 
 export const metadata: Metadata = {
   title: "Attendance Management - HRMS",
@@ -44,12 +45,6 @@ export default async function AttendancePage() {
           shift2: true,
           shift3: true,
           status: true,
-          verifiedAt: true,
-          verifiedBy: {
-            select: {
-              name: true,
-            },
-          },
         },
       },
     },
@@ -58,7 +53,6 @@ export default async function AttendancePage() {
     },
   });
 
-  // Separate users with pending attendance
   const pendingUsers = users.filter(user => !user.attendance.length);
   const markedUsers = users.filter(user => user.attendance.length);
 
@@ -72,13 +66,26 @@ export default async function AttendancePage() {
         <div>
           <h3 className="text-lg font-medium mb-4">Pending Attendance ({pendingUsers.length})</h3>
           <div className="rounded-md border">
-            <AttendanceTable users={pendingUsers} date={today} />
+            <SharedAttendanceTable 
+              users={pendingUsers} 
+              date={today}
+              userRole={session.user.role}
+            />
           </div>
         </div>
       )}
 
       {markedUsers.length > 0 && (
-        <DailyAttendanceView users={markedUsers} />
+        <div>
+          <h3 className="text-lg font-medium mb-4">Marked Attendance ({markedUsers.length})</h3>
+          <div className="rounded-md border">
+            <SharedAttendanceTable 
+              users={markedUsers} 
+              date={today}
+              userRole={session.user.role}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

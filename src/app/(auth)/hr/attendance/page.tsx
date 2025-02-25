@@ -1,9 +1,9 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { HRAttendanceTable } from "@/components/hr/attendance-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileClock } from "lucide-react";
+import { SharedAttendanceTable } from "@/components/attendance/shared-attendance-table";
 
 export default async function HRAttendancePage() {
   const session = await auth();
@@ -12,11 +12,9 @@ export default async function HRAttendancePage() {
     redirect("/dashboard");
   }
 
-  // Get today's date at start of day
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Get all branch managers and their attendance for today
   const branchManagers = await prisma.user.findMany({
     where: {
       role: "BRANCH_MANAGER",
@@ -34,11 +32,22 @@ export default async function HRAttendancePage() {
         where: {
           date: today,
         },
+        select: {
+          id: true,
+          isPresent: true,
+          checkIn: true,
+          checkOut: true,
+          isHalfDay: true,
+          overtime: true,
+          shift1: true,
+          shift2: true,
+          shift3: true,
+          status: true,
+        },
       },
     },
   });
 
-  // Count managers without attendance
   const pendingManagersCount = branchManagers.filter(
     manager => manager.attendance.length === 0
   ).length;
@@ -65,7 +74,13 @@ export default async function HRAttendancePage() {
       </Card>
 
       <div className="rounded-md border">
-        <HRAttendanceTable managers={branchManagers} />
+        <SharedAttendanceTable 
+          users={branchManagers} 
+          date={today}
+          showBranch={true}
+          isHR={true}
+          userRole={session.user.role}
+        />
       </div>
     </div>
   );

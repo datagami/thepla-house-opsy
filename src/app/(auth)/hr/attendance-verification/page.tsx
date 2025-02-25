@@ -34,9 +34,10 @@ function LoadingStats() {
 export default async function AttendanceVerificationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; date?: string }>;
 }) {
   const session = await auth();
+  const {status, date} = await searchParams;
   
 
   if (!session || session.user.role !== "HR") {
@@ -44,25 +45,29 @@ export default async function AttendanceVerificationPage({
   }
 
   // Default to PENDING if no status is specified
-  const status = (await searchParams).status || "PENDING";
 
-  // Get today's date range
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  // Get selected date or default to today
+  const selectedStatus = status || "PENDING";
+  const selectedDate = date ? 
+    new Date(date) : 
+    new Date();
+  
+  // Set time to start of day
+  selectedDate.setHours(0, 0, 0, 0);
+  
+  // Get end of selected day
+  const nextDay = new Date(selectedDate);
+  nextDay.setDate(nextDay.getDate() + 1);
 
-  console.log(status);
-
-  // Build where clause based on status
+  // Build where clause based on status and date
   const whereClause = {
     date: {
-      gte: today,
-      lt: tomorrow,
+      gte: selectedDate,
+      lt: nextDay,
     },
-    ...(status !== "ALL" && {
+    ...(selectedStatus !== "ALL" && {
       status: {
-        equals: status,
+        equals: selectedStatus,
       },
     }),
   };
@@ -91,13 +96,13 @@ export default async function AttendanceVerificationPage({
     ],
   });
 
-  // Get total counts for all statuses for today
+  // Get total counts for selected date
   const allAttendance = await prisma.attendance.groupBy({
     by: ['status'],
     where: {
       date: {
-        gte: today,
-        lt: tomorrow,
+        gte: selectedDate,
+        lt: nextDay,
       },
     },
     _count: {
@@ -190,7 +195,8 @@ export default async function AttendanceVerificationPage({
       <div className="rounded-md border">
         <AttendanceVerificationTable 
           records={attendanceRecords}
-          currentStatus={status}
+          currentStatus={selectedStatus}
+          currentDate={selectedDate}
         />
       </div>
     </div>
