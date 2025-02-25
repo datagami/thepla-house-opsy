@@ -56,7 +56,7 @@ export async function POST(req: Request) {
         userId: session.user.id,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
-        leaveType,
+        leaveType: leaveType as "CASUAL" | "SICK" | "ANNUAL" | "UNPAID" | "OTHER",
         reason,
         status: "PENDING",
       },
@@ -64,7 +64,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(leaveRequest);
   } catch (error) {
-    console.error("Error in leave request API:", error);
+    console.error("Error creating leave request:", error);
     return NextResponse.json(
       { error: "Failed to create leave request" },
       { status: 500 }

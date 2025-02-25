@@ -70,10 +70,10 @@ export function AttendanceForm({
         shift1: isPresent && shift1,
         shift2: isPresent && shift2,
         shift3: isPresent && shift3,
-        status: isHR ? "APPROVED" : "PENDING",
-        verifiedById: isHR ? userId : undefined,
-        verifiedAt: isHR ? new Date().toISOString() : undefined,
-        verificationNote: isHR ? "Marked and approved by HR" : undefined,
+        status: "APPROVED",
+        verifiedById: userId,
+        verifiedAt: new Date().toISOString(),
+        verificationNote: "Marked by user",
       };
 
       const response = await fetch(
@@ -96,9 +96,7 @@ export function AttendanceForm({
       toast.success(
         currentAttendance?.id
           ? "Attendance updated successfully"
-          : isHR 
-            ? "Attendance marked and approved" 
-            : "Attendance marked successfully"
+          : "Attendance marked successfully"
       );
       onClose();
       router.refresh();

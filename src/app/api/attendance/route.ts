@@ -42,10 +42,10 @@ export async function POST(req: Request) {
         shift1: isPresent && shift1,
         shift2: isPresent && shift2,
         shift3: isPresent && shift3,
-        status,
-        verifiedById,
-        verifiedAt: verifiedAt ? new Date(verifiedAt) : null,
-        verificationNote,
+        status: status || "APPROVED",
+        verifiedById: verifiedById || session.user.id,
+        verifiedAt: verifiedAt ? new Date(verifiedAt) : new Date(),
+        verificationNote: verificationNote || "Marked by user",
       },
     });
 

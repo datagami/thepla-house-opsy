@@ -119,13 +119,9 @@ export async function PUT(
       shift1,
       shift2,
       shift3,
-      status,
-      verifiedById,
-      verifiedAt,
-      verificationNote,
     } = await req.json();
 
-    // Update existing attendance
+    // Update existing attendance and reset verification
     const updatedAttendance = await prisma.attendance.update({
       where: {
         id: params.id,
@@ -139,10 +135,11 @@ export async function PUT(
         shift1: isPresent && shift1,
         shift2: isPresent && shift2,
         shift3: isPresent && shift3,
-        status,
-        verifiedById,
-        verifiedAt: verifiedAt ? new Date(verifiedAt) : null,
-        verificationNote,
+        // Reset verification status
+        status: "PENDING",
+        verifiedById: null,
+        verifiedAt: null,
+        verificationNote: null,
         updatedAt: new Date(),
       },
     });

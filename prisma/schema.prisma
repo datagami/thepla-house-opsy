@@ -20,6 +20,14 @@ enum UserStatus {
   INACTIVE
 }
 
+enum LeaveType {
+  CASUAL
+  SICK
+  ANNUAL
+  UNPAID
+  OTHER
+}
+
 model Account {
   id                 String  @id @default(cuid())
   numId              Int     @default(autoincrement()) @map("num_id")
@@ -146,18 +154,19 @@ model Attendance {
 }
 
 model LeaveRequest {
-  id          String   @id @default(cuid())
-  numId       Int      @default(autoincrement()) @map("num_id")
-  userId      String   @map("user_id")
-  startDate   DateTime @map("start_date")
-  endDate     DateTime @map("end_date")
+  id          String     @id @default(cuid())
+  numId       Int        @default(autoincrement()) @map("num_id")
+  userId      String     @map("user_id")
+  startDate   DateTime   @map("start_date")
+  endDate     DateTime   @map("end_date")
+  leaveType   LeaveType
   reason      String
-  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  status      String     @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
 
   // Relations
-  user        User     @relation(fields: [userId], references: [id])
+  user        User         @relation(fields: [userId], references: [id])
 
   @@map("leave_requests")
 }
