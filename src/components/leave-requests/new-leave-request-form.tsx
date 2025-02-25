@@ -6,18 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Popover,
   PopoverContent,
@@ -28,11 +29,6 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-interface LeaveRequestFormProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
 const LEAVE_TYPES = [
   { value: "CASUAL", label: "Casual Leave" },
   { value: "SICK", label: "Sick Leave" },
@@ -40,38 +36,13 @@ const LEAVE_TYPES = [
   { value: "UNPAID", label: "Unpaid Leave" },
 ];
 
-export function LeaveRequestForm({ isOpen, onClose }: LeaveRequestFormProps) {
+export function NewLeaveRequestForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [startDate, setStartDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date>();
   const [leaveType, setLeaveType] = useState<string>();
   const [reason, setReason] = useState("");
-  const [isStartDateOpen, setIsStartDateOpen] = useState(false);
-  const [isEndDateOpen, setIsEndDateOpen] = useState(false);
-
-  const handleClose = () => {
-    setStartDate(undefined);
-    setEndDate(undefined);
-    setLeaveType(undefined);
-    setReason("");
-    setIsStartDateOpen(false);
-    setIsEndDateOpen(false);
-    onClose();
-  };
-
-  const handleStartDateSelect = (date: Date | undefined) => {
-    setStartDate(date);
-    if (date && (!endDate || date > endDate)) {
-      setEndDate(addDays(date, 1));
-    }
-    setIsStartDateOpen(false);
-  };
-
-  const handleEndDateSelect = (date: Date | undefined) => {
-    setEndDate(date);
-    setIsEndDateOpen(false);
-  };
 
   const handleSubmit = async () => {
     if (!startDate || !endDate || !leaveType || !reason) {
@@ -105,8 +76,7 @@ export function LeaveRequestForm({ isOpen, onClose }: LeaveRequestFormProps) {
       }
 
       toast.success("Leave request submitted successfully");
-      router.refresh();
-      handleClose();
+      router.push("/leave-requests");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to submit leave request");
     } finally {
@@ -115,31 +85,35 @@ export function LeaveRequestForm({ isOpen, onClose }: LeaveRequestFormProps) {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>New Leave Request</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Leave Type</label>
-              <Select value={leaveType} onValueChange={setLeaveType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select leave type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {LEAVE_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Submit Leave Request</CardTitle>
+        <CardDescription>
+          Fill in the details below to submit your leave request
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Leave Type</label>
+            <Select value={leaveType} onValueChange={setLeaveType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select leave type" />
+              </SelectTrigger>
+              <SelectContent>
+                {LEAVE_TYPES.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">Start Date</label>
-              <Popover open={isStartDateOpen} onOpenChange={setIsStartDateOpen}>
+              <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -152,16 +126,16 @@ export function LeaveRequestForm({ isOpen, onClose }: LeaveRequestFormProps) {
                     {startDate ? format(startDate, "PPP") : "Pick a date"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent 
-                  className="w-auto p-0" 
-                  align="start"
-                  side="bottom"
-                  sideOffset={4}
-                >
+                <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={startDate}
-                    onSelect={handleStartDateSelect}
+                    onSelect={(date) => {
+                      setStartDate(date);
+                      if (date && (!endDate || date > endDate)) {
+                        setEndDate(addDays(date, 1));
+                      }
+                    }}
                     disabled={(date) => 
                       date < new Date(new Date().setHours(0, 0, 0, 0))
                     }
@@ -170,9 +144,10 @@ export function LeaveRequestForm({ isOpen, onClose }: LeaveRequestFormProps) {
                 </PopoverContent>
               </Popover>
             </div>
+
             <div className="space-y-2">
               <label className="text-sm font-medium">End Date</label>
-              <Popover open={isEndDateOpen} onOpenChange={setIsEndDateOpen}>
+              <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -185,16 +160,11 @@ export function LeaveRequestForm({ isOpen, onClose }: LeaveRequestFormProps) {
                     {endDate ? format(endDate, "PPP") : "Pick a date"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent 
-                  className="w-auto p-0" 
-                  align="start"
-                  side="bottom"
-                  sideOffset={4}
-                >
+                <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={endDate}
-                    onSelect={handleEndDateSelect}
+                    onSelect={setEndDate}
                     disabled={(date) => 
                       date < (startDate || new Date(new Date().setHours(0, 0, 0, 0)))
                     }
@@ -203,25 +173,35 @@ export function LeaveRequestForm({ isOpen, onClose }: LeaveRequestFormProps) {
                 </PopoverContent>
               </Popover>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Reason</label>
-              <Textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="Please provide a detailed reason for your leave request"
-                className="min-h-[100px]"
-              />
-            </div>
           </div>
-          <Button
-            onClick={handleSubmit}
-            className="w-full"
-            disabled={isLoading}
-          >
-            {isLoading ? "Submitting..." : "Submit Request"}
-          </Button>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Reason</label>
+            <Textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Please provide a detailed reason for your leave request"
+              className="min-h-[100px]"
+            />
+          </div>
+
+          <div className="flex justify-end space-x-4">
+            <Button
+              variant="outline"
+              onClick={() => router.push("/leave-requests")}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={isLoading}
+            >
+              {isLoading ? "Submitting..." : "Submit Request"}
+            </Button>
+          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </CardContent>
+    </Card>
   );
 } 

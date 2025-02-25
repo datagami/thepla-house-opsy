@@ -10,7 +10,8 @@ import {
   ClipboardCheck,
   Building,
   FileText,
-  CalendarCheck
+  CalendarCheck,
+  Plus
 } from "lucide-react";
 
 interface NavItem {
@@ -78,6 +79,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       icon: <CalendarCheck className="h-5 w-5" />,
       feature: "leave.view" 
     },
+    { 
+      title: "New Leave Request", 
+      href: "/leave-requests/new", 
+      icon: <Plus className="h-5 w-5" />,
+      feature: "leave.request" 
+    },
   ],
   MANAGEMENT: [
     { 
@@ -122,6 +129,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       title: "Leave Requests", 
       href: "/leave-requests", 
       icon: <CalendarCheck className="h-5 w-5" />,
+      feature: "leave.view" 
+    },
+    { 
+      title: "New Leave Request", 
+      href: "/leave-requests/new", 
+      icon: <Plus className="h-5 w-5" />,
       feature: "leave.request" 
     },
   ],

@@ -24,7 +24,6 @@ export async function POST(req: Request) {
       shift1,
       shift2,
       shift3,
-      verificationNote, // For HR verification
     } = await req.json();
 
     // Convert date string to Date object
@@ -42,24 +41,15 @@ export async function POST(req: Request) {
     // Base attendance data
     const attendanceData = {
       isPresent,
-      checkIn,
-      checkOut,
-      isHalfDay,
-      overtime,
-      shift1,
-      shift2,
-      shift3,
+      checkIn: isPresent ? checkIn : null,
+      checkOut: isPresent ? checkOut : null,
+      isHalfDay: isPresent ? isHalfDay : false,
+      overtime: isPresent ? overtime : false,
+      shift1: isPresent ? shift1 : false,
+      shift2: isPresent ? shift2 : false,
+      shift3: isPresent ? shift3 : false,
+      status: "PENDING", // All attendance records need verification
     };
-
-    // Add verification data if HR is verifying
-    if (session.user.role === "HR" && verificationNote) {
-      Object.assign(attendanceData, {
-        status: "APPROVED",
-        verifiedById: session.user.id,
-        verifiedAt: new Date(),
-        verificationNote,
-      });
-    }
 
     if (existingAttendance) {
       // Update existing attendance
@@ -74,18 +64,18 @@ export async function POST(req: Request) {
       });
 
       return NextResponse.json(updatedAttendance);
-    } else {
-      // Create new attendance record
-      const newAttendance = await prisma.attendance.create({
-        data: {
-          userId,
-          date: attendanceDate,
-          ...attendanceData,
-        },
-      });
-
-      return NextResponse.json(newAttendance);
     }
+
+    // Create new attendance
+    const newAttendance = await prisma.attendance.create({
+      data: {
+        userId,
+        date: attendanceDate,
+        ...attendanceData,
+      },
+    });
+
+    return NextResponse.json(newAttendance);
   } catch (error) {
     console.error("Error in attendance API:", error);
     return NextResponse.json(

@@ -2,9 +2,7 @@ import { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { LeaveRequestTable } from "@/components/leave-requests/leave-request-table";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { LeaveRequestContent } from "@/components/leave-requests/leave-request-content";
 
 export const metadata: Metadata = {
   title: "Leave Requests - HRMS",
@@ -87,24 +85,5 @@ export default async function LeaveRequestsPage() {
     });
   }
 
-  return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Leave Requests</h2>
-        {session.user.role === "EMPLOYEE" && (
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Request
-          </Button>
-        )}
-      </div>
-
-      <div className="rounded-md border">
-        <LeaveRequestTable 
-          leaveRequests={leaveRequests}
-          userRole={session.user.role}
-        />
-      </div>
-    </div>
-  );
+  return <LeaveRequestContent leaveRequests={leaveRequests} userRole={session.user.role} />;
 } 
