@@ -35,15 +35,15 @@ export async function POST(req: Request) {
         userId,
         date: new Date(date),
         isPresent,
-        checkIn: checkIn && isPresent ? new Date(`${date}T${checkIn}`) : null,
-        checkOut: checkOut && isPresent ? new Date(`${date}T${checkOut}`) : null,
+        checkIn: checkIn && isPresent ? checkIn : null,
+        checkOut: checkOut && isPresent ? checkOut : null,
         isHalfDay: isPresent && isHalfDay,
         overtime: isPresent && overtime,
         shift1: isPresent && shift1,
         shift2: isPresent && shift2,
         shift3: isPresent && shift3,
-        status: status || "APPROVED",
-        verifiedById: verifiedById || session.user.id,
+        status: status || "PENDING",
+        verifiedById: verifiedById || null,
         verifiedAt: verifiedAt ? new Date(verifiedAt) : new Date(),
         verificationNote: verificationNote || "Marked by user",
       },
@@ -51,9 +51,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json(attendance);
   } catch (error) {
-    console.error("Error marking attendance:", error);
+    console.error("Error creating attendance:", error);
     return NextResponse.json(
-      { error: "Failed to mark attendance" },
+      { error: "Failed to create attendance" },
       { status: 500 }
     );
   }

@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { LeaveRequestTable } from "@/components/leave/leave-request-table";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { LeaveRequestForm } from "@/components/leave/leave-request-form";
 
 export const metadata: Metadata = {
   title: "Leave Requests - HRMS",

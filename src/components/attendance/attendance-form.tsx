@@ -59,9 +59,12 @@ export function AttendanceForm({
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
+      // Create a new date object for the attendance date
+      const attendanceDate = new Date(date);
+
       const attendanceData = {
         userId,
-        date: date.toISOString(),
+        date: attendanceDate,
         isPresent,
         checkIn: checkIn || null,
         checkOut: checkOut || null,
@@ -70,11 +73,8 @@ export function AttendanceForm({
         shift1: isPresent && shift1,
         shift2: isPresent && shift2,
         shift3: isPresent && shift3,
-        status: "APPROVED",
-        verifiedById: userId,
-        verifiedAt: new Date().toISOString(),
-        verificationNote: "Marked by user",
       };
+
 
       const response = await fetch(
         currentAttendance?.id 

@@ -77,8 +77,9 @@ async function handleBranchManagerResubmission(
     where: { id: attendanceId },
     data: {
       isPresent: data.isPresent,
-      checkIn: data.checkIn && data.isPresent ? new Date(`${attendance.date.toISOString().split('T')[0]}T${data.checkIn}`) : null,
-      checkOut: data.checkOut && data.isPresent ? new Date(`${attendance.date.toISOString().split('T')[0]}T${data.checkOut}`) : null,
+      date: data.date,
+      checkIn: data.checkIn && data.isPresent ? data.checkIn : null,
+      checkOut: data.checkOut && data.isPresent ? data.checkOut : null,
       isHalfDay: data.isPresent && data.isHalfDay,
       overtime: data.isPresent && data.overtime,
       shift1: data.isPresent && data.shift1,
@@ -128,8 +129,9 @@ export async function PUT(
       },
       data: {
         isPresent,
-        checkIn: checkIn && isPresent ? new Date(`${date}T${checkIn}`) : null,
-        checkOut: checkOut && isPresent ? new Date(`${date}T${checkOut}`) : null,
+        date,
+        checkIn: checkIn && isPresent ? checkIn : null,
+        checkOut: checkOut && isPresent ? checkOut : null,
         isHalfDay: isPresent && isHalfDay,
         overtime: isPresent && overtime,
         shift1: isPresent && shift1,

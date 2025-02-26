@@ -2,11 +2,9 @@ import {Metadata} from "next";
 import {auth} from "@/auth";
 import {redirect} from "next/navigation";
 import {prisma} from "@/lib/prisma";
-import {DashboardStats} from "@/components/dashboard/dashboard-stats";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Clock, CalendarCheck, Users, AlertCircle} from "lucide-react";
 import Link from "next/link";
-import {Badge} from "@/components/ui/badge";
 
 export const metadata: Metadata = {
   title: "Dashboard - HRMS",
