@@ -14,7 +14,7 @@ import {
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Check, X, UserCog, Building } from "lucide-react";
+import { MoreHorizontal, UserCog } from "lucide-react";
 import { toast } from "sonner";
 import { hasAccess } from "@/lib/access-control";
 
@@ -56,8 +56,9 @@ export function UserActions({ user, branches = [], currentUserRole }: UserAction
 
       toast.success("User approved successfully");
       router.refresh();
-    } catch (error) {
+    } catch (err) {
       toast.error("Failed to approve user");
+      console.error(err);
     } finally {
       setIsLoading(false);
     }
@@ -84,6 +85,7 @@ export function UserActions({ user, branches = [], currentUserRole }: UserAction
       router.refresh();
     } catch (error) {
       toast.error("Failed to assign branch");
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -110,6 +112,7 @@ export function UserActions({ user, branches = [], currentUserRole }: UserAction
       router.refresh();
     } catch (error) {
       toast.error("Failed to change user role");
+      console.error(error);
     } finally {
       setIsLoading(false);
     }

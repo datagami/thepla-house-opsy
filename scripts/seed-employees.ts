@@ -4,8 +4,8 @@ import { hash } from 'bcryptjs';
 const prisma = new PrismaClient();
 
 const BRANCHES = [
-  'cm7j152c40000uztwhl8ts1tm', // Chandivali
-  'cm7j166lz0001uztwkiy0v7kz', // Lower Parel
+  'cm7lfn9900000uzzeuemgv9vs', // Chandivali
+  'cm7lfnjmz0001uzzeapmgtrfj', // Lower Parel
 ];
 
 const FIRST_NAMES = [
@@ -34,7 +34,7 @@ async function main() {
 
     await prisma.user.create({
       data: {
-        name: `${FIRST_NAMES[0]} ${LAST_NAMES[0]}`,
+        name: `${FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)]} ${LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)]}`,
         email: managerEmail,
         password: await hash('password123', 12),
         role: UserRole.BRANCH_MANAGER,

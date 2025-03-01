@@ -61,9 +61,18 @@ async function handleBranchManagerResubmission(
   attendanceId: string,
   data: any
 ) {
+  // Await the attendanceId if it's from params
+  const id = await attendanceId;
+  
   const attendance = await prisma.attendance.findUnique({
-    where: { id: attendanceId },
-    select: { date: true },
+    where: { id },
+    select: { 
+      date: true,
+      status: true,
+      verificationNote: true,
+      verifiedById: true,
+      verifiedAt: true
+    },
   });
 
   if (!attendance) {
@@ -72,6 +81,7 @@ async function handleBranchManagerResubmission(
       { status: 404 }
     );
   }
+  console.log(data);
 
   const updatedAttendance = await prisma.attendance.update({
     where: { id: attendanceId },
@@ -85,10 +95,19 @@ async function handleBranchManagerResubmission(
       shift1: data.isPresent && data.shift1,
       shift2: data.isPresent && data.shift2,
       shift3: data.isPresent && data.shift3,
-      status: "PENDING", // Reset status to pending
-      verifiedById: null,
-      verifiedAt: null,
-      verificationNote: null,
+      // Only reset verification if status is changing
+      ...(data.status !== attendance.status ? {
+        status: "PENDING",
+        verifiedById: null,
+        verifiedAt: null,
+        verificationNote: null,
+      } : {
+        // Keep existing verification data
+        status: attendance.status,
+        verifiedById: attendance.verifiedById,
+        verifiedAt: attendance.verifiedAt,
+        verificationNote: attendance.verificationNote,
+      })
     },
   });
 
@@ -96,62 +115,68 @@ async function handleBranchManagerResubmission(
 }
 
 export async function PUT(
-  req: Request,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
     const session = await auth();
-
     if (!session) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const {
-      userId,
-      date,
-      isPresent,
-      checkIn,
-      checkOut,
-      isHalfDay,
-      overtime,
-      shift1,
-      shift2,
-      shift3,
-    } = await req.json();
+    const { id } = await params;
+    const body = await request.json();
 
-    // Update existing attendance and reset verification
-    const updatedAttendance = await prisma.attendance.update({
-      where: {
-        id: params.id,
-      },
-      data: {
-        isPresent,
-        date,
-        checkIn: checkIn && isPresent ? checkIn : null,
-        checkOut: checkOut && isPresent ? checkOut : null,
-        isHalfDay: isPresent && isHalfDay,
-        overtime: isPresent && overtime,
-        shift1: isPresent && shift1,
-        shift2: isPresent && shift2,
-        shift3: isPresent && shift3,
-        // Reset verification status
-        status: "PENDING",
-        verifiedById: null,
-        verifiedAt: null,
-        verificationNote: null,
-        updatedAt: new Date(),
-      },
+    // Get current attendance to check status
+    const currentAttendance = await prisma.attendance.findUnique({
+      where: { id }
     });
 
-    return NextResponse.json(updatedAttendance);
+    if (!currentAttendance) {
+      return new NextResponse("Attendance not found", { status: 404 });
+    }
+
+    // Handle status changes based on user role and current status
+    let verificationData = {};
+    
+    if (session.user.role === "HR") {
+      // HR updates always set to approved
+      verificationData = {
+        status: "APPROVED",
+        verifiedById: session.user.id,
+        verifiedAt: new Date()
+      };
+    } else if (session.user.role === "BRANCH_MANAGER") {
+      // For branch manager, only change status if it was previously approved
+      if (currentAttendance.status === "APPROVED") {
+        verificationData = {
+          status: "PENDING",
+          verifiedById: null,
+          verifiedAt: null,
+          verificationNote: null
+        };
+      } else {
+        // Keep existing status and verification data if not approved
+        verificationData = {
+          status: currentAttendance.status,
+          verifiedById: currentAttendance.verifiedById,
+          verifiedAt: currentAttendance.verifiedAt,
+          verificationNote: currentAttendance.verificationNote
+        };
+      }
+    }
+
+    const attendance = await prisma.attendance.update({
+      where: { id },
+      data: {
+        ...body,
+        ...verificationData
+      }
+    });
+
+    return NextResponse.json(attendance);
   } catch (error) {
-    console.error("Error updating attendance:", error);
-    return NextResponse.json(
-      { error: "Failed to update attendance" },
-      { status: 500 }
-    );
+    console.error("[ATTENDANCE_UPDATE]", error);
+    return new NextResponse("Internal error", { status: 500 });
   }
 } 

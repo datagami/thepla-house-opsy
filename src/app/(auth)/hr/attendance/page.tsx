@@ -68,7 +68,7 @@ export default async function HRAttendancePage() {
         <CardContent>
           <div className="text-2xl font-bold">{pendingManagersCount}</div>
           <p className="text-xs text-muted-foreground">
-            branch managers haven't marked attendance today
+            branch managers haven&#39;t marked attendance today
           </p>
         </CardContent>
       </Card>

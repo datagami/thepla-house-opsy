@@ -165,7 +165,7 @@ export default async function DashboardPage() {
                 <CardContent>
                   <div className="text-2xl font-bold">{stats.pendingAttendance}</div>
                   <p className="text-xs text-muted-foreground">
-                    employees haven't marked attendance today
+                    employees haven&#39;t marked attendance today
                   </p>
                 </CardContent>
               </Card>
@@ -251,7 +251,7 @@ export default async function DashboardPage() {
                 <CardContent>
                   <div className="text-2xl font-bold">{stats.pendingManagerAttendance}</div>
                   <p className="text-xs text-muted-foreground">
-                    managers haven't marked attendance
+                    managers haven&#39;t marked attendance
                   </p>
                 </CardContent>
               </Card>

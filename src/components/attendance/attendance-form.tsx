@@ -30,10 +30,12 @@ interface AttendanceFormProps {
     shift3: boolean;
     status: string;
     verificationNote?: string;
+    verifiedById?: string;
+    verifiedAt?: Date;
   };
   isOpen: boolean;
   onClose: () => void;
-  isHR?: boolean;
+  userRole: string;
 }
 
 export function AttendanceForm({
@@ -43,7 +45,7 @@ export function AttendanceForm({
   currentAttendance,
   isOpen,
   onClose,
-  isHR = false,
+  userRole,
 }: AttendanceFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -59,8 +61,8 @@ export function AttendanceForm({
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
-      // Create a new date object for the attendance date
       const attendanceDate = new Date(date);
+      attendanceDate.setHours(0, 0, 0, 0);
 
       const attendanceData = {
         userId,
@@ -73,8 +75,15 @@ export function AttendanceForm({
         shift1: isPresent && shift1,
         shift2: isPresent && shift2,
         shift3: isPresent && shift3,
+        status: userRole === "HR" 
+          ? "APPROVED" 
+          : "PENDING_VERIFICATION",
+        ...(currentAttendance?.id && userRole !== "HR" && {
+          verificationNote: currentAttendance.verificationNote,
+          verifiedById: currentAttendance.verifiedById,
+          verifiedAt: currentAttendance.verifiedAt
+        })
       };
-
 
       const response = await fetch(
         currentAttendance?.id 

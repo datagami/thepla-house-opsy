@@ -137,7 +137,7 @@ model Attendance {
   shift1      Boolean  @default(false) @map("shift_1")
   shift2      Boolean  @default(false) @map("shift_2")
   shift3      Boolean  @default(false) @map("shift_3")
-  status      String   @default("PENDING") @map("status") // PENDING, APPROVED, REJECTED
+  status      String   @default("PENDING_VERIFICATION") @map("status") // PENDING, APPROVED, REJECTED
   verifiedById String? @map("verified_by_id")
   verifiedAt  DateTime? @map("verified_at")
   verificationNote String? @map("verification_note")
@@ -148,7 +148,7 @@ model Attendance {
   user        User     @relation("UserAttendance", fields: [userId], references: [id])
   verifiedBy  User?    @relation("AttendanceVerifications", fields: [verifiedById], references: [id])
 
-  @@unique([userId, date])
+  @@unique([id, date])
   @@map("attendance")
   @@index([verifiedById])
 }

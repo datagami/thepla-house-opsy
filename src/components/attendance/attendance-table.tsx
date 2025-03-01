@@ -12,27 +12,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { AttendanceForm } from "./attendance-form";
+import {User} from "@prisma/client";
 
-interface User {
-  id: string;
-  name: string;
-  attendance: {
-    id: string;
-    isPresent: boolean;
-    checkIn: string | null;
-    checkOut: string | null;
-    isHalfDay: boolean;
-    overtime: boolean;
-    shift1: boolean;
-    shift2: boolean;
-    shift3: boolean;
-    status: string;
-    verifiedAt: Date | null;
-    verifiedBy?: {
-      name: string | null;
-    } | null;
-  }[];
-}
 
 interface AttendanceTableProps {
   users: User[];

@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { AttendanceVerificationTable } from "@/components/attendance/attendance-verification-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Suspense } from "react";
-import { Loader2 } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Attendance Verification - HRMS",

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from "@/auth";
-import type { UserRole, UserStatus } from "@prisma/client";
 
 export async function POST(req: Request) {
   try {
@@ -42,7 +41,12 @@ export async function POST(req: Request) {
     }
 
     // Build update data
-    const updateData: any = {};
+    const updateData = {
+      role: undefined,
+      status: undefined,
+      branchId: undefined,
+      approvedById: ''
+    };
     
     if (role) updateData.role = role;
     if (status) updateData.status = status;
