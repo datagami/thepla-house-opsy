@@ -1,10 +1,10 @@
 export interface Branch {
   id: string;
+  numId: number;
   name: string;
-  code: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  country?: string;
-  pinCode?: string;
+  address?: string | null;
+  city: string;
+  state: string;
+  createdAt: Date;
+  updatedAt: Date;
 } 

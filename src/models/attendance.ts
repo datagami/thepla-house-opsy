@@ -1,7 +1,8 @@
 export type AttendanceStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export interface Attendance {
-  id?: string;
+  id: string;
+  numId: number;
   userId: string;
   date: Date;
   isPresent: boolean;
@@ -12,10 +13,12 @@ export interface Attendance {
   shift1: boolean;
   shift2: boolean;
   shift3: boolean;
-  status: AttendanceStatus;
-  verificationNote?: string;
-  verifiedById?: string;
-  verifiedAt?: Date;
+  status: string;
+  verifiedById?: string | null;
+  verifiedAt?: Date | null;
+  verificationNote?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface AttendanceFormProps {
@@ -33,4 +36,21 @@ export interface AttendanceVerificationData {
   verifiedById: string | null;
   verifiedAt: Date | null;
   verificationNote: string | null;
+}
+
+export interface AttendanceFormData {
+  userId: string;
+  date: Date;
+  isPresent: boolean;
+  checkIn?: string | null;
+  checkOut?: string | null;
+  isHalfDay: boolean;
+  overtime: boolean;
+  shift1: boolean;
+  shift2: boolean;
+  shift3: boolean;
+  status: string;
+  verificationNote?: string | null;
+  verifiedById?: string | null;
+  verifiedAt?: Date | null;
 } 

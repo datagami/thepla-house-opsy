@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { AttendanceFormProps, Attendance } from "@/models/attendance";
+import { AttendanceFormProps, Attendance, AttendanceFormData } from "@/models/attendance";
 
 export function AttendanceForm({
   userId,
@@ -41,7 +41,7 @@ export function AttendanceForm({
       const attendanceDate = new Date(date);
       attendanceDate.setHours(0, 0, 0, 0);
 
-      const attendanceData: Attendance = {
+      const attendanceData: AttendanceFormData = {
         userId,
         date: attendanceDate,
         isPresent,
