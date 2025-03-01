@@ -13,30 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-
-interface AttendanceFormProps {
-  userId: string;
-  userName: string;
-  date: Date;
-  currentAttendance?: {
-    id?: string;
-    isPresent: boolean;
-    checkIn?: string | null;
-    checkOut?: string | null;
-    isHalfDay: boolean;
-    overtime: boolean;
-    shift1: boolean;
-    shift2: boolean;
-    shift3: boolean;
-    status: string;
-    verificationNote?: string;
-    verifiedById?: string;
-    verifiedAt?: Date;
-  };
-  isOpen: boolean;
-  onClose: () => void;
-  userRole: string;
-}
+import { AttendanceFormProps, Attendance } from "@/models/attendance";
 
 export function AttendanceForm({
   userId,
@@ -64,7 +41,7 @@ export function AttendanceForm({
       const attendanceDate = new Date(date);
       attendanceDate.setHours(0, 0, 0, 0);
 
-      const attendanceData = {
+      const attendanceData: Attendance = {
         userId,
         date: attendanceDate,
         isPresent,
@@ -75,9 +52,7 @@ export function AttendanceForm({
         shift1: isPresent && shift1,
         shift2: isPresent && shift2,
         shift3: isPresent && shift3,
-        status: userRole === "HR" 
-          ? "APPROVED" 
-          : "PENDING_VERIFICATION",
+        status: userRole === "HR" ? "APPROVED" : "PENDING",
         ...(currentAttendance?.id && userRole !== "HR" && {
           verificationNote: currentAttendance.verificationNote,
           verifiedById: currentAttendance.verifiedById,
