@@ -41,7 +41,10 @@ export default async function DashboardPage() {
     rejectedAttendanceCount: 0
   };
 
-  if (session.user.role === "BRANCH_MANAGER") {
+  // @ts-expect-error - role is not in the User type
+  const role = session.user.role
+
+  if (role === "BRANCH_MANAGER") {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -109,6 +112,7 @@ export default async function DashboardPage() {
     };
   }
 
+  // @ts-expect-error - role is not in the User type
   if (session.user.role === "HR") {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -177,7 +181,7 @@ export default async function DashboardPage() {
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {session.user.role === "BRANCH_MANAGER" && (
+        {role === "BRANCH_MANAGER" && (
           <>
             <Link href="/attendance" className="block">
               <Card className="hover:bg-accent/5 transition-colors">
@@ -229,7 +233,7 @@ export default async function DashboardPage() {
             </Card>
           </>
         )}
-        {session.user.role === "HR" && (
+        {role === "HR" && (
           <>
             <Link href="/hr/attendance-verification" className="block">
               <Card className="hover:bg-accent/5 transition-colors">

@@ -8,7 +8,9 @@ import { SharedAttendanceTable } from "@/components/attendance/shared-attendance
 export default async function HRAttendancePage() {
   const session = await auth();
 
-  if (!session || session.user.role !== "HR") {
+  // @ts-expect-error - We check for HR role
+  const role = session.user.role
+  if (!session || role !== "HR") {
     redirect("/dashboard");
   }
 
@@ -79,7 +81,7 @@ export default async function HRAttendancePage() {
           date={today}
           showBranch={true}
           isHR={true}
-          userRole={session.user.role}
+          userRole={role}
         />
       </div>
     </div>

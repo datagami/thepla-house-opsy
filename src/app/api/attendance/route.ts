@@ -12,14 +12,17 @@ export async function POST(request: Request) {
     const body = await request.json();
     
     // Set initial status based on who's creating the attendance
-    const status = session.user.role === "HR" ? "APPROVED" : "PENDING_VERIFICATION";
+    // @ts-expect-error - role is not in the User type
+    const role = session.user.role;
+    const status = role === "HR" ? "APPROVED" : "PENDING_VERIFICATION";
     
     const attendance = await prisma.attendance.create({
       data: {
         ...body,
         status,
         // If HR is creating, set verification details
-        ...(session.user.role === "HR" && {
+        ...(role === "HR" && {
+          // @ts-expect-error - branchId is not in the User type
           verifiedById: session.user.id,
           verifiedAt: new Date()
         })
@@ -38,6 +41,7 @@ export async function PATCH(req: Request) {
   try {
     const session = await auth();
 
+    // @ts-expect-error - role is not in the User type
     if (!session || session.user.role !== "HR") {
       return NextResponse.json(
         { error: "Unauthorized" },
@@ -57,6 +61,7 @@ export async function PATCH(req: Request) {
       },
       data: {
         status,
+        // @ts-expect-error - branchId is not in the User
         verifiedById: session.user.id,
         verifiedAt: new Date(),
         verificationNote,

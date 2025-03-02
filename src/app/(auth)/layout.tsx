@@ -16,8 +16,11 @@ export default async function AuthLayout({
   }
 
   // Only redirect branch managers to branch selection if they have an assigned branch
-  if (session.user.role === "BRANCH_MANAGER") {
+  // @ts-expect-error - branchId is not in the User type
+  const role = session.user.role;
+  if (role === "BRANCH_MANAGER") {
     const user = await prisma.user.findUnique({
+      // @ts-expect-error - branchId is not in the User type
       where: { id: session.user.id },
       include: { managedBranch: true },
     });
@@ -33,7 +36,7 @@ export default async function AuthLayout({
       <Header />
       <div className="flex">
         <aside className="hidden w-64 border-r bg-muted/10 lg:block p-6">
-          <SideNav userRole={session.user.role} />
+          <SideNav userRole={role} />
         </aside>
         <main className="flex-1">{children}</main>
       </div>

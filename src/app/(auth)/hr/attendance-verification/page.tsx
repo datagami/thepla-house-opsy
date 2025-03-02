@@ -39,7 +39,7 @@ export default async function AttendanceVerificationPage({
   const session = await auth();
   const {status, date} = await searchParams;
   
-
+  // @ts-expect-error - We check for HR role
   if (!session || session.user.role !== "HR") {
     redirect("/dashboard");
   }

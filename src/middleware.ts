@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { auth } from "./auth"
+import NextAuth from "next-auth";
+import authConfig from "@/auth.config";
+
+const {auth} = NextAuth(authConfig);
 
 export default auth(
   async function middleware(req: NextRequest) {
+
+    // @ts-expect-error - Property 'auth' does not exist on type 'NextRequest'
     const session = req.auth
     const pathname = req.nextUrl.pathname
 
@@ -50,11 +55,6 @@ export default auth(
     // Allow access to all other authenticated routes
     return NextResponse.next()
   },
-  {
-    callbacks: {
-      authorized: ({ token }) => !!token,
-    },
-  }
 )
 
 export const config = {

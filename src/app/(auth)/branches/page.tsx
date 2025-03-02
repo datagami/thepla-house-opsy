@@ -13,6 +13,7 @@ export const metadata: Metadata = {
 export default async function BranchesPage() {
   const session = await auth();
 
+  //@ts-expect-error - We check for MANAGEMENT role
   if (!session || session.user.role !== "MANAGEMENT") {
     redirect("/dashboard");
   }

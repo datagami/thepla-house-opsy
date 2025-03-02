@@ -12,7 +12,9 @@ export const metadata: Metadata = {
 export default async function UsersPage() {
   const session = await auth();
 
-  if (!session || !["HR", "MANAGEMENT"].includes(session.user.role)) {
+  //@ts-expect-error - We check for HR and MANAGEMENT roles
+  const role = session.user.role;
+  if (!session || !["HR", "MANAGEMENT"].includes(role)) {
     redirect("/dashboard");
   }
 
@@ -53,7 +55,7 @@ export default async function UsersPage() {
         <UserTable 
           users={users}
           branches={branches}
-          currentUserRole={session.user.role}
+          currentUserRole={role}
         />
       </div>
     </div>

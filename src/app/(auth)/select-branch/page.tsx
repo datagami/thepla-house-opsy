@@ -12,8 +12,11 @@ export default async function SelectBranchPage() {
   }
 
   // For BRANCH_MANAGER, automatically select their managed branch and redirect
-  if (session.user.role === "BRANCH_MANAGER") {
+  // @ts-expect-error - branchId is not in the User type
+  const role = session.user.role
+  if (role === "BRANCH_MANAGER") {
     const user = await prisma.user.findUnique({
+      // @ts-expect-error - branchId is not in the User type
       where: { id: session.user.id },
       select: {
         managedBranchId: true,
@@ -23,6 +26,7 @@ export default async function SelectBranchPage() {
     if (user?.managedBranchId) {
       // Update user's selected branch
       await prisma.user.update({
+        // @ts-expect-error - branchId is not in the User type
         where: { id: session.user.id },
         data: { selectedBranchId: user.managedBranchId },
       });
@@ -36,12 +40,12 @@ export default async function SelectBranchPage() {
   }
 
   // For MANAGEMENT, get all branches
-  if (session.user.role === "MANAGEMENT") {
+  if (role === "MANAGEMENT") {
     const branches = await prisma.branch.findMany({
       orderBy: { name: "asc" },
     }) as Branch[];
 
-    return <BranchSelector branches={branches} userRole={session.user.role} />;
+    return <BranchSelector branches={branches} userRole={role} />;
   }
 
   // Other roles shouldn't access this page

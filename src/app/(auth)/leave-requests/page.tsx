@@ -40,15 +40,18 @@ export default async function LeaveRequestsPage() {
   };
 
   // Filter based on role
-  if (session.user.role === "BRANCH_MANAGER") {
+  // @ts-expect-error - branchId is not in the User type
+  const role = session.user.role
+  if (role === "BRANCH_MANAGER") {
     queryOptions.where = {
       user: {
         // @ts-expect-error - branchId is not in the User type
         branchId: session.user.branchId,
       },
     };
-  } else if (session.user.role === "EMPLOYEE") {
+  } else if (role === "EMPLOYEE") {
     queryOptions.where = {
+      // @ts-expect-error - branchId is not in the User type
       userId: session.user.id,
     };
   }
@@ -60,7 +63,7 @@ export default async function LeaveRequestsPage() {
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Leave Requests</h2>
-        {session.user.role === "EMPLOYEE" && (
+        {role === "EMPLOYEE" && (
           <Button>
             <Plus className="mr-2 h-4 w-4" />
             New Request
@@ -71,8 +74,8 @@ export default async function LeaveRequestsPage() {
       <div className="rounded-md border">
         <LeaveRequestTable 
           requests={leaveRequests}
-          showBranch={["HR", "MANAGEMENT"].includes(session.user.role)}
-          userRole={session.user.role}
+          showBranch={["HR", "MANAGEMENT"].includes(role)}
+          userRole={role}
         />
       </div>
     </div>
