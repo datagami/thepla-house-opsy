@@ -12,11 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Check, X } from "lucide-react";
 import { toast } from "sonner";
+import {LeaveRequest} from "@/models/models";
 
-interface LeaveRequest {
-  id: string;
-  status: string;
-}
 
 interface LeaveRequestActionsProps {
   request: LeaveRequest;
@@ -47,6 +44,7 @@ export function LeaveRequestActions({ request, userRole }: LeaveRequestActionsPr
       toast.success(`Leave request ${action}d successfully`);
       router.refresh();
     } catch (error) {
+      console.error(error);
       toast.error(`Failed to ${action} leave request`);
     } finally {
       setIsLoading(false);

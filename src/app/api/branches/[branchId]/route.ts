@@ -37,7 +37,7 @@ export async function DELETE(
 
     if (branch._count.users > 0 || branch._count.managers > 0) {
       return NextResponse.json(
-        { error: "Cannot delete branch with assigned users" },
+        { error: "Cannot delete branch with assigned users1" },
         { status: 400 }
       );
     }

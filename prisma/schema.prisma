@@ -89,7 +89,7 @@ model User {
   approvedUsers User[]      @relation("UserApproval")
   verifiedAttendance  Attendance[] @relation("AttendanceVerifications")
 
-  @@map("users")
+  @@map("users1")
   @@index([branchId])
   @@index([managedBranchId])
   @@index([selectedBranchId])

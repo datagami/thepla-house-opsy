@@ -71,6 +71,7 @@ export function AttendanceVerificationTable({ data }: AttendanceVerificationTabl
       toast.success(`Attendance ${status.toLowerCase()} successfully`);
       router.refresh();
     } catch (error) {
+      console.error(error);
       toast.error("Failed to verify attendance");
     } finally {
       setIsLoading(false);
@@ -116,7 +117,7 @@ export function AttendanceVerificationTable({ data }: AttendanceVerificationTabl
               </TableCell>
               <TableCell>{getShifts(attendance)}</TableCell>
               <TableCell>
-                <Badge variant={attendance.isHalfDay ? "warning" : "default"}>
+                <Badge variant={attendance.isHalfDay ? "destructive" : "default"}>
                   {attendance.isHalfDay ? "Half Day" : "Full Day"}
                 </Badge>
                 {attendance.overtime && (

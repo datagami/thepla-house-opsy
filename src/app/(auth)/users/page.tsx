@@ -6,7 +6,7 @@ import { UserTable } from "@/components/users/user-table";
 
 export const metadata: Metadata = {
   title: "User Management - HRMS",
-  description: "Manage users in the HRMS system",
+  description: "Manage users1 in the HRMS system",
 };
 
 export default async function UsersPage() {

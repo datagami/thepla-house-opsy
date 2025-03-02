@@ -31,7 +31,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     },
     { 
       title: "Users", 
-      href: "/users", 
+      href: "/users1",
       icon: <Users className="h-5 w-5" />,
       feature: "users.view" 
     },
@@ -95,7 +95,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     },
     { 
       title: "Users", 
-      href: "/users", 
+      href: "/users1",
       icon: <Users className="h-5 w-5" />,
       feature: "users.view" 
     },

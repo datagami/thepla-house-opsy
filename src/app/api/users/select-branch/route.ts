@@ -13,7 +13,7 @@ export async function POST(req: Request) {
 
     const { branchId } = await req.json();
 
-    // Allow null branchId for management users (all branches view)
+    // Allow null branchId for management users1 (all branches view)
     if (branchId === null && session.user.role === "MANAGEMENT") {
       await prisma.user.update({
         where: { id: session.user.id },

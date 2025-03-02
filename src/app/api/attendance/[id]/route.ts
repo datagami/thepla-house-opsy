@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import {Attendance} from "@/models/models";
 
 export async function PATCH(
   req: Request,
@@ -59,7 +60,7 @@ async function handleHRVerification(
 
 async function handleBranchManagerResubmission(
   attendanceId: string,
-  data: any
+  data: Attendance
 ) {
   // Await the attendanceId if it's from params
   const id = await attendanceId;
@@ -81,7 +82,6 @@ async function handleBranchManagerResubmission(
       { status: 404 }
     );
   }
-  console.log(data);
 
   const updatedAttendance = await prisma.attendance.update({
     where: { id: attendanceId },

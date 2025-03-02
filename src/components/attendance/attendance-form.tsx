@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { AttendanceFormProps, Attendance, AttendanceFormData } from "@/models/attendance";
+import { AttendanceFormProps, AttendanceFormData } from "@/models/attendance";
 
 export function AttendanceForm({
   userId,
@@ -85,6 +85,7 @@ export function AttendanceForm({
       onClose();
       router.refresh();
     } catch (error) {
+      console.error(error);
       toast.error("Failed to mark attendance");
     } finally {
       setIsLoading(false);

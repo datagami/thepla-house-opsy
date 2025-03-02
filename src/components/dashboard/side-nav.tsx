@@ -37,7 +37,7 @@ const routes = [
   {
     label: "User Management",
     icon: UserCog,
-    href: "/users",
+    href: "/users1",
     color: "text-orange-700",
   },
 ];

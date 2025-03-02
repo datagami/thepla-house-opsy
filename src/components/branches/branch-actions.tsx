@@ -32,7 +32,7 @@ export function BranchActions({ branch }: BranchActionsProps) {
 
   const deleteBranch = async () => {
     if (branch._count.users > 0 || branch._count.managers > 0) {
-      toast.error("Cannot delete branch with assigned users");
+      toast.error("Cannot delete branch with assigned users1");
       return;
     }
 
@@ -53,6 +53,7 @@ export function BranchActions({ branch }: BranchActionsProps) {
       toast.success("Branch deleted successfully");
       router.refresh();
     } catch (error) {
+      console.error(error);
       toast.error("Failed to delete branch");
     } finally {
       setIsLoading(false);

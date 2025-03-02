@@ -8,18 +8,19 @@ import {
   YAxis,
   Tooltip,
 } from "recharts";
-
-interface Attendance {
-  id: string;
-  date: Date;
-  isPresent: boolean;
-  isHalfDay: boolean;
-  overtime: boolean;
-}
+import {Attendance} from "@/models/models";
 
 interface AttendanceStatsProps {
   attendance: Attendance[];
   month: Date;
+}
+
+interface WeeklyStats {
+  week: string;
+  present: number;
+  absent: number;
+  halfDay: number;
+  overtime: number;
 }
 
 export function AttendanceStats({ attendance }: AttendanceStatsProps) {
@@ -42,7 +43,7 @@ export function AttendanceStats({ attendance }: AttendanceStatsProps) {
     if (curr.overtime) acc[week].overtime++;
 
     return acc;
-  }, {} as Record<number, any>);
+  }, {} as Record<number, WeeklyStats>);
 
   const data = Object.values(weeklyStats);
 

@@ -23,25 +23,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import {User} from "@/models/models";
 
-interface Manager {
-  id: string;
-  name: string;
-  managedBranch: { name: string } | null;
-  attendance: Array<{
-    id: string;
-    date: Date;
-    isPresent: boolean;
-    checkIn: Date | null;
-    checkOut: Date | null;
-    isHalfDay: boolean;
-    overtime: boolean;
-    shift1: boolean;
-    shift2: boolean;
-    shift3: boolean;
-    status: string;
-  }>;
-}
 
 interface PendingRecord {
   id: string;
@@ -62,7 +45,7 @@ interface PendingRecord {
 }
 
 interface HRAttendanceTableProps {
-  managers?: Manager[];
+  managers?: User[];
   pendingRecords?: PendingRecord[];
 }
 
@@ -96,6 +79,7 @@ export function HRAttendanceTable({ managers, pendingRecords }: HRAttendanceTabl
       setSelectedRecord(null);
       setNote("");
     } catch (error) {
+      console.error(error);
       toast.error("Failed to update attendance");
     } finally {
       setIsLoading(false);
@@ -124,7 +108,7 @@ export function HRAttendanceTable({ managers, pendingRecords }: HRAttendanceTabl
                 <TableCell>{manager.managedBranch?.name}</TableCell>
                 <TableCell>
                   {attendance ? (
-                    <Badge variant={attendance.isPresent ? "success" : "destructive"}>
+                    <Badge variant={attendance.isPresent ? "default" : "destructive"}>
                       {attendance.isPresent ? "Present" : "Absent"}
                     </Badge>
                   ) : (

@@ -13,21 +13,8 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import {LeaveRequest} from "@/models/models";
 
-interface LeaveRequest {
-  id: string;
-  startDate: Date;
-  endDate: Date;
-  leaveType: string;
-  reason: string;
-  status: string;
-  user: {
-    name: string;
-    branch?: {
-      name: string;
-    } | null;
-  };
-}
 
 interface LeaveRequestTableProps {
   requests: LeaveRequest[];
@@ -59,6 +46,7 @@ export function LeaveRequestTable({
       toast.success("Leave request updated successfully");
       router.refresh();
     } catch (error) {
+      console.error(error);
       toast.error("Failed to update leave request");
     }
   };

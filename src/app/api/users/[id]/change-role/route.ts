@@ -18,7 +18,7 @@ export async function PATCH(
 
     const { role } = await req.json();
 
-    // Only MANAGEMENT can create other MANAGEMENT users
+    // Only MANAGEMENT can create other MANAGEMENT users1
     if (role === "MANAGEMENT" && session.user.role !== "MANAGEMENT") {
       return NextResponse.json(
         { error: "Unauthorized to assign management role" },

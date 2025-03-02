@@ -58,7 +58,7 @@ export default async function AttendancePage() {
     },
   });
 
-  // Separate users with pending attendance
+  // Separate users1 with pending attendance
   const pendingUsers = users.filter(user => !user.attendance.length);
   const markedUsers = users.filter(user => user.attendance.length);
 

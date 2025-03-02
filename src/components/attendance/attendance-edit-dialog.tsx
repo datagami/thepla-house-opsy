@@ -15,20 +15,12 @@ import {
 import { Edit } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import {Attendance} from "@/models/models";
 
 interface AttendanceEditDialogProps {
-  attendance?: {
-    id: string;
-    date: Date;
-    isPresent: boolean;
-    checkIn: Date | null;
-    checkOut: Date | null;
-    isHalfDay: boolean;
-    overtime: boolean;
-    shift1: boolean;
-    shift2: boolean;
-    shift3: boolean;
-  };
+  attendance?: Attendance;
+  userId?: string;
+  date: Date;
 }
 
 export function AttendanceEditDialog({ attendance }: AttendanceEditDialogProps) {
@@ -39,7 +31,7 @@ export function AttendanceEditDialog({ attendance }: AttendanceEditDialogProps) 
   const [isHalfDay, setIsHalfDay] = useState(attendance?.isHalfDay ?? false);
   const [isOvertime, setIsOvertime] = useState(attendance?.overtime ?? false);
 
-  const formatTimeForInput = (date: Date | null) => {
+  const formatTimeForInput = (date: string | undefined | null) => {
     if (!date) return "";
     return new Date(date).toLocaleTimeString('en-US', {
       hour12: false,

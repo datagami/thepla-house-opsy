@@ -45,6 +45,7 @@ export function CreateBranchButton() {
       setIsOpen(false);
       router.refresh();
     } catch (error) {
+      console.error(error);
       toast.error("Failed to create branch");
     } finally {
       setIsLoading(false);

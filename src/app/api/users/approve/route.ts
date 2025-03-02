@@ -16,7 +16,7 @@ export async function POST(req: Request) {
 
     const { userId, role, status, branchId } = await req.json();
 
-    // First verify both users exist
+    // First verify both users1 exist
     const [userToUpdate, approver] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },

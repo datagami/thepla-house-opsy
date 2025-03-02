@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { LeaveRequestTable } from "./leave-request-table";
 import { LeaveRequestForm } from "./leave-request-form";
+import {LeaveRequest} from "@/models/models";
 
 interface LeaveRequestContentProps {
-  leaveRequests: any[];
+  leaveRequests: LeaveRequest[];
   userRole: string;
 }
 

@@ -71,6 +71,7 @@ export function LeaveRequestForm({ isOpen, onClose }: LeaveRequestFormProps) {
       onClose();
       router.refresh();
     } catch (error) {
+      console.error(error);
       toast.error("Failed to submit leave request");
     } finally {
       setIsLoading(false);

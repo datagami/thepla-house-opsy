@@ -11,12 +11,8 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import {Branch} from "@/models/models";
 
-interface Branch {
-  id: string;
-  name: string;
-  city: string;
-}
 
 interface BranchSelectorProps {
   branches: Branch[];
@@ -53,6 +49,7 @@ export function BranchSelector({ branches, userRole }: BranchSelectorProps) {
       router.push("/dashboard");
       router.refresh();
     } catch (error) {
+      console.error(error);
       toast.error("Failed to select branch");
     } finally {
       setIsLoading(false);

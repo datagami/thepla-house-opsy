@@ -22,15 +22,15 @@ export default auth(
       return NextResponse.redirect(new URL("/login", req.url))
     }
 
-    // Routes that don't require branch selection for MANAGEMENT users
+    // Routes that don't require branch selection for MANAGEMENT users1
     const managementExemptRoutes = [
       "/select-branch",
-      "/users",
+      "/users1",
       "/branches",
       "/settings",
     ]
 
-    // Allow MANAGEMENT users to access certain routes without branch selection
+    // Allow MANAGEMENT users1 to access certain routes without branch selection
     if (
       session.user.role === "MANAGEMENT" && 
       managementExemptRoutes.some(route => pathname.startsWith(route))
@@ -38,7 +38,7 @@ export default auth(
       return NextResponse.next()
     }
 
-    // Require branch selection for MANAGEMENT users on other routes
+    // Require branch selection for MANAGEMENT users1 on other routes
     if (
       session.user.role === "MANAGEMENT" && 
       !session.user.branchId && 

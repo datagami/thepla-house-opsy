@@ -15,35 +15,19 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { AttendanceForm } from "./attendance-form";
+import {Attendance} from "@/models/models";
 
-interface AttendanceRecord {
-  id: string;
-  date: Date;
-  isPresent: boolean;
-  isHalfDay: boolean;
-  overtime: boolean;
-  checkIn: string | null;
-  checkOut: string | null;
-  shift1: boolean;
-  shift2: boolean;
-  shift3: boolean;
-  status: string;
-  verificationNote?: string | null;
-  user: {
-    name: string | null;
-  };
-}
 
 interface BranchAttendanceTableProps {
-  records: AttendanceRecord[];
+  records: Attendance[];
 }
 
 export function BranchAttendanceTable({ records }: BranchAttendanceTableProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState<string | null>(null);
-  const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<Attendance | null>(null);
 
-  const handleResubmit = async (recordId: string, attendanceData: any) => {
+  const handleResubmit = async (recordId: string, attendanceData: Attendance) => {
     setIsLoading(recordId);
     try {
       const response = await fetch(`/api/attendance/${recordId}`, {
@@ -72,20 +56,7 @@ export function BranchAttendanceTable({ records }: BranchAttendanceTableProps) {
     }
   };
 
-  const getStatusBadge = (record: AttendanceRecord) => {
-    const statusColors = {
-      PENDING: "bg-yellow-100 text-yellow-800",
-      APPROVED: "bg-emerald-100 text-emerald-800",
-      REJECTED: "bg-red-100 text-red-800",
-    };
-    return (
-      <Badge className={statusColors[record.status as keyof typeof statusColors]}>
-        {record.status}
-      </Badge>
-    );
-  };
-
-  const getAttendanceStatus = (record: AttendanceRecord) => {
+  const getAttendanceStatus = (record: Attendance) => {
     if (record.isHalfDay) return <Badge className="bg-blue-100 text-blue-800">Half Day</Badge>;
     if (record.overtime) return <Badge className="bg-purple-100 text-purple-800">Overtime</Badge>;
     return record.isPresent ? 
@@ -139,7 +110,7 @@ export function BranchAttendanceTable({ records }: BranchAttendanceTableProps) {
       <AttendanceForm
         isOpen={!!selectedRecord}
         onClose={() => setSelectedRecord(null)}
-        onSubmit={(data) => selectedRecord && handleResubmit(selectedRecord.id, data)}
+        onSubmit={(data: Attendance) => selectedRecord && handleResubmit(selectedRecord.id, data)}
         defaultValues={selectedRecord || undefined}
         isLoading={!!isLoading}
       />

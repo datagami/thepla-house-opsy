@@ -13,33 +13,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { AttendanceStatusFilter } from "./attendance-status-filter";
 import { Loader2 } from "lucide-react";
 import { AttendanceDateFilter } from "./attendance-date-filter";
+import {Attendance} from "@/models/models";
 
-interface AttendanceRecord {
-  id: string;
-  date: Date;
-  isPresent: boolean;
-  isHalfDay: boolean;
-  overtime: boolean;
-  checkIn: string | null;
-  checkOut: string | null;
-  shift1: boolean;
-  shift2: boolean;
-  shift3: boolean;
-  status: string;
-  user: {
-    name: string | null;
-    branch: {
-      name: string | null;
-    } | null;
-  };
-}
 
 interface AttendanceVerificationTableProps {
-  records: AttendanceRecord[];
+  records: Attendance[];
   currentStatus: string;
   currentDate: Date;
 }
@@ -49,7 +31,6 @@ export function AttendanceVerificationTable({
   currentStatus,
   currentDate,
 }: AttendanceVerificationTableProps) {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState<string | null>(null);
@@ -102,7 +83,7 @@ export function AttendanceVerificationTable({
     }
   };
 
-  const getAttendanceStatus = (record: AttendanceRecord) => {
+  const getAttendanceStatus = (record: Attendance) => {
     if (record.isHalfDay) return <Badge className="bg-blue-100 text-blue-800">Half Day</Badge>;
     if (record.overtime) return <Badge className="bg-purple-100 text-purple-800">Overtime</Badge>;
     return record.isPresent ? 
