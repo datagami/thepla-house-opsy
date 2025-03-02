@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -16,11 +16,12 @@ export async function PATCH(
       );
     }
 
+    const { id } = await params;
     const { status } = await req.json();
 
     const updatedRequest = await prisma.leaveRequest.update({
       where: {
-        id: params.id,
+        id: id,
       },
       data: {
         status,

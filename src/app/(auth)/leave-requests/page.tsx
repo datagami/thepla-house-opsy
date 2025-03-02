@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { LeaveRequestTable } from "@/components/leave/leave-request-table";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import {LeaveRequest} from "@/models/models";
 
 export const metadata: Metadata = {
   title: "Leave Requests - HRMS",
@@ -42,6 +43,7 @@ export default async function LeaveRequestsPage() {
   if (session.user.role === "BRANCH_MANAGER") {
     queryOptions.where = {
       user: {
+        // @ts-expect-error - branchId is not in the User type
         branchId: session.user.branchId,
       },
     };
@@ -52,7 +54,7 @@ export default async function LeaveRequestsPage() {
   }
   // HR and MANAGEMENT can see all requests
 
-  const leaveRequests = await prisma.leaveRequest.findMany(queryOptions);
+  const leaveRequests = await prisma.leaveRequest.findMany(queryOptions) as LeaveRequest[];
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">

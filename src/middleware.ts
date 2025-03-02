@@ -25,7 +25,7 @@ export default auth(
     // Routes that don't require branch selection for MANAGEMENT users1
     const managementExemptRoutes = [
       "/select-branch",
-      "/users1",
+      "/users",
       "/branches",
       "/settings",
     ]

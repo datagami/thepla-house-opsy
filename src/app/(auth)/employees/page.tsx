@@ -18,6 +18,7 @@ export default async function EmployeesPage() {
 
   const employees = await prisma.user.findMany({
     where: {
+      // @ts-expect-error - branchId is not in the User type
       branchId: session.user.branchId,
       role: "EMPLOYEE",
       status: "ACTIVE",

@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { AttendanceForm } from "./attendance-form";
-import {User} from "@prisma/client";
+import {User} from "@/models/models";
 
 
 interface AttendanceTableProps {
@@ -99,7 +99,7 @@ export function AttendanceTable({ users, date }: AttendanceTableProps) {
                 <TableCell>
                   {attendance && (
                     <div className="flex flex-col gap-1">
-                      <Badge className={statusColors[attendance.status]}>
+                      <Badge className={statusColors[attendance.status] as string || ''}>
                         {attendance.status}
                       </Badge>
                       {attendance.verifiedAt && attendance.verifiedBy && (
@@ -121,6 +121,7 @@ export function AttendanceTable({ users, date }: AttendanceTableProps) {
         <AttendanceForm
           userId={selectedUser.id}
           userName={selectedUser.name}
+          userRole={selectedUser.role}
           date={date}
           currentAttendance={selectedUser.attendance[0]}
           isOpen={!!selectedUser}

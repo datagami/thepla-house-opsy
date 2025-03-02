@@ -22,6 +22,7 @@ export default async function AuthLayout({
       include: { managedBranch: true },
     });
 
+    // @ts-expect-error - branchId is not in the User type
     if (user?.managedBranch && !session.user.branchId) {
       redirect("/select-branch");
     }

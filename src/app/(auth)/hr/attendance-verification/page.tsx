@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { AttendanceVerificationTable } from "@/components/attendance/attendance-verification-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Suspense } from "react";
+import {Attendance} from "@/models/models";
 
 export const metadata: Metadata = {
   title: "Attendance Verification - HRMS",
@@ -93,7 +94,7 @@ export default async function AttendanceVerificationPage({
     orderBy: [
       { date: "desc" },
     ],
-  });
+  }) as Attendance[];
 
   // Get total counts for selected date
   const allAttendance = await prisma.attendance.groupBy({

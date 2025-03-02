@@ -5,6 +5,7 @@ import {prisma} from "@/lib/prisma";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Clock, CalendarCheck, Users, AlertCircle} from "lucide-react";
 import Link from "next/link";
+import {Attendance} from "@/models/models";
 
 export const metadata: Metadata = {
   title: "Dashboard - HRMS",
@@ -18,7 +19,27 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  let stats = {};
+  let stats: {
+    totalEmployees?: number;
+    markedAttendance?: number;
+    pendingAttendance?: number;
+    pendingLeaveRequests?: number;
+    pendingManagerAttendance?: number;
+    pendingVerifications?: number;
+    pendingApprovals?: number;
+    rejectedAttendance?: Attendance[];
+    rejectedAttendanceCount?: number;
+  } = {
+    totalEmployees: 0,
+    markedAttendance: 0,
+    pendingAttendance: 0,
+    pendingLeaveRequests: 0,
+    pendingManagerAttendance: 0,
+    pendingVerifications: 0,
+    pendingApprovals: 0,
+    rejectedAttendance: [],
+    rejectedAttendanceCount: 0
+  };
 
   if (session.user.role === "BRANCH_MANAGER") {
     const today = new Date();
@@ -27,6 +48,7 @@ export default async function DashboardPage() {
     // Get total employees in branch
     const totalEmployees = await prisma.user.count({
       where: {
+        // @ts-expect-error - branchId is not in the User type
         branchId: session.user.branchId,
         role: "EMPLOYEE",
         status: "ACTIVE",
@@ -38,6 +60,7 @@ export default async function DashboardPage() {
       where: {
         date: today,
         user: {
+          // @ts-expect-error - branchId is not in the User type
           branchId: session.user.branchId,
           role: "EMPLOYEE",
           status: "ACTIVE",
@@ -50,6 +73,7 @@ export default async function DashboardPage() {
       where: {
         status: "PENDING",
         user: {
+          // @ts-expect-error - branchId is not in the User type
           branchId: session.user.branchId,
         },
       },
@@ -60,6 +84,7 @@ export default async function DashboardPage() {
       where: {
         status: "REJECTED",
         user: {
+          // @ts-expect-error - branchId is not in the User
           branchId: session.user.branchId,
         },
       },
@@ -73,7 +98,7 @@ export default async function DashboardPage() {
       orderBy: {
         date: "desc",
       },
-    });
+    }) as Attendance[];
 
     stats = {
       totalEmployees,
@@ -132,7 +157,7 @@ export default async function DashboardPage() {
     });
 
     // Get rejected attendance count
-    const rejectedAttendance = await prisma.attendance.count({
+    const rejectedAttendanceCount = await prisma.attendance.count({
       where: {
         status: "REJECTED",
       },
@@ -142,7 +167,7 @@ export default async function DashboardPage() {
       pendingManagerAttendance,
       pendingVerifications,
       pendingApprovals,
-      rejectedAttendance,
+      rejectedAttendanceCount,
     };
   }
 
@@ -257,7 +282,7 @@ export default async function DashboardPage() {
               </Card>
             </Link>
 
-            {stats.rejectedAttendance > 0 && (
+            {stats.rejectedAttendance && stats.rejectedAttendance.length > 0 && (
               <Link href="/hr/attendance-verification?status=REJECTED" className="block">
                 <Card className="hover:bg-accent/5 transition-colors">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -267,7 +292,7 @@ export default async function DashboardPage() {
                     <AlertCircle className="h-4 w-4 text-red-500"/>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-red-500">{stats.rejectedAttendance}</div>
+                    <div className="text-2xl font-bold text-red-500">{stats.rejectedAttendanceCount}</div>
                     <p className="text-xs text-muted-foreground">
                       attendance records rejected
                     </p>

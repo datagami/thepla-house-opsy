@@ -3,7 +3,7 @@ import {Attendance} from "@/models/models";
 
 export interface AttendanceFormProps {
   userId: string;
-  userName: string;
+  userName?: string | null;
   date: Date;
   currentAttendance?: Attendance;
   isOpen: boolean;

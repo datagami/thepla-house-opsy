@@ -6,6 +6,7 @@ import { startOfMonth, endOfMonth, format } from "date-fns";
 import { AttendanceCalendar } from "@/components/attendance/attendance-calendar";
 import { AttendanceStats } from "@/components/attendance/attendance-stats";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {Attendance} from "@/models/models";
 
 export const metadata: Metadata = {
   title: "Employee Attendance - HRMS",
@@ -15,9 +16,10 @@ export const metadata: Metadata = {
 export default async function EmployeeAttendancePage({
   params,
 }: {
-  params: { userId: string };
+  params: Promise<{ userId: string }>;
 }) {
   const session = await auth();
+  const {userId} = await params;
 
   if (!session) {
     redirect("/login");
@@ -25,7 +27,7 @@ export default async function EmployeeAttendancePage({
 
   // Get employee details
   const employee = await prisma.user.findUnique({
-    where: { id: params.userId },
+    where: { id: userId },
     select: {
       id: true,
       name: true,
@@ -50,7 +52,7 @@ export default async function EmployeeAttendancePage({
   // Get attendance for the month
   const attendance = await prisma.attendance.findMany({
     where: {
-      userId: params.userId,
+      userId: userId,
       date: {
         gte: startDate,
         lte: endDate,
@@ -143,7 +145,7 @@ export default async function EmployeeAttendancePage({
           <div className="p-6">
             <h3 className="text-lg font-medium">Monthly Statistics</h3>
             <AttendanceStats 
-              attendance={attendance}
+              attendance={attendance as Attendance[]}
               month={startDate}
             />
           </div>

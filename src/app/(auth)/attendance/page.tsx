@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { AttendanceTable } from "@/components/attendance/attendance-table";
 import { DailyAttendanceView } from "@/components/attendance/daily-attendance-view";
+import {User} from "@/models/models";
 
 export const metadata: Metadata = {
   title: "Attendance Management - HRMS",
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
 export default async function AttendancePage() {
   const session = await auth();
 
+  // @ts-expect-error - branchId is not in the User type
   if (!session || !session.user.branchId) {
     redirect("/dashboard");
   }
@@ -22,6 +24,8 @@ export default async function AttendancePage() {
 
   const users = await prisma.user.findMany({
     where: {
+
+      // @ts-expect-error - branchId is not in the User type
       branchId: session.user.branchId,
       role: "EMPLOYEE",
       status: "ACTIVE",
@@ -59,8 +63,8 @@ export default async function AttendancePage() {
   });
 
   // Separate users1 with pending attendance
-  const pendingUsers = users.filter(user => !user.attendance.length);
-  const markedUsers = users.filter(user => user.attendance.length);
+  const pendingUsers = users.filter(user => !user.attendance.length) as User[];
+  const markedUsers = users.filter(user => user.attendance.length) as User[];
 
   return (
     <div className="flex-1 space-y-8 p-8 pt-6">

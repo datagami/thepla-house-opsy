@@ -1,7 +1,7 @@
 "use client";
 
 import { AttendanceTable } from "./attendance-table";
-import {User} from "@prisma/client";
+import {User} from "@/models/models";
 
 
 interface DailyAttendanceViewProps {

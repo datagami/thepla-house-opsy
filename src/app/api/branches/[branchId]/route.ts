@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { branchId: string } }
+  { params }: { params: Promise<{ branchId: string }> }
 ) {
   try {
     const session = await auth();
@@ -16,8 +16,10 @@ export async function DELETE(
       );
     }
 
+    const { branchId } = await params;
+
     const branch = await prisma.branch.findUnique({
-      where: { id: params.branchId },
+      where: { id: branchId },
       include: {
         _count: {
           select: {
@@ -43,7 +45,7 @@ export async function DELETE(
     }
 
     await prisma.branch.delete({
-      where: { id: params.branchId },
+      where: { id: branchId },
     });
 
     return NextResponse.json({ success: true });

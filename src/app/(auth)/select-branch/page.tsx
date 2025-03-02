@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { BranchSelector } from "@/components/branch/branch-selector";
+import {Branch} from "@/models/models";
 
 export default async function SelectBranchPage() {
   const session = await auth();
@@ -38,7 +39,7 @@ export default async function SelectBranchPage() {
   if (session.user.role === "MANAGEMENT") {
     const branches = await prisma.branch.findMany({
       orderBy: { name: "asc" },
-    });
+    }) as Branch[];
 
     return <BranchSelector branches={branches} userRole={session.user.role} />;
   }

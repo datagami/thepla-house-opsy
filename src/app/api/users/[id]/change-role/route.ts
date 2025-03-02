@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -16,6 +16,7 @@ export async function PATCH(
       );
     }
 
+    const { id } = await params;
     const { role } = await req.json();
 
     // Only MANAGEMENT can create other MANAGEMENT users1
@@ -27,7 +28,7 @@ export async function PATCH(
     }
 
     const updatedUser = await prisma.user.update({
-      where: { id: params.id },
+      where: { id: id },
       data: { role },
     });
 

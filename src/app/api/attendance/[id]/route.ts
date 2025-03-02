@@ -5,7 +5,7 @@ import {Attendance} from "@/models/models";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -16,18 +16,18 @@ export async function PATCH(
         { status: 401 }
       );
     }
-
+    const {id} = await params;
     const data = await req.json();
 
     // If HR is verifying
     if (session.user.role === "HR") {
       const { status, verificationNote } = data;
-      return await handleHRVerification(params.id, status, verificationNote, session.user.id);
+      return await handleHRVerification(id, status, verificationNote, session.user.id);
     }
 
     // If branch manager is resubmitting
     if (session.user.role === "BRANCH_MANAGER") {
-      return await handleBranchManagerResubmission(params.id, data);
+      return await handleBranchManagerResubmission(id, data);
     }
 
   } catch (error) {
@@ -116,7 +116,7 @@ async function handleBranchManagerResubmission(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -125,6 +125,7 @@ export async function PUT(
     }
 
     const { id } = await params;
+    console.log("id", id);
     const body = await request.json();
 
     // Get current attendance to check status
