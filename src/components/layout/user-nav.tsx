@@ -14,17 +14,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut, Building2, UserCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import {User} from "@/models/models";
 
 interface UserNavProps {
-  user: {
-    name: string | null;
-    email: string | null;
-    role: string;
-    branchName?: string | null;
-  };
+  user: User;
+  branchName: string;
 }
 
-export function UserNav({ user }: UserNavProps) {
+export function UserNav({ user, branchName }: UserNavProps) {
   const router = useRouter();
   const initials = user.name
     ? user.name
@@ -65,10 +62,10 @@ export function UserNav({ user }: UserNavProps) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          {user.branchName && (
+          {branchName && (
             <DropdownMenuItem>
               <Building2 className="mr-2 h-4 w-4" />
-              <span>{user.branchName}</span>
+              <span>{branchName}</span>
             </DropdownMenuItem>
           )}
           <DropdownMenuItem>

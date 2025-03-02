@@ -3,15 +3,21 @@ import { BranchSwitcher } from "@/components/branch/branch-switcher";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { UserNav } from "../layout/user-nav";
+import {Branch, User} from "@/models/models";
 
 export async function TopNav() {
   const session = await auth();
 
-  let branches = [];
+  let branches: Branch[] = [];
   let currentBranch = null;
+  // @ts-expect-error - We check for role
+  const role = session.user.role;
 
+  //@ts-expect-error - We check for branchId
+  const branchId = session.user.branchId;
   if (session?.user) {
-    if (session.user.role === "MANAGEMENT") {
+
+    if (role === "MANAGEMENT") {
       // Get all branches and current user's selected branch
       const user = await prisma.user.findUnique({
         where: { id: session.user.id },
@@ -23,12 +29,14 @@ export async function TopNav() {
       // Get all branches
       branches = await prisma.branch.findMany({
         orderBy: { name: "asc" },
-      });
+      }) as Branch[];
 
       currentBranch = user?.selectedBranch;
-    } else if (session.user.role === "BRANCH_MANAGER" && session.user.managedBranchId) {
+      // @ts-expect-error - We check for branchId
+    } else if (role=== "BRANCH_MANAGER" && session.user.managedBranchId) {
       // Get managed branch details for branch manager
       currentBranch = await prisma.branch.findUnique({
+        // @ts-expect-error - We check for managedBranchId
         where: { id: session.user.managedBranchId },
       });
     }
@@ -42,22 +50,22 @@ export async function TopNav() {
           {currentBranch && (
             <span className="text-muted-foreground ml-2 text-sm">
               {currentBranch.name}
-              {session.user.role === "BRANCH_MANAGER" && " (Managing)"}
+              {role === "BRANCH_MANAGER" && " (Managing)"}
             </span>
           )}
         </Link>
         <div className="ml-auto flex items-center space-x-4">
-          {session?.user.role === "MANAGEMENT" && (
+          {role === "MANAGEMENT" && (
             <BranchSwitcher 
               branches={branches} 
-              currentBranchId={session.user.branchId} 
+              currentBranchId={branchId}
             />
           )}
           <UserNav 
             user={{
-              ...session?.user,
-              branchName: currentBranch?.name
-            }} 
+              ...session?.user as User,
+            }}
+            branchName={currentBranch?.name || ''}
           />
         </div>
       </div>

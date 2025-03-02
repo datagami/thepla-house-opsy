@@ -14,8 +14,10 @@ export async function POST(req: Request) {
     const { branchId } = await req.json();
 
     // Allow null branchId for management users1 (all branches view)
+    // @ts-expect-error - role is not in the User type
     if (branchId === null && session.user.role === "MANAGEMENT") {
       await prisma.user.update({
+        // @ts-expect-error - id is not in the User type
         where: { id: session.user.id },
         data: { selectedBranchId: null },
       });
@@ -45,8 +47,10 @@ export async function POST(req: Request) {
     }
 
     // For branch managers, verify they manage this branch
+    // @ts-expect-error - role is not in the User type
     if (session.user.role === "BRANCH_MANAGER") {
       const user = await prisma.user.findUnique({
+        // @ts-expect-error - id is not in the User type
         where: { id: session.user.id },
         include: { managedBranch: true },
       });
@@ -61,6 +65,7 @@ export async function POST(req: Request) {
 
     // Update session with selected branch
     await prisma.user.update({
+      // @ts-expect-error - id is not in the User type
       where: { id: session.user.id },
       data: { selectedBranchId: branchId },
     });

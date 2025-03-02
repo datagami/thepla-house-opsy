@@ -9,7 +9,9 @@ export async function DELETE(
   try {
     const session = await auth();
 
-    if (!session || session.user.role !== "MANAGEMENT") {
+    // @ts-expect-error - role is not in the User type
+    const role = session.user.role;
+    if (!session || role !== "MANAGEMENT") {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }

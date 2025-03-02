@@ -6,6 +6,7 @@ export async function POST(req: Request) {
   try {
     const session = await auth();
 
+    // @ts-expect-error - role is not in the User type
     if (!session || session.user.role !== "MANAGEMENT") {
       return NextResponse.json(
         { error: "Unauthorized" },

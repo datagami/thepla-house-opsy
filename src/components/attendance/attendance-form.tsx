@@ -21,7 +21,7 @@ export function AttendanceForm({
   date,
   currentAttendance,
   isOpen,
-  onClose,
+  onCloseAction,
   userRole,
 }: AttendanceFormProps) {
   const router = useRouter();
@@ -38,11 +38,11 @@ export function AttendanceForm({
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
-      const attendanceDate = new Date(date);
+      const attendanceDate = new Date(date || new Date());
       attendanceDate.setHours(0, 0, 0, 0);
 
       const attendanceData: AttendanceFormData = {
-        userId,
+        userId: userId || null,
         date: attendanceDate,
         isPresent,
         checkIn: checkIn || null,
@@ -82,7 +82,7 @@ export function AttendanceForm({
           ? "Attendance updated successfully"
           : "Attendance marked successfully"
       );
-      onClose();
+      onCloseAction();
       router.refresh();
     } catch (error) {
       console.error(error);
@@ -104,7 +104,7 @@ export function AttendanceForm({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={onCloseAction}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Mark Attendance for {userName}</DialogTitle>

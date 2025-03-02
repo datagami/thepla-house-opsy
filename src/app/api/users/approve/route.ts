@@ -7,6 +7,7 @@ export async function POST(req: Request) {
     const session = await auth();
     
     // Check if user is authorized (MANAGEMENT or HR)
+    // @ts-expect-error - role is not in the User type
     if (!session || !['MANAGEMENT', 'HR'].includes(session.user.role)) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -22,6 +23,7 @@ export async function POST(req: Request) {
         where: { id: userId },
       }),
       prisma.user.findUnique({
+        // @ts-expect-error - id is not in the User type
         where: { id: session.user.id },
       }),
     ]);

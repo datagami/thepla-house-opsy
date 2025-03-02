@@ -92,7 +92,7 @@ export interface Attendance {
   shift1: boolean;
   shift2: boolean;
   shift3: boolean;
-  status: string;
+  status: 'PRESENT' | 'ABSENT' | 'PENDING' | 'APPROVED' | 'REJECTED';
   verifiedById?: string | null;
   verifiedAt?: Date | null;
   verificationNote?: string | null;

@@ -2,7 +2,6 @@ import {NextAuthConfig} from "next-auth";
 import {prisma} from "@/prisma";
 import Credentials from "next-auth/providers/credentials";
 import {compare} from "bcryptjs";
-import type {UserRole} from "@prisma/client";
 
 
 export default {
@@ -70,6 +69,7 @@ export default {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        // @ts-expect-error - role is not in the User type
         token.role = user.role;
         // @ts-expect-error - branchId is not in the User type
         token.branchId = user.branchId;
@@ -81,7 +81,8 @@ export default {
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.sub as string;
-        session.user.role = token.role as UserRole;
+        // @ts-expect-error - role is not in the User type
+        session.user.role = token.role;
         // @ts-expect-error - branchId is not in the User type
         session.user.branchId = token.branchId as string | null;
         // @ts-expect-error - managedBranchId is not in the

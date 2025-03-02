@@ -6,7 +6,9 @@ export async function POST(req: Request) {
   try {
     const session = await auth();
 
-    if (!session || session.user.role !== "HR") {
+    // @ts-expect-error - role is not in the User type
+    const role = session.user.role
+    if (!session || role !== "HR") {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -21,6 +23,7 @@ export async function POST(req: Request) {
       },
       data: {
         status,
+        // @ts-expect-error - branchId is not in the User type
         verifiedById: session.user.id,
         verifiedAt: new Date(),
         verificationNote: note,

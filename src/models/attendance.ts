@@ -2,17 +2,21 @@ import {Attendance} from "@/models/models";
 
 
 export interface AttendanceFormProps {
-  userId: string;
+  userId?: string;
   userName?: string | null;
-  date: Date;
+  date?: Date;
   currentAttendance?: Attendance;
-  isOpen: boolean;
-  onClose: () => void;
-  userRole: string;
+  isOpen?: boolean;
+  onCloseAction: () => void;
+  userRole?: string;
+  onSubmit?: (data: Attendance) => void;
+  defaultValues?: Attendance;
+  isLoading?: boolean;
+  isHR?: boolean;
 }
 
 export interface AttendanceFormData {
-  userId: string;
+  userId?: string | null;
   date: Date;
   isPresent: boolean;
   checkIn?: string | null;

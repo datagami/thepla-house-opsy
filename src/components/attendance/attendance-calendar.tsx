@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 
 interface Attendance {
   id: string;
@@ -32,16 +31,16 @@ export function AttendanceCalendar({ attendance, month }: AttendanceCalendarProp
     attendance.map(a => [format(new Date(a.date), "yyyy-MM-dd"), a])
   );
 
-  const getDayClass = (date: Date) => {
-    const dateStr = format(date, "yyyy-MM-dd");
-    const attendance = attendanceMap.get(dateStr);
-    
-    if (!attendance) return "";
-
-    if (attendance.isHalfDay) return "bg-blue-100";
-    if (attendance.overtime) return "bg-purple-100";
-    return attendance.isPresent ? "bg-green-100" : "bg-red-100";
-  };
+  // const getDayClass = (date: Date): string => {
+  //   const dateStr = format(date, "yyyy-MM-dd");
+  //   const attendance = attendanceMap.get(dateStr);
+  //
+  //   if (!attendance) return "";
+  //
+  //   if (attendance.isHalfDay) return "bg-blue-100";
+  //   if (attendance.overtime) return "bg-purple-100";
+  //   return attendance.isPresent ? "bg-green-100" : "bg-red-100";
+  // };
 
   return (
     <div className="space-y-4">
@@ -54,10 +53,6 @@ export function AttendanceCalendar({ attendance, month }: AttendanceCalendarProp
         classNames={{
           day_today: "bg-accent text-accent-foreground",
           day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-          day: (date) => cn(
-            "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
-            getDayClass(date)
-          ),
         }}
       />
 
@@ -73,7 +68,7 @@ export function AttendanceCalendar({ attendance, month }: AttendanceCalendarProp
             return (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Badge variant={attendance.isPresent ? "success" : "destructive"}>
+                  <Badge variant={attendance.isPresent ? "default" : "destructive"}>
                     {attendance.isPresent ? "Present" : "Absent"}
                   </Badge>
                   {attendance.isHalfDay && <Badge>Half Day</Badge>}

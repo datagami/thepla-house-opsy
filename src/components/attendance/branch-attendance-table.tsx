@@ -109,7 +109,7 @@ export function BranchAttendanceTable({ records }: BranchAttendanceTableProps) {
 
       <AttendanceForm
         isOpen={!!selectedRecord}
-        onClose={() => setSelectedRecord(null)}
+        onCloseAction={() => setSelectedRecord(null)}
         onSubmit={(data: Attendance) => selectedRecord && handleResubmit(selectedRecord.id, data)}
         defaultValues={selectedRecord || undefined}
         isLoading={!!isLoading}

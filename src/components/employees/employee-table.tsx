@@ -51,7 +51,7 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
             <TableCell>{employee._count.leaveRequests}</TableCell>
             <TableCell>
               <Badge 
-                variant={employee.status === "ACTIVE" ? "success" : "secondary"}
+                variant={employee.status === "ACTIVE" ? "default" : "secondary"}
                 className="capitalize"
               >
                 {employee.status.toLowerCase()}

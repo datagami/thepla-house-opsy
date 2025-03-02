@@ -157,7 +157,7 @@ export function HRAttendanceTable({ managers, pendingRecords }: HRAttendanceTabl
               <TableCell>{record.user.name}</TableCell>
               <TableCell>{record.user.branch?.name}</TableCell>
               <TableCell>
-                <Badge variant={record.isPresent ? "success" : "destructive"}>
+                <Badge variant={record.isPresent ? "default" : "destructive"}>
                   {record.isPresent ? "Present" : "Absent"}
                 </Badge>
               </TableCell>

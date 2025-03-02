@@ -11,26 +11,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { AttendanceForm } from "./attendance-form";
+import {User} from "@/models/models";
 
-interface User {
-  id: string;
-  name: string | null;
-  branch?: {
-    name: string | null;
-  } | null;
-  attendance?: {
-    id: string;
-    isPresent: boolean;
-    checkIn: string | null;
-    checkOut: string | null;
-    isHalfDay: boolean;
-    overtime: boolean;
-    shift1: boolean;
-    shift2: boolean;
-    shift3: boolean;
-    status: string;
-  }[];
-}
 
 interface SharedAttendanceTableProps {
   users: User[];
@@ -147,7 +129,7 @@ export function SharedAttendanceTable({
           date={date}
           currentAttendance={selectedUser.attendance?.[0]}
           isOpen={!!selectedUser}
-          onClose={() => setSelectedUser(null)}
+          onCloseAction={() => setSelectedUser(null)}
           isHR={userRole === "HR"}
         />
       )}

@@ -9,6 +9,7 @@ export async function PATCH(
   try {
     const session = await auth();
 
+    // @ts-expect-error - role is not in the User type
     if (!session || !["HR", "MANAGEMENT"].includes(session.user.role)) {
       return NextResponse.json(
         { error: "Unauthorized" },
@@ -20,6 +21,7 @@ export async function PATCH(
     const { role } = await req.json();
 
     // Only MANAGEMENT can create other MANAGEMENT users1
+    // @ts-expect-error - role is not in the User type
     if (role === "MANAGEMENT" && session.user.role !== "MANAGEMENT") {
       return NextResponse.json(
         { error: "Unauthorized to assign management role" },

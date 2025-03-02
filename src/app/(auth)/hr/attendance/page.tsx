@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileClock } from "lucide-react";
 import { SharedAttendanceTable } from "@/components/attendance/shared-attendance-table";
+import {User} from "@/models/models";
 
 export default async function HRAttendancePage() {
   const session = await auth();
@@ -48,7 +49,7 @@ export default async function HRAttendancePage() {
         },
       },
     },
-  });
+  }) as User[];
 
   const pendingManagersCount = branchManagers.filter(
     manager => manager.attendance.length === 0

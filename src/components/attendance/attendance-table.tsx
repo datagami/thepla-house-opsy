@@ -21,11 +21,11 @@ interface AttendanceTableProps {
 }
 
 const statusColors = {
-  PRESENT: "bg-green-100 text-green-800",
-  ABSENT: "bg-red-100 text-red-800",
-  PENDING: "bg-yellow-100 text-yellow-800",
-  APPROVED: "bg-emerald-100 text-emerald-800",
-  REJECTED: "bg-rose-100 text-rose-800",
+  'PRESENT': "bg-green-100 text-green-800",
+  'ABSENT': "bg-red-100 text-red-800",
+  'PENDING': "bg-yellow-100 text-yellow-800",
+  'APPROVED': "bg-emerald-100 text-emerald-800",
+  'REJECTED': "bg-rose-100 text-rose-800",
 } as const;
 
 export function AttendanceTable({ users, date }: AttendanceTableProps) {
@@ -125,7 +125,7 @@ export function AttendanceTable({ users, date }: AttendanceTableProps) {
           date={date}
           currentAttendance={selectedUser.attendance[0]}
           isOpen={!!selectedUser}
-          onClose={() => setSelectedUser(null)}
+          onCloseAction={() => setSelectedUser(null)}
         />
       )}
     </>

@@ -47,6 +47,9 @@ export function SideNav() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { data: session } = useSession();
 
+  // @ts-expect-error - We check for role
+  const role = session?.user.role;
+
   return (
     <div className={cn(
       "relative h-full border-r pt-16 bg-gray-50/50",
@@ -76,7 +79,7 @@ export function SideNav() {
                 {!isCollapsed && <span>{route.label}</span>}
               </Link>
             ))}
-            {session?.user.role === "MANAGEMENT" && (
+            {role === "MANAGEMENT" && (
               <li>
                 <Link
                   href="/branches"
