@@ -21,13 +21,12 @@ import {
 import { UserActions } from "./user-actions";
 import AssignBranchModal from './assign-branch-modal';
 import {Branch, User} from "@/models/models";
-
+import { useRouter } from "next/navigation";
 
 interface UserTableProps {
   users: User[];
   branches: Branch[];
   currentUserRole: string;
-  onUserUpdate?: () => void;
 }
 
 const roleColors = {
@@ -43,12 +42,13 @@ const statusColors = {
   INACTIVE: "text-red-600 bg-red-100",
 } as const;
 
-export function UserTable({ users, branches, currentUserRole, onUserUpdate }: UserTableProps) {
+export function UserTable({ users, branches, currentUserRole }: UserTableProps) {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isAssignBranchModalOpen, setIsAssignBranchModalOpen] = useState(false);
+  const router = useRouter();
 
   const handleAssignBranch = async (branchId: string) => {
     if (!selectedUser) return;
@@ -70,10 +70,7 @@ export function UserTable({ users, branches, currentUserRole, onUserUpdate }: Us
         throw new Error(error.error || 'Failed to assign branch');
       }
 
-      // Refresh the users list
-      if (onUserUpdate) {
-        onUserUpdate();
-      }
+      router.refresh();
       setIsAssignBranchModalOpen(false);
       setSelectedUser(null);
     } catch (error) {
@@ -167,7 +164,6 @@ export function UserTable({ users, branches, currentUserRole, onUserUpdate }: Us
                     </button>
                     <UserActions 
                       user={user} 
-                      branches={branches}
                       currentUserRole={currentUserRole}
                     />
                   </div>
@@ -177,7 +173,6 @@ export function UserTable({ users, branches, currentUserRole, onUserUpdate }: Us
           </TableBody>
         </Table>
       </div>
-      
 
       {isAssignBranchModalOpen && selectedUser && (
         <AssignBranchModal

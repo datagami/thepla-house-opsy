@@ -18,7 +18,7 @@ import { AttendanceStatusFilter } from "./attendance-status-filter";
 import { Loader2 } from "lucide-react";
 import { AttendanceDateFilter } from "./attendance-date-filter";
 import {Attendance} from "@/models/models";
-import {router} from "next/client";
+import {useRouter} from "next/navigation";
 
 
 interface AttendanceVerificationTableProps {
@@ -35,6 +35,7 @@ export function AttendanceVerificationTable({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleStatusChange = (status: string) => {
     setIsLoading('filter');
@@ -72,7 +73,8 @@ export function AttendanceVerificationTable({
         const error = await response.json();
         throw new Error(error.message || "Failed to verify attendance");
       }
-      window.location.reload();
+
+      router.refresh();
       toast.success(`Attendance ${status.toLowerCase()} successfully`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to verify attendance");

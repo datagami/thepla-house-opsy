@@ -4,6 +4,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuItem, DropdownMenuConten
 import { Button } from '../ui/button';
 import { Check } from 'lucide-react';
 import { toast } from 'sonner';
+import {useRouter} from "next/navigation";
 
 interface AssignBranchModalProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ const AssignBranchModal = ({
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const hasChanges = selectedBranchId !== currentBranchId;
+  const router = useRouter();
   
 
   useEffect(() => {
@@ -44,7 +46,7 @@ const AssignBranchModal = ({
     try {
       await onAssign(selectedBranchId);
       toast.success('Branch assigned successfully');
-      window.location.reload();
+      router.refresh();
       onClose();
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to assign branch');

@@ -17,23 +17,15 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal, UserCog } from "lucide-react";
 import { toast } from "sonner";
 import { hasAccess } from "@/lib/access-control";
-
-interface Branch {
-  id: string;
-  name: string;
-}
+import { User } from "@/models/models";
 
 interface UserActionsProps {
-  user: {
-    id: string;
-    status: string;
-    role: string;
-  };
-  branches: Branch[];
+  user: User;
   currentUserRole: string;
+  onUpdate?: () => void;
 }
 
-export function UserActions({ user, branches = [], currentUserRole }: UserActionsProps) {
+export function UserActions({ user, currentUserRole, onUpdate }: UserActionsProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -88,6 +80,37 @@ export function UserActions({ user, branches = [], currentUserRole }: UserAction
       console.error(error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleStatusUpdate = async (userId: string, newStatus: string) => {
+    try {
+      const response = await fetch('/api/users/update-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          status: newStatus,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update status');
+      }
+
+      toast.success(`User status updated to ${newStatus.toLowerCase()}`);
+      
+      if (onUpdate) {
+        onUpdate();
+      }
+      router.refresh();
+
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Failed to update status');
     }
   };
 
@@ -150,6 +173,21 @@ export function UserActions({ user, branches = [], currentUserRole }: UserAction
               )}
             </DropdownMenuSubContent>
           </DropdownMenuSub>
+        )}
+        {user.status === "ACTIVE" ? (
+          <DropdownMenuItem
+            className="text-red-600"
+            onClick={() => handleStatusUpdate(user.id, "INACTIVE")}
+          >
+            Mark as Inactive
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem
+            className="text-green-600"
+            onClick={() => handleStatusUpdate(user.id, "ACTIVE")}
+          >
+            Mark as Active
+          </DropdownMenuItem>
         )}
       </DropdownMenuContent>
     </DropdownMenu>
