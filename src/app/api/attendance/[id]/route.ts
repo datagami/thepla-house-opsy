@@ -44,7 +44,7 @@ export async function PATCH(
 
 async function handleHRVerification(
   attendanceId: string,
-  status: string,
+  status: 'PENDING_VERIFICATION' | 'APPROVED' | 'REJECTED',
   verificationNote: string,
   verifierId: string
 ) {

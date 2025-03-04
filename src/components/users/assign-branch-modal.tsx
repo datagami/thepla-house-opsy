@@ -34,7 +34,7 @@ const AssignBranchModal = ({
   useEffect(() => {
     const currentBranch = branches.find(branch => branch.id === currentBranchId);
     setSelectedBranch(currentBranch || null);
-  }, [currentBranchId]);
+  }, [currentBranchId, branches]);
 
   if (!isOpen) return null;
 

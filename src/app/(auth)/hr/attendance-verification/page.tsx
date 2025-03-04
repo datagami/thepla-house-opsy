@@ -34,7 +34,7 @@ function LoadingStats() {
 export default async function AttendanceVerificationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; date?: string }>;
+  searchParams: Promise<{ status?: 'PENDING_VERIFICATION' | 'APPROVED' | 'REJECTED' | 'ALL'; date?: string }>;
 }) {
   const session = await auth();
   const {status, date} = await searchParams;
