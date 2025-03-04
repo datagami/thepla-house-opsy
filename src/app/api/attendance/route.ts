@@ -15,7 +15,19 @@ export async function POST(request: Request) {
     // @ts-expect-error - role is not in the User type
     const role = session.user.role;
     const status = role === "HR" ? "APPROVED" : "PENDING_VERIFICATION";
-    
+
+    // Check if the user has already marked attendance for this date
+    const existingAttendance = await prisma.attendance.findFirst({
+      where: {
+        userId: body.userId,
+        date: body.date
+      }
+    });
+
+    if (existingAttendance) {
+      return NextResponse.json({ error: "Attendance already marked for this date" }, { status: 400 });
+    }
+
     const attendance = await prisma.attendance.create({
       data: {
         ...body,

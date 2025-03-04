@@ -18,6 +18,7 @@ import {User} from "@/models/models";
 interface AttendanceTableProps {
   users: User[];
   date: Date;
+  viewOnly?: boolean;
 }
 
 const statusColors = {
@@ -28,7 +29,7 @@ const statusColors = {
   'REJECTED': "bg-rose-100 text-rose-800",
 } as const;
 
-export function AttendanceTable({ users, date }: AttendanceTableProps) {
+export function AttendanceTable({ users, date, viewOnly = false }: AttendanceTableProps) {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   const getAttendanceStatus = (user: User) => {
@@ -117,14 +118,14 @@ export function AttendanceTable({ users, date }: AttendanceTableProps) {
         </TableBody>
       </Table>
 
-      {selectedUser && (
+      {selectedUser && !viewOnly && (
         <AttendanceForm
           userId={selectedUser.id}
           userName={selectedUser.name}
           userRole={selectedUser.role}
           date={date}
           currentAttendance={selectedUser.attendance[0]}
-          isOpen={!!selectedUser}
+          isOpen={!!selectedUser && !viewOnly}
           onCloseAction={() => setSelectedUser(null)}
         />
       )}

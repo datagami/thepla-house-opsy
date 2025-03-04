@@ -128,7 +128,6 @@ export async function PUT(
     }
 
     const { id } = await params;
-    console.log("id", id);
     const body = await request.json();
 
     // Get current attendance to check status
@@ -155,7 +154,7 @@ export async function PUT(
       };
     } else if (role === "BRANCH_MANAGER") {
       // For branch manager, only change status if it was previously approved
-      if (currentAttendance.status === "APPROVED") {
+      if (currentAttendance.status === "APPROVED" || currentAttendance.status === "REJECTED") {
         verificationData = {
           status: "PENDING_VERIFICATION",
           verifiedById: null,
