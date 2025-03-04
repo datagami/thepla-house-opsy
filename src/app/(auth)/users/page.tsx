@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { UserTable } from "@/components/users/user-table";
+import {Branch, User} from "@/models/models";
 
 export const metadata: Metadata = {
   title: "User Management - HRMS",
@@ -28,13 +29,14 @@ export default async function UsersPage() {
       branch: {
         select: {
           name: true,
+          id: true
         },
       },
     },
     orderBy: {
       createdAt: "desc",
     },
-  });
+  }) as User[];
 
   const branches = await prisma.branch.findMany({
     select: {
@@ -44,7 +46,7 @@ export default async function UsersPage() {
     orderBy: {
       name: "asc",
     },
-  });
+  }) as Branch[];
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">

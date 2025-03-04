@@ -72,7 +72,7 @@ export function AttendanceVerificationTable({
         const error = await response.json();
         throw new Error(error.message || "Failed to verify attendance");
       }
-      router.reload();
+      window.location.reload();
       toast.success(`Attendance ${status.toLowerCase()} successfully`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to verify attendance");

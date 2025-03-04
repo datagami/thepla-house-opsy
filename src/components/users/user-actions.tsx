@@ -64,33 +64,6 @@ export function UserActions({ user, branches = [], currentUserRole }: UserAction
     }
   };
 
-  const handleAssignBranch = async (branchId: string) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/users/${user.id}/assign-branch`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          branchId,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to assign branch");
-      }
-
-      toast.success("Branch assigned successfully");
-      router.refresh();
-    } catch (error) {
-      toast.error("Failed to assign branch");
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleChangeRole = async (newRole: string) => {
     setIsLoading(true);
     try {
@@ -119,7 +92,6 @@ export function UserActions({ user, branches = [], currentUserRole }: UserAction
   };
 
   const canApproveUser = hasAccess(currentUserRole, "users.approve");
-  const canAssignBranch = hasAccess(currentUserRole, "users.assign_branch");
   const canChangeRole = hasAccess(currentUserRole, "users.change_role");
 
   return (
@@ -176,24 +148,6 @@ export function UserActions({ user, branches = [], currentUserRole }: UserAction
                   Management
                 </DropdownMenuItem>
               )}
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
-        )}
-        {canAssignBranch && (
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
-              Assign Branch
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
-              {branches.map((branch) => (
-                <DropdownMenuItem
-                  key={branch.id}
-                  onClick={() => handleAssignBranch(branch.id)}
-                  disabled={isLoading}
-                >
-                  {branch.name}
-                </DropdownMenuItem>
-              ))}
             </DropdownMenuSubContent>
           </DropdownMenuSub>
         )}

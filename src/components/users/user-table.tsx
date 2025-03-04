@@ -19,27 +19,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { UserActions } from "./user-actions";
+import AssignBranchModal from './assign-branch-modal';
+import {Branch, User} from "@/models/models";
 
-interface Branch {
-  id: string;
-  name: string;
-}
-
-interface User {
-  id: string;
-  name: string | null;
-  email: string | null;
-  role: string;
-  status: string;
-  branch: {
-    name: string;
-  } | null;
-}
 
 interface UserTableProps {
   users: User[];
   branches: Branch[];
   currentUserRole: string;
+  onUserUpdate?: () => void;
 }
 
 const roleColors = {
@@ -55,10 +43,44 @@ const statusColors = {
   INACTIVE: "text-red-600 bg-red-100",
 } as const;
 
-export function UserTable({ users, branches, currentUserRole }: UserTableProps) {
+export function UserTable({ users, branches, currentUserRole, onUserUpdate }: UserTableProps) {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isAssignBranchModalOpen, setIsAssignBranchModalOpen] = useState(false);
+
+  const handleAssignBranch = async (branchId: string) => {
+    if (!selectedUser) return;
+
+    try {
+      const response = await fetch('/api/users/assign-branch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: selectedUser.id,
+          branchId,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to assign branch');
+      }
+
+      // Refresh the users list
+      if (onUserUpdate) {
+        onUserUpdate();
+      }
+      setIsAssignBranchModalOpen(false);
+      setSelectedUser(null);
+    } catch (error) {
+      console.error('Error assigning branch:', error);
+      throw error;
+    }
+  };
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
@@ -133,17 +155,42 @@ export function UserTable({ users, branches, currentUserRole }: UserTableProps) 
                 </TableCell>
                 <TableCell>{user.branch?.name || "-"}</TableCell>
                 <TableCell className="text-right">
-                  <UserActions 
-                    user={user} 
-                    branches={branches}
-                    currentUserRole={currentUserRole}
-                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setIsAssignBranchModalOpen(true);
+                      }}
+                      className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                    >
+                      Assign Branch
+                    </button>
+                    <UserActions 
+                      user={user} 
+                      branches={branches}
+                      currentUserRole={currentUserRole}
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+      
+
+      {isAssignBranchModalOpen && selectedUser && (
+        <AssignBranchModal
+          isOpen={isAssignBranchModalOpen}
+          onClose={() => {
+            setIsAssignBranchModalOpen(false);
+            setSelectedUser(null);
+          }}
+          onAssign={handleAssignBranch}
+          branches={branches}
+          currentBranchId={selectedUser.branch?.id}
+        />
+      )}
     </div>
   );
 } 
