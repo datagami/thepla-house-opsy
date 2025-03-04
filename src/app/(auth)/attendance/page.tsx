@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { AttendanceTable } from "@/components/attendance/attendance-table";
 import { DailyAttendanceView } from "@/components/attendance/daily-attendance-view";
 import {User} from "@/models/models";
+import { format } from "date-fns";
 
 export const metadata: Metadata = {
   title: "Attendance Management - HRMS",
@@ -70,6 +71,8 @@ export default async function AttendancePage() {
     <div className="flex-1 space-y-8 p-8 pt-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Attendance Management</h2>
+        
+        <p className="text-sm text-muted-foreground">Attendance For {format(today, "PPP")}</p>
       </div>
 
       {pendingUsers.length > 0 && (

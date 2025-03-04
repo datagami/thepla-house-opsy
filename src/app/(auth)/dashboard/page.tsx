@@ -86,6 +86,7 @@ export default async function DashboardPage() {
     const rejectedAttendance = await prisma.attendance.findMany({
       where: {
         status: "REJECTED",
+        date: today,
         user: {
           // @ts-expect-error - branchId is not in the User
           branchId: session.user.branchId,
@@ -140,6 +141,7 @@ export default async function DashboardPage() {
     // Get pending attendance verifications - updated query
     const pendingVerifications = await prisma.attendance.count({
       where: {
+        date: today,
         AND: [
           { status: "PENDING_VERIFICATION" },
           {
@@ -164,6 +166,7 @@ export default async function DashboardPage() {
     const rejectedAttendanceCount = await prisma.attendance.count({
       where: {
         status: "REJECTED",
+        date: today,
       },
     });
 

@@ -118,7 +118,7 @@ export function AttendanceVerificationTable({
           />
         </div>
         <div className="text-sm text-muted-foreground">
-          Showing attendance for {format(new Date(), "PPP")}
+          Showing attendance for {format(currentDate, "PPP")}
         </div>
       </div>
       {isLoading === 'filter' ? (
