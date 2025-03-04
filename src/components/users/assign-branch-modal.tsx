@@ -3,6 +3,7 @@ import { Branch } from '@/models/models';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuItem, DropdownMenuContent } from '../ui/dropdown-menu';
 import { Button } from '../ui/button';
 import { Check } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface AssignBranchModalProps {
   isOpen: boolean;
@@ -42,6 +43,8 @@ const AssignBranchModal = ({
 
     try {
       await onAssign(selectedBranchId);
+      toast.success('Branch assigned successfully');
+      window.location.reload();
       onClose();
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to assign branch');

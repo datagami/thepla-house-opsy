@@ -100,7 +100,7 @@ async function handleBranchManagerResubmission(
       shift3: data.isPresent && data.shift3,
       // Only reset verification if status is changing
       ...(data.status !== attendance.status ? {
-        status: "PENDING",
+        status: "PENDING_VERIFICATION",
         verifiedById: null,
         verifiedAt: null,
         verificationNote: null,
@@ -157,7 +157,7 @@ export async function PUT(
       // For branch manager, only change status if it was previously approved
       if (currentAttendance.status === "APPROVED") {
         verificationData = {
-          status: "PENDING",
+          status: "PENDING_VERIFICATION",
           verifiedById: null,
           verifiedAt: null,
           verificationNote: null

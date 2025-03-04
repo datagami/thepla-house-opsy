@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { EmployeeTable } from "@/components/employees/employee-table";
+import { Branch } from "@/models/models";
 
 export const metadata: Metadata = {
   title: "Employees - HRMS",
@@ -29,6 +30,12 @@ export default async function EmployeesPage() {
       name: true,
       email: true,
       status: true,
+      branch: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
       _count: {
         select: {
           attendance: {
@@ -49,6 +56,16 @@ export default async function EmployeesPage() {
     },
   });
 
+  const branches = await prisma.branch.findMany({
+    select: {
+      id: true,
+      name: true,
+    },
+    orderBy: {
+      name: "asc",
+    },
+  }) as Branch[];
+
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between">
@@ -56,7 +73,7 @@ export default async function EmployeesPage() {
       </div>
 
       <div className="rounded-md border">
-        <EmployeeTable employees={employees} />
+        <EmployeeTable employees={employees} branches={branches} />
       </div>
     </div>
   );

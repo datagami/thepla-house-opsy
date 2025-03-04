@@ -15,7 +15,7 @@ export async function POST(request: Request) {
       where: { email: session.user.email! }
     });
 
-    if (!currentUser || (currentUser.role !== 'MANAGEMENT' && currentUser.role !== 'HR')) {
+    if (!currentUser || (currentUser.role !== 'MANAGEMENT' && currentUser.role !== 'HR' && currentUser.role !== 'BRANCH_MANAGER')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
