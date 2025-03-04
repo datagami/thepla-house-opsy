@@ -18,6 +18,7 @@ import { AttendanceStatusFilter } from "./attendance-status-filter";
 import { Loader2 } from "lucide-react";
 import { AttendanceDateFilter } from "./attendance-date-filter";
 import {Attendance} from "@/models/models";
+import {router} from "next/client";
 
 
 interface AttendanceVerificationTableProps {
@@ -71,11 +72,8 @@ export function AttendanceVerificationTable({
         const error = await response.json();
         throw new Error(error.message || "Failed to verify attendance");
       }
-
+      router.reload();
       toast.success(`Attendance ${status.toLowerCase()} successfully`);
-      
-      // Force a full page refresh to update stats
-      window.location.reload();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to verify attendance");
     } finally {
@@ -161,7 +159,7 @@ export function AttendanceVerificationTable({
                 </TableCell>
                 <TableCell>{getVerificationStatus(record.status)}</TableCell>
                 <TableCell className="text-right space-x-2">
-                  {record.status === "PENDING" && (
+                  {record.status === "PENDING_VERIFICATION" && (
                     <>
                       <Button
                         variant="outline"

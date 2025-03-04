@@ -3,10 +3,34 @@ import { hash } from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-const BRANCHES = [
-  'cm7lfn9900000uzzeuemgv9vs', // Chandivali
-  'cm7lfnjmz0001uzzeapmgtrfj', // Lower Parel
+// TODO: create branches
+const BRANCHES_DATA = [
+  {
+    name: 'Chandivali',
+    address: 'Chandivali',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+  },
+  {
+    name: 'Lower Parel',
+    address: 'Lower Parel',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+  },
+  {
+    name: 'Santacruz',
+    address: '789 Main St, Anytown, USA',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+  },
 ];
+
+const branchIds = await prisma.branch.createMany({
+  data: BRANCHES_DATA,
+});
+
+const BRANCHES = await prisma.branch.findMany({});
+
 
 const FIRST_NAMES = [
   'Aarav', 'Advait', 'Arjun', 'Dev', 'Ishaan',
@@ -21,9 +45,9 @@ const LAST_NAMES = [
 
 async function main() {
   // Create branch managers first
-  for (const branchId of BRANCHES) {
+  for (const branchData of BRANCHES) {
     const branch = await prisma.branch.findUnique({
-      where: { id: branchId },
+      where: { id: branchData.id },
       select: { name: true },
     });
 
@@ -39,8 +63,8 @@ async function main() {
         password: await hash('password123', 12),
         role: UserRole.BRANCH_MANAGER,
         status: UserStatus.ACTIVE,
-        branchId: branchId,
-        managedBranchId: branchId,
+        branchId: branchData.id,
+        managedBranchId: branchData.id,
       },
     });
 
@@ -60,7 +84,7 @@ async function main() {
           password: await hash('password123', 12),
           role: UserRole.EMPLOYEE,
           status: UserStatus.ACTIVE,
-          branchId: branchId,
+          branchId: branchData.id,
         },
       });
     }

@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/select";
 
 const STATUS_OPTIONS = [
-  { value: "PENDING", label: "Pending Approval" },
+  { value: "PENDING_VERIFICATION", label: "Pending Approval" },
   { value: "APPROVED", label: "Approved" },
   { value: "REJECTED", label: "Rejected" },
   { value: "ALL", label: "All Records" },

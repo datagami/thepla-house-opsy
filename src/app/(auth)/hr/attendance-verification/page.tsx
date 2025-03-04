@@ -47,7 +47,7 @@ export default async function AttendanceVerificationPage({
   // Default to PENDING if no status is specified
 
   // Get selected date or default to today
-  const selectedStatus = status || "PENDING";
+  const selectedStatus = status || "PENDING_VERIFICATION";
   const selectedDate = date ? 
     new Date(date) : 
     new Date();
@@ -113,7 +113,7 @@ export default async function AttendanceVerificationPage({
   // Calculate statistics
   const stats = {
     total: attendanceRecords.length,
-    pending: allAttendance.find(a => a.status === "PENDING")?._count.status || 0,
+    pending: allAttendance.find(a => a.status === "PENDING_VERIFICATION")?._count.status || 0,
     approved: allAttendance.find(a => a.status === "APPROVED")?._count.status || 0,
     rejected: allAttendance.find(a => a.status === "REJECTED")?._count.status || 0,
     present: attendanceRecords.filter(r => r.isPresent).length,

@@ -74,7 +74,7 @@ export default async function DashboardPage() {
     // Get pending leave requests
     const pendingLeaveRequests = await prisma.leaveRequest.count({
       where: {
-        status: "PENDING",
+        status: "PENDING_VERIFICATION",
         user: {
           // @ts-expect-error - branchId is not in the User type
           branchId: session.user.branchId,
@@ -141,7 +141,7 @@ export default async function DashboardPage() {
     const pendingVerifications = await prisma.attendance.count({
       where: {
         AND: [
-          { status: "PENDING" },
+          { status: "PENDING_VERIFICATION" },
           {
             user: {
               NOT: {

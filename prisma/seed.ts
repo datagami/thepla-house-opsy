@@ -28,10 +28,40 @@ async function main() {
     });
     
     console.log('Admin user created successfully');
+
+    console.log('HR user created successfully');
   } else {
     console.log('Admin user already exists');
   }
+
+  const existingHr = await prisma.user.findUnique({
+    where: {
+      email: 'hr@example.com',
+    },
+  });
+
+  if (!existingHr) {
+    // create Hr user
+    const hashedPassword = await hash('hr123', 12);
+  const hrData: Prisma.UserCreateInput = {
+    email: 'hr@example.com',
+    name: 'HR User',
+    password: hashedPassword,
+    role: 'HR',
+    status: 'ACTIVE',
+  };
+
+    await prisma.user.create({
+      data: hrData,
+    });
+
+    console.log('HR user created successfully');
+  } else {
+    console.log('HR user already exists');
+  }
 }
+
+
 
 main()
   .catch((e) => {

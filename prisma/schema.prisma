@@ -28,6 +28,12 @@ enum LeaveType {
   OTHER
 }
 
+enum AttendanceStatus {
+  PENDING_VERIFICATION
+  APPROVED
+  REJECTED
+}
+
 model Account {
   id                 String  @id @default(cuid())
   numId              Int     @default(autoincrement()) @map("num_id")
@@ -137,7 +143,7 @@ model Attendance {
   shift1      Boolean  @default(false) @map("shift_1")
   shift2      Boolean  @default(false) @map("shift_2")
   shift3      Boolean  @default(false) @map("shift_3")
-  status      String   @default("PENDING_VERIFICATION") @map("status") // PENDING, APPROVED, REJECTED
+  status      AttendanceStatus   @default(PENDING_VERIFICATION) @map("status") // PENDING_VERIFICATION, APPROVED, REJECTED
   verifiedById String? @map("verified_by_id")
   verifiedAt  DateTime? @map("verified_at")
   verificationNote String? @map("verification_note")
