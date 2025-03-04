@@ -1,11 +1,10 @@
 import { Metadata } from "next";
 import { auth } from "@/auth";
-import { redirect } from "next/navigation";
+import {redirect} from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { AttendanceTable } from "@/components/attendance/attendance-table";
 import { DailyAttendanceView } from "@/components/attendance/daily-attendance-view";
 import { User } from "@/models/models";
-import { format, startOfDay } from "date-fns";
 import { DateSwitcher } from "@/components/attendance/date-switcher";
 
 export const metadata: Metadata = {
@@ -14,9 +13,9 @@ export const metadata: Metadata = {
 };
 
 interface Props {
-  searchParams: {
+  searchParams: Promise<{
     date?: string;
-  };
+  }>;
 }
 
 export default async function AttendancePage({ searchParams }: Props) {
@@ -27,8 +26,9 @@ export default async function AttendancePage({ searchParams }: Props) {
     redirect("/dashboard");
   }
 
+  const searchParamDate = (await searchParams).date;
   // Parse the date from searchParams or use today
-  const selectedDate = searchParams.date ? new Date(searchParams.date) : new Date();
+  const selectedDate = searchParamDate ? new Date(searchParamDate) : new Date();
   selectedDate.setHours(0, 0, 0, 0);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
