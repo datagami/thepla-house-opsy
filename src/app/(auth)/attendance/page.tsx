@@ -30,12 +30,9 @@ export default async function AttendancePage({ searchParams }: Props) {
   // Parse the date from searchParams or use today
   const selectedDate = searchParams.date ? new Date(searchParams.date) : new Date();
   selectedDate.setHours(0, 0, 0, 0);
-  console.log("selectedDate", selectedDate);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const isToday = selectedDate.toISOString() === today.toISOString();
-  console.log("today", today);
-  console.log("isToday", isToday);
 
   const users = await prisma.user.findMany({
     where: {

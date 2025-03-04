@@ -20,34 +20,25 @@ export function DateSwitcher({ currentDate }: DateSwitcherProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  console.log(currentDate);
-
   const handleDateChange = (date: Date | undefined) => {
-    console.log("handleDateChange", date);
     if (!date) return;
 
     const params = new URLSearchParams(searchParams);
-    console.log(params);
     if (isToday(date)) {
       params.delete('date');
     } else {
-      console.log("setting date", `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`);
       params.set('date', `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`);
     }
     router.push(`/attendance?${params.toString()}`);
   };
 
   const handlePrevDay = () => {
-    console.log("prev day");
-    console.log(currentDate);
     const prevDay = new Date(currentDate);
     prevDay.setDate(currentDate.getDate() - 1);
     handleDateChange(prevDay);
   };
 
   const handleNextDay = () => {
-    console.log("next day");
-    console.log(currentDate);
     const nextDay = new Date(currentDate);
     nextDay.setDate(nextDay.getDate() + 1);
     handleDateChange(nextDay);

@@ -103,7 +103,6 @@ export default async function DashboardPage() {
         date: "desc",
       },
     }) as Attendance[];
-    console.log("rejectedAttendance", rejectedAttendance);
 
     stats = {
       totalEmployees,
@@ -178,8 +177,6 @@ export default async function DashboardPage() {
       rejectedAttendanceCount,
     };
   }
-
-  console.log("stats", stats);
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
