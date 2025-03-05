@@ -3,63 +3,57 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { UserTable } from "@/components/users/user-table";
-import {Branch, User} from "@/models/models";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import Link from "next/link";
+import { hasAccess } from "@/lib/access-control";
 
 export const metadata: Metadata = {
-  title: "User Management - HRMS",
-  description: "Manage users1 in the HRMS system",
+  title: "Users - HRMS",
+  description: "Manage users in the system",
 };
 
 export default async function UsersPage() {
   const session = await auth();
+  
+  if (!session?.user) {
+    redirect("/login");
+  }
 
-  //@ts-expect-error - We check for HR and MANAGEMENT roles
-  const role = session.user.role;
-  if (!session || !["HR", "MANAGEMENT"].includes(role)) {
+  // @ts-expect-error - role is not defined in the session type
+  const canManageUsers = hasAccess(session.user.role, "users.manage");
+
+  if (!canManageUsers) {
     redirect("/dashboard");
   }
 
   const users = await prisma.user.findMany({
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      status: true,
+    include: {
       branch: {
         select: {
+          id: true,
           name: true,
-          id: true
         },
       },
     },
     orderBy: {
-      createdAt: "desc",
+      createdAt: 'desc',
     },
-  }) as User[];
-
-  const branches = await prisma.branch.findMany({
-    select: {
-      id: true,
-      name: true,
-    },
-    orderBy: {
-      name: "asc",
-    },
-  }) as Branch[];
+  });
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
+      <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Users</h2>
+        <Link href="/users/new">
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Add User
+          </Button>
+        </Link>
       </div>
-      <div className="space-y-4">
-        <UserTable 
-          users={users}
-          branches={branches}
-          currentUserRole={role}
-        />
-      </div>
+
+      <UserTable users={users} canEdit={canManageUsers} />
     </div>
   );
 } 

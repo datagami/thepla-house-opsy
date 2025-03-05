@@ -1,28 +1,40 @@
 import {NextResponse} from 'next/server';
 import {hash} from 'bcrypt';
 import {prisma} from '@/lib/prisma';
-import {UserRole, UserStatus} from '@prisma/client';
 import {auth} from "@/auth";
+import { hasAccess } from "@/lib/access-control";
 
 export async function POST(request: Request) {
   try {
-    // Check if user is authenticated and has permission
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({error: 'Unauthorized'}, {status: 401});
     }
 
-    // Get the current user's role
-    const currentUser = await prisma.user.findUnique({
-      where: {email: session.user.email!}
-    });
-
-    if (!currentUser || (currentUser.role !== 'MANAGEMENT' && currentUser.role !== 'HR')) {
+    // @ts-expect-error - role is not defined in the session type
+    const canManageUsers = hasAccess(session.user.role, "users.manage");
+    if (!canManageUsers) {
       return NextResponse.json({error: 'Forbidden'}, {status: 403});
     }
 
     const body = await request.json();
-    const {email, name, password, role, branchId, status = 'ACTIVE'} = body;
+    const { 
+      name, 
+      email, 
+      password, 
+      role, 
+      branchId,
+      title,
+      department,
+      mobileNo,
+      doj,
+      dob,
+      gender,
+      panNo,
+      aadharNo,
+      salary,
+      references 
+    } = body;
 
     if (!email || !name || !password) {
       return NextResponse.json(
@@ -44,9 +56,10 @@ export async function POST(request: Request) {
     }
 
     // Validate role assignment permissions
-    if (currentUser.role === 'HR' && role === 'MANAGEMENT') {
+    // @ts-expect-error - role is not defined in the session type
+    if (role === 'MANAGEMENT' && session.user.role !== 'MANAGEMENT') {
       return NextResponse.json(
-        {error: 'HR cannot create MANAGEMENT users1'},
+        {error: 'MANAGEMENT users can only be created by MANAGEMENT users'},
         {status: 403}
       );
     }
@@ -57,22 +70,39 @@ export async function POST(request: Request) {
     // Create new user
     const user = await prisma.user.create({
       data: {
-        email,
         name,
+        email,
         password: hashedPassword,
-        role: role as UserRole,
-        status: status as UserStatus,
+        role,
         branchId,
-        approvedById: currentUser.id,
-      }
+        title,
+        department,
+        mobileNo,
+        doj: doj ? new Date(doj) : undefined,
+        dob: dob ? new Date(dob) : undefined,
+        gender,
+        panNo,
+        aadharNo,
+        salary: parseFloat(salary),
+        references: {
+          create: references.map((ref: { name: string; contactNo: string }) => ({
+            name: ref.name,
+            contactNo: ref.contactNo,
+          })),
+        },
+      },
+      include: {
+        branch: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        references: true,
+      },
     });
 
-    // Remove password from response
-    const userWithoutPassword = {...user};
-    userWithoutPassword.password = 'abc';
-
-
-    return NextResponse.json(userWithoutPassword);
+    return NextResponse.json(user);
   } catch (error) {
     console.error('Error creating user:', error);
     return NextResponse.json(

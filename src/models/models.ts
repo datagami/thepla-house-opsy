@@ -4,6 +4,8 @@ type UserStatus = "PENDING" | "ACTIVE" | "INACTIVE";
 
 type LeaveType = "CASUAL" | "SICK" | "ANNUAL" | "UNPAID" | "OTHER";
 
+type AttendanceStatus = "PENDING_VERIFICATION" | "APPROVED" | "REJECTED";
+
 export interface Account {
   id: string;
   numId: number;
@@ -46,6 +48,16 @@ export interface User {
   approvedById?: string | null;
   createdAt: Date;
   updatedAt: Date;
+  title?: string | null;
+  doj?: Date | null;
+  department?: string | null;
+  mobileNo?: string | null;
+  dob?: Date | null;
+  gender?: string | null;
+  panNo?: string | null;
+  aadharNo?: string | null;
+  salary?: number | null;
+  references: Reference[];
   accounts: Account[];
   sessions: Session[];
   branch?: Branch | null;
@@ -92,7 +104,7 @@ export interface Attendance {
   shift1: boolean;
   shift2: boolean;
   shift3: boolean;
-  status: 'PRESENT' | 'ABSENT' | 'PENDING_VERIFICATION' | 'APPROVED' | 'REJECTED';
+  status: AttendanceStatus;
   verifiedById?: string | null;
   verifiedAt?: Date | null;
   verificationNote?: string | null;
@@ -114,5 +126,15 @@ export interface LeaveRequest {
   createdAt: Date;
   updatedAt: Date;
   user: User;
+}
+
+export interface Reference {
+  id: string;
+  name: string;
+  contactNo: string;
+  userId: string;
+  user: User;
+  createdAt: Date;
+  updatedAt: Date;
 }
 

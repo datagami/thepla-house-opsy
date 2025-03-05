@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { hash } from "bcrypt";
 import { hasAccess } from "@/lib/access-control";
-import {User} from "@prisma/client";
+import { User } from "@prisma/client";
 
 export async function PUT(
   request: Request,
@@ -12,6 +12,7 @@ export async function PUT(
   try {
     const session = await auth();
     const { id } = await params;
+    
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -25,41 +26,87 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, email, role, branchId, password } = body;
+    const { 
+      name, 
+      email, 
+      role, 
+      branchId, 
+      password,
+      title,
+      department,
+      mobileNo,
+      doj,
+      dob,
+      gender,
+      panNo,
+      aadharNo,
+      salary,
+      references 
+    } = body;
 
-    // Only allow role and branch changes if user has management permissions
-
-    const updateData: User = {
+    // Base update data that any user can modify
+    const updateData: Partial<User> = {
       name,
       email,
+      title,
+      mobileNo,
+      dob: dob ? new Date(dob) : undefined,
+      gender,
+      panNo,
+      aadharNo,
       updatedAt: new Date(),
-    } as User;
+    };
 
+    // Additional fields that only managers can modify
     if (canManageUsers) {
-      updateData.role = role;
-      updateData.branchId = branchId;
+      Object.assign(updateData, {
+        role,
+        branchId,
+        department,
+        doj: doj ? new Date(doj) : undefined,
+        salary: parseFloat(salary),
+      });
     }
 
     if (password) {
       updateData.password = await hash(password, 10);
     }
 
-    const user = await prisma.user.update({
-      where: { id: id },
-      data: updateData as User,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        status: true,
-        branch: {
-          select: {
-            id: true,
-            name: true,
+    // Update user and references in a transaction
+    const user = await prisma.$transaction(async (tx) => {
+      // Update user
+      const updatedUser = await tx.user.update({
+        where: { id },
+        data: updateData,
+        include: {
+          branch: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
+          references: true,
         },
-      },
+      });
+
+      // Update references if provided and user has permission
+      if (references && (canManageUsers || isOwnProfile)) {
+        // Delete existing references
+        await tx.reference.deleteMany({
+          where: { userId: id },
+        });
+
+        // Create new references
+        await tx.reference.createMany({
+          data: references.map((ref: { name: string; contactNo: string }) => ({
+            name: ref.name,
+            contactNo: ref.contactNo,
+            userId: id,
+          })),
+        });
+      }
+
+      return updatedUser;
     });
 
     return NextResponse.json(user);

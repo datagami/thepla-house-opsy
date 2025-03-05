@@ -82,6 +82,17 @@ model User {
   approvedById    String?     @map("approved_by_id")
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
+  title           String?
+  doj             DateTime?
+  department      String?
+  mobileNo        String?
+  dob             DateTime?
+  gender          String?
+  panNo           String?
+  aadharNo        String?
+  salary          Float?
+
+  references      Reference[]
 
   // Relations
   accounts      Account[]
@@ -175,4 +186,16 @@ model LeaveRequest {
   user        User         @relation(fields: [userId], references: [id])
 
   @@map("leave_requests")
+}
+
+model Reference {
+  id        String   @id @default(cuid())
+  name      String
+  contactNo String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
