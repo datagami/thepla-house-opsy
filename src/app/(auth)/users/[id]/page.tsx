@@ -12,28 +12,30 @@ export const metadata: Metadata = {
 };
 
 interface Props {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function UserProfilePage({ params }: Props) {
   const session = await auth();
+  const {id} = await params;
   
   if (!session?.user) {
     redirect("/login");
   }
 
   // Check if user has permission to view/edit other users
+  // @ts-expect-error - role is not defined in the session type
   const canManageUsers = hasAccess(session.user.role, "users.manage");
-  const isOwnProfile = session.user.id === params.id;
+  const isOwnProfile = session.user.id === id;
 
   if (!canManageUsers && !isOwnProfile) {
     redirect("/dashboard");
   }
 
   const user = await prisma.user.findUnique({
-    where: { id: params.id },
+    where: { id: id },
     include: {
       branch: {
         select: {

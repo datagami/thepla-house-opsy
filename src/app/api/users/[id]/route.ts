@@ -7,17 +7,18 @@ import {User} from "@prisma/client";
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
+    const { id } = await params;
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // @ts-expect-error - role is not defined in the session type
     const canManageUsers = hasAccess(session.user.role, "users.manage");
-    const isOwnProfile = session.user.id === params.id;
+    const isOwnProfile = session.user.id === id;
 
     if (!canManageUsers && !isOwnProfile) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -44,7 +45,7 @@ export async function PUT(
     }
 
     const user = await prisma.user.update({
-      where: { id: params.id },
+      where: { id: id },
       data: updateData as User,
       select: {
         id: true,
