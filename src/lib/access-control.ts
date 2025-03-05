@@ -5,6 +5,7 @@ export type Feature =
   | "users.delete"
   | "users.approve"
   | "users.assign_branch"
+  | "users.manage"
   | "users.change_role"
   | "attendance.view"
   | "attendance.mark"
@@ -36,6 +37,7 @@ const permissions: RolePermissions = {
   "users.approve": ["HR", "MANAGEMENT"],
   "users.assign_branch": ["HR", "MANAGEMENT"],
   "users.change_role": ["HR", "MANAGEMENT"],
+  "users.manage": ["HR", "MANAGEMENT"],
 
   // Attendance Management
   "attendance.view": ["HR", "MANAGEMENT", "BRANCH_MANAGER", "EMPLOYEE"],
