@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { hasAccess } from "@/lib/access-control";
-
+import {Branch, User} from "@/models/models";
 export const metadata: Metadata = {
   title: "Users - HRMS",
   description: "Manage users in the system",
@@ -21,7 +21,8 @@ export default async function UsersPage() {
   }
 
   // @ts-expect-error - role is not defined in the session type
-  const canManageUsers = hasAccess(session.user.role, "users.manage");
+  const role = session.user.role
+  const canManageUsers = hasAccess(role, "users.manage");
 
   if (!canManageUsers) {
     redirect("/dashboard");
@@ -39,7 +40,14 @@ export default async function UsersPage() {
     orderBy: {
       createdAt: 'desc',
     },
-  });
+  }) as User[];
+
+  const branches = await prisma.branch.findMany({
+    select: {
+      id: true,
+      name: true,
+    },
+  }) as Branch[];
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
@@ -53,7 +61,7 @@ export default async function UsersPage() {
         </Link>
       </div>
 
-      <UserTable users={users} canEdit={canManageUsers} />
+      <UserTable users={users} branches={branches} currentUserRole={role} canEdit={canManageUsers} />
     </div>
   );
 } 

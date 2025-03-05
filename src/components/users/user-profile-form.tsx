@@ -50,7 +50,7 @@ const userFormSchema = z.object({
       contactNo: z.string().min(10, "Contact number must be at least 10 digits"),
     })
   ).min(1, "At least one reference is required"),
-  password: z.string().min(6, "Password must be at least 6 characters").optional(),
+  password: z.string().min(6, "Password must be at least 6 characters").optional().or(z.literal('')),
 });
 
 interface UserProfileFormProps {
@@ -63,6 +63,8 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
+  console.log(user);
+
   const form = useForm<z.infer<typeof userFormSchema>>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
@@ -70,16 +72,21 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
       name: user?.name || "",
       email: user?.email || "",
       role: user?.role || "EMPLOYEE",
-      branch: user?.branch?.id,
+      branch: user?.branch?.id || "",
       department: user?.department || "",
       mobileNo: user?.mobileNo || "",
       doj: user?.doj ? new Date(user.doj) : undefined,
       dob: user?.dob ? new Date(user.dob) : undefined,
-      gender: (user?.gender as 'MALE' | 'FEMALE' | 'OTHER' | undefined)  || "MALE",
+      gender: (user?.gender as 'MALE' | 'FEMALE' | 'OTHER' | undefined) || "MALE",
       panNo: user?.panNo || "",
       aadharNo: user?.aadharNo || "",
       salary: user?.salary || 0,
-      references: user?.references || [{ name: "", contactNo: "" }],
+      references: user?.references?.length 
+        ? user.references.map(ref => ({ 
+            name: ref.name, 
+            contactNo: ref.contactNo 
+          }))
+        : [{ name: "", contactNo: "" }],
       password: "",
     },
   });
@@ -90,12 +97,19 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
       const endpoint = user ? `/api/users/${user.id}` : "/api/users";
       const method = user ? "PUT" : "POST";
 
+      const submitData = {
+        ...values,
+        ...(values.password ? { password: values.password } : {}),
+        branchId: values.branch,
+      };
+      delete submitData.branch;
+
       const response = await fetch(endpoint, {
         method,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify(submitData),
       });
 
       if (!response.ok) {
@@ -108,8 +122,8 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
         router.push("/users");
       }
     } catch (error) {
-      toast.error("Failed to save user");
-      console.error(error);
+      console.error("Error saving user:", error);
+      toast.error("Error saving user");
     } finally {
       setIsLoading(false);
     }

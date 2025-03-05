@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { hash } from "bcrypt";
 import { hasAccess } from "@/lib/access-control";
-import { User } from "@prisma/client";
+import {Prisma} from "@prisma/client";
+import UserUpdateInput = Prisma.UserUpdateInput;
 
 export async function PUT(
   request: Request,
@@ -44,30 +45,29 @@ export async function PUT(
       references 
     } = body;
 
-    // Base update data that any user can modify
-    const updateData: Partial<User> = {
+    // Base update data
+    const updateData: UserUpdateInput = {
       name,
       email,
       title,
+      department,
       mobileNo,
-      dob: dob ? new Date(dob) : undefined,
+      doj: doj ? new Date(doj) : null,
+      dob: dob ? new Date(dob) : null,
       gender,
       panNo,
       aadharNo,
-      updatedAt: new Date(),
+      salary: salary ? parseFloat(salary) : null,
+      // Handle branchId - set to null if empty or undefined
+      branch: branchId || null,
     };
 
-    // Additional fields that only managers can modify
+    // Only update role if user has permission
     if (canManageUsers) {
-      Object.assign(updateData, {
-        role,
-        branchId,
-        department,
-        doj: doj ? new Date(doj) : undefined,
-        salary: parseFloat(salary),
-      });
+      updateData.role = role;
     }
 
+    // Only update password if provided
     if (password) {
       updateData.password = await hash(password, 10);
     }
@@ -89,21 +89,23 @@ export async function PUT(
         },
       });
 
-      // Update references if provided and user has permission
-      if (references && (canManageUsers || isOwnProfile)) {
+      // Update references if provided
+      if (references) {
         // Delete existing references
         await tx.reference.deleteMany({
           where: { userId: id },
         });
 
         // Create new references
-        await tx.reference.createMany({
-          data: references.map((ref: { name: string; contactNo: string }) => ({
-            name: ref.name,
-            contactNo: ref.contactNo,
-            userId: id,
-          })),
-        });
+        if (references.length > 0) {
+          await tx.reference.createMany({
+            data: references.map((ref: { name: string; contactNo: string }) => ({
+              name: ref.name,
+              contactNo: ref.contactNo,
+              userId: id,
+            })),
+          });
+        }
       }
 
       return updatedUser;

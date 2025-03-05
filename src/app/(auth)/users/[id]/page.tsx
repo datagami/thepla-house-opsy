@@ -43,9 +43,18 @@ export default async function UserProfilePage({ params }: Props) {
           name: true,
         },
       },
+      references: {
+        select: {
+          id: true,
+          name: true,
+          contactNo: true
+        },
+      }
     },
   }) as User;
 
+  console.log("user", user);
+  
   if (!user) {
     redirect("/404");
   }
