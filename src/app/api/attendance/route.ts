@@ -38,10 +38,12 @@ export async function POST(req: Request) {
         isHalfDay: data.isHalfDay,
         overtime: data.overtime,
         userId: data.userId,
+        // @ts-expect-error - branchId is not in the User
         branchId: user.branchId,
         status,
         // If HR or Branch Manager is creating, set verification details
         ...(status === "APPROVED" && {
+          // @ts-expect-error - id is not in the session type
           verifiedById: session.user.id,
           verifiedAt: new Date()
         })

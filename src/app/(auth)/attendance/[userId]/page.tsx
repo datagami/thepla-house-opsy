@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { startOfMonth, endOfMonth, format, addMonths, subMonths } from "date-fns";
 import { AttendanceStats } from "@/components/attendance/attendance-stats";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {Attendance} from "@/models/models";
+import {Attendance, User} from "@/models/models";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -46,13 +46,14 @@ export default async function EmployeeAttendancePage({
       id: true,
       name: true,
       email: true,
+      salary: true,
       branch: {
         select: {
           name: true,
         },
       },
     },
-  });
+  }) as User;
 
   if (!employee) {
     redirect("/dashboard");
@@ -194,7 +195,8 @@ export default async function EmployeeAttendancePage({
         <div className="rounded-md border bg-card">
           <div className="p-6">
             <h3 className="text-lg font-medium">Monthly Statistics</h3>
-            <AttendanceStats 
+            <AttendanceStats
+              user={employee}
               attendance={attendance as Attendance[]}
               month={startDate}
             />
