@@ -23,10 +23,23 @@ interface WeeklyStats {
   overtime: number;
 }
 
-export function AttendanceStats({ attendance }: AttendanceStatsProps) {
+export function AttendanceStats({ attendance, month }: AttendanceStatsProps) {
   // Calculate weekly stats
   const weeklyStats = attendance.reduce((acc, curr) => {
-    const week = Math.floor(new Date(curr.date).getDate() / 7);
+    const date = new Date(curr.date);
+    
+    // Get the first day of the month
+    const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+    
+    // Calculate week number (0-based)
+    // Adding the day of week of the first day to get complete weeks
+    const firstDayOffset = firstDay.getDay();
+    const dayOfMonth = date.getDate() - 1; // 0-based day of month
+    
+    // Calculate which week the date belongs to (Saturday is end of week)
+    // We add firstDayOffset to account for partial first week
+    const week = Math.floor((dayOfMonth + firstDayOffset) / 7);
+    
     if (!acc[week]) {
       acc[week] = {
         week: `Week ${week + 1}`,
@@ -45,7 +58,10 @@ export function AttendanceStats({ attendance }: AttendanceStatsProps) {
     return acc;
   }, {} as Record<number, WeeklyStats>);
 
-  const data = Object.values(weeklyStats);
+  // Convert to array and sort by week number
+  const data = Object.values(weeklyStats).sort((a, b) => 
+    parseInt(a.week.split(' ')[1]) - parseInt(b.week.split(' ')[1])
+  );
 
   return (
     <div className="h-[300px] w-full mt-6">

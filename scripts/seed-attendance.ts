@@ -181,6 +181,3 @@ main()
     console.error(error);
     process.exit(1);
   });
-
-
-SHOP NO 3/4, GARIB NAWAZ MANJIL, NEHRU ROAD, NEXT TO VAKOLA MASJID, OPP. POST AND TELEGRAM COLONY, VAKOLA, MUMBAI 400055
