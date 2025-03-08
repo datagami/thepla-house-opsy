@@ -63,8 +63,6 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  console.log(user);
-
   const form = useForm<z.infer<typeof userFormSchema>>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
@@ -97,10 +95,12 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
       const endpoint = user ? `/api/users/${user.id}` : "/api/users";
       const method = user ? "PUT" : "POST";
 
+      console.log("values", values);
+      console.log("values.branch", values.branch);
       const submitData = {
         ...values,
         ...(values.password ? { password: values.password } : {}),
-        branchId: values.branch,
+        branchId: values.branch === "null" ? null : values.branch,
       };
       delete submitData.branch;
 
@@ -248,6 +248,8 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
+                      {/* unset the value if the branch is none */}
+                      <SelectItem key="none" value="null">None</SelectItem>
                       {branches.map((branch) => (
                         <SelectItem key={branch.id} value={branch.id}>
                           {branch.name}

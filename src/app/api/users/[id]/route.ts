@@ -3,8 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { hash } from "bcrypt";
 import { hasAccess } from "@/lib/access-control";
-import {Prisma} from "@prisma/client";
+import {Prisma, User} from "@prisma/client";
 import UserUpdateInput = Prisma.UserUpdateInput;
+import UserUpdateArgs = Prisma.UserUpdateArgs;
 
 export async function PUT(
   request: Request,
@@ -58,8 +59,8 @@ export async function PUT(
       panNo,
       aadharNo,
       salary: salary ? parseFloat(salary) : null,
-      // Handle branchId - set to null if empty or undefined
-      branch: branchId || null,
+      // @ts-expect-error - branchId can be null
+      branchId : branchId || null,
     };
 
     // Only update role if user has permission
@@ -72,8 +73,18 @@ export async function PUT(
       updateData.password = await hash(password, 10);
     }
 
+    // if branchId is null, remove the existing branch from database
+    
+
     // Update user and references in a transaction
     const user = await prisma.$transaction(async (tx) => {
+      // if (branchId === null) {
+      //   await prisma.user.update({
+      //     where: { id },
+      //     data: { branchId: null },
+      //   });
+      // }
+      
       // Update user
       const updatedUser = await tx.user.update({
         where: { id },
