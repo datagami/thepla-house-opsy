@@ -44,6 +44,14 @@ const userFormSchema = z.object({
   panNo: z.string().min(10, "PAN number must be 10 characters"),
   aadharNo: z.string().min(12, "Aadhar number must be 12 digits"),
   salary: z.number().min(0, "Salary must be a positive number"),
+  bankAccountNo: z.string().min(9, "Account number must be at least 9 digits").optional(),
+  bankIfscCode: z
+    .string()
+    .regex(
+      /^[A-Z]{4}0[A-Z0-9]{6}$/,
+      "IFSC code must be valid (e.g., HDFC0123456)"
+    )
+    .optional(),
   references: z.array(
     z.object({
       name: z.string().min(2, "Reference name is required"),
@@ -79,6 +87,8 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
       panNo: user?.panNo || "",
       aadharNo: user?.aadharNo || "",
       salary: user?.salary || 0,
+      bankAccountNo: user?.bankAccountNo || "",
+      bankIfscCode: user?.bankIfscCode || "",
       references: user?.references?.length 
         ? user.references.map(ref => ({ 
             name: ref.name, 
@@ -420,6 +430,52 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
                       maxLength={12}
                       pattern="\d*"
                       inputMode="numeric"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Bank Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="bankAccountNo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Bank Account Number</FormLabel>
+                  <FormControl>
+                    <Input 
+                      {...field} 
+                      placeholder="Enter account number"
+                      disabled={!canEdit}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="\d*"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="bankIfscCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>IFSC Code</FormLabel>
+                  <FormControl>
+                    <Input 
+                      {...field} 
+                      placeholder="HDFC0123456"
+                      disabled={!canEdit}
+                      className="uppercase"
+                      maxLength={11}
                     />
                   </FormControl>
                   <FormMessage />

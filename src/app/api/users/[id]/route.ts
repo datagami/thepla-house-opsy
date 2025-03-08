@@ -43,7 +43,9 @@ export async function PUT(
       panNo,
       aadharNo,
       salary,
-      references 
+      references,
+      bankAccountNo,
+      bankIfscCode
     } = body;
 
     // Base update data
@@ -59,8 +61,9 @@ export async function PUT(
       panNo,
       aadharNo,
       salary: salary ? parseFloat(salary) : null,
-      // @ts-expect-error - branchId can be null
-      branchId : branchId || null,
+      bankAccountNo: bankAccountNo || null,
+      bankIfscCode: bankIfscCode || null,
+      branchId: branchId || null,
     };
 
     // Only update role if user has permission
