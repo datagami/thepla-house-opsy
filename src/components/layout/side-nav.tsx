@@ -3,15 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { 
-  LayoutDashboard, 
-  Users, 
-  Clock, 
+import {
+  LayoutDashboard,
+  Users,
+  Clock,
   ClipboardCheck,
   Building,
   FileText,
   CalendarCheck,
-  Plus
+  Plus, DollarSign
 } from "lucide-react";
 
 interface NavItem {
@@ -20,6 +20,8 @@ interface NavItem {
   icon: React.ReactNode;
   feature: string;
 }
+
+
 
 const roleNavItems: Record<string, NavItem[]> = {
   HR: [
@@ -53,6 +55,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       icon: <CalendarCheck className="h-5 w-5" />,
       feature: "leave.view" 
     },
+    {
+      title: "Salary",
+      href: "/salary",
+      icon: <DollarSign className="h-5 w-5" />,
+      feature: "salary.edit"
+    }
   ],
   BRANCH_MANAGER: [
     { 
@@ -111,6 +119,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       icon: <FileText className="h-5 w-5" />,
       feature: "attendance.report" 
     },
+    {
+      title: "Salary",
+      href: "/salary",
+      icon: <DollarSign className="h-5 w-5" />,
+      feature: "salary.edit"
+    }
   ],
   EMPLOYEE: [
     { 
