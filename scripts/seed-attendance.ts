@@ -1,5 +1,5 @@
-import { PrismaClient, UserRole, AttendanceStatus } from '@prisma/client';
-import { addDays, format, isWeekend, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import { PrismaClient, UserRole } from '@prisma/client';
+import { addDays, format, isWeekend } from 'date-fns';
 
 const prisma = new PrismaClient();
 
@@ -51,93 +51,7 @@ async function updateUserSalaries() {
   console.log('Successfully updated all user salaries');
 }
 
-// Helper function to generate random time between two hours
-function randomTime(startHour: number, endHour: number): string {
-  const hour = Math.floor(Math.random() * (endHour - startHour) + startHour);
-  const minute = Math.floor(Math.random() * 60);
-  return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-}
 
-// Helper function to generate random attendance data for a day
-function generateAttendanceForDay(
-  userId: string, 
-  date: Date, 
-  verifierIds: string[],
-  isWeekend: boolean
-) {
-  // 85% chance of being present on weekdays, 30% chance on weekends
-  const presenceProbability = isWeekend ? 0.3 : 0.85;
-  const isPresent = Math.random() < presenceProbability;
-  
-  // Random verifier from the branch managers/HR
-  const verifiedById = verifierIds[Math.floor(Math.random() * verifierIds.length)];
-
-  if (!isPresent) {
-    return {
-      userId,
-      date,
-      isPresent: false,
-      checkIn: null,
-      checkOut: null,
-      isHalfDay: false,
-      overtime: false,
-      shift1: false,
-      shift2: false,
-      shift3: false,
-      status: AttendanceStatus.APPROVED,
-      verifiedById,
-      verifiedAt: new Date(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-  }
-
-  // For present employees
-  // Weekend shifts have different timings
-  const isShift1 = isWeekend ? Math.random() < 0.4 : Math.random() < 0.6;
-  const isShift2 = isWeekend ? Math.random() < 0.4 : (Math.random() >= 0.6 && Math.random() < 0.9);
-  const isShift3 = isWeekend ? Math.random() < 0.2 : Math.random() >= 0.9;
-
-  // Adjust check-in and check-out times based on shifts
-  let checkIn, checkOut;
-  if (isShift1) {
-    checkIn = randomTime(8, 10);
-    checkOut = randomTime(17, 19);
-  } else if (isShift2) {
-    checkIn = randomTime(14, 15);
-    checkOut = randomTime(22, 23);
-  } else if (isShift3) {
-    checkIn = randomTime(22, 23);
-    checkOut = randomTime(6, 7); // Next day
-  } else {
-    checkIn = randomTime(9, 10);
-    checkOut = randomTime(17, 18);
-  }
-
-  // Higher chance of overtime on weekends
-  const overtime = isWeekend ? Math.random() < 0.4 : Math.random() < 0.2;
-
-  // Lower chance of half day on weekends
-  const isHalfDay = isWeekend ? Math.random() < 0.05 : Math.random() < 0.1;
-
-  return {
-    userId,
-    date,
-    isPresent: true,
-    checkIn,
-    checkOut,
-    isHalfDay,
-    overtime,
-    shift1: isShift1,
-    shift2: isShift2,
-    shift3: isShift3,
-    status: AttendanceStatus.APPROVED,
-    verifiedById,
-    verifiedAt: new Date(),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-}
 
 async function main() {
   try {
@@ -202,6 +116,24 @@ async function main() {
         // Create attendance for the entire period
         for (let date = startDate; date <= endDate; date = addDays(date, 1)) {
           const isWeekendDay = isWeekend(date);
+
+          const isPresent = Math.random() > (isWeekendDay ? 0.3 : 0.1);
+          let isHalfDay = Math.random() > (isWeekendDay ? 0.95 : 0.9);
+          let overtime = Math.random() > (isWeekendDay ? 0.6 : 0.8);
+
+          if (isPresent) {
+            if (overtime && isHalfDay) {
+              isHalfDay = false;
+            }
+          }
+
+          if (!isPresent) {
+            isHalfDay = false;
+            overtime = false
+          }
+          
+
+
           
           try {
             await prisma.attendance.create({
@@ -209,9 +141,9 @@ async function main() {
                 userId: employee.id,
                 date: date,
                 // Lower presence probability on weekends
-                isPresent: Math.random() > (isWeekendDay ? 0.7 : 0.1), // 30% presence on weekends, 90% on weekdays
-                isHalfDay: Math.random() > (isWeekendDay ? 0.95 : 0.9), // 5% half day on weekends, 10% on weekdays
-                overtime: Math.random() > (isWeekendDay ? 0.6 : 0.8), // 40% overtime on weekends, 20% on weekdays
+                isPresent: isPresent,
+                isHalfDay: isHalfDay,
+                overtime: overtime,
                 branchId: employee.branchId,
                 status: "APPROVED",
                 verifiedById: verifierIds[0],
@@ -248,4 +180,7 @@ main()
   .catch((error) => {
     console.error(error);
     process.exit(1);
-  }); 
+  });
+
+
+SHOP NO 3/4, GARIB NAWAZ MANJIL, NEHRU ROAD, NEXT TO VAKOLA MASJID, OPP. POST AND TELEGRAM COLONY, VAKOLA, MUMBAI 400055
