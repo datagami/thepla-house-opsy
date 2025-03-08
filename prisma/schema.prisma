@@ -34,6 +34,20 @@ enum AttendanceStatus {
   REJECTED
 }
 
+enum SalaryStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+}
+
+enum AdvanceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SETTLED
+}
+
 model Account {
   id                 String  @id @default(cuid())
   numId              Int     @default(autoincrement()) @map("num_id")
@@ -91,6 +105,8 @@ model User {
   panNo           String?
   aadharNo        String?
   salary          Float?
+  totalAdvanceBalance Float   @default(0) @map("total_advance_balance")
+  totalEmiDeduction  Float    @default(0) @map("total_emi_deduction")
   references      Reference[]
   bankAccountNo   String?
   bankIfscCode    String?
@@ -106,6 +122,11 @@ model User {
   approvedBy    User?       @relation("UserApproval", fields: [approvedById], references: [id], onDelete: SetNull)
   approvedUsers User[]      @relation("UserApproval")
   verifiedAttendance  Attendance[] @relation("AttendanceVerifications")
+
+  // New Salary Relations
+  salaries            Salary[]
+  advances            AdvancePayment[]          @relation("UserAdvances")
+  approvedAdvances    AdvancePayment[]          @relation("ApprovedAdvances")
 
   @@map("users1")
   @@index([branchId])
@@ -203,4 +224,72 @@ model Reference {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+model Salary {
+  id                String   @id @default(cuid())
+  numId             Int      @default(autoincrement()) @map("num_id")
+  userId            String   @map("user_id")
+  month             Int      
+  year              Int      
+  baseSalary        Float    @map("base_salary")
+  advanceDeduction  Float    @default(0) @map("advance_deduction")
+  bonuses           Float    @default(0)
+  deductions        Float    @default(0)
+  netSalary         Float    @map("net_salary")
+  status            SalaryStatus @default(PENDING)
+  paidAt            DateTime? @map("paid_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  installments      AdvancePaymentInstallment[]
+
+  @@unique([userId, month, year])
+  @@map("salaries")
+  @@index([userId])
+}
+
+model AdvancePayment {
+  id               String        @id @default(cuid())
+  numId            Int           @default(autoincrement()) @map("num_id")
+  userId           String        @map("user_id")
+  amount           Float         
+  emiAmount        Float         @map("emi_amount")
+  remainingAmount  Float         @map("remaining_amount")
+  reason           String?       
+  status           AdvanceStatus @default(PENDING)
+  isSettled        Boolean       @default(false) @map("is_settled")
+  approvedById     String?       @map("approved_by_id")
+  approvedAt       DateTime?     @map("approved_at")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  user             User          @relation("UserAdvances", fields: [userId], references: [id], onDelete: Cascade)
+  approvedBy       User?         @relation("ApprovedAdvances", fields: [approvedById], references: [id], onDelete: SetNull)
+  installments     AdvancePaymentInstallment[]
+
+  @@map("advance_payments")
+  @@index([userId])
+  @@index([approvedById])
+}
+
+model AdvancePaymentInstallment {
+  id               String   @id @default(cuid())
+  numId            Int      @default(autoincrement()) @map("num_id")
+  advanceId        String   @map("advance_id")
+  salaryId         String?  @map("salary_id")
+  userId           String   @map("user_id")
+  amountPaid       Float    @map("amount_paid")
+  paidAt           DateTime @default(now()) @map("paid_at")
+
+  // Relations
+  advance          AdvancePayment @relation(fields: [advanceId], references: [id], onDelete: Cascade)
+  salary           Salary?        @relation(fields: [salaryId], references: [id], onDelete: SetNull)
+
+  @@map("advance_payment_installments")
+  @@index([advanceId])
+  @@index([salaryId])
 }
