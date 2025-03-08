@@ -2,11 +2,14 @@ import { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { startOfMonth, endOfMonth, format } from "date-fns";
+import { startOfMonth, endOfMonth, format, addMonths, subMonths } from "date-fns";
 import { AttendanceCalendar } from "@/components/attendance/attendance-calendar";
 import { AttendanceStats } from "@/components/attendance/attendance-stats";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {Attendance} from "@/models/models";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Employee Attendance - HRMS",
@@ -15,15 +18,25 @@ export const metadata: Metadata = {
 
 export default async function EmployeeAttendancePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ userId: string }>;
+  searchParams: { month?: string };
 }) {
   const session = await auth();
-  const {userId} = await params;
+  const { userId } = await params;
 
   if (!session) {
     redirect("/login");
   }
+
+  // Get the month from query params or use current month
+  const selectedMonth = searchParams.month 
+    ? new Date(searchParams.month) 
+    : new Date();
+
+  const startDate = startOfMonth(selectedMonth);
+  const endDate = endOfMonth(selectedMonth);
 
   // Get employee details
   const employee = await prisma.user.findUnique({
@@ -44,12 +57,7 @@ export default async function EmployeeAttendancePage({
     redirect("/dashboard");
   }
 
-  // Get current month's date range
-  const today = new Date();
-  const startDate = startOfMonth(today);
-  const endDate = endOfMonth(today);
-
-  // Get attendance for the month
+  // Get attendance for the selected month
   const attendance = await prisma.attendance.findMany({
     where: {
       userId: userId,
@@ -72,12 +80,49 @@ export default async function EmployeeAttendancePage({
     overtimeDays: attendance.filter(a => a.overtime).length,
   };
 
+  const prevMonth = format(subMonths(startDate, 1), "yyyy-MM");
+  const nextMonth = format(addMonths(startDate, 1), "yyyy-MM");
+  const isCurrentMonth = format(new Date(), "yyyy-MM") === format(startDate, "yyyy-MM");
+
   return (
     <div className="flex-1 space-y-8 p-8 pt-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">{employee.name}</h2>
           <p className="text-muted-foreground">{employee.branch?.name}</p>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium">
+          Attendance Calendar
+        </h3>
+        <div className="flex items-center gap-4">
+          <Link href={`/attendance/${userId}?month=${prevMonth}`}>
+            <Button
+              variant="outline"
+              size="sm">
+              <ChevronLeft className="h-4 w-4" />
+              Previous Month
+            </Button>
+          </Link>
+
+          
+          <span className="font-medium">
+            {format(startDate, "MMMM yyyy")}
+          </span>
+
+          <Link href={`/attendance/${userId}?month=${nextMonth}`}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isCurrentMonth}
+            >
+              Next Month
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </Link>
+
         </div>
       </div>
 
@@ -131,9 +176,6 @@ export default async function EmployeeAttendancePage({
       <div className="space-y-4">
         <div className="rounded-md border bg-card">
           <div className="p-6">
-            <h3 className="text-lg font-medium">
-              Attendance Calendar - {format(startDate, "MMMM yyyy")}
-            </h3>
             <AttendanceCalendar 
               attendance={attendance}
               month={startDate}
