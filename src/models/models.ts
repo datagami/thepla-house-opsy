@@ -6,6 +6,10 @@ type LeaveType = "CASUAL" | "SICK" | "ANNUAL" | "UNPAID" | "OTHER";
 
 type AttendanceStatus = "PENDING_VERIFICATION" | "APPROVED" | "REJECTED";
 
+type SalaryStatus = "PENDING" | "PROCESSING" | "PAID" | "FAILED";
+
+type AdvanceStatus = "PENDING" | "APPROVED" | "REJECTED" | "SETTLED";
+
 export interface Account {
   id: string;
   numId: number;
@@ -57,6 +61,8 @@ export interface User {
   panNo?: string | null;
   aadharNo?: string | null;
   salary?: number | null;
+  totalAdvanceBalance: number;
+  totalEmiDeduction: number;
   references: Reference[];
   bankAccountNo?: string | null;
   bankIfscCode?: string | null;
@@ -70,6 +76,9 @@ export interface User {
   approvedBy?: User | null;
   approvedUsers: User[];
   verifiedAttendance: Attendance[];
+  salaries: Salary[];
+  advances: AdvancePayment[];
+  approvedAdvances: AdvancePayment[];
 }
 
 export interface VerificationToken {
@@ -141,5 +150,56 @@ export interface Reference {
   user: User;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface Salary {
+  id: string;
+  userId: string;
+  month: number;
+  year: number;
+  baseSalary: number;
+  deductions: number;
+  bonuses: number;
+  netSalary: number;
+  status: SalaryStatus;
+  attendanceDeduction?: number;
+  advanceDeduction?: number;
+  overtimeBonus?: number;
+  performanceBonus?: number;
+  user: {
+    name: string;
+    email: string;
+  };
+}
+
+export interface AdvancePayment {
+  id: string;
+  numId: number;
+  userId: string;
+  amount: number;
+  emiAmount: number;
+  remainingAmount: number;
+  reason?: string | null;
+  status: AdvanceStatus;
+  isSettled: boolean;
+  approvedById?: string | null;
+  approvedAt?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  user: User;
+  approvedBy?: User | null;
+  installments: AdvancePaymentInstallment[];
+}
+
+export interface AdvancePaymentInstallment {
+  id: string;
+  numId: number;
+  advanceId: string;
+  salaryId?: string | null;
+  userId: string;
+  amountPaid: number;
+  paidAt: Date;
+  advance: AdvancePayment;
+  salary?: Salary | null;
 }
 
