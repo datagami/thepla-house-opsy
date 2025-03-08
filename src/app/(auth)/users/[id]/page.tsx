@@ -53,8 +53,7 @@ export default async function UserProfilePage({ params }: Props) {
     },
   }) as User;
 
-  console.log("user", user);
-  
+
   if (!user) {
     redirect("/404");
   }

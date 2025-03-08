@@ -24,7 +24,6 @@ const AssignBranchModal = ({
   const [selectedBranchId, setSelectedBranchId] = useState(currentBranchId || '');
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
 
-  console.log(branches);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const hasChanges = selectedBranchId !== currentBranchId;

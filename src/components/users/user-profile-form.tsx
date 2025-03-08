@@ -105,8 +105,6 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
       const endpoint = user ? `/api/users/${user.id}` : "/api/users";
       const method = user ? "PUT" : "POST";
 
-      console.log("values", values);
-      console.log("values.branch", values.branch);
       const submitData = {
         ...values,
         ...(values.password ? { password: values.password } : {}),
