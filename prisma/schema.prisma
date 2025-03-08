@@ -138,6 +138,7 @@ model Branch {
   users          User[] @relation("BranchUsers")
   managers       User[] @relation("BranchManagers")
   selectedByUsers User[] @relation("SelectedBranch")
+  attendances    Attendance[]
 
   @@map("branches")
 }
@@ -165,10 +166,13 @@ model Attendance {
   // Relations
   user        User     @relation("UserAttendance", fields: [userId], references: [id])
   verifiedBy  User?    @relation("AttendanceVerifications", fields: [verifiedById], references: [id])
+  branchId    String
+  branch      Branch   @relation(fields: [branchId], references: [id])
 
   @@unique([id, date])
   @@map("attendance")
   @@index([verifiedById])
+  @@index([branchId])
 }
 
 model LeaveRequest {

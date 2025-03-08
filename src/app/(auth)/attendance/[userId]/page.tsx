@@ -3,13 +3,13 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { startOfMonth, endOfMonth, format, addMonths, subMonths } from "date-fns";
-import { AttendanceCalendar } from "@/components/attendance/attendance-calendar";
 import { AttendanceStats } from "@/components/attendance/attendance-stats";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {Attendance} from "@/models/models";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { DetailedAttendanceCalendar } from "@/components/attendance/detailed-attendance-calendar";
 
 export const metadata: Metadata = {
   title: "Employee Attendance - HRMS",
@@ -21,18 +21,19 @@ export default async function EmployeeAttendancePage({
   searchParams,
 }: {
   params: Promise<{ userId: string }>;
-  searchParams: { month?: string };
+  searchParams: Promise<{ month?: string }>;
 }) {
   const session = await auth();
   const { userId } = await params;
+  const { month } = await searchParams;
 
   if (!session) {
     redirect("/login");
   }
 
   // Get the month from query params or use current month
-  const selectedMonth = searchParams.month 
-    ? new Date(searchParams.month) 
+  const selectedMonth = month
+    ? new Date(month)
     : new Date();
 
   const startDate = startOfMonth(selectedMonth);
@@ -66,10 +67,17 @@ export default async function EmployeeAttendancePage({
         lte: endDate,
       },
     },
+    include: {
+      branch: {
+        select: {
+          name: true,
+        },
+      },
+    },
     orderBy: {
       date: "asc",
     },
-  });
+  }) as Attendance[];
 
   // Calculate statistics
   const stats = {
@@ -176,7 +184,7 @@ export default async function EmployeeAttendancePage({
       <div className="space-y-4">
         <div className="rounded-md border bg-card">
           <div className="p-6">
-            <AttendanceCalendar 
+            <DetailedAttendanceCalendar 
               attendance={attendance}
               month={startDate}
             />

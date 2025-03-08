@@ -91,6 +91,7 @@ export interface Branch {
   users: User[];
   managers: User[];
   selectedByUsers: User[];
+  attendances: Attendance[];
 }
 
 export interface Attendance {
@@ -114,6 +115,8 @@ export interface Attendance {
   updatedAt: Date;
   user: User;
   verifiedBy?: User | null;
+  branchId: string;
+  branch: Branch;
 }
 
 export interface LeaveRequest {

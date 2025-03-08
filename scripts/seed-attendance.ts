@@ -1,5 +1,5 @@
 import { PrismaClient, UserRole, AttendanceStatus } from '@prisma/client';
-import { addDays, format, isWeekend } from 'date-fns';
+import { addDays, format, isWeekend, subDays, startOfMonth, endOfMonth } from 'date-fns';
 
 const prisma = new PrismaClient();
 
@@ -161,6 +161,7 @@ async function main() {
         },
         select: {
           id: true,
+          branchId: true,
         },
       });
 
@@ -187,39 +188,52 @@ async function main() {
         continue;
       }
 
-      // Generate attendance for January and February 2025
+      // Set fixed date range for January and February 2025
       const startDate = new Date(2025, 0, 1); // January 1st, 2025
       const endDate = new Date(2025, 1, 28); // February 28th, 2025
-      
-      let currentDate = startDate;
-      const attendanceData = [];
 
-      while (currentDate <= endDate) {
-        const isWeekendDay = isWeekend(currentDate);
-        for (const employee of employees) {
-          const attendance = generateAttendanceForDay(
-            employee.id, 
-            new Date(currentDate), 
-            verifierIds,
-            isWeekendDay
-          );
-          if (attendance) {
-            attendanceData.push(attendance);
+      // Create attendance records for each user
+      for (const employee of employees) {
+        if (!employee.branchId) {
+          console.log(`Skipping user ${employee.id} - no branch assigned`);
+          continue;
+        }
+
+        // Create attendance for the entire period
+        for (let date = startDate; date <= endDate; date = addDays(date, 1)) {
+          const isWeekendDay = isWeekend(date);
+          
+          try {
+            await prisma.attendance.create({
+              data: {
+                userId: employee.id,
+                date: date,
+                // Lower presence probability on weekends
+                isPresent: Math.random() > (isWeekendDay ? 0.7 : 0.1), // 30% presence on weekends, 90% on weekdays
+                isHalfDay: Math.random() > (isWeekendDay ? 0.95 : 0.9), // 5% half day on weekends, 10% on weekdays
+                overtime: Math.random() > (isWeekendDay ? 0.6 : 0.8), // 40% overtime on weekends, 20% on weekdays
+                branchId: employee.branchId,
+                status: "APPROVED",
+                verifiedById: verifierIds[0],
+                verifiedAt: date,
+                // Different timings for weekends
+                checkIn: isWeekendDay ? "10:00" : "09:00",
+                checkOut: isWeekendDay ? "16:00" : "18:00",
+                // Different shift patterns for weekends
+                shift1: isWeekendDay ? Math.random() > 0.7 : Math.random() > 0.5, // 30% shift1 on weekends
+                shift2: isWeekendDay ? Math.random() > 0.8 : Math.random() > 0.8, // 20% shift2 on weekends
+                shift3: isWeekendDay ? Math.random() > 0.9 : Math.random() > 0.9, // 10% shift3 on both
+              },
+            });
+          } catch (error) {
+            console.error(`Error creating attendance for user ${employee.id} on ${format(date, 'yyyy-MM-dd')}:`, error);
           }
         }
-        currentDate = addDays(currentDate, 1);
+
+        console.log(`Completed attendance for employee ${employee.id}`);
       }
 
-      // Insert attendance data in batches of 100
-      const batchSize = 100;
-      for (let i = 0; i < attendanceData.length; i += batchSize) {
-        const batch = attendanceData.slice(i, i + batchSize);
-        await prisma.attendance.createMany({
-          data: batch,
-          skipDuplicates: true,
-        });
-        console.log(`Branch: Inserted batch ${i / batchSize + 1} of ${Math.ceil(attendanceData.length / batchSize)}`);
-      }
+      console.log(`Completed attendance for branch ${branch.id}`);
     }
 
     console.log('Successfully seeded attendance data for all branches');
