@@ -58,6 +58,8 @@ export interface User {
   aadharNo?: string | null;
   salary?: number | null;
   references: Reference[];
+  bankAccountNo?: string | null;
+  bankIfscCode?: string | null;
   accounts: Account[];
   sessions: Session[];
   branch?: Branch | null;

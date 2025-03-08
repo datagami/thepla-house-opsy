@@ -3,9 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { hash } from "bcrypt";
 import { hasAccess } from "@/lib/access-control";
-import {Prisma, User} from "@prisma/client";
+import {Prisma} from "@prisma/client";
 import UserUpdateInput = Prisma.UserUpdateInput;
-import UserUpdateArgs = Prisma.UserUpdateArgs;
 
 export async function PUT(
   request: Request,
@@ -63,6 +62,7 @@ export async function PUT(
       salary: salary ? parseFloat(salary) : null,
       bankAccountNo: bankAccountNo || null,
       bankIfscCode: bankIfscCode || null,
+      // @ts-expect-error - branchId can be null
       branchId: branchId || null,
     };
 
