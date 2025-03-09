@@ -9,13 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
 import {Branch, Salary} from "@/models/models"
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card"
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { PencilIcon, SearchIcon } from 'lucide-react'
@@ -56,6 +50,10 @@ export function SalaryList({ month, year }: SalaryListProps) {
   const [selectedRole, setSelectedRole] = useState<string | null>(null)
   const [branches, setBranches] = useState([])
   const [roles, setRoles] = useState([])
+  const [branchNames, setBranchNames] = useState<Record<string, string>>({});
+
+
+  console.log(salaries);
 
   useEffect(() => {
     if (month && year) {
@@ -86,6 +84,12 @@ export function SalaryList({ month, year }: SalaryListProps) {
       if (response.ok) {
         const data = await response.json()
         setBranches(data)
+        const branchNames = data.reduce((acc: Record<string, string>, branch: Branch) => {
+          acc[branch.id] = branch.name;
+          return acc;
+        }, {});
+        setBranchNames(branchNames);
+
       }
     } catch (error) {
       console.error('Error fetching branches:', error)
@@ -208,7 +212,7 @@ export function SalaryList({ month, year }: SalaryListProps) {
                 <TableCell>{salary.user.numId || 'N/A'}</TableCell>
                 <TableCell>{salary.user.name}</TableCell>
                 <TableCell>{salary.user.email}</TableCell>
-                <TableCell>{salary.user.branch?.name || 'N/A'}</TableCell>
+                <TableCell>{salary.user.branchId ? branchNames[salary.user.branchId] : 'N/A'}</TableCell>
                 <TableCell>{salary.user.role || 'N/A'}</TableCell>
                 <TableCell>{formatCurrency(salary.netSalary)}</TableCell>
                 <TableCell className="text-right">
