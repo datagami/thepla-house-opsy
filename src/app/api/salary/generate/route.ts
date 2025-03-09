@@ -23,7 +23,7 @@ export async function POST(req: Request) {
       where: {
         status: 'ACTIVE',
       },
-    })
+    });
 
     // Generate salaries for each employee
     const salaries = await Promise.all(

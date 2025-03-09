@@ -33,6 +33,21 @@ interface SalaryListProps {
   year: number
 }
 
+const getRowColorClass = (status: string) => {
+  switch (status) {
+    case 'PENDING':
+      return 'bg-yellow-50 hover:bg-yellow-100'
+    case 'PROCESSING':
+      return 'bg-blue-50 hover:bg-blue-100'
+    case 'PAID':
+      return 'bg-green-50 hover:bg-green-100'
+    case 'FAILED':
+      return 'bg-red-50 hover:bg-red-100'
+    default:
+      return ''
+  }
+}
+
 export function SalaryList({ month, year }: SalaryListProps) {
   const [salaries, setSalaries] = useState([])
   const [loading, setLoading] = useState(false)
@@ -180,78 +195,22 @@ export function SalaryList({ month, year }: SalaryListProps) {
               <TableHead>Email</TableHead>
               <TableHead>Branch</TableHead>
               <TableHead>Role</TableHead>
-              <TableHead>Base Salary</TableHead>
-              <TableHead className="text-right">Deductions</TableHead>
-              <TableHead className="text-right">Bonuses</TableHead>
               <TableHead>Net Salary</TableHead>
-              <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredSalaries.map((salary: Salary) => (
-              <TableRow key={salary.id}>
+              <TableRow 
+                key={salary.id}
+                className={getRowColorClass(salary.status)}
+              >
                 <TableCell>{salary.user.numId || 'N/A'}</TableCell>
                 <TableCell>{salary.user.name}</TableCell>
                 <TableCell>{salary.user.email}</TableCell>
                 <TableCell>{salary.user.branch?.name || 'N/A'}</TableCell>
                 <TableCell>{salary.user.role || 'N/A'}</TableCell>
-                <TableCell>{formatCurrency(salary.baseSalary)}</TableCell>
-                <TableCell className="text-right">
-                  <HoverCard>
-                    <HoverCardTrigger className="cursor-help">
-                      {formatCurrency(salary.deductions)}
-                    </HoverCardTrigger>
-                    <HoverCardContent className="w-80">
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-semibold">Deduction Details</h4>
-                        <div className="text-sm">
-                          <div className="flex justify-between">
-                            <span>Attendance Deductions:</span>
-                            <span>{formatCurrency(salary.attendanceDeduction || 0)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Advance/EMI:</span>
-                            <span>{formatCurrency(salary.advanceDeduction || 0)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </HoverCardContent>
-                  </HoverCard>
-                </TableCell>
-                <TableCell className="text-right">
-                  <HoverCard>
-                    <HoverCardTrigger className="cursor-help">
-                      {formatCurrency(salary.bonuses)}
-                    </HoverCardTrigger>
-                    <HoverCardContent className="w-80">
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-semibold">Bonus Details</h4>
-                        <div className="text-sm">
-                          <div className="flex justify-between">
-                            <span>Overtime Bonus:</span>
-                            <span>{formatCurrency(salary.overtimeBonus || 0)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Performance Bonus:</span>
-                            <span>{formatCurrency(salary.performanceBonus || 0)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </HoverCardContent>
-                  </HoverCard>
-                </TableCell>
                 <TableCell>{formatCurrency(salary.netSalary)}</TableCell>
-                <TableCell>
-                  <Badge variant={
-                    salary.status === 'PAID' ? 'default' :
-                    salary.status === 'PROCESSING' ? 'secondary' :
-                    salary.status === 'FAILED' ? 'destructive' :
-                    'outline'
-                  }>
-                    {salary.status}
-                  </Badge>
-                </TableCell>
                 <TableCell className="text-right">
                   <Button
                     variant="ghost"
