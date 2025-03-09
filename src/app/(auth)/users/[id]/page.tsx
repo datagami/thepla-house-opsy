@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { UserProfileForm } from "@/components/users/user-profile-form";
 import { hasAccess } from "@/lib/access-control";
 import {Branch, User} from "@/models/models";
+import { AdvancePaymentForm } from "@/components/users/advance-payment-form";
+import { AdvancePaymentsList } from "@/components/users/advance-payments-list";
 
 export const metadata: Metadata = {
   title: "User Profile - HRMS",
@@ -80,6 +82,14 @@ export default async function UserProfilePage({ params }: Props) {
           branches={branches}
           canEdit={canManageUsers || isOwnProfile}
         />
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Advance Payments</h2>
+          <AdvancePaymentForm userId={id} userName={user.name} />
+        </div>
+        <AdvancePaymentsList userId={id} />
       </div>
     </div>
   );
