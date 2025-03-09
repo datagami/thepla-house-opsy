@@ -1,4 +1,4 @@
-import { Attendance } from "@/models/models";
+import { AdvancePayment, Attendance } from "@/models/models";
 import { prisma } from '@/lib/prisma'
 
 export interface SalaryBreakup {
@@ -122,14 +122,38 @@ export async function calculateSalary(userId: string, month: number, year: numbe
     },
   })
 
+  // Initialize counters
+  let presentDays = 0;
+  let absentDays = 0;
+  let halfDays = 0;
+  let overtimeDays = 0;
+
+  attendance.forEach(day => {
+    if (!day.isPresent) {
+      absentDays++;
+      return;
+    }
+
+    if (day.isHalfDay) {
+      halfDays++;
+      return;
+    }
+
+    if (day.overtime) {
+      overtimeDays++;
+      return;
+    }
+
+    presentDays++;
+  });
+
   // Calculate attendance-based deductions
   const workingDays = endDate.getDate()
-  const presentDays = attendance.filter(a => a.isPresent).length
-  const halfDays = attendance.filter(a => a.isHalfDay).length
-  const absentDays = workingDays - presentDays - (halfDays / 2)
-  
   const perDaySalary = employee.salary / workingDays
   const attendanceDeduction = absentDays * perDaySalary
+  console.log('attendance breakdown ---', presentDays, absentDays, halfDays, overtimeDays, perDaySalary, (presentDays * perDaySalary), (halfDays * (perDaySalary * 0.5)), (overtimeDays * (perDaySalary * 1.5)));
+  const totalSalary = (presentDays * perDaySalary) + (halfDays * (perDaySalary * 0.5)) + (overtimeDays * (perDaySalary * 1.5))
+  const overtimeAmount = overtimeDays * (perDaySalary * 1.5)
 
   // Get advance payment deductions
   const advanceDeductions = await prisma.advancePayment.findMany({
@@ -141,19 +165,40 @@ export async function calculateSalary(userId: string, month: number, year: numbe
   })
 
   const totalAdvanceDeduction = advanceDeductions.reduce(
-    (total, advance) => total + advance.emiAmount,
+    (total: number, advance: AdvancePayment) => total + advance.emiAmount,
     0
   )
 
   // Calculate bonuses (you can customize this based on your requirements)
-  const overtime = attendance.filter(a => a.overtime).length
-  const overtimeBonus = overtime * (perDaySalary * 0.5) // 50% bonus for overtime
   const performanceBonus = 0 // You can implement your performance bonus logic here
 
   const baseSalary = employee.salary
-  const deductions = attendanceDeduction + totalAdvanceDeduction
-  const bonuses = overtimeBonus + performanceBonus
-  const netSalary = baseSalary - deductions + bonuses
+  const deductions = totalAdvanceDeduction
+  const bonuses =  performanceBonus
+  const netSalary = totalSalary + bonuses
+
+  console.log(totalSalary, performanceBonus, bonuses);
+
+  console.log('Salary Breakdown:', {
+    baseSalary,
+    deductions,
+    bonuses,
+    netSalary,
+    attendanceDeduction,
+    totalAdvanceDeduction,
+    overtimeAmount,
+    performanceBonus,
+  });
+
+  console.log('Total Salary breakdown:',
+    presentDays,
+    absentDays,
+    halfDays,
+    overtimeDays,
+    perDaySalary,
+  (presentDays * perDaySalary),
+  (halfDays * (perDaySalary * 0.5)),
+  (overtimeDays * (perDaySalary * 1.5)));
 
   return {
     baseSalary,
@@ -163,7 +208,7 @@ export async function calculateSalary(userId: string, month: number, year: numbe
     // Additional details for breakdown
     attendanceDeduction,
     advanceDeduction: totalAdvanceDeduction,
-    overtimeBonus,
+    overtimeAmount,
     performanceBonus,
     attendance
   }

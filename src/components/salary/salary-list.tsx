@@ -53,8 +53,6 @@ export function SalaryList({ month, year }: SalaryListProps) {
   const [branchNames, setBranchNames] = useState<Record<string, string>>({});
 
 
-  console.log(salaries);
-
   useEffect(() => {
     if (month && year) {
       fetchSalaries()
@@ -223,7 +221,6 @@ export function SalaryList({ month, year }: SalaryListProps) {
                   >
                     <Link href={`/salary/${salary.id}`}>
                       <PencilIcon className="h-4 w-4 mr-2" />
-                      Details
                     </Link>
                   </Button>
                 </TableCell>

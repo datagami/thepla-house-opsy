@@ -42,7 +42,7 @@ export async function POST(req: Request) {
         }
 
         // Calculate salary components
-        const { baseSalary, deductions, bonuses, netSalary, advanceDeduction, overtimeBonus } =
+        const { baseSalary, deductions, bonuses, netSalary, advanceDeduction, overtimeAmount } =
           await calculateSalary(employee.id, month, year)
 
         // Create new salary record

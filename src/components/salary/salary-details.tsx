@@ -35,7 +35,6 @@ export function SalaryDetails({ salary, attendanceStats }: SalaryDetailsProps) {
   const router = useRouter()
   const [isUpdating, setIsUpdating] = useState(false)
 
-  console.log(attendanceStats);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
