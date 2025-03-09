@@ -22,7 +22,6 @@ export async function POST(req: Request) {
     const employees = await prisma.user.findMany({
       where: {
         status: 'ACTIVE',
-        role: 'EMPLOYEE',
       },
     })
 

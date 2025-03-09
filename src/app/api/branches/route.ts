@@ -40,4 +40,24 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
+}
+
+export async function GET() {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        branch: true,
+      },
+      distinct: ['branchId'],
+    })
+
+    const branches = users.map(user => user.branch).filter(Boolean)
+    return NextResponse.json(branches)
+  } catch (error) {
+    console.error('Error fetching branches:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch branches' },
+      { status: 500 }
+    )
+  }
 } 

@@ -28,6 +28,14 @@ export async function GET(req: Request) {
           select: {
             name: true,
             email: true,
+            numId: true,
+            id: true,
+            branch: {
+              select: {
+                name: true,
+              },
+            },
+            role: true,
           },
         },
       },
