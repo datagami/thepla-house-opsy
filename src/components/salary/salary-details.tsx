@@ -101,15 +101,21 @@ export function SalaryDetails({ salary, attendanceStats }: SalaryDetailsProps) {
                 <span>({(salary.baseSalary / totalDaysInMonth).toFixed(2) } per day)</span>
               </div>
               <div className="flex justify-between">
+                <span>Regular Day Salary:</span>
+                <span className="text-green-500">{formatCurrency(attendanceStats.regularDays * (salary.baseSalary / totalDaysInMonth))}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Overtime Salary:</span>
+                <span className="text-green-500">{formatCurrency(attendanceStats.overtime * 1.5 * (salary.baseSalary / totalDaysInMonth))}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Half Day Salary:</span>
+                <span className="text-green-500">{formatCurrency(attendanceStats.halfDay * 0.5 * (salary.baseSalary / totalDaysInMonth))}</span>
+              </div>
+              <div className="flex justify-between">
                 <span>Deductions:</span>
                 <span className="text-red-500">
                   -{formatCurrency(salary.deductions)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Overtime Bonus:</span>
-                <span className="text-green-500">
-                  +{formatCurrency(salary.bonuses)}
                 </span>
               </div>
               <div className="flex justify-between font-bold">

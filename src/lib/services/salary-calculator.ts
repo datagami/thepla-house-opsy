@@ -149,11 +149,10 @@ export async function calculateSalary(userId: string, month: number, year: numbe
 
   // Calculate attendance-based deductions
   const workingDays = endDate.getDate()
-  const perDaySalary = employee.salary / workingDays
-  const attendanceDeduction = absentDays * perDaySalary
-  console.log('attendance breakdown ---', presentDays, absentDays, halfDays, overtimeDays, perDaySalary, (presentDays * perDaySalary), (halfDays * (perDaySalary * 0.5)), (overtimeDays * (perDaySalary * 1.5)));
-  const totalSalary = (presentDays * perDaySalary) + (halfDays * (perDaySalary * 0.5)) + (overtimeDays * (perDaySalary * 1.5))
-  const overtimeAmount = overtimeDays * (perDaySalary * 1.5)
+  const perDaySalary = parseFloat((employee.salary.valueOf() / workingDays).toFixed(2));
+  const attendanceDeduction = parseFloat((absentDays * perDaySalary).toFixed(2));
+  const totalSalary = parseFloat(((presentDays * perDaySalary) + (halfDays * (perDaySalary * 0.5)) + (overtimeDays * (perDaySalary * 1.5))).toFixed(2));
+  const overtimeAmount = parseFloat((overtimeDays * (perDaySalary * 1.5)).toFixed(2));
 
   // Get advance payment deductions
   
@@ -165,7 +164,6 @@ export async function calculateSalary(userId: string, month: number, year: numbe
     },
   }) as AdvancePayment[];
 
-  console.log('advanceDeductions', advanceDeductions);
   let totalAdvanceDeduction = 0;
   advanceDeductions.forEach( (advance) => {
     const amount = Math.min(advance.emiAmount, advance.remainingAmount);
@@ -175,7 +173,6 @@ export async function calculateSalary(userId: string, month: number, year: numbe
   // iterate over advanceDeductions and create entries in AdvancePaymentInstallment table
   advanceDeductions.forEach(async (advance) => {
     const amount = Math.min(advance.emiAmount, advance.remainingAmount);
-    console.log(amount);
     await prisma.advancePaymentInstallment.create({
       data: {
         userId,
@@ -195,7 +192,6 @@ export async function calculateSalary(userId: string, month: number, year: numbe
   const bonuses =  performanceBonus
   const netSalary = totalSalary + bonuses - deductions
 
-  console.log('netSalary', netSalary);
 
   return {
     baseSalary,
