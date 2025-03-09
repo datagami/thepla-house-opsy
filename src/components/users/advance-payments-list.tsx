@@ -11,20 +11,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
+import {AdvancePayment} from "@/models/models";
 
-interface AdvancePayment {
-  id: string;
-  amount: number;
-  emiAmount: number;
-  remainingAmount: number;
-  reason: string;
-  status: string;
-  isSettled: boolean;
-  createdAt: string;
-  approvedBy: {
-    name: string;
-  } | null;
-}
 
 interface AdvancePaymentsListProps {
   userId: string;

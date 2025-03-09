@@ -165,10 +165,23 @@ export async function calculateSalary(userId: string, month: number, year: numbe
     },
   }) as AdvancePayment[];
 
+  console.log('advanceDeductions', advanceDeductions);
   let totalAdvanceDeduction = 0;
-  advanceDeductions.forEach(advance => {
-    totalAdvanceDeduction += advance.emiAmount
-  });
+
+  // create entries in AdvancePaymentInstallment table
+  advanceDeductions.forEach(async (advance) => {
+    const amount = Math.min(advance.emiAmount, advance.remainingAmount);
+    await prisma.advancePaymentInstallment.create({
+      data: {
+        userId,
+        status: 'PENDING',
+        advanceId: advance.id,
+        amountPaid: amount,
+        paidAt: new Date(),
+      }
+    })
+    totalAdvanceDeduction += amount;
+  })
 
   // Calculate bonuses (you can customize this based on your requirements)
   const performanceBonus = 0 // You can implement your performance bonus logic here
@@ -176,30 +189,7 @@ export async function calculateSalary(userId: string, month: number, year: numbe
   const baseSalary = employee.salary
   const deductions = totalAdvanceDeduction
   const bonuses =  performanceBonus
-  const netSalary = totalSalary + bonuses
-
-  console.log(totalSalary, performanceBonus, bonuses);
-
-  console.log('Salary Breakdown:', {
-    baseSalary,
-    deductions,
-    bonuses,
-    netSalary,
-    attendanceDeduction,
-    totalAdvanceDeduction,
-    overtimeAmount,
-    performanceBonus,
-  });
-
-  console.log('Total Salary breakdown:',
-    presentDays,
-    absentDays,
-    halfDays,
-    overtimeDays,
-    perDaySalary,
-  (presentDays * perDaySalary),
-  (halfDays * (perDaySalary * 0.5)),
-  (overtimeDays * (perDaySalary * 1.5)));
+  const netSalary = totalSalary + bonuses - deductions
 
   return {
     baseSalary,

@@ -15,8 +15,8 @@ import {
 import { Label } from "@/components/ui/label";
 
 interface AdvancePaymentFormProps {
-  userId: string;
-  userName: string;
+  userId: string | null | undefined;
+  userName: string | null | undefined;
   onSuccess?: () => void;
 }
 

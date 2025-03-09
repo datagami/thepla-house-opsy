@@ -48,6 +48,13 @@ enum AdvanceStatus {
   SETTLED
 }
 
+enum InstallmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+}
+
 model Account {
   id                 String  @id @default(cuid())
   numId              Int     @default(autoincrement()) @map("num_id")
@@ -127,6 +134,8 @@ model User {
   salaries            Salary[]
   advances            AdvancePayment[]          @relation("UserAdvances")
   approvedAdvances    AdvancePayment[]          @relation("ApprovedAdvances")
+
+  approvedInstallments AdvancePaymentInstallment[] @relation("InstallmentApprovals")
 
   @@map("users1")
   @@index([branchId])
@@ -277,19 +286,24 @@ model AdvancePayment {
 }
 
 model AdvancePaymentInstallment {
-  id               String   @id @default(cuid())
-  numId            Int      @default(autoincrement()) @map("num_id")
-  advanceId        String   @map("advance_id")
-  salaryId         String?  @map("salary_id")
-  userId           String   @map("user_id")
-  amountPaid       Float    @map("amount_paid")
-  paidAt           DateTime @default(now()) @map("paid_at")
+  id               String            @id @default(cuid())
+  numId            Int               @default(autoincrement()) @map("num_id")
+  advanceId        String            @map("advance_id")
+  salaryId         String?           @map("salary_id")
+  userId           String            @map("user_id")
+  amountPaid       Float             @map("amount_paid")
+  status           InstallmentStatus @default(PENDING)
+  approvedById     String?           @map("approved_by_id")
+  approvedAt       DateTime?         @map("approved_at")
+  paidAt           DateTime?         @map("paid_at")
 
   // Relations
-  advance          AdvancePayment @relation(fields: [advanceId], references: [id], onDelete: Cascade)
-  salary           Salary?        @relation(fields: [salaryId], references: [id], onDelete: SetNull)
+  advance          AdvancePayment    @relation(fields: [advanceId], references: [id], onDelete: Cascade)
+  salary           Salary?           @relation(fields: [salaryId], references: [id], onDelete: SetNull)
+  approvedBy       User?             @relation("InstallmentApprovals", fields: [approvedById], references: [id], onDelete: SetNull)
 
   @@map("advance_payment_installments")
   @@index([advanceId])
   @@index([salaryId])
+  @@index([approvedById])
 }

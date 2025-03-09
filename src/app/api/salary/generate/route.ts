@@ -42,13 +42,14 @@ export async function POST(req: Request) {
         }
 
         // Calculate salary components
-        const { baseSalary, bonuses, netSalary } =
+        const { baseSalary, bonuses, netSalary, deductions } =
           await calculateSalary(employee.id, month, year)
 
         // Create new salary record
         return prisma.salary.create({
           data: {
             userId: employee.id,
+            deductions,
             month,
             year,
             baseSalary,
