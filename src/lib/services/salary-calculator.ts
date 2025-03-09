@@ -167,10 +167,15 @@ export async function calculateSalary(userId: string, month: number, year: numbe
 
   console.log('advanceDeductions', advanceDeductions);
   let totalAdvanceDeduction = 0;
+  advanceDeductions.forEach( (advance) => {
+    const amount = Math.min(advance.emiAmount, advance.remainingAmount);
+    totalAdvanceDeduction += amount;
+  });
 
-  // create entries in AdvancePaymentInstallment table
+  // iterate over advanceDeductions and create entries in AdvancePaymentInstallment table
   advanceDeductions.forEach(async (advance) => {
     const amount = Math.min(advance.emiAmount, advance.remainingAmount);
+    console.log(amount);
     await prisma.advancePaymentInstallment.create({
       data: {
         userId,
@@ -179,8 +184,7 @@ export async function calculateSalary(userId: string, month: number, year: numbe
         amountPaid: amount,
         paidAt: new Date(),
       }
-    })
-    totalAdvanceDeduction += amount;
+    });
   })
 
   // Calculate bonuses (you can customize this based on your requirements)
@@ -190,6 +194,8 @@ export async function calculateSalary(userId: string, month: number, year: numbe
   const deductions = totalAdvanceDeduction
   const bonuses =  performanceBonus
   const netSalary = totalSalary + bonuses - deductions
+
+  console.log('netSalary', netSalary);
 
   return {
     baseSalary,

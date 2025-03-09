@@ -10,6 +10,8 @@ type SalaryStatus = "PENDING" | "PROCESSING" | "PAID" | "FAILED";
 
 type AdvanceStatus = "PENDING" | "APPROVED" | "REJECTED" | "SETTLED";
 
+type InstallmentStatus = "PENDING" | "APPROVED" | "REJECTED" | "PAID";
+
 export interface Account {
   id: string;
   numId: number;
@@ -79,6 +81,7 @@ export interface User {
   salaries: Salary[];
   advances: AdvancePayment[];
   approvedAdvances: AdvancePayment[];
+  approvedInstallments: AdvancePaymentInstallment[];
 }
 
 export interface VerificationToken {
@@ -154,26 +157,21 @@ export interface Reference {
 
 export interface Salary {
   id: string;
+  numId: number;
   userId: string;
   month: number;
   year: number;
   baseSalary: number;
-  deductions: number;
+  advanceDeduction: number;
   bonuses: number;
+  deductions: number;
   netSalary: number;
   status: SalaryStatus;
-  attendanceDeduction?: number;
-  advanceDeduction?: number;
-  overtimeBonus?: number;
-  performanceBonus?: number;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    numId: number;
-    branchId: string;
-    role: string;
-  };
+  paidAt?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  user: User;
+  installments: AdvancePaymentInstallment[];
 }
 
 export interface AdvancePayment {
@@ -202,8 +200,12 @@ export interface AdvancePaymentInstallment {
   salaryId?: string | null;
   userId: string;
   amountPaid: number;
-  paidAt: Date;
+  status: InstallmentStatus;
+  approvedById?: string | null;
+  approvedAt?: Date | null;
+  paidAt?: Date | null;
   advance: AdvancePayment;
   salary?: Salary | null;
+  approvedBy?: User | null;
 }
 

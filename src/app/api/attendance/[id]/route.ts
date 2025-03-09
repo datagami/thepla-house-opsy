@@ -48,6 +48,7 @@ async function handleHRVerification(
   verificationNote: string,
   verifierId: string
 ) {
+  console.log(verifierId)
   const updatedAttendance = await prisma.attendance.update({
     where: { id: attendanceId },
     data: {

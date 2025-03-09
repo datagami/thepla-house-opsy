@@ -198,44 +198,7 @@ export function SalaryDetails({ salary, attendanceStats }: SalaryDetailsProps) {
                 <span>Base Salary:</span>
                 <span>{formatCurrency(salary.baseSalary)}</span>
               </div>
-              
-              {/* Deductions Breakdown */}
-              <div className="border-t pt-4">
-                <h4 className="font-medium mb-2">Deductions</h4>
-                <div className="space-y-2 pl-4">
-                  <div className="flex justify-between text-sm">
-                    <span>Attendance Based:</span>
-                    <span className="text-red-500">
-                      -{formatCurrency(salary.attendanceDeduction || 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Advance/EMI:</span>
-                    <span className="text-red-500">
-                      -{formatCurrency(salary.advanceDeduction || 0)}
-                    </span>
-                  </div>
-                </div>
-              </div>
 
-              {/* Bonuses Breakdown */}
-              <div className="border-t pt-4">
-                <h4 className="font-medium mb-2">Bonuses</h4>
-                <div className="space-y-2 pl-4">
-                  <div className="flex justify-between text-sm">
-                    <span>Overtime:</span>
-                    <span className="text-green-500">
-                      +{formatCurrency(salary.overtimeBonus || 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Performance:</span>
-                    <span className="text-green-500">
-                      +{formatCurrency(salary.performanceBonus || 0)}
-                    </span>
-                  </div>
-                </div>
-              </div>
 
               <div className="border-t pt-4 flex justify-between font-bold">
                 <span>Net Salary:</span>
