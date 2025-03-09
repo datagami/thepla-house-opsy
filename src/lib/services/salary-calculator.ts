@@ -156,18 +156,19 @@ export async function calculateSalary(userId: string, month: number, year: numbe
   const overtimeAmount = overtimeDays * (perDaySalary * 1.5)
 
   // Get advance payment deductions
+  
   const advanceDeductions = await prisma.advancePayment.findMany({
     where: {
       userId,
       status: 'APPROVED',
       isSettled: false,
     },
-  })
+  }) as AdvancePayment[];
 
-  const totalAdvanceDeduction = advanceDeductions.reduce(
-    (total: number, advance: AdvancePayment) => total + advance.emiAmount,
-    0
-  )
+  let totalAdvanceDeduction = 0;
+  advanceDeductions.forEach(advance => {
+    totalAdvanceDeduction += advance.emiAmount
+  });
 
   // Calculate bonuses (you can customize this based on your requirements)
   const performanceBonus = 0 // You can implement your performance bonus logic here

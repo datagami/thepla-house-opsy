@@ -9,11 +9,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Salary } from '@/models/models'
+
 import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
 import { CalendarIcon } from 'lucide-react'
 import { Progress } from "@/components/ui/progress"
+import {Salary} from "@/models/models";
 
 interface SalaryDetailsProps {
   salary: Salary

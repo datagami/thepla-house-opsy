@@ -54,7 +54,7 @@ export default async function SalaryDetailsPage({
 }) {
   const {id} = await params;
   const salary = await prisma.salary.findUnique({
-    where: { id: id },
+    where: { id },
     include: {
       user: true
     },

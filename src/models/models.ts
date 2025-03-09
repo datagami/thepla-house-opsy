@@ -166,7 +166,14 @@ export interface Salary {
   advanceDeduction?: number;
   overtimeBonus?: number;
   performanceBonus?: number;
-  user: User
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    numId: number;
+    branchId: string;
+    role: string;
+  };
 }
 
 export interface AdvancePayment {

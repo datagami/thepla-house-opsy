@@ -3,13 +3,14 @@ import { prisma } from '@/lib/prisma'
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { status } = await request.json()
+    const {id} = await params;
     
     const updatedSalary = await prisma.salary.update({
-      where: { id: params.id },
+      where: { id: id },
       data: { status },
     })
 
