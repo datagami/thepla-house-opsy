@@ -4,16 +4,17 @@ import { auth } from "@/auth"
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
+    const {id} = await params;
     // @ts-expect-error - role is not in the User type
     if (!session || !['HR', 'MANAGEMENT'].includes(session.user.role)) {
       return new NextResponse('Unauthorized', { status: 401 })
     }
 
-    const salaryId = params.id
+    const salaryId = id
 
     // Get the salary record with user details
     const salary = await prisma.salary.findUnique({
@@ -60,8 +61,8 @@ export async function GET(
     const regularDays = attendance.filter(a => a.isPresent && !a.isHalfDay && !a.overtime).length
     const halfDays = attendance.filter(a => a.isPresent && a.isHalfDay).length
     const overtimeDays = attendance.filter(a => a.isPresent && a.overtime).length
-    const leaveDays = attendance.filter(a => !a.isPresent && a.leaveApproved).length
-    const absentDays = attendance.filter(a => !a.isPresent && !a.leaveApproved).length
+    const leaveDays = attendance.filter(a => !a.isPresent).length
+    const absentDays = attendance.filter(a => !a.isPresent).length
     
     // Calculate present days (counting half days as 0.5)
     const presentDays = regularDays + overtimeDays + (halfDays * 0.5)
@@ -138,7 +139,7 @@ export async function GET(
         advanceId: i.advanceId,
         amount: i.amountPaid,
         status: i.status,
-        advanceTitle: i.advance.title,
+        advanceTitle: i.advance.reason,
         approvedAt: i.approvedAt
       }))
     }

@@ -172,36 +172,6 @@ export function SalaryDetails({ salary }: SalaryDetailsProps) {
     setAdvanceDeductions(prev => prev.filter(item => item.id !== id))
   }
 
-  const handleUpdateInstallmentAmount = async (installmentId: string, newAmount: number) => {
-    try {
-      setIsUpdating(true)
-      
-      const response = await fetch(`/api/salary/${salary.id}/advance-installment`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          installmentId,
-          amount: newAmount
-        }),
-      })
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null)
-        throw new Error(errorData?.message || 'Failed to update installment amount')
-      }
-      
-      toast.success('Installment amount updated successfully')
-      router.refresh()
-    } catch (error) {
-      console.error('Error updating installment amount:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to update installment amount')
-    } finally {
-      setIsUpdating(false)
-    }
-  }
-
   const renderAdvanceInstallmentSection = () => {
     if (!salary.installments || salary.installments.length === 0) return null
 

@@ -125,18 +125,14 @@ export async function calculateSalary(userId: string, month: number, year: numbe
 
   // Initialize counters
   let presentDays = 0;
-  let absentDays = 0;
-  let halfDays = 0;
   let overtimeDays = 0;
 
   attendance.forEach(day => {
     if (!day.isPresent) {
-      absentDays++;
       return;
     }
 
     if (day.isHalfDay) {
-      halfDays++;
       presentDays += 0.5;
       return;
     }
@@ -173,14 +169,14 @@ export async function calculateSalary(userId: string, month: number, year: numbe
   }) as AdvancePayment[];
 
   // Calculate suggested advance deductions
-  let suggestedAdvanceDeductions = pendingAdvances.map(advance => ({
+  const suggestedAdvanceDeductions = pendingAdvances.map(advance => ({
     advanceId: advance.id,
     suggestedAmount: Math.min(advance.emiAmount, advance.remainingAmount),
     advance: advance
   }));
 
-  let totalAdvanceDeduction = suggestedAdvanceDeductions.reduce(
-    (sum, item) => sum + item.suggestedAmount, 
+  const totalAdvanceDeduction = suggestedAdvanceDeductions.reduce(
+    (sum, item) => sum + item.suggestedAmount,
     0
   );
 
@@ -253,7 +249,7 @@ export async function createOrUpdateSalary({
     0
   );
   
-  return await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx) => {
     // Create or update salary record
     const salary = await tx.salary.upsert({
       where: { 
@@ -311,11 +307,11 @@ export async function createOrUpdateSalary({
               },
               // Only set as settled if remaining amount will be 0
               isSettled: {
-                set: await tx.advancePayment.findUnique({
+                set: !!(await tx.advancePayment.findUnique({
                   where: { id: deduction.advanceId }
                 }).then(advance => 
                   advance && advance.remainingAmount - deduction.amount <= 0
-                )
+                ))
               }
             }
           });

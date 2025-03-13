@@ -132,10 +132,11 @@ export async function PATCH(
 // Add a PUT endpoint to update installment amounts
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
+    const {id} = await params;
     
     // Check if user is authorized (HR or MANAGEMENT)
     // @ts-expect-error - role is not in the User type
@@ -143,7 +144,7 @@ export async function PUT(
       return new NextResponse('Unauthorized', { status: 401 })
     }
 
-    const salaryId = params.id
+    const salaryId = id
     const { installmentId, amount } = await req.json()
 
     if (!installmentId || typeof amount !== 'number' || amount < 0) {
