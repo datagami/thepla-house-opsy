@@ -166,6 +166,8 @@ export interface Salary {
   bonuses: number;
   deductions: number;
   netSalary: number;
+  leavesEarned: number;
+  leaveSalary: number;
   status: SalaryStatus;
   paidAt?: Date | null;
   createdAt: Date;
@@ -197,7 +199,7 @@ export interface AdvancePaymentInstallment {
   id: string;
   numId: number;
   advanceId: string;
-  salaryId?: string | null;
+  salaryId: string;
   userId: string;
   amountPaid: number;
   status: InstallmentStatus;
@@ -205,7 +207,7 @@ export interface AdvancePaymentInstallment {
   approvedAt?: Date | null;
   paidAt?: Date | null;
   advance: AdvancePayment;
-  salary?: Salary | null;
+  salary: Salary;
   approvedBy?: User | null;
 }
 

@@ -17,34 +17,21 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
 import { CalendarIcon, AlertCircle, Edit, Save, X, CheckCircle } from 'lucide-react'
-import { Progress } from "@/components/ui/progress"
 import { AdvancePaymentInstallment, Salary } from "@/models/models"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { toast } from 'sonner';
+import { SalaryStatsTable } from '@/components/salary/salary-stats-table'
 
 interface SalaryDetailsProps {
   salary: Salary
-  attendanceStats: {
-    regularDays: number
-    absent: number
-    halfDay: number
-    leave: number
-    total: number
-    overtime: number
-  }
 }
 
-function daysInMonth (month: number, year: number): number {
-  return new Date(year, month, 0).getDate();
-}
-
-export function SalaryDetails({ salary, attendanceStats }: SalaryDetailsProps) {
+export function SalaryDetails({ salary }: SalaryDetailsProps) {
   const router = useRouter()
   const [isUpdating, setIsUpdating] = useState(false)
   const [editMode, setEditMode] = useState(false)
@@ -96,13 +83,7 @@ export function SalaryDetails({ salary, attendanceStats }: SalaryDetailsProps) {
     } finally {
       setIsUpdating(false)
     }
-  }
-
-  const calculatePercentage = (value: number) => {
-    return ((value / attendanceStats.total) * 100).toFixed(1)
-  }
-
-  const totalDaysInMonth = daysInMonth(salary.month, salary.year)
+  };
 
   const handleAdvanceInstallment = async (action: 'APPROVE' | 'REJECT', installment: AdvancePaymentInstallment) => {
     try {
@@ -123,17 +104,17 @@ export function SalaryDetails({ salary, attendanceStats }: SalaryDetailsProps) {
           action 
         }),
       })
-
-      if (response.ok) {
-        toast.success(`Installment ${action === 'APPROVE' ? 'approved' : 'rejected'} successfully`)
-        router.refresh()
-      } else {
-        const error = await response.text()
-        toast.error(error || `Failed to ${action.toLowerCase()} installment`)
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null)
+        throw new Error(errorData?.message || `Failed to ${action.toLowerCase()} installment`)
       }
+      
+      toast.success(`Installment ${action.toLowerCase()}d successfully`)
+      router.refresh()
     } catch (error) {
-      console.error('Error updating advance installment:', error)
-      toast.error("An unexpected error occurred")
+      console.error(`Error ${action.toLowerCase()}ing installment:`, error)
+      toast.error(error instanceof Error ? error.message : `Failed to ${action.toLowerCase()} installment`)
     } finally {
       setIsUpdating(false)
     }
@@ -189,6 +170,36 @@ export function SalaryDetails({ salary, attendanceStats }: SalaryDetailsProps) {
   // Remove an advance deduction
   const removeAdvanceDeduction = (id: string) => {
     setAdvanceDeductions(prev => prev.filter(item => item.id !== id))
+  }
+
+  const handleUpdateInstallmentAmount = async (installmentId: string, newAmount: number) => {
+    try {
+      setIsUpdating(true)
+      
+      const response = await fetch(`/api/salary/${salary.id}/advance-installment`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          installmentId,
+          amount: newAmount
+        }),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null)
+        throw new Error(errorData?.message || 'Failed to update installment amount')
+      }
+      
+      toast.success('Installment amount updated successfully')
+      router.refresh()
+    } catch (error) {
+      console.error('Error updating installment amount:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to update installment amount')
+    } finally {
+      setIsUpdating(false)
+    }
   }
 
   const renderAdvanceInstallmentSection = () => {
@@ -308,7 +319,7 @@ export function SalaryDetails({ salary, attendanceStats }: SalaryDetailsProps) {
                     {approvedInstallments.map((installment) => (
                       <Alert 
                         key={installment.id}
-                        variant="success"
+                        variant="default"
                         className="bg-green-50 border-green-200"
                       >
                         <div className="flex-1">
@@ -408,42 +419,6 @@ export function SalaryDetails({ salary, attendanceStats }: SalaryDetailsProps) {
                 {salary.status}
               </Badge>
             </div>
-            
-            <div className="grid gap-4">
-              <div className="flex justify-between">
-                <span>Base Salary:</span>
-                <span>{formatCurrency(salary.baseSalary)}</span>
-                <span>({(salary.baseSalary / totalDaysInMonth).toFixed(2)} per day)</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Regular Day Salary:</span>
-                <span className="text-green-500">{formatCurrency(attendanceStats.regularDays * (salary.baseSalary / totalDaysInMonth))}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Overtime Salary:</span>
-                <span className="text-green-500">{formatCurrency(attendanceStats.overtime * 1.5 * (salary.baseSalary / totalDaysInMonth))}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Half Day Salary:</span>
-                <span className="text-green-500">{formatCurrency(attendanceStats.halfDay * 0.5 * (salary.baseSalary / totalDaysInMonth))}</span>
-              </div>
-              {salary.leavesEarned > 0 && (
-                <div className="flex justify-between">
-                  <span>Earned Leaves ({salary.leavesEarned} days):</span>
-                  <span className="text-green-500">{formatCurrency(salary.leaveSalary)}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span>Deductions:</span>
-                <span className="text-red-500">
-                  -{formatCurrency(salary.deductions)}
-                </span>
-              </div>
-              <div className="flex justify-between font-bold">
-                <span>Net Salary:</span>
-                <span>{formatCurrency(salary.netSalary)}</span>
-              </div>
-            </div>
 
             {salary.status === 'PENDING' && (
               <Button
@@ -456,6 +431,8 @@ export function SalaryDetails({ salary, attendanceStats }: SalaryDetailsProps) {
           </div>
         </CardContent>
       </Card>
+
+      <SalaryStatsTable salaryId={salary.id} />
 
       <Card>
         <CardHeader>
@@ -467,73 +444,6 @@ export function SalaryDetails({ salary, attendanceStats }: SalaryDetailsProps) {
             Monthly attendance breakdown affecting salary calculation
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Present Days */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span>Regular Days</span>
-              <span className="font-medium">
-                {attendanceStats.regularDays} days ({calculatePercentage(attendanceStats.regularDays)}%)
-              </span>
-            </div>
-            <Progress value={Number(calculatePercentage(attendanceStats.regularDays))} className="h-2"/>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span>Overtimes Days</span>
-              <span className="font-medium">
-                {attendanceStats.overtime} days ({calculatePercentage(attendanceStats.overtime)}%)
-              </span>
-            </div>
-            <Progress value={Number(calculatePercentage(attendanceStats.overtime))} className="h-2"/>
-          </div>
-
-          {/* Half Days */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span>Half Days</span>
-              <span className="font-medium">
-                {attendanceStats.halfDay} days ({calculatePercentage(attendanceStats.halfDay)}%)
-              </span>
-            </div>
-            <Progress value={Number(calculatePercentage(attendanceStats.halfDay))} className="h-2"/>
-          </div>
-
-          {/* Absents */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span>Absents</span>
-              <span className="font-medium text-destructive">
-                {attendanceStats.absent} days ({calculatePercentage(attendanceStats.absent)}%)
-              </span>
-            </div>
-            <Progress value={Number(calculatePercentage(attendanceStats.absent))} className="h-2"/>
-          </div>
-
-          {/* Earned Leaves Section */}
-          <div className="mt-6 border-t pt-4">
-            <h4 className="text-sm font-medium mb-2">Earned Leaves</h4>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm">
-                  {salary.leavesEarned} {salary.leavesEarned === 1 ? 'day' : 'days'} earned this month
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {attendanceStats.regularDays + attendanceStats.overtime + attendanceStats.halfDay} days present
-                  {attendanceStats.regularDays + attendanceStats.overtime + attendanceStats.halfDay >= 25 
-                    ? ' (2 leaves earned for 25+ days)'
-                    : attendanceStats.regularDays + attendanceStats.overtime + attendanceStats.halfDay >= 15
-                      ? ' (1 leave earned for 15-24 days)'
-                      : ' (no leaves earned for <15 days)'}
-                </p>
-              </div>
-              <Badge variant="outline" className="bg-green-50">
-                +{formatCurrency(salary.leaveSalary)}
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
       </Card>
 
       {renderAdvanceInstallmentSection()}
@@ -543,55 +453,6 @@ export function SalaryDetails({ salary, attendanceStats }: SalaryDetailsProps) {
           <CardTitle>Salary Breakdown</CardTitle>
           <CardDescription>Detailed calculation of the final salary</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid gap-4">
-              <div className="flex justify-between">
-                <span>Base Salary:</span>
-                <span>{formatCurrency(salary.baseSalary)}</span>
-                <span>({(salary.baseSalary / totalDaysInMonth).toFixed(2)} per day)</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Regular Day Salary:</span>
-                <span className="text-green-500">{formatCurrency(attendanceStats.regularDays * (salary.baseSalary / totalDaysInMonth))}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Overtime Salary:</span>
-                <span className="text-green-500">{formatCurrency(attendanceStats.overtime * 1.5 * (salary.baseSalary / totalDaysInMonth))}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Half Day Salary:</span>
-                <span className="text-green-500">{formatCurrency(attendanceStats.halfDay * 0.5 * (salary.baseSalary / totalDaysInMonth))}</span>
-              </div>
-              {salary.leavesEarned > 0 && (
-                <div className="flex justify-between">
-                  <span>Earned Leaves ({salary.leavesEarned} days):</span>
-                  <span className="text-green-500">{formatCurrency(salary.leaveSalary)}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span>Deductions:</span>
-                <span className="text-red-500">
-                  -{formatCurrency(salary.deductions)}
-                </span>
-              </div>
-              <div className="flex justify-between font-bold">
-                <span>Net Salary:</span>
-                <span>{formatCurrency(salary.netSalary)}</span>
-              </div>
-            </div>
-
-            {salary.status === 'PENDING' && (
-              <Button
-                onClick={handleUpdateStatus}
-                disabled={isUpdating}
-                className="w-full mt-6"
-              >
-                {isUpdating ? 'Updating...' : 'Move to Processing'}
-              </Button>
-            )}
-          </div>
-        </CardContent>
       </Card>
     </div>
   )

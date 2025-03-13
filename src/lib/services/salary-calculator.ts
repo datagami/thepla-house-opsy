@@ -137,23 +137,31 @@ export async function calculateSalary(userId: string, month: number, year: numbe
 
     if (day.isHalfDay) {
       halfDays++;
+      presentDays += 0.5;
       return;
     }
 
     if (day.overtime) {
       overtimeDays++;
+      presentDays += 1;
       return;
     }
 
     presentDays++;
   });
 
-  // Calculate attendance-based deductions
+  // Calculate attendance-based salary
   const workingDays = endDate.getDate()
   const perDaySalary = parseFloat((employee.salary.valueOf() / workingDays).toFixed(2));
-  const attendanceDeduction = parseFloat((absentDays * perDaySalary).toFixed(2));
-  const totalSalary = parseFloat(((presentDays * perDaySalary) + (halfDays * (perDaySalary * 0.5)) + (overtimeDays * (perDaySalary * 1.5))).toFixed(2));
-  const overtimeAmount = parseFloat((overtimeDays * (perDaySalary * 1.5)).toFixed(2));
+  
+  // Regular days get 1x per day salary
+  const presentDaysAmount = parseFloat((presentDays * perDaySalary).toFixed(2));
+  
+  // Overtime days get 0.5x per day salary ( half extra)
+  const overtimeAmount = parseFloat((overtimeDays * (perDaySalary * 0.5)).toFixed(2));
+  
+  // Total salary is the sum of all attendance-based amounts
+  const totalSalary = presentDaysAmount + overtimeAmount;
 
   // Get pending advance payments but don't create installments yet
   const pendingAdvances = await prisma.advancePayment.findMany({
@@ -185,9 +193,9 @@ export async function calculateSalary(userId: string, month: number, year: numbe
 
   // Calculate earned leaves based on attendance
   let leavesEarned = 0;
-  if (presentDays + halfDays + overtimeDays >= 25) {
+  if (presentDays >= 25) {
     leavesEarned = 2;
-  } else if (presentDays + halfDays + overtimeDays >= 15) {
+  } else if (presentDays >= 15) {
     leavesEarned = 1;
   }
 
@@ -206,13 +214,16 @@ export async function calculateSalary(userId: string, month: number, year: numbe
     bonuses,
     netSalary,
     // Additional details for breakdown
-    attendanceDeduction,
+    attendanceDeduction: 0, // Not used in this calculation
     suggestedAdvanceDeductions,
     overtimeAmount,
     performanceBonus,
     attendance,
     leavesEarned,
-    leaveSalary
+    leaveSalary,
+    // Add detailed amounts for UI
+    presentDaysAmount,
+    presentDays
   }
 }
 
