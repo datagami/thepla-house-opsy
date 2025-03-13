@@ -1,7 +1,6 @@
-import { notFound } from 'next/navigation'
 import { SalaryDetails } from '@/components/salary/salary-details'
 import { prisma } from '@/lib/prisma'
-import {Salary} from "@/models/models";
+import {AdvancePaymentInstallment, Salary} from "@/models/models";
 
 async function getAttendanceStats(userId: string, month: Date) {
   const startOfMonth = new Date(month.getFullYear(), month.getMonth(), 1)
@@ -47,23 +46,40 @@ async function getAttendanceStats(userId: string, month: Date) {
   return stats
 }
 
+async function getSalaryDetails(id: string) {
+  const salary = await prisma.salary.findUnique({
+    where: { id },
+    include: {
+      user: true,
+      installments: {
+        where: {
+          OR: [
+            { status: 'PENDING' },
+            { status: 'APPROVED' }
+          ]
+        }
+      }
+    }
+  }) as Salary;
+
+  console.log(salary);
+
+  if (!salary) {
+    throw new Error('Salary not found')
+  }
+
+  return {
+    ...salary
+  }
+}
+
 export default async function SalaryDetailsPage({
   params
 }: {
   params: Promise<{ id: string }>
 }) {
   const {id} = await params;
-  const salary = await prisma.salary.findUnique({
-    where: { id },
-    include: {
-      user: true
-    },
-  }) as Salary;
-
-  if (!salary) {
-    notFound()
-  }
-
+  const salary = await getSalaryDetails(id);
   const attendanceStats = await getAttendanceStats(salary.user?.id, new Date(`${salary.year}-${salary.month}-15`))
 
   return <SalaryDetails salary={salary} attendanceStats={attendanceStats} />

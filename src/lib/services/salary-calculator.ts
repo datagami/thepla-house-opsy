@@ -1,5 +1,6 @@
 import { AdvancePayment, Attendance } from "@/models/models";
 import { prisma } from '@/lib/prisma'
+import { SalaryStatus } from "@prisma/client";
 
 export interface SalaryBreakup {
   basicSalary: number;
@@ -154,9 +155,8 @@ export async function calculateSalary(userId: string, month: number, year: numbe
   const totalSalary = parseFloat(((presentDays * perDaySalary) + (halfDays * (perDaySalary * 0.5)) + (overtimeDays * (perDaySalary * 1.5))).toFixed(2));
   const overtimeAmount = parseFloat((overtimeDays * (perDaySalary * 1.5)).toFixed(2));
 
-  // Get advance payment deductions
-  
-  const advanceDeductions = await prisma.advancePayment.findMany({
+  // Get pending advance payments but don't create installments yet
+  const pendingAdvances = await prisma.advancePayment.findMany({
     where: {
       userId,
       status: 'APPROVED',
@@ -164,34 +164,41 @@ export async function calculateSalary(userId: string, month: number, year: numbe
     },
   }) as AdvancePayment[];
 
-  let totalAdvanceDeduction = 0;
-  advanceDeductions.forEach( (advance) => {
-    const amount = Math.min(advance.emiAmount, advance.remainingAmount);
-    totalAdvanceDeduction += amount;
-  });
+  // Calculate suggested advance deductions
+  let suggestedAdvanceDeductions = pendingAdvances.map(advance => ({
+    advanceId: advance.id,
+    suggestedAmount: Math.min(advance.emiAmount, advance.remainingAmount),
+    advance: advance
+  }));
 
-  // iterate over advanceDeductions and create entries in AdvancePaymentInstallment table
-  advanceDeductions.forEach(async (advance) => {
-    const amount = Math.min(advance.emiAmount, advance.remainingAmount);
-    await prisma.advancePaymentInstallment.create({
-      data: {
-        userId,
-        status: 'PENDING',
-        advanceId: advance.id,
-        amountPaid: amount,
-        paidAt: new Date(),
-      }
-    });
-  })
+  let totalAdvanceDeduction = suggestedAdvanceDeductions.reduce(
+    (sum, item) => sum + item.suggestedAmount, 
+    0
+  );
 
   // Calculate bonuses (you can customize this based on your requirements)
   const performanceBonus = 0 // You can implement your performance bonus logic here
 
-  const baseSalary = employee.salary
-  const deductions = totalAdvanceDeduction
-  const bonuses =  performanceBonus
-  const netSalary = totalSalary + bonuses - deductions
+  const baseSalary = employee.salary;
+  const deductions = totalAdvanceDeduction;
+  const bonuses = performanceBonus;
 
+  // Calculate earned leaves based on attendance
+  let leavesEarned = 0;
+  if (presentDays + halfDays + overtimeDays >= 25) {
+    leavesEarned = 2;
+  } else if (presentDays + halfDays + overtimeDays >= 15) {
+    leavesEarned = 1;
+  }
+
+  // Calculate leave salary (per day salary * earned leaves)
+  const leaveSalary = parseFloat((leavesEarned * perDaySalary).toFixed(2));
+  
+  // Add leave salary to total salary
+  const totalSalaryWithLeaves = totalSalary + leaveSalary;
+  
+  // Update net salary calculation to include leave salary
+  const netSalary = totalSalaryWithLeaves + bonuses - deductions;
 
   return {
     baseSalary,
@@ -200,9 +207,111 @@ export async function calculateSalary(userId: string, month: number, year: numbe
     netSalary,
     // Additional details for breakdown
     attendanceDeduction,
-    advanceDeduction: totalAdvanceDeduction,
+    suggestedAdvanceDeductions,
     overtimeAmount,
     performanceBonus,
-    attendance
+    attendance,
+    leavesEarned,
+    leaveSalary
   }
+}
+
+// New function to create/update salary with advance deductions
+export async function createOrUpdateSalary({
+  userId,
+  month,
+  year,
+  advanceDeductions, // Array of {advanceId, amount}
+  salaryId, // Optional, for updates,
+  status, // Optional, for updates
+  updateAdvanceRemaining = false // Only update remaining amounts when explicitly requested
+}: {
+  userId: string;
+  month: number;
+  year: number;
+  advanceDeductions: Array<{ advanceId: string; amount: number }>;
+  salaryId?: string;
+  status?: string;
+  updateAdvanceRemaining?: boolean;
+}) {
+  const salaryDetails = await calculateSalary(userId, month, year);
+  
+  // Calculate total deductions from advance payments
+  const totalAdvanceDeduction = advanceDeductions.reduce(
+    (sum, deduction) => sum + deduction.amount, 
+    0
+  );
+  
+  return await prisma.$transaction(async (tx) => {
+    // Create or update salary record
+    const salary = await tx.salary.upsert({
+      where: { 
+        id: salaryId ?? 'new',
+      },
+      create: {
+        userId,
+        month,
+        year,
+        baseSalary: salaryDetails.baseSalary,
+        deductions: totalAdvanceDeduction,
+        bonuses: salaryDetails.bonuses,
+        netSalary: salaryDetails.netSalary - totalAdvanceDeduction,
+        leavesEarned: salaryDetails.leavesEarned,
+        leaveSalary: salaryDetails.leaveSalary
+      },
+      update: {
+        deductions: totalAdvanceDeduction,
+        netSalary: salaryDetails.netSalary - totalAdvanceDeduction,
+        status: status as SalaryStatus ?? 'PENDING',
+        leavesEarned: salaryDetails.leavesEarned,
+        leaveSalary: salaryDetails.leaveSalary
+      }
+    });
+
+    // Delete existing advance installments if updating
+    if (salaryId) {
+      await tx.advancePaymentInstallment.deleteMany({
+        where: { salaryId }
+      });
+    }
+
+    // Create advance installments
+    for (const deduction of advanceDeductions) {
+      if (deduction.amount > 0) { // Only create installments for positive amounts
+        await tx.advancePaymentInstallment.create({
+          data: {
+            userId,
+            status: 'PENDING',
+            advanceId: deduction.advanceId,
+            amountPaid: deduction.amount,
+            paidAt: new Date(),
+            salaryId: salary.id
+          }
+        });
+
+        // Only update advance payment remaining amount if explicitly requested
+        if (updateAdvanceRemaining) {
+          // Update advance payment remaining amount
+          await tx.advancePayment.update({
+            where: { id: deduction.advanceId },
+            data: {
+              remainingAmount: {
+                decrement: deduction.amount
+              },
+              // Only set as settled if remaining amount will be 0
+              isSettled: {
+                set: await tx.advancePayment.findUnique({
+                  where: { id: deduction.advanceId }
+                }).then(advance => 
+                  advance && advance.remainingAmount - deduction.amount <= 0
+                )
+              }
+            }
+          });
+        }
+      }
+    }
+
+    return salary;
+  });
 } 

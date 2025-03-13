@@ -28,8 +28,6 @@ async function main() {
     });
     
     console.log('Admin user created successfully');
-
-    console.log('HR user created successfully');
   } else {
     console.log('Admin user already exists');
   }
