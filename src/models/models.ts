@@ -166,6 +166,9 @@ export interface Salary {
   bonuses: number;
   deductions: number;
   netSalary: number;
+  presentDays: number;
+  overtimeDays: number;
+  halfDays: number;
   leavesEarned: number;
   leaveSalary: number;
   status: SalaryStatus;

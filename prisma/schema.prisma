@@ -236,30 +236,30 @@ model Reference {
 }
 
 model Salary {
-  id                String   @id @default(cuid())
-  numId             Int      @default(autoincrement()) @map("num_id")
-  userId            String   @map("user_id")
-  month             Int      
-  year              Int      
-  baseSalary        Float    @map("base_salary")
-  advanceDeduction  Float    @default(0) @map("advance_deduction")
-  bonuses           Float    @default(0)
-  deductions        Float    @default(0)
-  netSalary         Float    @map("net_salary")
-  leavesEarned      Int      @default(0) @map("leaves_earned")
-  leaveSalary       Float    @default(0) @map("leave_salary")
-  status            SalaryStatus @default(PENDING)
-  paidAt            DateTime? @map("paid_at")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-
-  // Relations
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String    @id @default(cuid())
+  numId             Int       @default(autoincrement())
+  userId            String
+  month             Int
+  year              Int
+  baseSalary        Float
+  advanceDeduction  Float
+  bonuses           Float
+  deductions        Float
+  netSalary         Float
+  presentDays       Int       @default(0)
+  overtimeDays      Int       @default(0)
+  halfDays          Int       @default(0)
+  leavesEarned      Int       @default(0)
+  leaveSalary       Float     @default(0)
+  status            String
+  paidAt            DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  user              User      @relation(fields: [userId], references: [id])
   installments      AdvancePaymentInstallment[]
 
-  @@unique([userId, month, year])
-  @@map("salaries")
   @@index([userId])
+  @@index([month, year])
 }
 
 model AdvancePayment {

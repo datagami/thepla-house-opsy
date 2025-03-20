@@ -25,6 +25,7 @@ import {
 interface SalaryListProps {
   month: number
   year: number
+  filter: string
 }
 
 const getRowColorClass = (status: string) => {
@@ -42,7 +43,7 @@ const getRowColorClass = (status: string) => {
   }
 }
 
-export function SalaryList({ month, year }: SalaryListProps) {
+export function SalaryList({ month, year, filter }: SalaryListProps) {
   const [salaries, setSalaries] = useState([])
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -113,7 +114,22 @@ export function SalaryList({ month, year }: SalaryListProps) {
     }).format(amount)
   }
 
-  const filteredSalaries = salaries.filter((salary: Salary) => {
+  const filterSalaries = (salaries: Salary[]) => {
+    switch (filter) {
+      case 'with-deductions':
+        return salaries.filter(salary => 
+          salary.installments && salary.installments.length > 0
+        )
+      case 'without-deductions':
+        return salaries.filter(salary => 
+          !salary.installments || salary.installments.length === 0
+        )
+      default:
+        return salaries
+    }
+  }
+
+  const filteredSalaries = filterSalaries(salaries).filter((salary: Salary) => {
     const matchesSearch = searchTerm === '' || 
       salary.user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       salary.user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -202,30 +218,38 @@ export function SalaryList({ month, year }: SalaryListProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredSalaries.map((salary: Salary) => (
-              <TableRow 
-                key={salary.id}
-                className={getRowColorClass(salary.status)}
-              >
-                <TableCell>{salary.user.numId || 'N/A'}</TableCell>
-                <TableCell>{salary.user.name}</TableCell>
-                <TableCell>{salary.user.email}</TableCell>
-                <TableCell>{salary.user.branchId ? branchNames[salary.user.branchId] : 'N/A'}</TableCell>
-                <TableCell>{salary.user.role || 'N/A'}</TableCell>
-                <TableCell>{formatCurrency(salary.netSalary)}</TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    asChild
-                  >
-                    <Link href={`/salary/${salary.id}?month=${month}&year=${year}`}>
-                      <PencilIcon className="h-4 w-4 mr-2" />
-                    </Link>
-                  </Button>
+            {filteredSalaries.length > 0 ? (
+              filteredSalaries.map((salary: Salary) => (
+                <TableRow 
+                  key={salary.id}
+                  className={getRowColorClass(salary.status)}
+                >
+                  <TableCell>{salary.user.numId || 'N/A'}</TableCell>
+                  <TableCell>{salary.user.name}</TableCell>
+                  <TableCell>{salary.user.email}</TableCell>
+                  <TableCell>{salary.user.branchId ? branchNames[salary.user.branchId] : 'N/A'}</TableCell>
+                  <TableCell>{salary.user.role || 'N/A'}</TableCell>
+                  <TableCell>{formatCurrency(salary.netSalary)}</TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      asChild
+                    >
+                      <Link href={`/salary/${salary.id}?month=${month}&year=${year}`}>
+                        <PencilIcon className="h-4 w-4 mr-2" />
+                      </Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-4">
+                  No salaries found matching the selected filters
                 </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
       </div>

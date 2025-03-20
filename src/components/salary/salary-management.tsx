@@ -19,16 +19,22 @@ import {
 import { SalaryList } from './salary-list'
 import {toast} from "sonner";
 import { useRouter } from 'next/navigation'
+import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@/components/ui/toggle-group"
 
 interface SalaryManagementProps {
   initialYear?: number
   initialMonth?: number
+  initialFilter: string
 }
 
-export function SalaryManagement({ initialYear, initialMonth }: SalaryManagementProps) {
+export function SalaryManagement({ initialYear, initialMonth, initialFilter }: SalaryManagementProps) {
   const router = useRouter()
   const [selectedYear, setSelectedYear] = useState(initialYear || new Date().getFullYear())
   const [selectedMonth, setSelectedMonth] = useState(initialMonth || new Date().getMonth() + 1)
+  const [selectedFilter, setSelectedFilter] = useState(initialFilter)
   const [isGenerating, setIsGenerating] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
 
@@ -51,23 +57,30 @@ export function SalaryManagement({ initialYear, initialMonth }: SalaryManagement
   ]
 
   // Update URL when selection changes
-  const updateUrlParams = useCallback((year: number, month: number) => {
+  const updateUrlParams = useCallback((year: number, month: number, filter: string) => {
     const params = new URLSearchParams()
     params.set('year', year.toString())
     params.set('month', month.toString())
+    params.set('filter', filter)
     router.push(`/salary?${params.toString()}`, { scroll: false })
   }, [router])
 
   // Handle year change
   const handleYearChange = (year: number) => {
     setSelectedYear(year)
-    updateUrlParams(year, selectedMonth)
+    updateUrlParams(year, selectedMonth, selectedFilter)
   }
 
   // Handle month change
   const handleMonthChange = (month: number) => {
     setSelectedMonth(month)
-    updateUrlParams(selectedYear, month)
+    updateUrlParams(selectedYear, month, selectedFilter)
+  }
+
+  // Handle filter change
+  const handleFilterChange = (value: string) => {
+    setSelectedFilter(value)
+    updateUrlParams(selectedYear, selectedMonth, value)
   }
 
   const handleGenerateSalaries = async () => {
@@ -113,49 +126,71 @@ export function SalaryManagement({ initialYear, initialMonth }: SalaryManagement
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 items-end">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Month</label>
-              <Select
-                value={selectedMonth.toString()}
-                onValueChange={(value) => handleMonthChange(parseInt(value))}
+          <div className="space-y-6">
+            <div className="flex gap-4 items-end">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Month</label>
+                <Select
+                  value={selectedMonth.toString()}
+                  onValueChange={(value) => handleMonthChange(parseInt(value))}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {months.map((month) => (
+                      <SelectItem key={month.value} value={month.value}>
+                        {month.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Year</label>
+                <Select
+                  value={selectedYear.toString()}
+                  onValueChange={(value) => handleYearChange(parseInt(value))}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button 
+                onClick={handleGenerateSalaries}
+                disabled={isGenerating || !selectedMonth || !selectedYear}
               >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {months.map((month) => (
-                    <SelectItem key={month.value} value={month.value}>
-                      {month.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                {isGenerating ? 'Generating...' : 'Generate Salaries'}
+              </Button>
             </div>
+
             <div className="space-y-2">
-              <label className="text-sm font-medium">Year</label>
-              <Select
-                value={selectedYear.toString()}
-                onValueChange={(value) => handleYearChange(parseInt(value))}
+              <label className="text-sm font-medium">Filter Salaries</label>
+              <ToggleGroup
+                type="single"
+                value={selectedFilter}
+                onValueChange={handleFilterChange}
+                className="justify-start"
               >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <ToggleGroupItem value="all" className="px-3">
+                  All
+                </ToggleGroupItem>
+                <ToggleGroupItem value="with-deductions" className="px-3">
+                  With Deductions
+                </ToggleGroupItem>
+                <ToggleGroupItem value="without-deductions" className="px-3">
+                  Without Deductions
+                </ToggleGroupItem>
+              </ToggleGroup>
             </div>
-            <Button 
-              onClick={handleGenerateSalaries}
-              disabled={isGenerating || !selectedMonth || !selectedYear}
-            >
-              {isGenerating ? 'Generating...' : 'Generate Salaries'}
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -164,6 +199,7 @@ export function SalaryManagement({ initialYear, initialMonth }: SalaryManagement
         key={refreshKey}
         month={selectedMonth}
         year={selectedYear}
+        filter={selectedFilter}
       />
     </div>
   )

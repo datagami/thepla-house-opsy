@@ -6,14 +6,14 @@ import { auth } from "@/auth"
 export default async function SalaryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ year?: string; month?: string }>
+  searchParams: Promise<{ year?: string; month?: string; filter?: string }>
 }) {
   const session = await auth();
   // @ts-expect-error - role is not in the User type
   if (!session || !['HR', 'MANAGEMENT'].includes(session.user.role)) {
     redirect('/dashboard')
   }
-  const {year, month} = await searchParams;
+  const {year, month, filter} = await searchParams;
 
   // Pass the selected year and month from URL to SalaryManagement
   return (
@@ -22,6 +22,7 @@ export default async function SalaryPage({
       <SalaryManagement 
         initialYear={year ? parseInt(year) : undefined}
         initialMonth={month ? parseInt(month) : undefined}
+        initialFilter={filter || 'all'}
       />
     </div>
   )

@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { CalendarIcon, AlertCircle, Edit, Save, X, CheckCircle, ArrowLeft } from 'lucide-react'
 import { AdvancePaymentInstallment, Salary } from "@/models/models"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -28,12 +28,13 @@ import { toast } from 'sonner';
 import { SalaryStatsTable } from '@/components/salary/salary-stats-table'
 
 interface SalaryDetailsProps {
-  salary: Salary
+  salary: Salary;
+  month: string;
+  year: string;
 }
 
 export function SalaryDetails({ salary, month, year }: SalaryDetailsProps) {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [isUpdating, setIsUpdating] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [advanceDeductions, setAdvanceDeductions] = useState<Array<{

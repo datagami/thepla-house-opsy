@@ -24,7 +24,8 @@ export async function GET(req: Request) {
         year,
       },
       include: {
-        user: true
+        user: true,
+        installments: true
       },
       orderBy: {
         createdAt: 'desc',
