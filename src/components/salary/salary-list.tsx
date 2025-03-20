@@ -219,7 +219,7 @@ export function SalaryList({ month, year }: SalaryListProps) {
                     size="sm"
                     asChild
                   >
-                    <Link href={`/salary/${salary.id}`}>
+                    <Link href={`/salary/${salary.id}?month=${month}&year=${year}`}>
                       <PencilIcon className="h-4 w-4 mr-2" />
                     </Link>
                   </Button>

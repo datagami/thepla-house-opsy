@@ -30,12 +30,15 @@ async function getSalaryDetails(id: string) {
 }
 
 export default async function SalaryDetailsPage({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ month?: string; year?: string }>
 }) {
   const {id} = await params;
+  const {month, year} = await searchParams;
   const salary = await getSalaryDetails(id);
 
-  return <SalaryDetails salary={salary} />
+  return <SalaryDetails salary={salary} month={month} year={year} />
 } 

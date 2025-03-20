@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -18,10 +18,17 @@ import {
 } from '@/components/ui/select'
 import { SalaryList } from './salary-list'
 import {toast} from "sonner";
+import { useRouter } from 'next/navigation'
 
-export function SalaryManagement() {
-  const [selectedMonth, setSelectedMonth] = useState<string>('')
-  const [selectedYear, setSelectedYear] = useState<string>('')
+interface SalaryManagementProps {
+  initialYear?: number
+  initialMonth?: number
+}
+
+export function SalaryManagement({ initialYear, initialMonth }: SalaryManagementProps) {
+  const router = useRouter()
+  const [selectedYear, setSelectedYear] = useState(initialYear || new Date().getFullYear())
+  const [selectedMonth, setSelectedMonth] = useState(initialMonth || new Date().getMonth() + 1)
   const [isGenerating, setIsGenerating] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
 
@@ -43,6 +50,26 @@ export function SalaryManagement() {
     { value: '12', label: 'December' },
   ]
 
+  // Update URL when selection changes
+  const updateUrlParams = useCallback((year: number, month: number) => {
+    const params = new URLSearchParams()
+    params.set('year', year.toString())
+    params.set('month', month.toString())
+    router.push(`/salary?${params.toString()}`, { scroll: false })
+  }, [router])
+
+  // Handle year change
+  const handleYearChange = (year: number) => {
+    setSelectedYear(year)
+    updateUrlParams(year, selectedMonth)
+  }
+
+  // Handle month change
+  const handleMonthChange = (month: number) => {
+    setSelectedMonth(month)
+    updateUrlParams(selectedYear, month)
+  }
+
   const handleGenerateSalaries = async () => {
     if (!selectedMonth || !selectedYear) {
       toast.success('Please select both month and year')
@@ -57,8 +84,8 @@ export function SalaryManagement() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          month: parseInt(selectedMonth),
-          year: parseInt(selectedYear),
+          month: parseInt(selectedMonth.toString()),
+          year: parseInt(selectedYear.toString()),
         }),
       })
 
@@ -90,8 +117,8 @@ export function SalaryManagement() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Month</label>
               <Select
-                value={selectedMonth}
-                onValueChange={setSelectedMonth}
+                value={selectedMonth.toString()}
+                onValueChange={(value) => handleMonthChange(parseInt(value))}
               >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Select month" />
@@ -108,8 +135,8 @@ export function SalaryManagement() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Year</label>
               <Select
-                value={selectedYear}
-                onValueChange={setSelectedYear}
+                value={selectedYear.toString()}
+                onValueChange={(value) => handleYearChange(parseInt(value))}
               >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Select year" />
@@ -135,8 +162,8 @@ export function SalaryManagement() {
 
       <SalaryList 
         key={refreshKey}
-        month={parseInt(selectedMonth)}
-        year={parseInt(selectedYear)}
+        month={selectedMonth}
+        year={selectedYear}
       />
     </div>
   )

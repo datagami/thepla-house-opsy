@@ -20,8 +20,8 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { useRouter } from 'next/navigation'
-import { CalendarIcon, AlertCircle, Edit, Save, X, CheckCircle } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { CalendarIcon, AlertCircle, Edit, Save, X, CheckCircle, ArrowLeft } from 'lucide-react'
 import { AdvancePaymentInstallment, Salary } from "@/models/models"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { toast } from 'sonner';
@@ -31,8 +31,9 @@ interface SalaryDetailsProps {
   salary: Salary
 }
 
-export function SalaryDetails({ salary }: SalaryDetailsProps) {
+export function SalaryDetails({ salary, month, year }: SalaryDetailsProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isUpdating, setIsUpdating] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [advanceDeductions, setAdvanceDeductions] = useState<Array<{
@@ -170,6 +171,16 @@ export function SalaryDetails({ salary }: SalaryDetailsProps) {
   // Remove an advance deduction
   const removeAdvanceDeduction = (id: string) => {
     setAdvanceDeductions(prev => prev.filter(item => item.id !== id))
+  }
+
+  const handleBack = () => {
+    // Preserve the year and month when going back
+    const params = new URLSearchParams()
+    if (year) params.set('year', year)
+    if (month) params.set('month', month)
+    
+    const queryString = params.toString()
+    router.push(`/salary${queryString ? `?${queryString}` : ''}`)
   }
 
   const renderAdvanceInstallmentSection = () => {
@@ -368,6 +379,15 @@ export function SalaryDetails({ salary }: SalaryDetailsProps) {
 
   return (
     <div className="container mx-auto p-10 space-y-6">
+      <Button
+        variant="ghost"
+        onClick={handleBack}
+        className="mb-4"
+      >
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back to Salaries
+      </Button>
+
       {renderConfirmationDialog()}
       <Card>
         <CardHeader>
