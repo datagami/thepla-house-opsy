@@ -105,7 +105,7 @@ export async function PATCH(req: Request) {
     }
 
     // Update salary with new advance deductions
-    const updatedSalary = await createOrUpdateSalary({
+    await createOrUpdateSalary({
       userId: existingSalary.userId,
       month: existingSalary.month,
       year: existingSalary.year,
@@ -114,7 +114,7 @@ export async function PATCH(req: Request) {
       status // Optional status update
     })
 
-    return NextResponse.json(updatedSalary)
+    return NextResponse.json(null)
   } catch (error) {
     console.error('Error updating salary:', error)
     return new NextResponse('Internal Server Error', { status: 500 })
