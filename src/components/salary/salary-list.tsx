@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react'
 import {Branch, Salary} from "@/models/models"
 import { Button } from '@/components/ui/button'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Checkbox } from "@/components/ui/checkbox"
+import { toast } from "sonner"
 
 import { SearchIcon } from 'lucide-react'
 import { Input } from "@/components/ui/input"
@@ -16,7 +19,6 @@ import {
 import { CalendarDays, Clock, CalendarOff, CalendarCheck } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { useRouter } from "next/navigation"
 
 interface SalaryListProps {
   month: number
@@ -49,6 +51,13 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
   const [roles, setRoles] = useState([])
   const [branchNames, setBranchNames] = useState<Record<string, string>>({});
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const [selectedSalaries, setSelectedSalaries] = useState<string[]>([])
+  const [isProcessing, setIsProcessing] = useState(false)
+
+  // Get current year and month from URL
+  const currentYear = searchParams.get('year')
+  const currentMonth = searchParams.get('month')
 
   useEffect(() => {
     if (month && year) {
@@ -140,6 +149,81 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
     return days % 1 === 0 ? days.toString() : days.toFixed(1)
   }
 
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      // Only select PENDING salaries
+      const pendingSalaryIds = filteredSalaries
+        .filter(salary => salary.status === 'PENDING')
+        .map(salary => salary.id)
+      setSelectedSalaries(pendingSalaryIds)
+    } else {
+      setSelectedSalaries([])
+    }
+  }
+
+  const handleSelectSalary = (salaryId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedSalaries(prev => [...prev, salaryId])
+    } else {
+      setSelectedSalaries(prev => prev.filter(id => id !== salaryId))
+    }
+  }
+
+  const handleMoveToProcessing = async () => {
+    if (selectedSalaries.length === 0) {
+      toast.error("Please select at least one salary")
+      return
+    }
+
+    try {
+      setIsProcessing(true)
+      const response = await fetch('/api/salary/bulk-update-status', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          salaryIds: selectedSalaries,
+          status: 'PROCESSING'
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update salaries')
+      }
+
+      toast.success(`${selectedSalaries.length} salaries moved to processing`)
+      setSelectedSalaries([])
+      router.refresh()
+    } catch (error) {
+      toast.error('Failed to update salaries')
+      console.error(error)
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const handleViewDetails = (salaryId: string) => {
+    const params = new URLSearchParams()
+    if (currentYear) params.set('year', currentYear)
+    if (currentMonth) params.set('month', currentMonth)
+    
+    router.push(`/salary/${salaryId}?${params.toString()}`)
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PAID':
+        return 'bg-green-50 text-green-700 border-green-200'
+      case 'PROCESSING':
+        return 'bg-blue-50 text-blue-700 border-blue-200'
+      case 'FAILED':
+        return 'bg-red-50 text-red-700 border-red-200'
+      default:
+        return 'bg-gray-50 text-gray-700 border-gray-200'
+    }
+  }
+
   if (!month || !year) {
     return null
   }
@@ -203,26 +287,50 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
         </div>
       </div>
 
+      {/* Bulk Actions */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Checkbox
+            checked={selectedSalaries.length === filteredSalaries.filter(s => s.status === 'PENDING').length}
+            onCheckedChange={handleSelectAll}
+          />
+          <span className="text-sm text-muted-foreground">
+            {selectedSalaries.length} selected
+          </span>
+        </div>
+        {selectedSalaries.length > 0 && (
+          <Button
+            onClick={handleMoveToProcessing}
+            disabled={isProcessing}
+          >
+            {isProcessing ? 'Processing...' : 'Move to Processing'}
+          </Button>
+        )}
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filteredSalaries.map((salary) => (
           <Card key={salary.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle>{salary.user.name}</CardTitle>
-                  <CardDescription>
-                    {new Date(salary.year, salary.month - 1).toLocaleString('default', { 
-                      month: 'long', 
-                      year: 'numeric' 
-                    })}
-                  </CardDescription>
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-2">
+                  {salary.status === 'PENDING' && (
+                    <Checkbox
+                      checked={selectedSalaries.includes(salary.id)}
+                      onCheckedChange={(checked) => handleSelectSalary(salary.id, checked as boolean)}
+                    />
+                  )}
+                  <div>
+                    <CardTitle>{salary.user.name}</CardTitle>
+                    <CardDescription>
+                      {new Date(salary.year, salary.month - 1).toLocaleString('default', { 
+                        month: 'long', 
+                        year: 'numeric' 
+                      })}
+                    </CardDescription>
+                  </div>
                 </div>
-                <Badge variant={
-                  salary.status === 'PAID' ? 'default' :
-                  salary.status === 'PROCESSING' ? 'secondary' :
-                  salary.status === 'FAILED' ? 'destructive' :
-                  'outline'
-                }>
+                <Badge className={getStatusColor(salary.status)}>
                   {salary.status}
                 </Badge>
               </div>
@@ -305,7 +413,7 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
               <Button 
                 variant="outline" 
                 className="w-full"
-                onClick={() => router.push(`/salary/${salary.id}`)}
+                onClick={() => handleViewDetails(salary.id)}
               >
                 View Details
               </Button>
