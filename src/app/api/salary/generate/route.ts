@@ -34,14 +34,16 @@ export async function POST(request: Request) {
       let halfDays = 0;
       let overtimeDays = 0;
 
+      console.log(attendanceData);
       for (const attendance of attendanceData) {
-        if (attendance.isPresent) {
-          presentDays = presentDays + 1;
-        } else if (attendance.isHalfDay) {
-          presentDays = presentDays + 0.5;
-          halfDays = halfDays + 1;
-        } else if (attendance.overtime) {
+        if (attendance.isPresent && attendance.overtime) {
           overtimeDays = overtimeDays + 1;
+          presentDays = presentDays + 1;
+        } else if (attendance.isPresent && attendance.isHalfDay) {
+          halfDays = halfDays + 1;
+          presentDays = presentDays + 0.5;
+        } else if (attendance.isPresent) {
+          presentDays = presentDays + 1;
         }
       }
 

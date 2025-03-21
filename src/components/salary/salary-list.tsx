@@ -1,18 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import {Branch, Salary} from "@/models/models"
 import { Button } from '@/components/ui/button'
-import Link from 'next/link'
-import { PencilIcon, SearchIcon } from 'lucide-react'
+
+import { SearchIcon } from 'lucide-react'
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -21,6 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { CalendarDays, Clock, CalendarOff, CalendarCheck } from 'lucide-react'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { useRouter } from "next/navigation"
 
 interface SalaryListProps {
   month: number
@@ -52,7 +48,7 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
   const [branches, setBranches] = useState([])
   const [roles, setRoles] = useState([])
   const [branchNames, setBranchNames] = useState<Record<string, string>>({});
-
+  const router = useRouter()
 
   useEffect(() => {
     if (month && year) {
@@ -88,7 +84,6 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
           return acc;
         }, {});
         setBranchNames(branchNames);
-
       }
     } catch (error) {
       console.error('Error fetching branches:', error)
@@ -140,6 +135,10 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
 
     return matchesSearch && matchesBranch && matchesRole
   })
+
+  const formatDays = (days: number) => {
+    return days % 1 === 0 ? days.toString() : days.toFixed(1)
+  }
 
   if (!month || !year) {
     return null
@@ -204,55 +203,122 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
         </div>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Employee ID</TableHead>
-              <TableHead>Employee</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Branch</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Net Salary</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredSalaries.length > 0 ? (
-              filteredSalaries.map((salary: Salary) => (
-                <TableRow 
-                  key={salary.id}
-                  className={getRowColorClass(salary.status)}
-                >
-                  <TableCell>{salary.user.numId || 'N/A'}</TableCell>
-                  <TableCell>{salary.user.name}</TableCell>
-                  <TableCell>{salary.user.email}</TableCell>
-                  <TableCell>{salary.user.branchId ? branchNames[salary.user.branchId] : 'N/A'}</TableCell>
-                  <TableCell>{salary.user.role || 'N/A'}</TableCell>
-                  <TableCell>{formatCurrency(salary.netSalary)}</TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      asChild
-                    >
-                      <Link href={`/salary/${salary.id}?month=${month}&year=${year}`}>
-                        <PencilIcon className="h-4 w-4 mr-2" />
-                      </Link>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-4">
-                  No salaries found matching the selected filters
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {filteredSalaries.map((salary) => (
+          <Card key={salary.id} className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle>{salary.user.name}</CardTitle>
+                  <CardDescription>
+                    {new Date(salary.year, salary.month - 1).toLocaleString('default', { 
+                      month: 'long', 
+                      year: 'numeric' 
+                    })}
+                  </CardDescription>
+                </div>
+                <Badge variant={
+                  salary.status === 'PAID' ? 'default' :
+                  salary.status === 'PROCESSING' ? 'secondary' :
+                  salary.status === 'FAILED' ? 'destructive' :
+                  'outline'
+                }>
+                  {salary.status}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Salary Information */}
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Net Salary</span>
+                <span className="font-semibold">
+                  {new Intl.NumberFormat('en-IN', {
+                    style: 'currency',
+                    currency: 'INR'
+                  }).format(salary.netSalary)}
+                </span>
+              </div>
+
+              {/* Attendance Metrics */}
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                {/* Present Days */}
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-green-50 rounded-lg">
+                    <CalendarCheck className="h-4 w-4 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Present</p>
+                    <p className="text-sm font-medium">{formatDays(salary.presentDays)} days</p>
+                  </div>
+                </div>
+
+                {/* Half Days */}
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-orange-50 rounded-lg">
+                    <CalendarDays className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Half Days</p>
+                    <p className="text-sm font-medium">{salary.halfDays} days</p>
+                  </div>
+                </div>
+
+                {/* Overtime Days */}
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-blue-50 rounded-lg">
+                    <Clock className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Overtime</p>
+                    <p className="text-sm font-medium">{salary.overtimeDays} days</p>
+                  </div>
+                </div>
+
+                {/* Leave Days */}
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-purple-50 rounded-lg">
+                    <CalendarOff className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Leaves</p>
+                    <p className="text-sm font-medium">{salary.leavesEarned} days</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Deductions Info if any */}
+              {salary.advanceDeduction > 0 && (
+                <div className="pt-2">
+                  <p className="text-sm text-muted-foreground flex items-center justify-between">
+                    <span>Advance Deduction</span>
+                    <span className="text-destructive font-medium">
+                      {new Intl.NumberFormat('en-IN', {
+                        style: 'currency',
+                        currency: 'INR'
+                      }).format(salary.advanceDeduction)}
+                    </span>
+                  </p>
+                </div>
+              )}
+            </CardContent>
+            <CardFooter>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => router.push(`/salary/${salary.id}`)}
+              >
+                View Details
+              </Button>
+            </CardFooter>
+          </Card>
+        ))}
       </div>
+
+      {filteredSalaries.length === 0 && (
+        <div className="text-center py-4">
+          No salaries found matching the selected filters
+        </div>
+      )}
     </div>
   )
 } 
