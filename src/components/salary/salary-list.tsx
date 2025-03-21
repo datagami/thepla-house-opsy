@@ -23,18 +23,14 @@ import { Badge } from "@/components/ui/badge"
 interface SalaryListProps {
   month: number
   year: number
-  filter: string
 }
 
-export function SalaryList({ month, year, filter }: SalaryListProps) {
+export function SalaryList({ month, year }: SalaryListProps) {
   const [salaries, setSalaries] = useState<Salary[]>([])
   const [loading, setLoading] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedBranch, setSelectedBranch] = useState<string | null>(null)
-  const [selectedRole, setSelectedRole] = useState<string | null>(null)
   const [branches, setBranches] = useState([])
   const [roles, setRoles] = useState([])
-  const [branchNames, setBranchNames] = useState<Record<string, string>>({});
+  const [, setBranchNames] = useState<Record<string, string>>({});
   const router = useRouter()
   const searchParams = useSearchParams()
   const [selectedSalaries, setSelectedSalaries] = useState<string[]>([])
@@ -100,21 +96,6 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
       }
     } catch (error) {
       console.error('Error fetching roles:', error)
-    }
-  }
-
-  const filterSalaries = (salaries: Salary[]) => {
-    switch (filter) {
-      case 'with-deductions':
-        return salaries.filter(salary => 
-          salary.installments && salary.installments.length > 0
-        )
-      case 'without-deductions':
-        return salaries.filter(salary => 
-          !salary.installments || salary.installments.length === 0
-        )
-      default:
-        return salaries
     }
   }
 

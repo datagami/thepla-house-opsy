@@ -19,22 +19,16 @@ import {
 import { SalaryList } from './salary-list'
 import {toast} from "sonner";
 import { useRouter } from 'next/navigation'
-import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from "@/components/ui/toggle-group"
 
 interface SalaryManagementProps {
   initialYear?: number
   initialMonth?: number
-  initialFilter: string
 }
 
-export function SalaryManagement({ initialYear, initialMonth, initialFilter }: SalaryManagementProps) {
+export function SalaryManagement({ initialYear, initialMonth }: SalaryManagementProps) {
   const router = useRouter()
   const [selectedYear, setSelectedYear] = useState(initialYear || new Date().getFullYear())
   const [selectedMonth, setSelectedMonth] = useState(initialMonth || new Date().getMonth() + 1)
-  const [selectedFilter, setSelectedFilter] = useState(initialFilter)
   const [isGenerating, setIsGenerating] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
 
@@ -57,30 +51,23 @@ export function SalaryManagement({ initialYear, initialMonth, initialFilter }: S
   ]
 
   // Update URL when selection changes
-  const updateUrlParams = useCallback((year: number, month: number, filter: string) => {
+  const updateUrlParams = useCallback((year: number, month: number) => {
     const params = new URLSearchParams()
     params.set('year', year.toString())
     params.set('month', month.toString())
-    params.set('filter', filter)
     router.push(`/salary?${params.toString()}`, { scroll: false })
   }, [router])
 
   // Handle year change
   const handleYearChange = (year: number) => {
     setSelectedYear(year)
-    updateUrlParams(year, selectedMonth, selectedFilter)
+    updateUrlParams(year, selectedMonth)
   }
 
   // Handle month change
   const handleMonthChange = (month: number) => {
     setSelectedMonth(month)
-    updateUrlParams(selectedYear, month, selectedFilter)
-  }
-
-  // Handle filter change
-  const handleFilterChange = (value: string) => {
-    setSelectedFilter(value)
-    updateUrlParams(selectedYear, selectedMonth, value)
+    updateUrlParams(selectedYear, month)
   }
 
   const handleGenerateSalaries = async () => {
@@ -126,7 +113,7 @@ export function SalaryManagement({ initialYear, initialMonth, initialFilter }: S
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
+          <div className="space-y-2">
             <div className="flex gap-4 items-end">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Month</label>
@@ -178,7 +165,6 @@ export function SalaryManagement({ initialYear, initialMonth, initialFilter }: S
         key={refreshKey}
         month={selectedMonth}
         year={selectedYear}
-        filter={selectedFilter}
       />
     </div>
   )

@@ -29,8 +29,8 @@ import { SalaryStatsTable } from '@/components/salary/salary-stats-table'
 
 interface SalaryDetailsProps {
   salary: Salary;
-  month: string;
-  year: string;
+  month?: string;
+  year?: string;
 }
 
 export function SalaryDetails({ salary, month, year }: SalaryDetailsProps) {
