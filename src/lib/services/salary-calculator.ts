@@ -126,6 +126,7 @@ export async function calculateSalary(userId: string, month: number, year: numbe
   // Initialize counters
   let presentDays = 0;
   let overtimeDays = 0;
+  let halfDays =0
 
   attendance.forEach(day => {
     if (!day.isPresent) {
@@ -134,6 +135,7 @@ export async function calculateSalary(userId: string, month: number, year: numbe
 
     if (day.isHalfDay) {
       presentDays += 0.5;
+      halfDays += 1;
       return;
     }
 
@@ -219,7 +221,9 @@ export async function calculateSalary(userId: string, month: number, year: numbe
     leaveSalary,
     // Add detailed amounts for UI
     presentDaysAmount,
-    presentDays
+    presentDays,
+    overtimeDays,
+    halfDays
   }
 }
 
@@ -228,10 +232,10 @@ export async function createOrUpdateSalary({
   userId,
   month,
   year,
-  advanceDeductions, // Array of {advanceId, amount}
-  salaryId, // Optional, for updates,
-  status, // Optional, for updates
-  updateAdvanceRemaining = false // Only update remaining amounts when explicitly requested
+  advanceDeductions,
+  salaryId,
+  status,
+  updateAdvanceRemaining = false
 }: {
   userId: string;
   month: number;
@@ -260,16 +264,25 @@ export async function createOrUpdateSalary({
         month,
         year,
         baseSalary: salaryDetails.baseSalary,
+        advanceDeduction: totalAdvanceDeduction,
         deductions: totalAdvanceDeduction,
         bonuses: salaryDetails.bonuses,
         netSalary: salaryDetails.netSalary - totalAdvanceDeduction,
+        presentDays: salaryDetails.presentDays,
+        overtimeDays: salaryDetails.overtimeDays || 0,
+        halfDays: salaryDetails.halfDays || 0,
         leavesEarned: salaryDetails.leavesEarned,
-        leaveSalary: salaryDetails.leaveSalary
+        leaveSalary: salaryDetails.leaveSalary,
+        status: 'PENDING',
       },
       update: {
         deductions: totalAdvanceDeduction,
+        advanceDeduction: totalAdvanceDeduction,
         netSalary: salaryDetails.netSalary - totalAdvanceDeduction,
         status: status as SalaryStatus ?? 'PENDING',
+        presentDays: salaryDetails.presentDays,
+        overtimeDays: salaryDetails.overtimeDays || 0,
+        halfDays: salaryDetails.halfDays || 0,
         leavesEarned: salaryDetails.leavesEarned,
         leaveSalary: salaryDetails.leaveSalary
       }
@@ -284,7 +297,7 @@ export async function createOrUpdateSalary({
 
     // Create advance installments
     for (const deduction of advanceDeductions) {
-      if (deduction.amount > 0) { // Only create installments for positive amounts
+      if (deduction.amount > 0) {
         await tx.advancePaymentInstallment.create({
           data: {
             userId,
@@ -296,16 +309,13 @@ export async function createOrUpdateSalary({
           }
         });
 
-        // Only update advance payment remaining amount if explicitly requested
         if (updateAdvanceRemaining) {
-          // Update advance payment remaining amount
           await tx.advancePayment.update({
             where: { id: deduction.advanceId },
             data: {
               remainingAmount: {
                 decrement: deduction.amount
               },
-              // Only set as settled if remaining amount will be 0
               isSettled: {
                 set: !!(await tx.advancePayment.findUnique({
                   where: { id: deduction.advanceId }

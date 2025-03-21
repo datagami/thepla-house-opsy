@@ -242,16 +242,16 @@ model Salary {
   month             Int
   year              Int
   baseSalary        Float
-  advanceDeduction  Float
-  bonuses           Float
-  deductions        Float
+  advanceDeduction  Float     @default(0)
+  deductions        Float     @default(0)
+  bonuses           Float     @default(0)
   netSalary         Float
   presentDays       Float     @default(0)
   overtimeDays      Int       @default(0)
   halfDays          Int       @default(0)
   leavesEarned      Int       @default(0)
   leaveSalary       Float     @default(0)
-  status            String
+  status            String    @default("PENDING")
   paidAt            DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
