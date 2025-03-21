@@ -7,6 +7,18 @@ CREATE TYPE "UserStatus" AS ENUM ('PENDING', 'ACTIVE', 'INACTIVE');
 -- CreateEnum
 CREATE TYPE "LeaveType" AS ENUM ('CASUAL', 'SICK', 'ANNUAL', 'UNPAID', 'OTHER');
 
+-- CreateEnum
+CREATE TYPE "AttendanceStatus" AS ENUM ('PENDING_VERIFICATION', 'APPROVED', 'REJECTED');
+
+-- CreateEnum
+CREATE TYPE "SalaryStatus" AS ENUM ('PENDING', 'PROCESSING', 'PAID', 'FAILED');
+
+-- CreateEnum
+CREATE TYPE "AdvanceStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'SETTLED');
+
+-- CreateEnum
+CREATE TYPE "InstallmentStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'PAID');
+
 -- CreateTable
 CREATE TABLE "accounts" (
     "id" TEXT NOT NULL,
@@ -54,6 +66,19 @@ CREATE TABLE "users1" (
     "approved_by_id" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "title" TEXT,
+    "doj" TIMESTAMP(3),
+    "department" TEXT,
+    "mobileNo" TEXT,
+    "dob" TIMESTAMP(3),
+    "gender" TEXT,
+    "panNo" TEXT,
+    "aadharNo" TEXT,
+    "salary" DOUBLE PRECISION,
+    "total_advance_balance" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "total_emi_deduction" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "bankAccountNo" TEXT,
+    "bankIfscCode" TEXT,
 
     CONSTRAINT "users1_pkey" PRIMARY KEY ("id")
 );
@@ -94,12 +119,13 @@ CREATE TABLE "attendance" (
     "shift_1" BOOLEAN NOT NULL DEFAULT false,
     "shift_2" BOOLEAN NOT NULL DEFAULT false,
     "shift_3" BOOLEAN NOT NULL DEFAULT false,
-    "status" TEXT NOT NULL DEFAULT 'PENDING_VERIFICATION',
+    "status" "AttendanceStatus" NOT NULL DEFAULT 'PENDING_VERIFICATION',
     "verified_by_id" TEXT,
     "verified_at" TIMESTAMP(3),
     "verification_note" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "branchId" TEXT NOT NULL,
 
     CONSTRAINT "attendance_pkey" PRIMARY KEY ("id")
 );
@@ -118,6 +144,78 @@ CREATE TABLE "leave_requests" (
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "leave_requests_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Reference" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "contactNo" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Reference_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Salary" (
+    "id" TEXT NOT NULL,
+    "numId" SERIAL NOT NULL,
+    "userId" TEXT NOT NULL,
+    "month" INTEGER NOT NULL,
+    "year" INTEGER NOT NULL,
+    "baseSalary" DOUBLE PRECISION NOT NULL,
+    "advanceDeduction" DOUBLE PRECISION NOT NULL,
+    "bonuses" DOUBLE PRECISION NOT NULL,
+    "deductions" DOUBLE PRECISION NOT NULL,
+    "netSalary" DOUBLE PRECISION NOT NULL,
+    "presentDays" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "overtimeDays" INTEGER NOT NULL DEFAULT 0,
+    "halfDays" INTEGER NOT NULL DEFAULT 0,
+    "leavesEarned" INTEGER NOT NULL DEFAULT 0,
+    "leaveSalary" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "status" TEXT NOT NULL,
+    "paidAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Salary_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "advance_payments" (
+    "id" TEXT NOT NULL,
+    "num_id" SERIAL NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "amount" DOUBLE PRECISION NOT NULL,
+    "emi_amount" DOUBLE PRECISION NOT NULL,
+    "remaining_amount" DOUBLE PRECISION NOT NULL,
+    "reason" TEXT,
+    "status" "AdvanceStatus" NOT NULL DEFAULT 'PENDING',
+    "is_settled" BOOLEAN NOT NULL DEFAULT false,
+    "approved_by_id" TEXT,
+    "approved_at" TIMESTAMP(3),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "advance_payments_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "advance_payment_installments" (
+    "id" TEXT NOT NULL,
+    "num_id" SERIAL NOT NULL,
+    "advance_id" TEXT NOT NULL,
+    "salary_id" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "amount_paid" DOUBLE PRECISION NOT NULL,
+    "status" "InstallmentStatus" NOT NULL DEFAULT 'PENDING',
+    "approved_by_id" TEXT,
+    "approved_at" TIMESTAMP(3),
+    "paid_at" TIMESTAMP(3),
+
+    CONSTRAINT "advance_payment_installments_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -148,7 +246,34 @@ CREATE UNIQUE INDEX "verification_tokens_identifier_token_key" ON "verification_
 CREATE INDEX "attendance_verified_by_id_idx" ON "attendance"("verified_by_id");
 
 -- CreateIndex
+CREATE INDEX "attendance_branchId_idx" ON "attendance"("branchId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "attendance_id_date_key" ON "attendance"("id", "date");
+
+-- CreateIndex
+CREATE INDEX "Reference_userId_idx" ON "Reference"("userId");
+
+-- CreateIndex
+CREATE INDEX "Salary_userId_idx" ON "Salary"("userId");
+
+-- CreateIndex
+CREATE INDEX "Salary_month_year_idx" ON "Salary"("month", "year");
+
+-- CreateIndex
+CREATE INDEX "advance_payments_user_id_idx" ON "advance_payments"("user_id");
+
+-- CreateIndex
+CREATE INDEX "advance_payments_approved_by_id_idx" ON "advance_payments"("approved_by_id");
+
+-- CreateIndex
+CREATE INDEX "advance_payment_installments_advance_id_idx" ON "advance_payment_installments"("advance_id");
+
+-- CreateIndex
+CREATE INDEX "advance_payment_installments_salary_id_idx" ON "advance_payment_installments"("salary_id");
+
+-- CreateIndex
+CREATE INDEX "advance_payment_installments_approved_by_id_idx" ON "advance_payment_installments"("approved_by_id");
 
 -- AddForeignKey
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users1"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -175,4 +300,28 @@ ALTER TABLE "attendance" ADD CONSTRAINT "attendance_user_id_fkey" FOREIGN KEY ("
 ALTER TABLE "attendance" ADD CONSTRAINT "attendance_verified_by_id_fkey" FOREIGN KEY ("verified_by_id") REFERENCES "users1"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "attendance" ADD CONSTRAINT "attendance_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "branches"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "leave_requests" ADD CONSTRAINT "leave_requests_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users1"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Reference" ADD CONSTRAINT "Reference_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users1"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Salary" ADD CONSTRAINT "Salary_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users1"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "advance_payments" ADD CONSTRAINT "advance_payments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users1"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "advance_payments" ADD CONSTRAINT "advance_payments_approved_by_id_fkey" FOREIGN KEY ("approved_by_id") REFERENCES "users1"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "advance_payment_installments" ADD CONSTRAINT "advance_payment_installments_advance_id_fkey" FOREIGN KEY ("advance_id") REFERENCES "advance_payments"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "advance_payment_installments" ADD CONSTRAINT "advance_payment_installments_salary_id_fkey" FOREIGN KEY ("salary_id") REFERENCES "Salary"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "advance_payment_installments" ADD CONSTRAINT "advance_payment_installments_approved_by_id_fkey" FOREIGN KEY ("approved_by_id") REFERENCES "users1"("id") ON DELETE SET NULL ON UPDATE CASCADE;

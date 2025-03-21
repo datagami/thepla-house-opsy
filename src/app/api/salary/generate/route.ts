@@ -6,6 +6,24 @@ import {auth} from "@/auth"
 export async function POST(request: Request) {
   try {
     const {month, year} = await request.json()
+    const daysInMonth = new Date(year, month, 0).getDate()
+
+    // Check for existing salaries for this month
+    const existingSalaries = await prisma.salary.findMany({
+      where: {
+        month,
+        year,
+      },
+      select: {
+        userId: true,
+        status: true
+      }
+    })
+
+    // Create a map of existing salaries for quick lookup
+    const existingSalaryMap = new Map(
+      existingSalaries.map(salary => [salary.userId, salary.status])
+    )
 
     // Get all active users
     const users = await prisma.user.findMany({
@@ -17,7 +35,32 @@ export async function POST(request: Request) {
       }
     })
 
-    const salaries = await Promise.all(users.map(async (user) => {
+    // Filter out users whose salaries are already processed (not in PENDING state)
+    const usersToProcess = users.filter(user => {
+      const existingStatus = existingSalaryMap.get(user.id)
+      return !existingStatus || existingStatus === 'PENDING'
+    })
+
+    if (usersToProcess.length === 0) {
+      return NextResponse.json(
+        { message: 'All salaries for this month have already been processed' },
+        { status: 400 }
+      )
+    }
+
+    const salaries = await Promise.all(usersToProcess.map(async (user) => {
+      // Delete existing PENDING salary if exists
+      if (existingSalaryMap.get(user.id) === 'PENDING') {
+        await prisma.salary.deleteMany({
+          where: {
+            userId: user.id,
+            month,
+            year,
+            status: 'PENDING'
+          }
+        })
+      }
+
       // Get attendance data for the month
       const attendanceData = await prisma.attendance.findMany({
         where: {
@@ -30,22 +73,13 @@ export async function POST(request: Request) {
         }
       })
 
-      let presentDays = 0;
-      let halfDays = 0;
-      let overtimeDays = 0;
+      // Calculate attendance metrics
+      const presentDays = attendanceData.filter(a => a.isPresent && !a.isHalfDay && !a.overtime).length
+      const halfDays = attendanceData.filter(a => a.isHalfDay).length
+      const overtimeDays = attendanceData.filter(a => a.overtime).length
 
-      console.log(attendanceData);
-      for (const attendance of attendanceData) {
-        if (attendance.isPresent && attendance.overtime) {
-          overtimeDays = overtimeDays + 1;
-          presentDays = presentDays + 1;
-        } else if (attendance.isPresent && attendance.isHalfDay) {
-          halfDays = halfDays + 1;
-          presentDays = presentDays + 0.5;
-        } else if (attendance.isPresent) {
-          presentDays = presentDays + 1;
-        }
-      }
+      // Calculate total present days (including half days)
+      const totalPresentDays = presentDays + (halfDays * 0.5) + overtimeDays
 
       // Get leave data for the month
       const leaveData = await prisma.leaveRequest.findMany({
@@ -75,8 +109,18 @@ export async function POST(request: Request) {
         return total + days
       }, 0)
 
-      // Calculate leave salary (assuming it's based on some business logic)
-      const leaveSalary = (user.salary || 0) * (leavesEarned / 30) // Example calculation
+      // Calculate per day salary
+      const perDaySalary = (user.salary || 0) / daysInMonth
+
+      // Calculate base earnings for present days
+      const presentDaysEarnings = perDaySalary * totalPresentDays
+
+      // Calculate leave salary
+      const leaveSalary = perDaySalary * leavesEarned
+
+      // Calculate overtime bonus (if applicable)
+      const overtimeRate = 0.5 // 150% of regular pay for overtime
+      const overtimeBonus = overtimeDays * (perDaySalary * overtimeRate)
 
       // Get advance payment installments
       const advanceInstallments = await prisma.advancePaymentInstallment.findMany({
@@ -96,9 +140,9 @@ export async function POST(request: Request) {
 
       // Calculate net salary
       const baseSalary = user.salary || 0
-      const netSalary = baseSalary - advanceDeduction + leaveSalary
+      const netSalary = presentDaysEarnings + leaveSalary + overtimeBonus - advanceDeduction
 
-      // Create salary record
+      // Create new salary record
       return prisma.salary.create({
         data: {
           userId: user.id,
@@ -106,10 +150,10 @@ export async function POST(request: Request) {
           year,
           baseSalary,
           advanceDeduction,
-          bonuses: 0, // Set based on your business logic
-          deductions: 0, // Set based on your business logic
+          bonuses: overtimeBonus,
+          deductions: 0,
           netSalary,
-          presentDays,
+          presentDays: totalPresentDays,
           overtimeDays,
           halfDays,
           leavesEarned,
@@ -122,7 +166,13 @@ export async function POST(request: Request) {
       })
     }))
 
-    return NextResponse.json(salaries)
+    // Return appropriate response
+    return NextResponse.json({
+      message: `Generated/updated salaries for ${salaries.length} employees`,
+      skipped: users.length - usersToProcess.length,
+      processed: salaries.length,
+      salaries
+    })
   } catch (error) {
     console.error('Error generating salaries:', error)
     return NextResponse.json(

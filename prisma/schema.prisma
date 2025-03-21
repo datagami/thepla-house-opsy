@@ -260,6 +260,7 @@ model Salary {
 
   @@index([userId])
   @@index([month, year])
+  @@unique([userId, month, year])
 }
 
 model AdvancePayment {

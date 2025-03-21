@@ -26,21 +26,6 @@ interface SalaryListProps {
   filter: string
 }
 
-const getRowColorClass = (status: string) => {
-  switch (status) {
-    case 'PENDING':
-      return 'bg-yellow-50 hover:bg-yellow-100'
-    case 'PROCESSING':
-      return 'bg-blue-50 hover:bg-blue-100'
-    case 'PAID':
-      return 'bg-green-50 hover:bg-green-100'
-    case 'FAILED':
-      return 'bg-red-50 hover:bg-red-100'
-    default:
-      return ''
-  }
-}
-
 export function SalaryList({ month, year, filter }: SalaryListProps) {
   const [salaries, setSalaries] = useState([])
   const [loading, setLoading] = useState(false)
@@ -109,13 +94,6 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
     } catch (error) {
       console.error('Error fetching roles:', error)
     }
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-    }).format(amount)
   }
 
   const filterSalaries = (salaries: Salary[]) => {
@@ -222,6 +200,11 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
       default:
         return 'bg-gray-50 text-gray-700 border-gray-200'
     }
+  }
+
+  const calculatePerDaySalary = (baseSalary: number) => {
+    // Assuming 30 days per month for salary calculation
+    return baseSalary / 30
   }
 
   if (!month || !year) {
@@ -336,15 +319,36 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Salary Information */}
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Net Salary</span>
-                <span className="font-semibold">
-                  {new Intl.NumberFormat('en-IN', {
-                    style: 'currency',
-                    currency: 'INR'
-                  }).format(salary.netSalary)}
-                </span>
+              {/* Salary Information - Updated */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Base Salary</span>
+                  <span className="font-semibold">
+                    {new Intl.NumberFormat('en-IN', {
+                      style: 'currency',
+                      currency: 'INR'
+                    }).format(salary.baseSalary)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Per Day</span>
+                  <span className="font-medium text-muted-foreground">
+                    {new Intl.NumberFormat('en-IN', {
+                      style: 'currency',
+                      currency: 'INR',
+                      maximumFractionDigits: 0
+                    }).format(calculatePerDaySalary(salary.baseSalary))}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center pt-1 border-t">
+                  <span className="text-sm font-medium">Net Salary</span>
+                  <span className="font-semibold text-green-600">
+                    {new Intl.NumberFormat('en-IN', {
+                      style: 'currency',
+                      currency: 'INR'
+                    }).format(salary.netSalary)}
+                  </span>
+                </div>
               </div>
 
               {/* Attendance Metrics */}
@@ -394,7 +398,7 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
                 </div>
               </div>
 
-              {/* Deductions Info if any */}
+              {/* Deductions Info */}
               {salary.advanceDeduction > 0 && (
                 <div className="pt-2">
                   <p className="text-sm text-muted-foreground flex items-center justify-between">

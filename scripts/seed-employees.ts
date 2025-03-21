@@ -25,12 +25,33 @@ const BRANCHES_DATA = [
   },
 ];
 
-const branchIds = await prisma.branch.createMany({
-  data: BRANCHES_DATA,
-});
+// Department options
+const DEPARTMENTS = ['Kitchen', 'Service', 'Housekeeping', 'Management', 'Accounts'];
 
-const BRANCHES = await prisma.branch.findMany({});
+// Title options
+const TITLES = ['Mr', 'Mrs', 'Ms'];
 
+// Bank options
+const BANKS = [
+  { name: 'HDFC', ifscPrefix: 'HDFC0' },
+  { name: 'ICICI', ifscPrefix: 'ICIC0' },
+  { name: 'SBI', ifscPrefix: 'SBIN0' }
+];
+
+// Generate random date within a range
+function randomDate(start: Date, end: Date) {
+  return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+}
+
+// Generate random number string of specific length
+function generateRandomNumber(length: number): string {
+  return Array.from({ length }, () => Math.floor(Math.random() * 10)).join('');
+}
+
+// Generate random salary between range
+function generateRandomSalary(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
 const FIRST_NAMES = [
   'Aarav', 'Advait', 'Arjun', 'Dev', 'Ishaan',
@@ -44,6 +65,12 @@ const LAST_NAMES = [
 ];
 
 async function main() {
+  await prisma.branch.createMany({
+    data: BRANCHES_DATA,
+  });
+
+  const BRANCHES = await prisma.branch.findMany({});
+
   // Create branch managers first
   for (const branchData of BRANCHES) {
     const branch = await prisma.branch.findUnique({
@@ -65,6 +92,20 @@ async function main() {
         status: UserStatus.ACTIVE,
         branchId: branchData.id,
         managedBranchId: branchData.id,
+        // Additional fields for managers
+        title: TITLES[Math.floor(Math.random() * TITLES.length)],
+        department: 'Management',
+        dob: randomDate(new Date(1970, 0, 1), new Date(1995, 11, 31)),
+        doj: randomDate(new Date(2020, 0, 1), new Date(2024, 11, 31)),
+        gender: Math.random() > 0.5 ? 'MALE' : 'FEMALE',
+        mobileNo: generateRandomNumber(10),
+        panNo: `ABCDE${generateRandomNumber(4)}F`,
+        aadharNo: generateRandomNumber(12),
+        salary: Math.floor(generateRandomSalary(12000, 35000) / 1000) * 1000,
+        bankAccountNo: generateRandomNumber(12),
+        bankIfscCode: `${BANKS[Math.floor(Math.random() * BANKS.length)].ifscPrefix}${generateRandomNumber(6)}`,
+        totalAdvanceBalance: 0,
+        totalEmiDeduction: 0
       },
     });
 
@@ -76,6 +117,8 @@ async function main() {
       const lastName = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
       const name = `${firstName} ${lastName}`;
       const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${branchName.split(" ").join("_")}${i}@example.com`;
+      const department = DEPARTMENTS[Math.floor(Math.random() * DEPARTMENTS.length)];
+      const selectedBank = BANKS[Math.floor(Math.random() * BANKS.length)];
 
       await prisma.user.create({
         data: {
@@ -85,6 +128,20 @@ async function main() {
           role: UserRole.EMPLOYEE,
           status: UserStatus.ACTIVE,
           branchId: branchData.id,
+          // Additional employee data
+          title: TITLES[Math.floor(Math.random() * TITLES.length)],
+          department,
+          dob: randomDate(new Date(1980, 0, 1), new Date(2000, 11, 31)),
+          doj: randomDate(new Date(2022, 0, 1), new Date(2024, 11, 31)),
+          gender: Math.random() > 0.5 ? 'MALE' : 'FEMALE',
+          mobileNo: generateRandomNumber(10),
+          panNo: `ABCDE${generateRandomNumber(4)}F`,
+          aadharNo: generateRandomNumber(12),
+          salary: generateRandomSalary(20000, 40000),
+          bankAccountNo: generateRandomNumber(12),
+          bankIfscCode: `${selectedBank.ifscPrefix}${generateRandomNumber(6)}`,
+          totalAdvanceBalance: Math.random() > 0.7 ? generateRandomSalary(5000, 15000) : 0,
+          totalEmiDeduction: 0 // This will be calculated based on advances
         },
       });
     }
