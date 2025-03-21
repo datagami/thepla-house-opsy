@@ -137,10 +137,10 @@ async function main() {
           mobileNo: generateRandomNumber(10),
           panNo: `ABCDE${generateRandomNumber(4)}F`,
           aadharNo: generateRandomNumber(12),
-          salary: generateRandomSalary(20000, 40000),
+          salary: Math.floor(generateRandomSalary(12000, 35000) / 1000) * 1000,
           bankAccountNo: generateRandomNumber(12),
           bankIfscCode: `${selectedBank.ifscPrefix}${generateRandomNumber(6)}`,
-          totalAdvanceBalance: Math.random() > 0.7 ? generateRandomSalary(5000, 15000) : 0,
+          totalAdvanceBalance: 0,
           totalEmiDeduction: 0 // This will be calculated based on advances
         },
       });

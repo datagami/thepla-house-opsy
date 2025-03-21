@@ -27,7 +27,7 @@ interface SalaryListProps {
 }
 
 export function SalaryList({ month, year, filter }: SalaryListProps) {
-  const [salaries, setSalaries] = useState([])
+  const [salaries, setSalaries] = useState<Salary[]>([])
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedBranch, setSelectedBranch] = useState<string | null>(null)
@@ -39,6 +39,13 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
   const searchParams = useSearchParams()
   const [selectedSalaries, setSelectedSalaries] = useState<string[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
+  const [selectedFilters, setSelectedFilters] = useState({
+    deductions: 'all',
+    status: 'all',
+    search: '',
+    branch: 'all',
+    role: 'all'
+  })
 
   // Get current year and month from URL
   const currentYear = searchParams.get('year')
@@ -111,17 +118,39 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
     }
   }
 
-  const filteredSalaries = filterSalaries(salaries).filter((salary: Salary) => {
-    const matchesSearch = searchTerm === '' || 
-      salary.user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      salary.user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      salary.user.numId?.toString().includes(searchTerm)
+  const getFilteredSalaries = () => {
+    return salaries.filter(salary => {
+      // Search filter
+      const matchesSearch = !selectedFilters.search || 
+        salary.user.name?.toLowerCase().includes(selectedFilters.search.toLowerCase()) ||
+        salary.user.email?.toLowerCase().includes(selectedFilters.search.toLowerCase()) ||
+        salary.user.numId?.toString().includes(selectedFilters.search)
 
-    const matchesBranch = !selectedBranch || salary.user.branchId === selectedBranch
-    const matchesRole = !selectedRole || salary.user.role === selectedRole
+      // Branch filter
+      const matchesBranch = selectedFilters.branch === 'all' || 
+        salary.user.branchId === selectedFilters.branch
 
-    return matchesSearch && matchesBranch && matchesRole
-  })
+      // Role filter
+      const matchesRole = selectedFilters.role === 'all' || 
+        salary.user.role === selectedFilters.role
+
+      // Deductions filter
+      const matchesDeductions = 
+        selectedFilters.deductions === 'all' ? true :
+        selectedFilters.deductions === 'with-deductions' ? salary.advanceDeduction > 0 :
+        selectedFilters.deductions === 'without-deductions' ? salary.advanceDeduction === 0 :
+        true
+
+      // Status filter
+      const matchesStatus = selectedFilters.status === 'all' ? true :
+        salary.status === selectedFilters.status
+
+      return matchesSearch && matchesBranch && matchesRole && 
+             matchesDeductions && matchesStatus
+    })
+  }
+
+  const filteredSalaries = getFilteredSalaries()
 
   const formatDays = (days: number) => {
     return days % 1 === 0 ? days.toString() : days.toFixed(1)
@@ -202,11 +231,6 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
     }
   }
 
-  const calculatePerDaySalary = (baseSalary: number) => {
-    // Assuming 30 days per month for salary calculation
-    return baseSalary / 30
-  }
-
   if (!month || !year) {
     return null
   }
@@ -217,15 +241,18 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-4 items-end">
-        <div className="flex-1">
+      <div className="flex flex-wrap gap-4 items-end">
+        <div className="flex-1 min-w-[200px]">
           <label className="text-sm font-medium mb-2 block">Search</label>
           <div className="relative">
             <SearchIcon className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by name, email, or employee ID"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={selectedFilters.search}
+              onChange={(e) => setSelectedFilters(prev => ({
+                ...prev,
+                search: e.target.value
+              }))}
               className="pl-8"
             />
           </div>
@@ -233,15 +260,18 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
         <div className="w-[200px]">
           <label className="text-sm font-medium mb-2 block">Branch</label>
           <Select 
-            value={selectedBranch || undefined} 
-            onValueChange={setSelectedBranch}
+            value={selectedFilters.branch}
+            onValueChange={(value) => setSelectedFilters(prev => ({
+              ...prev,
+              branch: value
+            }))}
           >
             <SelectTrigger>
               <SelectValue placeholder="All Branches" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Branches</SelectItem>
-              {branches.map((branch: Branch,) => (
+              {branches.map((branch: Branch) => (
                 <SelectItem key={branch.id} value={branch.id}>
                   {branch.name}
                 </SelectItem>
@@ -252,8 +282,11 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
         <div className="w-[200px]">
           <label className="text-sm font-medium mb-2 block">Role</label>
           <Select 
-            value={selectedRole || undefined}
-            onValueChange={setSelectedRole}
+            value={selectedFilters.role}
+            onValueChange={(value) => setSelectedFilters(prev => ({
+              ...prev,
+              role: value
+            }))}
           >
             <SelectTrigger>
               <SelectValue placeholder="All Roles" />
@@ -268,9 +301,66 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
             </SelectContent>
           </Select>
         </div>
+        <div className="w-[200px]">
+          <label className="text-sm font-medium mb-2 block">Deductions</label>
+          <Select 
+            value={selectedFilters.deductions}
+            onValueChange={(value) => setSelectedFilters(prev => ({
+              ...prev,
+              deductions: value
+            }))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Filter by Deductions" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Salaries</SelectItem>
+              <SelectItem value="with-deductions">With Deductions</SelectItem>
+              <SelectItem value="without-deductions">Without Deductions</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="w-[200px]">
+          <label className="text-sm font-medium mb-2 block">Status</label>
+          <Select 
+            value={selectedFilters.status}
+            onValueChange={(value) => setSelectedFilters(prev => ({
+              ...prev,
+              status: value
+            }))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Filter by Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="PENDING">Pending</SelectItem>
+              <SelectItem value="PROCESSING">Processing</SelectItem>
+              <SelectItem value="PAID">Paid</SelectItem>
+              <SelectItem value="FAILED">Failed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {(selectedFilters.deductions !== 'all' || 
+          selectedFilters.status !== 'all' || 
+          selectedFilters.search || 
+          selectedFilters.branch || 
+          selectedFilters.role) && (
+          <Button
+            variant="outline"
+            onClick={() => setSelectedFilters({
+              deductions: 'all',
+              status: 'all',
+              search: '',
+              branch: 'all',
+              role: 'all'
+            })}
+          >
+            Clear Filters
+          </Button>
+        )}
       </div>
 
-      {/* Bulk Actions */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Checkbox
@@ -319,7 +409,6 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Salary Information - Updated */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Base Salary</span>
@@ -328,16 +417,6 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
                       style: 'currency',
                       currency: 'INR'
                     }).format(salary.baseSalary)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Per Day</span>
-                  <span className="font-medium text-muted-foreground">
-                    {new Intl.NumberFormat('en-IN', {
-                      style: 'currency',
-                      currency: 'INR',
-                      maximumFractionDigits: 0
-                    }).format(calculatePerDaySalary(salary.baseSalary))}
                   </span>
                 </div>
                 <div className="flex justify-between items-center pt-1 border-t">
@@ -351,9 +430,7 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
                 </div>
               </div>
 
-              {/* Attendance Metrics */}
               <div className="grid grid-cols-2 gap-3 pt-2">
-                {/* Present Days */}
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-green-50 rounded-lg">
                     <CalendarCheck className="h-4 w-4 text-green-600" />
@@ -364,7 +441,6 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
                   </div>
                 </div>
 
-                {/* Half Days */}
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-orange-50 rounded-lg">
                     <CalendarDays className="h-4 w-4 text-orange-600" />
@@ -375,7 +451,6 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
                   </div>
                 </div>
 
-                {/* Overtime Days */}
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-blue-50 rounded-lg">
                     <Clock className="h-4 w-4 text-blue-600" />
@@ -386,7 +461,6 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
                   </div>
                 </div>
 
-                {/* Leave Days */}
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-purple-50 rounded-lg">
                     <CalendarOff className="h-4 w-4 text-purple-600" />
@@ -398,7 +472,6 @@ export function SalaryList({ month, year, filter }: SalaryListProps) {
                 </div>
               </div>
 
-              {/* Deductions Info */}
               {salary.advanceDeduction > 0 && (
                 <div className="pt-2">
                   <p className="text-sm text-muted-foreground flex items-center justify-between">

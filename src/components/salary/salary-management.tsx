@@ -166,30 +166,9 @@ export function SalaryManagement({ initialYear, initialMonth, initialFilter }: S
               </div>
               <Button 
                 onClick={handleGenerateSalaries}
-                disabled={isGenerating || !selectedMonth || !selectedYear}
-              >
+                disabled={isGenerating || !selectedMonth || !selectedYear}>
                 {isGenerating ? 'Generating...' : 'Generate Salaries'}
               </Button>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Filter Salaries</label>
-              <ToggleGroup
-                type="single"
-                value={selectedFilter}
-                onValueChange={handleFilterChange}
-                className="justify-start"
-              >
-                <ToggleGroupItem value="all" className="px-3">
-                  All
-                </ToggleGroupItem>
-                <ToggleGroupItem value="with-deductions" className="px-3">
-                  With Deductions
-                </ToggleGroupItem>
-                <ToggleGroupItem value="without-deductions" className="px-3">
-                  Without Deductions
-                </ToggleGroupItem>
-              </ToggleGroup>
             </div>
           </div>
         </CardContent>
