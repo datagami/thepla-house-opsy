@@ -1,6 +1,6 @@
 import {NextResponse} from 'next/server'
 import {prisma} from '@/lib/prisma'
-import {createOrUpdateSalary} from '@/lib/services/salary-calculator'
+import {calculateSalary, createOrUpdateSalary} from '@/lib/services/salary-calculator'
 import {auth} from "@/auth"
 
 export async function POST(request: Request) {
@@ -49,126 +49,105 @@ export async function POST(request: Request) {
     }
 
     const salaries = await Promise.all(usersToProcess.map(async (user) => {
-      // Delete existing PENDING salary if exists
+      // Delete existing PENDING salary and its installments if exists
       if (existingSalaryMap.get(user.id) === 'PENDING') {
-        await prisma.salary.deleteMany({
-          where: {
+        await prisma.$transaction([
+          prisma.advancePaymentInstallment.deleteMany({
+            where: {
+              userId: user.id,
+              salary: {
+                month,
+                year,
+                status: 'PENDING'
+              }
+            }
+          }),
+          prisma.salary.deleteMany({
+            where: {
+              userId: user.id,
+              month,
+              year,
+              status: 'PENDING'
+            }
+          })
+        ])
+      }
+
+      // Calculate salary details including suggested advance deductions
+      const salaryDetails = await calculateSalary(user.id, month, year)
+
+      // Get pending advances and calculate suggested installments
+      const pendingAdvances = await prisma.advancePayment.findMany({
+        where: {
+          userId: user.id,
+          status: 'APPROVED',
+          isSettled: false,
+        },
+        include: {
+          installments: {
+            where: {
+              salary: {
+                month,
+                year,
+              }
+            }
+          }
+        }
+      })
+
+      // Create salary record with suggested advance deductions
+      return await prisma.$transaction(async (tx) => {
+        // Create the salary record
+        const salary = await tx.salary.create({
+          data: {
             userId: user.id,
             month,
             year,
+            baseSalary: salaryDetails.baseSalary,
+            advanceDeduction: 0, // Will be updated when installments are approved
+            bonuses: salaryDetails.overtimeAmount,
+            deductions: 0,
+            netSalary: salaryDetails.netSalary,
+            presentDays: salaryDetails.presentDays,
+            overtimeDays: salaryDetails.overtimeDays,
+            halfDays: salaryDetails.halfDays,
+            leavesEarned: salaryDetails.leavesEarned,
+            leaveSalary: salaryDetails.leaveSalary,
             status: 'PENDING'
           }
         })
-      }
 
-      // Get attendance data for the month
-      const attendanceData = await prisma.attendance.findMany({
-        where: {
-          userId: user.id,
-          date: {
-            gte: new Date(year, month - 1, 1),
-            lt: new Date(year, month, 1)
-          },
-          status: 'APPROVED'
-        }
-      })
+        // Create pending installments for each suggested deduction
+        for (const advance of pendingAdvances) {
+          // Skip if advance already has an installment for this month
+          if (advance.installments.length > 0) continue
 
-      // Calculate attendance metrics
-      const presentDays = attendanceData.filter(a => a.isPresent && !a.isHalfDay && !a.overtime).length
-      const halfDays = attendanceData.filter(a => a.isHalfDay).length
-      const overtimeDays = attendanceData.filter(a => a.overtime).length
+          // Calculate suggested amount
+          const suggestedAmount = Math.min(
+            advance.emiAmount,
+            advance.remainingAmount
+          )
 
-      // Calculate total present days (including half days)
-      const totalPresentDays = presentDays + (halfDays * 0.5) + overtimeDays
-
-      // Get leave data for the month
-      const leaveData = await prisma.leaveRequest.findMany({
-        where: {
-          userId: user.id,
-          status: 'APPROVED',
-          startDate: {
-            lte: new Date(year, month, 0) // End of the month
-          },
-          endDate: {
-            gte: new Date(year, month - 1, 1) // Start of the month
+          if (suggestedAmount > 0) {
+            await tx.advancePaymentInstallment.create({
+              data: {
+                userId: user.id,
+                advanceId: advance.id,
+                salaryId: salary.id,
+                amountPaid: suggestedAmount,
+                status: 'PENDING',
+                paidAt: null
+              }
+            })
           }
         }
-      })
 
-      // Calculate leaves earned
-      const leavesEarned = leaveData.reduce((total, leave) => {
-        const startDate = new Date(Math.max(
-          leave.startDate.getTime(),
-          new Date(year, month - 1, 1).getTime()
-        ))
-        const endDate = new Date(Math.min(
-          leave.endDate.getTime(),
-          new Date(year, month, 0).getTime()
-        ))
-        const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
-        return total + days
-      }, 0)
-
-      // Calculate per day salary
-      const perDaySalary = (user.salary || 0) / daysInMonth
-
-      // Calculate base earnings for present days
-      const presentDaysEarnings = perDaySalary * totalPresentDays
-
-      // Calculate leave salary
-      const leaveSalary = perDaySalary * leavesEarned
-
-      // Calculate overtime bonus (if applicable)
-      const overtimeRate = 0.5 // 150% of regular pay for overtime
-      const overtimeBonus = overtimeDays * (perDaySalary * overtimeRate)
-
-      // Get advance payment installments
-      const advanceInstallments = await prisma.advancePaymentInstallment.findMany({
-        where: {
-          userId: user.id,
-          status: 'APPROVED',
-          advance: {
-            status: 'APPROVED'
-          }
-        }
-      })
-
-      const advanceDeduction = advanceInstallments.reduce(
-        (total, installment) => total + installment.amountPaid,
-        0
-      )
-
-      // Calculate net salary
-      const baseSalary = user.salary || 0
-      const netSalary = presentDaysEarnings + leaveSalary + overtimeBonus - advanceDeduction
-
-      // Create new salary record
-      return prisma.salary.create({
-        data: {
-          userId: user.id,
-          month,
-          year,
-          baseSalary,
-          advanceDeduction,
-          bonuses: overtimeBonus,
-          deductions: 0,
-          netSalary,
-          presentDays: totalPresentDays,
-          overtimeDays,
-          halfDays,
-          leavesEarned,
-          leaveSalary,
-          status: 'PENDING',
-          installments: {
-            connect: advanceInstallments.map(i => ({id: i.id}))
-          }
-        }
+        return salary
       })
     }))
 
-    // Return appropriate response
     return NextResponse.json({
-      message: `Generated/updated salaries for ${salaries.length} employees`,
+      message: `Generated salaries for ${salaries.length} employees`,
       skipped: users.length - usersToProcess.length,
       processed: salaries.length,
       salaries
@@ -176,13 +155,13 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error generating salaries:', error)
     return NextResponse.json(
-      {error: 'Failed to generate salaries'},
-      {status: 500}
+      { error: 'Failed to generate salaries' },
+      { status: 500 }
     )
   }
 }
 
-export async function PATCH(req: Request) {
+export async function PATCH(request: Request) {
   try {
     const session = await auth();
     // @ts-expect-error - role is not in the User type
@@ -194,7 +173,7 @@ export async function PATCH(req: Request) {
       salaryId,
       advanceDeductions, // Array of {advanceId, amount}
       status
-    } = await req.json()
+    } = await request.json()
 
     // Validate input
     if (!salaryId || !advanceDeductions) {

@@ -18,8 +18,6 @@ async function getSalaryDetails(id: string) {
     }
   }) as Salary;
 
-  console.log(salary);
-
   if (!salary) {
     throw new Error('Salary not found')
   }

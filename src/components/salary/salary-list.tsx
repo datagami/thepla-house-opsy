@@ -115,11 +115,12 @@ export function SalaryList({ month, year }: SalaryListProps) {
       const matchesRole = selectedFilters.role === 'all' || 
         salary.user.role === selectedFilters.role
 
+      console.log(salary.advanceDeduction, salary)
       // Deductions filter
       const matchesDeductions = 
         selectedFilters.deductions === 'all' ? true :
-        selectedFilters.deductions === 'with-deductions' ? salary.advanceDeduction > 0 :
-        selectedFilters.deductions === 'without-deductions' ? salary.advanceDeduction === 0 :
+        selectedFilters.deductions === 'with-deductions' ? salary.installments.length > 0 :
+        selectedFilters.deductions === 'without-deductions' ? salary.installments.length === 0 :
         true
 
       // Status filter
