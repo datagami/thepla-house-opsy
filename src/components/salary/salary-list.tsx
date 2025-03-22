@@ -158,12 +158,7 @@ export function SalaryList({ month, year }: SalaryListProps) {
     }
   }
 
-  const handleMoveToProcessing = async () => {
-    if (selectedSalaries.length === 0) {
-      toast.error("Please select at least one salary")
-      return
-    }
-
+  const handleBulkUpdateStatus = async () => {
     try {
       setIsProcessing(true)
       const response = await fetch('/api/salary/bulk-update-status', {
@@ -177,16 +172,26 @@ export function SalaryList({ month, year }: SalaryListProps) {
         }),
       })
 
+      const data = await response.json()
+
       if (!response.ok) {
-        throw new Error('Failed to update salaries')
+        if (data.details) {
+          // Show detailed error for each invalid salary
+          data.details.forEach((detail: any) => {
+            toast.error(`Salary ${detail.salaryId}: ${detail.error}`)
+          })
+        } else {
+          toast.error(data.error || 'Failed to update salaries')
+        }
+        return
       }
 
-      toast.success(`${selectedSalaries.length} salaries moved to processing`)
+      toast.success(`Successfully processed ${data.processedIds.length} salaries`)
       setSelectedSalaries([])
       router.refresh()
     } catch (error) {
+      console.error('Error updating salaries:', error)
       toast.error('Failed to update salaries')
-      console.error(error)
     } finally {
       setIsProcessing(false)
     }
@@ -355,7 +360,7 @@ export function SalaryList({ month, year }: SalaryListProps) {
         </div>
         {selectedSalaries.length > 0 && (
           <Button
-            onClick={handleMoveToProcessing}
+            onClick={handleBulkUpdateStatus}
             disabled={isProcessing}
           >
             {isProcessing ? 'Processing...' : 'Move to Processing'}

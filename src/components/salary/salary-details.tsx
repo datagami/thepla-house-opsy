@@ -67,23 +67,31 @@ export function SalaryDetails({ salary, month, year }: SalaryDetailsProps) {
   const handleUpdateStatus = async () => {
     try {
       setIsUpdating(true)
-      const response = await fetch(`/api/salary/${salary.id}/status`, {
+      const response = await fetch('/api/salary/generate', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status: 'PROCESSING' }),
+        body: JSON.stringify({ 
+          salaryId: salary.id,
+          status: 'PROCESSING'
+        }),
       })
 
-      if (response.ok) {
-        router.refresh()
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null)
+        throw new Error(errorData?.error || 'Failed to update status')
       }
+
+      toast.success('Salary moved to processing')
+      router.refresh()
     } catch (error) {
       console.error('Error updating salary status:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to update status')
     } finally {
       setIsUpdating(false)
     }
-  };
+  }
 
   const handleInstallmentAction = async (installmentId: string, action: 'APPROVE' | 'REJECT') => {
     try {
@@ -350,9 +358,11 @@ export function SalaryDetails({ salary, month, year }: SalaryDetailsProps) {
             {salary.status === 'PENDING' && (
               <Button
                 onClick={handleUpdateStatus}
-                disabled={isUpdating}
+                disabled={isUpdating || salary.installments?.some(i => i.status === 'PENDING')}
               >
                 {isUpdating ? 'Updating...' : 'Move to Processing'}
+                {salary.installments?.some(i => i.status === 'PENDING') && 
+                  ' (Pending installments need approval)'}
               </Button>
             )}
           </div>
@@ -361,26 +371,8 @@ export function SalaryDetails({ salary, month, year }: SalaryDetailsProps) {
 
       <SalaryStatsTable salaryId={salary.id} />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CalendarIcon className="h-5 w-5" />
-            Attendance Overview
-          </CardTitle>
-          <CardDescription>
-            Monthly attendance breakdown affecting salary calculation
-          </CardDescription>
-        </CardHeader>
-      </Card>
-
       {renderAdvanceInstallments()}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Salary Breakdown</CardTitle>
-          <CardDescription>Detailed calculation of the final salary</CardDescription>
-        </CardHeader>
-      </Card>
     </div>
   )
 } 

@@ -172,12 +172,12 @@ export async function PATCH(req: Request) {
     const {
       salaryId,
       advanceDeductions,
-      installmentAction, // New parameter for handling individual installments
-      installmentId,     // New parameter for handling individual installments
+      installmentAction,
+      installmentId,
       status
     } = await req.json()
 
-    // Get existing salary record
+    // Get existing salary record with its installments
     const existingSalary = await prisma.salary.findUnique({
       where: { id: salaryId },
       include: {
@@ -194,15 +194,90 @@ export async function PATCH(req: Request) {
       return new NextResponse('Can only edit pending salary records', {status: 400})
     }
 
+    // Handle status change to PROCESSING
+    if (status === 'PROCESSING') {
+      // Check for pending installments
+      const hasPendingInstallments = existingSalary.installments.some(
+        inst => inst.status === 'PENDING'
+      )
+
+      if (hasPendingInstallments) {
+        return NextResponse.json({
+          error: 'Cannot move to processing: There are pending installments that need approval'
+        }, { status: 400 })
+      }
+
+      await prisma.$transaction(async (tx) => {
+        // Get only approved installments
+        const approvedInstallments = existingSalary.installments.filter(
+          inst => inst.status === 'APPROVED'
+        )
+
+        // Calculate total approved deductions
+        const totalApprovedDeductions = approvedInstallments.reduce(
+          (sum, inst) => sum + inst.amountPaid,
+          0
+        )
+
+        // Update salary with final calculations
+        await tx.salary.update({
+          where: { id: salaryId },
+          data: {
+            status: 'PROCESSING',
+            advanceDeduction: totalApprovedDeductions,
+            netSalary: existingSalary.baseSalary + 
+                      existingSalary.bonuses - 
+                      totalApprovedDeductions
+          }
+        })
+
+        // Delete any remaining pending installments (just in case)
+        await tx.advancePaymentInstallment.deleteMany({
+          where: {
+            salaryId,
+            status: 'PENDING'
+          }
+        })
+      })
+
+      return NextResponse.json({
+        message: 'Salary moved to processing successfully'
+      })
+    }
+
     // Handle individual installment actions
     if (installmentAction && installmentId) {
       await prisma.$transaction(async (tx) => {
+        // Get the installment with advance details
+        const installment = await tx.advancePaymentInstallment.findUnique({
+          where: { id: installmentId },
+          include: {
+            advance: true
+          }
+        })
+
+        if (!installment) {
+          throw new Error('Installment not found')
+        }
+
         if (installmentAction === 'APPROVE') {
+          // Update installment status
           await tx.advancePaymentInstallment.update({
             where: { id: installmentId },
             data: {
               status: 'APPROVED',
               paidAt: new Date()
+            }
+          })
+
+          // Update advance payment remaining amount
+          const newRemainingAmount = installment.advance.remainingAmount - installment.amountPaid
+          await tx.advancePayment.update({
+            where: { id: installment.advanceId },
+            data: {
+              remainingAmount: newRemainingAmount,
+              // Set isSettled to true if remaining amount is 0
+              isSettled: newRemainingAmount <= 0
             }
           })
         } else if (installmentAction === 'REJECT') {
@@ -243,32 +318,82 @@ export async function PATCH(req: Request) {
 
     // Handle bulk advance deductions update
     if (advanceDeductions) {
-      await createOrUpdateSalary({
-        userId: existingSalary.userId,
-        month: existingSalary.month,
-        year: existingSalary.year,
-        salaryId,
-        advanceDeductions,
-        status
-      })
-    }
-
-    // Handle status change to PROCESSING
-    if (status === 'PROCESSING') {
-      await prisma.$transaction(async (tx) => {
-        // Delete any pending installments
-        await tx.advancePaymentInstallment.deleteMany({
-          where: {
-            salaryId,
-            status: 'PENDING'
+      // First validate all advance deductions
+      const advanceIds = advanceDeductions.map(ad => ad.advanceId)
+      
+      // Get all advances with their current remaining amounts
+      const advances = await prisma.advancePayment.findMany({
+        where: {
+          id: {
+            in: advanceIds
           }
-        })
+        }
+      })
 
-        // Update salary status
+      // Validate amounts against remaining balances
+      for (const deduction of advanceDeductions) {
+        const advance = advances.find(a => a.id === deduction.advanceId)
+        if (!advance) {
+          return NextResponse.json({
+            error: `Advance payment not found for id: ${deduction.advanceId}`
+          }, { status: 400 })
+        }
+
+        if (deduction.amount > advance.remainingAmount) {
+          return NextResponse.json({
+            error: `Deduction amount ${deduction.amount} exceeds remaining balance ${advance.remainingAmount} for advance ${deduction.advanceId}`
+          }, { status: 400 })
+        }
+      }
+
+      // If validation passes, process all deductions in a transaction
+      await prisma.$transaction(async (tx) => {
+        // Update each advance payment's remaining amount
+        for (const deduction of advanceDeductions) {
+          const advance = advances.find(a => a.id === deduction.advanceId)!
+          const newRemainingAmount = advance.remainingAmount - deduction.amount
+
+          await tx.advancePayment.update({
+            where: { id: deduction.advanceId },
+            data: {
+              remainingAmount: newRemainingAmount,
+              isSettled: newRemainingAmount <= 0
+            }
+          })
+
+          // Create or update the installment
+          await tx.advancePaymentInstallment.create({
+            data: {
+              userId: existingSalary.userId,
+              advanceId: deduction.advanceId,
+              salaryId,
+              amountPaid: deduction.amount,
+              status: 'APPROVED',
+              paidAt: new Date()
+            }
+          })
+        }
+
+        // Calculate total deductions
+        const totalDeductions = advanceDeductions.reduce(
+          (sum, deduction) => sum + deduction.amount,
+          0
+        )
+
+        // Update salary
         await tx.salary.update({
           where: { id: salaryId },
-          data: { status: 'PROCESSING' }
+          data: {
+            advanceDeduction: totalDeductions,
+            netSalary: existingSalary.baseSalary + 
+                      existingSalary.bonuses - 
+                      totalDeductions
+          }
         })
+      })
+
+      return NextResponse.json({
+        message: 'Advance deductions updated successfully'
       })
     }
 
@@ -332,7 +457,7 @@ export async function PUT(request: Request) {
       // Recalculate salary deductions and net salary
       const updatedInstallments = await tx.advancePaymentInstallment.findMany({
         where: {
-          salaryId: installment.salaryId,
+          salaryId,
           status: 'APPROVED'
         }
       })
