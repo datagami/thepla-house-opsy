@@ -14,6 +14,8 @@ function parseDate(dateValue: string | number): Date {
     resultDate.setDate(resultDate.getDate() + offsetDays);
     return resultDate;
   }
+
+  console.log('parse date');
   
   // If it's a string in DD/MM/YYYY format
   const [day, month, year] = dateValue.split('/').map(num => parseInt(num, 10));
