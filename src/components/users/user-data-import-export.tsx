@@ -30,9 +30,9 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
       const response = await fetch('/api/users/export');
       if (!response.ok) throw new Error('Export failed');
       
-      const users = await response.json() as User[];
+      const users = await response.json();
 
-      // Format data for Excel with multiple references
+      // Format data for Excel with date formatting
       const userData = users.map(user => ({
         'Name*': user.name,
         'Email*': user.email,
@@ -41,19 +41,28 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
         'Department*': user.department,
         'Title*': user.title,
         'Role*': user.role,
-        'Branch': user.branch?.name,
-        'DOB*': user.dob,
-        'DOJ*': user.doj,
+        'Branch*': user.branch?.name || '',
+        // Format dates as DD-MM-YYYY
+        'DOB*': new Date(user.dob).toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        }),
+        'DOJ*': new Date(user.doj).toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        }),
         'Salary*': user.salary,
         'PAN No*': user.panNo,
         'Aadhar No*': user.aadharNo,
         'Bank Account No*': user.bankAccountNo,
         'Bank IFSC Code*': user.bankIfscCode,
-        // Multiple references
+        // References
         'Reference 1 Name*': user.references?.[0]?.name || '',
         'Reference 1 Contact*': user.references?.[0]?.contactNo || '',
         'Reference 2 Name': user.references?.[1]?.name || '',
-        'Reference 2 Contact': user.references?.[1]?.contactNo || ''
+        'Reference 2 Contact': user.references?.[1]?.contactNo || '',
       }));
 
       const workbook = XLSX.utils.book_new();
@@ -82,6 +91,11 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
         errors.push(`Missing required field: ${field}`);
       }
     });
+
+    // Branch is required only for EMPLOYEE role
+    if (userData['Role*'] === 'EMPLOYEE' && !userData['Branch*']) {
+      errors.push('Branch is required for EMPLOYEE role');
+    }
 
     // Validate email
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userData['Email*'])) {

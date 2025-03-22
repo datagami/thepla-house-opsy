@@ -3,6 +3,12 @@ import {NextResponse} from 'next/server'
 import {auth} from "@/auth"
 import {hash} from 'bcryptjs'
 
+// Helper function to convert DD-MM-YYYY to Date object
+function parseDate(dateStr: string): Date {
+  const [day, month, year] = dateStr.split('-').map(num => parseInt(num, 10));
+  return new Date(year, month - 1, day); // month is 0-based in JS Date
+}
+
 export async function POST(request: Request) {
   try {
     const session = await auth()
@@ -15,17 +21,28 @@ export async function POST(request: Request) {
 
     await prisma.$transaction(async (tx) => {
       for (const userData of users) {
-        // Find or create branch
-        const branch = await tx.branch.upsert({
-          where: {name: (userData['Branch*'] as string) || ''},
-          update: {},
-          create: {
-            name: userData['Branch*'],
-            address: '',
-            city: '',
-            state: ''
-          }
-        });
+        // Handle branch based on role
+        let branchId = null;
+        if (userData['Role*'] === 'EMPLOYEE') {
+          // First find branch by name
+          const existingBranch = await tx.branch.findFirst({
+            where: { 
+              name: userData['Branch*'] as string 
+            }
+          });
+
+          // Create branch if it doesn't exist
+          const branch = existingBranch || await tx.branch.create({
+            data: {
+              name: userData['Branch*'] as string,
+              address: '',
+              city: '',
+              state: ''
+            }
+          });
+
+          branchId = branch.id;
+        }
 
         // Prepare references data
         const references = [];
@@ -41,12 +58,6 @@ export async function POST(request: Request) {
             contactNo: userData['Reference 2 Contact']
           });
         }
-        if (userData['Reference 3 Name']) {
-          references.push({
-            name: userData['Reference 3 Name'],
-            contactNo: userData['Reference 3 Contact']
-          });
-        }
 
         // Try to find existing user by email
         const existingUser = await tx.user.findUnique({
@@ -54,26 +65,30 @@ export async function POST(request: Request) {
           include: {references: true}
         });
 
+        // Common user data
+        const userCommonData = {
+          name: userData['Name*'],
+          mobileNo: userData['Mobile No*'].toString(),
+          gender: userData['Gender*'],
+          department: userData['Department*'],
+          title: userData['Title*'],
+          role: userData['Role*'],
+          // Parse dates from DD-MM-YYYY format
+          dob: parseDate(userData['DOB*']),
+          doj: parseDate(userData['DOJ*']),
+          salary: parseFloat(userData['Salary*']),
+          panNo: userData['PAN No*'],
+          aadharNo: userData['Aadhar No*'].toString(),
+          bankAccountNo: userData['Bank Account No*'].toString(),
+          bankIfscCode: userData['Bank IFSC Code*'].toString(),
+          branchId: branchId,
+        };
+
         if (existingUser) {
           // Update existing user
           await tx.user.update({
             where: {id: existingUser.id},
-            data: {
-              name: userData['Name*'],
-              mobileNo: userData['Mobile No*'],
-              gender: userData['Gender*'],
-              department: userData['Department*'],
-              title: userData['Title*'],
-              role: userData['Role*'],
-              dob: new Date(userData['DOB*']),
-              doj: new Date(userData['DOJ*']),
-              salary: parseFloat(userData['Salary*']),
-              panNo: userData['PAN No*'],
-              aadharNo: userData['Aadhar No*'],
-              bankAccountNo: userData['Bank Account No*'],
-              bankIfscCode: userData['Bank IFSC Code*'],
-              branchId: branch.id,
-            }
+            data: userCommonData
           });
 
           // Delete existing references
@@ -92,23 +107,10 @@ export async function POST(request: Request) {
           // Create new user
           const newUser = await tx.user.create({
             data: {
-              name: userData['Name*'],
+              ...userCommonData,
               email: userData['Email*'],
               password: await hash('password123', 12),
-              mobileNo: userData['Mobile No*'],
-              gender: userData['Gender*'],
-              department: userData['Department*'],
-              title: userData['Title*'],
-              role: userData['Role*'],
               status: 'ACTIVE',
-              dob: new Date(userData['DOB*']),
-              doj: new Date(userData['DOJ*']),
-              salary: parseFloat(userData['Salary*']),
-              panNo: userData['PAN No*'],
-              aadharNo: userData['Aadhar No*'],
-              bankAccountNo: userData['Bank Account No*'],
-              bankIfscCode: userData['Bank IFSC Code*'],
-              branchId: branch.id,
             }
           });
 

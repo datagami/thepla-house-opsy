@@ -157,7 +157,7 @@ model VerificationToken {
 model Branch {
   id        String   @id @default(cuid())
   numId     Int      @default(autoincrement()) @map("num_id")
-  name      String
+  name      String   @unique
   address   String?
   city      String
   state     String
