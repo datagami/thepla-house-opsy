@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 8080",
     "lint": "next lint",
     "seed:employees": "ts-node scripts/seed-employees.ts",
     "seed:attendance": "ts-node scripts/seed-attendance.ts"
