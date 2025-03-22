@@ -145,7 +145,6 @@ export function SalaryDetails({ salary, month, year }: SalaryDetailsProps) {
   }
 
   const handleEditInstallment = async (newAmount: number) => {
-    console.log(editingInstallment);
     if (!editingInstallment) return
 
     try {

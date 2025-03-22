@@ -64,7 +64,6 @@ export function AdvancePaymentsList({ userId, refreshKey = 0 }: AdvancePaymentsL
 
   const fetchPaymentHistory = async (advanceId: string) => {
     try {
-      console.log(userId, advanceId);
       setLoadingHistory(true);
       const response = await fetch(`/api/users/${userId}/advance-payments/${advanceId}/history`);
       if (!response.ok) throw new Error('Failed to fetch history');

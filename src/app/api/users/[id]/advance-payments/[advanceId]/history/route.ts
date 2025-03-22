@@ -18,8 +18,6 @@ export async function GET(
 
     const {id, advanceId} = await params
 
-    console.log(id, advanceId);
-
     const installments = await prisma.advancePaymentInstallment.findMany({
       where: {
         userId: id,
