@@ -8,6 +8,8 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { hasAccess } from "@/lib/access-control";
 import {Branch, User} from "@/models/models";
+import { UserDataActions } from "@/components/users/user-data-actions"
+
 export const metadata: Metadata = {
   title: "Users - HRMS",
   description: "Manage users in the system",
@@ -60,6 +62,8 @@ export default async function UsersPage() {
           </Button>
         </Link>
       </div>
+
+      <UserDataActions />
 
       <UserTable users={users} branches={branches} currentUserRole={role} canEdit={canManageUsers} />
     </div>
