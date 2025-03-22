@@ -8,7 +8,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter
 } from '@/components/ui/card'
 import {
   Dialog,
@@ -18,10 +17,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
-import { CalendarIcon, AlertCircle, Edit, Save, X, CheckCircle, ArrowLeft } from 'lucide-react'
+import { CalendarIcon, AlertCircle, CheckCircle, DollarSign, ArrowLeft } from 'lucide-react'
 import { AdvancePaymentInstallment, Salary } from "@/models/models"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { toast } from 'sonner';
@@ -87,32 +85,32 @@ export function SalaryDetails({ salary, month, year }: SalaryDetailsProps) {
     }
   };
 
-  const handleAdvanceInstallment = async (action: 'APPROVE' | 'REJECT', installment: AdvancePaymentInstallment) => {
+  const handleInstallmentAction = async (installmentId: string, action: 'APPROVE' | 'REJECT') => {
     try {
       setIsUpdating(true)
       
-      // Close dialog if rejecting
       if (action === 'REJECT') {
         setConfirmReject(null)
       }
       
-      const response = await fetch(`/api/salary/${salary.id}/advance-installment`, {
+      const response = await fetch('/api/salary/generate', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          installmentId: installment.id,
-          action 
+          salaryId: salary.id,
+          installmentId,
+          installmentAction: action
         }),
       })
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => null)
-        throw new Error(errorData?.message || `Failed to ${action.toLowerCase()} installment`)
+        throw new Error(errorData?.error || `Failed to ${action.toLowerCase()} installment`)
       }
       
-      toast.success(`Installment ${action.toLowerCase()}d successfully`)
+      toast.success(`Installment ${action.toLowerCase()}ed successfully`)
       router.refresh()
     } catch (error) {
       console.error(`Error ${action.toLowerCase()}ing installment:`, error)
@@ -184,166 +182,104 @@ export function SalaryDetails({ salary, month, year }: SalaryDetailsProps) {
     router.push(`/salary${queryString ? `?${queryString}` : ''}`)
   }
 
-  const renderAdvanceInstallmentSection = () => {
-    if (!salary.installments || salary.installments.length === 0) return null
+  const renderAdvanceInstallments = () => {
+    if (!salary.installments || salary.installments.length === 0) {
+      return null
+    }
 
-    // Group installments by status for better organization
-    const pendingInstallments = salary.installments.filter(i => i.status === 'PENDING');
-    const approvedInstallments = salary.installments.filter(i => i.status === 'APPROVED');
-    const hasInstallments = pendingInstallments.length > 0 || approvedInstallments.length > 0;
-
-    if (!hasInstallments && !editMode) return null;
+    // Group installments by status
+    const pendingInstallments = salary.installments.filter(i => i.status === 'PENDING')
+    const approvedInstallments = salary.installments.filter(i => i.status === 'APPROVED')
 
     return (
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Advance Payment Installments</CardTitle>
-            <CardDescription>
-              {editMode ? 'Edit installments for this salary period' : 
-               pendingInstallments.length > 0 ? 'Pending installments require approval' : 
-               'Approved installments for this salary period'}
-            </CardDescription>
-          </div>
-          {salary.status === 'PENDING' && (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setEditMode(!editMode)}
-              disabled={isUpdating}
-            >
-              {editMode ? <X className="h-4 w-4 mr-2" /> : <Edit className="h-4 w-4 mr-2" />}
-              {editMode ? 'Cancel' : 'Edit'}
-            </Button>
-          )}
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Advance Payment Installments
+          </CardTitle>
+          <CardDescription>
+            Manage advance payment deductions for this salary
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {editMode ? (
-              // Edit mode view
-              advanceDeductions.length > 0 ? (
-                advanceDeductions.map((deduction) => (
-                  <div key={deduction.id} className="flex items-center space-x-4 p-4 border rounded-md">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Advance Installment</p>
-                      <p className="text-sm text-muted-foreground">Original: {formatCurrency(deduction.originalAmount)}</p>
-                    </div>
-                    <div className="w-24">
-                      <Input
-                        type="number"
-                        value={deduction.amount}
-                        onChange={(e) => handleAmountChange(deduction.id, parseFloat(e.target.value) || 0)}
-                        min="0"
-                        step="100"
-                      />
-                    </div>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => removeAdvanceDeduction(deduction.id)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+        <CardContent className="space-y-4">
+          {/* Pending Installments */}
+          {pendingInstallments.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium">Pending Approval</h4>
+              {pendingInstallments.map((installment) => (
+                <Alert 
+                  key={installment.id}
+                  variant="default"
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                >
+                  <div className="flex-1">
+                    <AlertCircle className="h-4 w-4 mb-2" />
+                    <AlertTitle>Pending Installment</AlertTitle>
+                    <AlertDescription className="space-y-1">
+                      <p>Amount: {formatCurrency(installment.amountPaid)}</p>
+                      {installment.advance && (
+                        <p className="text-sm text-muted-foreground">
+                          Remaining: {formatCurrency(installment.advance.remainingAmount)}
+                        </p>
+                      )}
+                    </AlertDescription>
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-4 text-muted-foreground">
-                  No advance installments to edit
-                </div>
-              )
-            ) : (
-              // View mode - show pending and approved separately
-              <div className="space-y-6">
-                {pendingInstallments.length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium">Pending Approval</h4>
-                    {pendingInstallments.map((installment) => (
-                      <Alert 
-                        key={installment.id}
+                  {salary.status === 'PENDING' && (
+                    <div className="flex gap-2">
+                      <Button
                         variant="default"
-                        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                        size="sm"
+                        onClick={() => handleInstallmentAction(installment.id, 'APPROVE')}
+                        disabled={isUpdating}
                       >
-                        <div className="flex-1">
-                          <AlertCircle className="h-4 w-4 mb-2" />
-                          <AlertTitle>Pending Installment</AlertTitle>
-                          <AlertDescription>
-                            Amount: {formatCurrency(installment.amountPaid)}
-                          </AlertDescription>
-                        </div>
-                        {salary.status === 'PENDING' && (
-                          <div className="flex gap-2 mt-2 sm:mt-0">
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={() => handleAdvanceInstallment('APPROVE', installment)}
-                              disabled={isUpdating}
-                            >
-                              {isUpdating ? 'Processing...' : 'Approve'}
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => setConfirmReject(installment)}
-                              disabled={isUpdating}
-                            >
-                              Reject
-                            </Button>
-                          </div>
-                        )}
-                      </Alert>
-                    ))}
-                  </div>
-                )}
-                
-                {approvedInstallments.length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium">Approved Installments</h4>
-                    {approvedInstallments.map((installment) => (
-                      <Alert 
-                        key={installment.id}
-                        variant="default"
-                        className="bg-green-50 border-green-200"
+                        Approve
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleInstallmentAction(installment.id, 'REJECT')}
+                        disabled={isUpdating}
                       >
-                        <div className="flex-1">
-                          <div className="flex items-center">
-                            <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                            <AlertTitle>Approved Installment</AlertTitle>
-                          </div>
-                          <AlertDescription>
-                            <p>Amount: {formatCurrency(installment.amountPaid)}</p>
-                            {installment.approvedAt && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Approved on: {new Date(installment.approvedAt).toLocaleDateString()}
-                              </p>
-                            )}
-                          </AlertDescription>
-                        </div>
-                      </Alert>
-                    ))}
+                        Reject
+                      </Button>
+                    </div>
+                  )}
+                </Alert>
+              ))}
+            </div>
+          )}
+
+          {/* Approved Installments */}
+          {approvedInstallments.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium">Approved Installments</h4>
+              {approvedInstallments.map((installment) => (
+                <Alert 
+                  key={installment.id}
+                  variant="default"
+                  className="bg-green-50 border-green-200"
+                >
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <div>
+                      <AlertTitle>Approved Installment</AlertTitle>
+                      <AlertDescription>
+                        Amount: {formatCurrency(installment.amountPaid)}
+                      </AlertDescription>
+                    </div>
                   </div>
-                )}
-                
-                {pendingInstallments.length === 0 && approvedInstallments.length === 0 && (
-                  <div className="text-center py-4 text-muted-foreground">
-                    No advance installments for this salary period
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+                </Alert>
+              ))}
+            </div>
+          )}
+
+          {pendingInstallments.length === 0 && approvedInstallments.length === 0 && (
+            <div className="text-center py-4 text-muted-foreground">
+              No advance payment installments for this salary
+            </div>
+          )}
         </CardContent>
-        {editMode && advanceDeductions.length > 0 && (
-          <CardFooter>
-            <Button 
-              onClick={saveAdvanceDeductions} 
-              disabled={isUpdating}
-              className="w-full"
-            >
-              {isUpdating ? 'Saving...' : 'Save Changes'}
-              {!isUpdating && <Save className="ml-2 h-4 w-4" />}
-            </Button>
-          </CardFooter>
-        )}
       </Card>
     )
   }
@@ -367,7 +303,7 @@ export function SalaryDetails({ salary, month, year }: SalaryDetailsProps) {
             </Button>
             <Button 
               variant="destructive" 
-              onClick={() => confirmReject && handleAdvanceInstallment('REJECT', confirmReject)}
+              onClick={() => confirmReject && handleInstallmentAction(confirmReject.id, 'REJECT')}
               disabled={isUpdating}
             >
               {isUpdating ? 'Processing...' : 'Confirm Rejection'}
@@ -437,7 +373,7 @@ export function SalaryDetails({ salary, month, year }: SalaryDetailsProps) {
         </CardHeader>
       </Card>
 
-      {renderAdvanceInstallmentSection()}
+      {renderAdvanceInstallments()}
 
       <Card>
         <CardHeader>

@@ -103,8 +103,8 @@ async function main() {
       }
 
       // Set fixed date range for January and February 2025
-      const startDate = new Date(2025, 0, 1); // January 1st, 2025
-      const endDate = new Date(2025, 1, 28); // February 28th, 2025
+      const startDate = new Date(2024, 0, 1); // January 1st, 2025
+      const endDate = new Date(); // February 28th, 2025
 
       // Create attendance records for each user
       for (const employee of employees) {

@@ -161,7 +161,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function PATCH(request: Request) {
+export async function PATCH(req: Request) {
   try {
     const session = await auth();
     // @ts-expect-error - role is not in the User type
@@ -171,23 +171,17 @@ export async function PATCH(request: Request) {
 
     const {
       salaryId,
-      advanceDeductions, // Array of {advanceId, amount}
+      advanceDeductions,
+      installmentAction, // New parameter for handling individual installments
+      installmentId,     // New parameter for handling individual installments
       status
-    } = await request.json()
-
-    // Validate input
-    if (!salaryId || !advanceDeductions) {
-      return new NextResponse('Salary ID and advance deductions are required', {status: 400})
-    }
+    } = await req.json()
 
     // Get existing salary record
     const existingSalary = await prisma.salary.findUnique({
-      where: {id: salaryId},
-      select: {
-        userId: true,
-        month: true,
-        year: true,
-        status: true
+      where: { id: salaryId },
+      include: {
+        installments: true
       }
     })
 
@@ -200,19 +194,174 @@ export async function PATCH(request: Request) {
       return new NextResponse('Can only edit pending salary records', {status: 400})
     }
 
-    // Update salary with new advance deductions
-    await createOrUpdateSalary({
-      userId: existingSalary.userId,
-      month: existingSalary.month,
-      year: existingSalary.year,
-      salaryId,
-      advanceDeductions,
-      status // Optional status update
-    })
+    // Handle individual installment actions
+    if (installmentAction && installmentId) {
+      await prisma.$transaction(async (tx) => {
+        if (installmentAction === 'APPROVE') {
+          await tx.advancePaymentInstallment.update({
+            where: { id: installmentId },
+            data: {
+              status: 'APPROVED',
+              paidAt: new Date()
+            }
+          })
+        } else if (installmentAction === 'REJECT') {
+          await tx.advancePaymentInstallment.delete({
+            where: { id: installmentId }
+          })
+        }
 
-    return NextResponse.json(null)
+        // Recalculate total deductions
+        const approvedInstallments = await tx.advancePaymentInstallment.findMany({
+          where: {
+            salaryId,
+            status: 'APPROVED'
+          }
+        })
+
+        const totalDeductions = approvedInstallments.reduce(
+          (sum, inst) => sum + inst.amountPaid,
+          0
+        )
+
+        // Update salary
+        await tx.salary.update({
+          where: { id: salaryId },
+          data: {
+            advanceDeduction: totalDeductions,
+            netSalary: existingSalary.baseSalary + 
+                      existingSalary.bonuses - 
+                      totalDeductions
+          }
+        })
+      })
+
+      return NextResponse.json({
+        message: `Installment ${installmentAction.toLowerCase()}ed successfully`
+      })
+    }
+
+    // Handle bulk advance deductions update
+    if (advanceDeductions) {
+      await createOrUpdateSalary({
+        userId: existingSalary.userId,
+        month: existingSalary.month,
+        year: existingSalary.year,
+        salaryId,
+        advanceDeductions,
+        status
+      })
+    }
+
+    // Handle status change to PROCESSING
+    if (status === 'PROCESSING') {
+      await prisma.$transaction(async (tx) => {
+        // Delete any pending installments
+        await tx.advancePaymentInstallment.deleteMany({
+          where: {
+            salaryId,
+            status: 'PENDING'
+          }
+        })
+
+        // Update salary status
+        await tx.salary.update({
+          where: { id: salaryId },
+          data: { status: 'PROCESSING' }
+        })
+      })
+    }
+
+    return NextResponse.json({ message: 'Salary updated successfully' })
+
   } catch (error) {
     console.error('Error updating salary:', error)
     return new NextResponse('Internal Server Error', {status: 500})
+  }
+}
+
+// Add a new endpoint to manage advance installment approvals
+export async function PUT(request: Request) {
+  try {
+    const session = await auth();
+    // @ts-expect-error - role is not in the User type
+    if (!session || !['HR', 'MANAGEMENT'].includes(session.user.role)) {
+      return new NextResponse('Unauthorized', {status: 401})
+    }
+
+    const { installmentId, action } = await request.json()
+
+    const installment = await prisma.advancePaymentInstallment.findUnique({
+      where: { id: installmentId },
+      include: {
+        salary: true
+      }
+    })
+
+    if (!installment) {
+      return NextResponse.json(
+        { error: 'Installment not found' },
+        { status: 404 }
+      )
+    }
+
+    if (installment.salary.status !== 'PENDING') {
+      return NextResponse.json(
+        { error: 'Can only modify installments for pending salaries' },
+        { status: 400 }
+      )
+    }
+
+    await prisma.$transaction(async (tx) => {
+      if (action === 'APPROVE') {
+        // Update installment status
+        await tx.advancePaymentInstallment.update({
+          where: { id: installmentId },
+          data: {
+            status: 'APPROVED',
+            paidAt: new Date()
+          }
+        })
+      } else if (action === 'REJECT') {
+        // Delete the installment
+        await tx.advancePaymentInstallment.delete({
+          where: { id: installmentId }
+        })
+      }
+
+      // Recalculate salary deductions and net salary
+      const updatedInstallments = await tx.advancePaymentInstallment.findMany({
+        where: {
+          salaryId: installment.salaryId,
+          status: 'APPROVED'
+        }
+      })
+
+      const totalDeductions = updatedInstallments.reduce(
+        (sum, inst) => sum + inst.amountPaid,
+        0
+      )
+
+      await tx.salary.update({
+        where: { id: installment.salaryId },
+        data: {
+          advanceDeduction: totalDeductions,
+          netSalary: installment.salary.baseSalary + 
+                     installment.salary.bonuses - 
+                     totalDeductions
+        }
+      })
+    })
+
+    return NextResponse.json({
+      message: `Installment ${action.toLowerCase()}ed successfully`
+    })
+
+  } catch (error) {
+    console.error('Error managing installment:', error)
+    return NextResponse.json(
+      { error: 'Failed to manage installment' },
+      { status: 500 }
+    )
   }
 } 
