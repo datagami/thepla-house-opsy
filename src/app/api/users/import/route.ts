@@ -3,10 +3,21 @@ import {NextResponse} from 'next/server'
 import {auth} from "@/auth"
 import {hash} from 'bcryptjs'
 
-// Helper function to convert DD-MM-YYYY to Date object
-function parseDate(dateStr: string): Date {
-  const [day, month, year] = dateStr.split('-').map(num => parseInt(num, 10));
-  return new Date(year, month - 1, day); // month is 0-based in JS Date
+// Helper function to convert Excel date or DD/MM/YYYY string to Date object
+function parseDate(dateValue: string | number): Date {
+  // If it's a number (Excel date serial number)
+  if (typeof dateValue === 'number') {
+    // Excel dates are number of days since Dec 30, 1899
+    const excelEpoch = new Date(1899, 11, 30);
+    const offsetDays = dateValue;
+    const resultDate = new Date(excelEpoch);
+    resultDate.setDate(resultDate.getDate() + offsetDays);
+    return resultDate;
+  }
+  
+  // If it's a string in DD/MM/YYYY format
+  const [day, month, year] = dateValue.split('/').map(num => parseInt(num, 10));
+  return new Date(year, month - 1, day);
 }
 
 export async function POST(request: Request) {
@@ -65,6 +76,9 @@ export async function POST(request: Request) {
           include: {references: true}
         });
 
+        console.log(userData['DOB*'], 'DOB*', userData);
+        console.log(parseDate(userData['DOB*']));
+        console.log(userData['DOJ*'], 'DOJ*', parseDate(userData['DOJ*']));
         // Common user data
         const userCommonData = {
           name: userData['Name*'],

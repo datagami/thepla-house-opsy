@@ -10,7 +10,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { salaryIds, status } = await request.json()
+    const { salaryIds } = await request.json()
 
     if (!salaryIds || !Array.isArray(salaryIds) || salaryIds.length === 0) {
       return NextResponse.json(

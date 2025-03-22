@@ -1,12 +1,12 @@
 import {NextResponse} from 'next/server'
 import {prisma} from '@/lib/prisma'
-import {calculateSalary, createOrUpdateSalary} from '@/lib/services/salary-calculator'
+import {calculateSalary} from '@/lib/services/salary-calculator'
 import {auth} from "@/auth"
+import {AdvancePaymentInstallment} from "@/models/models";
 
 export async function POST(request: Request) {
   try {
     const {month, year} = await request.json()
-    const daysInMonth = new Date(year, month, 0).getDate()
 
     // Check for existing salaries for this month
     const existingSalaries = await prisma.salary.findMany({
@@ -282,7 +282,7 @@ export async function PATCH(req: Request) {
               salaryId: installment.salaryId,
               status: 'APPROVED'
             }
-          })
+          }) as AdvancePaymentInstallment[];
 
           const totalDeductions = allInstallments.reduce(
             (sum, inst) => sum + inst.amountPaid,
@@ -392,7 +392,7 @@ export async function PATCH(req: Request) {
         }
 
         // Calculate total deductions
-        const totalDeductions = advanceDeductions.reduce(
+        const totalDeductions = (advanceDeductions).reduce(
           (sum, deduction) => sum + deduction.amount,
           0
         )
@@ -474,7 +474,7 @@ export async function PUT(request: Request) {
       // Recalculate salary deductions and net salary
       const updatedInstallments = await tx.advancePaymentInstallment.findMany({
         where: {
-          salaryId,
+          salaryId: installment.salaryId,
           status: 'APPROVED'
         }
       })

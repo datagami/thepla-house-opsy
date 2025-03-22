@@ -176,9 +176,8 @@ export function SalaryList({ month, year }: SalaryListProps) {
       if (!response.ok) {
         if (data.details) {
           // Show detailed error for each invalid salary
-          data.details.forEach((detail: any) => {
-            toast.error(`Salary ${detail.salaryId}: ${detail.error}`)
-          })
+
+          toast.error(`Salary ${data.detail.salaryId}: ${data.detail.error}`)
         } else {
           toast.error(data.error || 'Failed to update salaries')
         }

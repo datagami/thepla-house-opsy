@@ -16,6 +16,29 @@ import * as XLSX from 'xlsx';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {User} from "@/models/models";
 
+export interface ExcelObject {
+  "Name*": string;
+  "Email*": string;
+  "Mobile No*": string;
+  "Gender*": string;
+  "Department*": string;
+  "Title*": string;
+  "Role*": string;
+  "Branch*"?: string;
+  "DOB*": string;
+  "DOJ*": string;
+  "Salary*": string | number; // Handle both string and number
+  "PAN No*": string;
+  "Aadhar No*": string;
+  "Bank Account No*": string;
+  "Bank IFSC Code*": string;
+  "Reference 1 Name*": string;
+  "Reference 1 Contact*": string;
+  "Reference 2 Name"?: string;
+  "Reference 2 Contact"?: string;
+}
+
+
 interface UserDataImportExportProps {
   onImportComplete?: () => void;
 }
@@ -33,7 +56,7 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
       const users = await response.json();
 
       // Format data for Excel with date formatting
-      const userData = users.map(user => ({
+      const userData = users.map((user: User) => ({
         'Name*': user.name,
         'Email*': user.email,
         'Mobile No*': user.mobileNo,
@@ -42,17 +65,9 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
         'Title*': user.title,
         'Role*': user.role,
         'Branch*': user.branch?.name || '',
-        // Format dates as DD-MM-YYYY
-        'DOB*': new Date(user.dob).toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric'
-        }),
-        'DOJ*': new Date(user.doj).toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric'
-        }),
+        // Format dates with single quotes to prevent Excel conversion
+        'DOB*': user.dob ? `'${new Date(user.dob).toLocaleDateString('en-GB')}` : '',
+        'DOJ*': user.doj ? `'${new Date(user.doj).toLocaleDateString('en-GB')}` : '',
         'Salary*': user.salary,
         'PAN No*': user.panNo,
         'Aadhar No*': user.aadharNo,
@@ -67,6 +82,32 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
 
       const workbook = XLSX.utils.book_new();
       const sheet = XLSX.utils.json_to_sheet(userData);
+
+      // Set column width and format
+      const columnWidths = [
+        { wch: 20 }, // Name
+        { wch: 25 }, // Email
+        { wch: 15 }, // Mobile
+        { wch: 10 }, // Gender
+        { wch: 15 }, // Department
+        { wch: 10 }, // Title
+        { wch: 10 }, // Role
+        { wch: 15 }, // Branch
+        { wch: 12 }, // DOB
+        { wch: 12 }, // DOJ
+        { wch: 10 }, // Salary
+        { wch: 12 }, // PAN
+        { wch: 15 }, // Aadhar
+        { wch: 20 }, // Bank Account
+        { wch: 15 }, // IFSC
+        { wch: 20 }, // Ref1 Name
+        { wch: 15 }, // Ref1 Contact
+        { wch: 20 }, // Ref2 Name
+        { wch: 15 }, // Ref2 Contact
+      ];
+
+      sheet['!cols'] = columnWidths;
+
       XLSX.utils.book_append_sheet(workbook, sheet, 'Users');
       XLSX.writeFile(workbook, 'users-data.xlsx');
     } catch (error) {
@@ -76,18 +117,18 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
   };
 
 
-  const validateUserData = (userData: any) => {
+  const validateUserData = (userData: ExcelObject) => {
     const errors: string[] = [];
     const requiredFields = [
-      'Name*', 'Email*', 'Mobile No*', 'Gender*', 'Department*', 
+      'Name*', 'Email*', 'Mobile No*', 'Gender*', 'Department*',
       'Title*', 'Role*', 'DOB*', 'DOJ*', 'Salary*',
       'PAN No*', 'Aadhar No*', 'Bank Account No*', 'Bank IFSC Code*',
       'Reference 1 Name*', 'Reference 1 Contact*'
-    ];
+    ] as const;
 
     // Check required fields
     requiredFields.forEach(field => {
-      if (!userData[field]) {
+      if (!userData[field as keyof ExcelObject]) {
         errors.push(`Missing required field: ${field}`);
       }
     });
@@ -114,9 +155,6 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
     if (userData['Reference 2 Contact'] && !/^\d{10}$/.test(userData['Reference 2 Contact'])) {
       errors.push('Reference 2 contact must be 10 digits');
     }
-    if (userData['Reference 3 Contact'] && !/^\d{10}$/.test(userData['Reference 3 Contact'])) {
-      errors.push('Reference 3 contact must be 10 digits');
-    }
 
     // Other validations...
     return errors;
@@ -136,11 +174,30 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
           const workbook = XLSX.read(data, { type: 'array' });
           const sheetName = workbook.SheetNames[0];
           const sheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+          // Configure date parsing
+          const jsonData = XLSX.utils.sheet_to_json<ExcelObject>(sheet, {
+            raw: false, // Don't convert values
+            dateNF: 'dd/mm/yyyy', // Set date format
+          });
+
+          // Process the data before validation
+          const processedData = jsonData.map(row => ({
+            ...row,
+            // Remove any leading single quotes from dates (if present from export)
+            'DOB*': row['DOB*']?.replace(/^'/, ''),
+            'DOJ*': row['DOJ*']?.replace(/^'/, ''),
+            // Convert number values to strings where needed
+            'Mobile No*': row['Mobile No*']?.toString(),
+            'Aadhar No*': row['Aadhar No*']?.toString(),
+            'Bank Account No*': row['Bank Account No*']?.toString(),
+            'Reference 1 Contact*': row['Reference 1 Contact*']?.toString(),
+            'Reference 2 Contact': row['Reference 2 Contact']?.toString(),
+          }));
 
           // Validate all rows
           const allErrors: string[] = [];
-          jsonData.forEach((row: any, index: number) => {
+          processedData.forEach((row: ExcelObject, index: number) => {
             const rowErrors = validateUserData(row);
             if (rowErrors.length > 0) {
               allErrors.push(`Row ${index + 2}: ${rowErrors.join(', ')}`);
@@ -158,7 +215,7 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ users: jsonData }),
+            body: JSON.stringify({ users: processedData }),
           });
 
           if (!response.ok) throw new Error('Import failed');
