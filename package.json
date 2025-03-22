@@ -66,5 +66,8 @@
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
+  },
+  "resolutions": {
+    "punycode": "latest"
   }
 }
