@@ -336,7 +336,7 @@ export async function PATCH(req: Request) {
     // Handle bulk advance deductions update
     if (advanceDeductions) {
       // First validate all advance deductions
-      const advanceIds = advanceDeductions.map(ad => ad.advanceId)
+      const advanceIds = advanceDeductions.map((ad: AdvancePaymentInstallment) => ad.advanceId)
       
       // Get all advances with their current remaining amounts
       const advances = await prisma.advancePayment.findMany({
@@ -393,7 +393,7 @@ export async function PATCH(req: Request) {
 
         // Calculate total deductions
         const totalDeductions = (advanceDeductions).reduce(
-          (sum, deduction) => sum + deduction.amount,
+          (sum: number, deduction: AdvancePaymentInstallment) => sum + deduction.amountPaid,
           0
         )
 
