@@ -19,11 +19,12 @@ import {
 } from "@/components/ui/dialog"
 import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
-import { CalendarIcon, AlertCircle, CheckCircle, DollarSign, ArrowLeft } from 'lucide-react'
+import { AlertCircle, CheckCircle, DollarSign, ArrowLeft } from 'lucide-react'
 import { AdvancePaymentInstallment, Salary } from "@/models/models"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { toast } from 'sonner';
 import { SalaryStatsTable } from '@/components/salary/salary-stats-table'
+import { Input } from "@/components/ui/input"
 
 interface SalaryDetailsProps {
   salary: Salary;
@@ -34,14 +35,19 @@ interface SalaryDetailsProps {
 export function SalaryDetails({ salary, month, year }: SalaryDetailsProps) {
   const router = useRouter()
   const [isUpdating, setIsUpdating] = useState(false)
-  const [editMode, setEditMode] = useState(false)
-  const [advanceDeductions, setAdvanceDeductions] = useState<Array<{
+  const [, setAdvanceDeductions] = useState<Array<{
     advanceId: string;
     amount: number;
     id: string;
     originalAmount: number;
   }>>([])
   const [confirmReject, setConfirmReject] = useState<AdvancePaymentInstallment | null>(null)
+  const [editingInstallment, setEditingInstallment] = useState<{
+    id: string;
+    amountPaid: number;
+    originalAmount: number;
+    advanceRemainingAmount: number;
+  } | null>(null)
 
   // Initialize advance deductions from salary installments
   useEffect(() => {
@@ -128,58 +134,6 @@ export function SalaryDetails({ salary, month, year }: SalaryDetailsProps) {
     }
   }
 
-  // Handle amount change for an advance deduction
-  const handleAmountChange = (id: string, newAmount: number) => {
-    setAdvanceDeductions(prev => 
-      prev.map(item => 
-        item.id === id ? { ...item, amount: newAmount } : item
-      )
-    )
-  }
-
-  // Save updated advance deductions
-  const saveAdvanceDeductions = async () => {
-    try {
-      setIsUpdating(true)
-      
-      // Format the data for the API
-      const deductionsForApi = advanceDeductions.map(item => ({
-        advanceId: item.advanceId,
-        amount: item.amount
-      }))
-      
-      const response = await fetch('/api/salary/generate', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          salaryId: salary.id,
-          advanceDeductions: deductionsForApi
-        }),
-      })
-
-      if (response.ok) {
-        toast.success("Advance deductions updated successfully")
-        setEditMode(false)
-        router.refresh()
-      } else {
-        const error = await response.text()
-        toast.error(error || "Failed to update advance deductions")
-      }
-    } catch (error) {
-      console.error('Error updating advance deductions:', error)
-      toast.error("An unexpected error occurred",)
-    } finally {
-      setIsUpdating(false)
-    }
-  }
-
-  // Remove an advance deduction
-  const removeAdvanceDeduction = (id: string) => {
-    setAdvanceDeductions(prev => prev.filter(item => item.id !== id))
-  }
-
   const handleBack = () => {
     // Preserve the year and month when going back
     const params = new URLSearchParams()
@@ -188,6 +142,41 @@ export function SalaryDetails({ salary, month, year }: SalaryDetailsProps) {
     
     const queryString = params.toString()
     router.push(`/salary${queryString ? `?${queryString}` : ''}`)
+  }
+
+  const handleEditInstallment = async (newAmount: number) => {
+    console.log(editingInstallment);
+    if (!editingInstallment) return
+
+    try {
+      setIsUpdating(true)
+      const response = await fetch('/api/salary/generate', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          salaryId: salary.id,
+          installmentId: editingInstallment.id,
+          installmentAction: 'EDIT',
+          amount: newAmount
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null)
+        throw new Error(errorData?.error || 'Failed to update installment')
+      }
+
+      toast.success('Installment amount updated successfully')
+      setEditingInstallment(null)
+      router.refresh()
+    } catch (error) {
+      console.error('Error updating installment:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to update installment')
+    } finally {
+      setIsUpdating(false)
+    }
   }
 
   const renderAdvanceInstallments = () => {
@@ -200,95 +189,167 @@ export function SalaryDetails({ salary, month, year }: SalaryDetailsProps) {
     const approvedInstallments = salary.installments.filter(i => i.status === 'APPROVED')
 
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
-            Advance Payment Installments
-          </CardTitle>
-          <CardDescription>
-            Manage advance payment deductions for this salary
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Pending Installments */}
-          {pendingInstallments.length > 0 && (
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium">Pending Approval</h4>
-              {pendingInstallments.map((installment) => (
-                <Alert 
-                  key={installment.id}
-                  variant="default"
-                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-                >
-                  <div className="flex-1">
-                    <AlertCircle className="h-4 w-4 mb-2" />
-                    <AlertTitle>Pending Installment</AlertTitle>
-                    <AlertDescription className="space-y-1">
-                      <p>Amount: {formatCurrency(installment.amountPaid)}</p>
-                      {installment.advance && (
-                        <p className="text-sm text-muted-foreground">
-                          Remaining: {formatCurrency(installment.advance.remainingAmount)}
-                        </p>
-                      )}
-                    </AlertDescription>
-                  </div>
-                  {salary.status === 'PENDING' && (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => handleInstallmentAction(installment.id, 'APPROVE')}
-                        disabled={isUpdating}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleInstallmentAction(installment.id, 'REJECT')}
-                        disabled={isUpdating}
-                      >
-                        Reject
-                      </Button>
-                    </div>
-                  )}
-                </Alert>
-              ))}
-            </div>
-          )}
-
-          {/* Approved Installments */}
-          {approvedInstallments.length > 0 && (
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium">Approved Installments</h4>
-              {approvedInstallments.map((installment) => (
-                <Alert 
-                  key={installment.id}
-                  variant="default"
-                  className="bg-green-50 border-green-200"
-                >
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <div>
-                      <AlertTitle>Approved Installment</AlertTitle>
-                      <AlertDescription>
-                        Amount: {formatCurrency(installment.amountPaid)}
+      <>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Advance Payment Installments
+            </CardTitle>
+            <CardDescription>
+              Manage advance payment deductions for this salary
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Pending Installments */}
+            {pendingInstallments.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium">Pending Approval</h4>
+                {pendingInstallments.map((installment) => (
+                  <Alert 
+                    key={installment.id}
+                    variant="default"
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                  >
+                    <div className="flex-1">
+                      <AlertCircle className="h-4 w-4 mb-2" />
+                      <AlertTitle>Pending Installment</AlertTitle>
+                      <AlertDescription className="space-y-1">
+                        <p>Amount: {formatCurrency(installment.amountPaid)}</p>
+                        {installment.advance && (
+                          <p className="text-sm text-muted-foreground">
+                            Remaining on Advance: {formatCurrency(installment.advance.remainingAmount)}
+                          </p>
+                        )}
                       </AlertDescription>
                     </div>
-                  </div>
-                </Alert>
-              ))}
-            </div>
-          )}
+                    {salary.status === 'PENDING' && (
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditingInstallment({
+                            id: installment.id,
+                            amountPaid: installment.amountPaid,
+                            originalAmount: installment.amountPaid,
+                            advanceRemainingAmount: installment.advance?.remainingAmount || 0
+                          })}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleInstallmentAction(installment.id, 'APPROVE')}
+                          disabled={isUpdating}
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleInstallmentAction(installment.id, 'REJECT')}
+                          disabled={isUpdating}
+                        >
+                          Reject
+                        </Button>
+                      </div>
+                    )}
+                  </Alert>
+                ))}
+              </div>
+            )}
 
-          {pendingInstallments.length === 0 && approvedInstallments.length === 0 && (
-            <div className="text-center py-4 text-muted-foreground">
-              No advance payment installments for this salary
+            {/* Approved Installments */}
+            {approvedInstallments.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium">Approved Installments</h4>
+                {approvedInstallments.map((installment) => (
+                  <Alert 
+                    key={installment.id}
+                    variant="default"
+                    className="bg-green-50 border-green-200"
+                  >
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <div>
+                        <AlertTitle>Approved Installment</AlertTitle>
+                        <AlertDescription>
+                          Amount: {formatCurrency(installment.amountPaid)}
+                        </AlertDescription>
+                      </div>
+                    </div>
+                  </Alert>
+                ))}
+              </div>
+            )}
+
+            {pendingInstallments.length === 0 && approvedInstallments.length === 0 && (
+              <div className="text-center py-4 text-muted-foreground">
+                No advance payment installments for this salary
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Edit Dialog */}
+        <Dialog open={!!editingInstallment} onOpenChange={(open) => !open && setEditingInstallment(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Installment Amount</DialogTitle>
+              <DialogDescription>
+                Update the installment amount. Maximum amount allowed is{' '}
+                {editingInstallment && formatCurrency(editingInstallment.advanceRemainingAmount)}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Amount</label>
+                <Input
+                  type="number"
+                  value={editingInstallment?.amountPaid}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value)
+                    if (editingInstallment) {
+                      setEditingInstallment({
+                        ...editingInstallment,
+                        amountPaid: value
+                      })
+                    }
+                  }}
+                  min={0}
+                  max={editingInstallment?.advanceRemainingAmount}
+                  step={100}
+                />
+              </div>
+              {editingInstallment && editingInstallment.amountPaid > editingInstallment.advanceRemainingAmount && (
+                <p className="text-sm text-destructive">
+                  Amount cannot exceed the remaining advance amount
+                </p>
+              )}
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setEditingInstallment(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => editingInstallment && handleEditInstallment(editingInstallment.amountPaid)}
+                disabled={
+                  isUpdating || 
+                  !editingInstallment || 
+                  editingInstallment.amountPaid <= 0 ||
+                  editingInstallment.amountPaid > editingInstallment.advanceRemainingAmount
+                }
+              >
+                {isUpdating ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
     )
   }
 

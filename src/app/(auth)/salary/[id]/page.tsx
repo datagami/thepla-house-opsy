@@ -13,6 +13,9 @@ async function getSalaryDetails(id: string) {
             { status: 'PENDING' },
             { status: 'APPROVED' }
           ]
+        },
+        include: {
+          advance: true
         }
       }
     }

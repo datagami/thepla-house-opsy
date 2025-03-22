@@ -174,7 +174,8 @@ export async function PATCH(req: Request) {
       advanceDeductions,
       installmentAction,
       installmentId,
-      status
+      status,
+      amount
     } = await req.json()
 
     // Get existing salary record with its installments
@@ -248,11 +249,11 @@ export async function PATCH(req: Request) {
     // Handle individual installment actions
     if (installmentAction && installmentId) {
       await prisma.$transaction(async (tx) => {
-        // Get the installment with advance details
         const installment = await tx.advancePaymentInstallment.findUnique({
           where: { id: installmentId },
           include: {
-            advance: true
+            advance: true,
+            salary: true
           }
         })
 
@@ -260,7 +261,45 @@ export async function PATCH(req: Request) {
           throw new Error('Installment not found')
         }
 
-        if (installmentAction === 'APPROVE') {
+        if (installmentAction === 'EDIT') {
+
+          // Validate amount
+          if (amount > installment.advance.remainingAmount) {
+            throw new Error('Amount exceeds remaining advance balance')
+          }
+
+          // Update installment amount
+          await tx.advancePaymentInstallment.update({
+            where: { id: installmentId },
+            data: {
+              amountPaid: amount
+            }
+          })
+
+          // Recalculate salary deductions
+          const allInstallments = await tx.advancePaymentInstallment.findMany({
+            where: {
+              salaryId: installment.salaryId,
+              status: 'APPROVED'
+            }
+          })
+
+          const totalDeductions = allInstallments.reduce(
+            (sum, inst) => sum + inst.amountPaid,
+            0
+          )
+
+          // Update salary
+          await tx.salary.update({
+            where: { id: installment.salaryId },
+            data: {
+              advanceDeduction: totalDeductions,
+              netSalary: installment.salary.baseSalary + 
+                        installment.salary.bonuses - 
+                        totalDeductions
+            }
+          })
+        } else if (installmentAction === 'APPROVE') {
           // Update installment status
           await tx.advancePaymentInstallment.update({
             where: { id: installmentId },
@@ -285,34 +324,12 @@ export async function PATCH(req: Request) {
             where: { id: installmentId }
           })
         }
-
-        // Recalculate total deductions
-        const approvedInstallments = await tx.advancePaymentInstallment.findMany({
-          where: {
-            salaryId,
-            status: 'APPROVED'
-          }
-        })
-
-        const totalDeductions = approvedInstallments.reduce(
-          (sum, inst) => sum + inst.amountPaid,
-          0
-        )
-
-        // Update salary
-        await tx.salary.update({
-          where: { id: salaryId },
-          data: {
-            advanceDeduction: totalDeductions,
-            netSalary: existingSalary.baseSalary + 
-                      existingSalary.bonuses - 
-                      totalDeductions
-          }
-        })
       })
 
       return NextResponse.json({
-        message: `Installment ${installmentAction.toLowerCase()}ed successfully`
+        message: `Installment ${
+          installmentAction === 'EDIT' ? 'updated' : installmentAction.toLowerCase() + 'ed'
+        } successfully`
       })
     }
 
