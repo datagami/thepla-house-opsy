@@ -19,15 +19,13 @@ async function getSalaryDetails(id: string) {
         }
       }
     }
-  }) as Salary;
+  }) as unknown as Salary;
 
   if (!salary) {
     throw new Error('Salary not found')
   }
 
-  return {
-    ...salary
-  }
+  return salary;
 }
 
 export default async function SalaryDetailsPage({

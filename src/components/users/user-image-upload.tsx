@@ -63,7 +63,7 @@ export function UserImageUpload({userId, currentImage, onImageUpdate}: UserImage
       console.error('Error uploading image:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to upload image');
       // Revert preview on error
-      setPreviewUrl(currentImage);
+      setPreviewUrl(currentImage || null);
     } finally {
       setIsUploading(false);
     }

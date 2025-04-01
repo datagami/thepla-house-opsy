@@ -7,10 +7,11 @@ const PROFILE_PICTURES_FOLDER = 'profile-pictures';
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
+    const {id} = await params;
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -18,7 +19,7 @@ export async function POST(
     // Check if user is updating their own profile or has permission
     // @ts-expect-error - role is not in session type
     const isAdmin = ['HR', 'MANAGEMENT'].includes(session.user.role);
-    const isOwnProfile = session.user.id === params.id;
+    const isOwnProfile = session.user.id === id;
 
     if (!isAdmin && !isOwnProfile) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -52,19 +53,19 @@ export async function POST(
 
     // Get current user image to delete later
     const currentUser = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: { image: true }
     });
 
     // Upload to Azure
     const buffer = Buffer.from(await file.arrayBuffer());
     const azureStorage = new AzureStorageService();
-    const filename = `${params.id}-${Date.now()}-${file.name}`;
+    const filename = `${id}-${Date.now()}-${file.name}`;
     const imageUrl = await azureStorage.uploadImage(buffer, filename, PROFILE_PICTURES_FOLDER);
 
     // Update user's image field in database
     await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: { image: imageUrl }
     });
 
