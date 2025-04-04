@@ -445,8 +445,8 @@ export function SalaryDetails({ salary, month, year, canEdit = false }: SalaryDe
 
       {canEdit && salary.status === 'PENDING' && (
         <div className="pt-4">
-          <h3 className="text-lg font-medium mb-2">Add Bonus</h3>
-          <AddBonusForm salary={salary} onBonusAdded={handleBonusAdded} />
+          <h3 className="text-lg font-medium mb-2">Adjustments</h3>
+          <AddBonusForm salary={salary} onAdjustmentAdded={handleBonusAdded} />
         </div>
       )}
 

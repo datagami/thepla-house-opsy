@@ -13,8 +13,8 @@ interface AddBonusFormProps {
 }
 
 export function AddBonusForm({ salary, onAdjustmentAdded }: AddBonusFormProps) {
-  const [bonusAmount, setBonusAmount] = useState('')
-  const [deductionAmount, setDeductionAmount] = useState('')
+  const [bonusAmount, setBonusAmount] = useState(salary.otherBonuses.toString())
+  const [deductionAmount, setDeductionAmount] = useState(salary.otherDeductions.toString())
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,17 +33,12 @@ export function AddBonusForm({ salary, onAdjustmentAdded }: AddBonusFormProps) {
         }),
       })
 
-      if (!response.ok) {
-        throw new Error('Failed to add adjustments')
-      }
-
       const updatedSalary = await response.json()
       onAdjustmentAdded(updatedSalary)
-      setBonusAmount('')
-      setDeductionAmount('')
-      toast.success('Adjustments added successfully')
+      toast.success('Adjustments updated successfully')
     } catch (error) {
-      toast.error('Failed to add adjustments')
+      console.log(error);
+      toast.error('Failed to update adjustments')
     } finally {
       setIsSubmitting(false)
     }
@@ -52,7 +47,7 @@ export function AddBonusForm({ salary, onAdjustmentAdded }: AddBonusFormProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Add Adjustments</CardTitle>
+        <CardTitle>Edit Adjustments</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -67,9 +62,6 @@ export function AddBonusForm({ salary, onAdjustmentAdded }: AddBonusFormProps) {
                 min="0"
                 step="0.01"
               />
-              <p className="text-sm text-muted-foreground">
-                Current Bonus: ₹{salary.otherBonuses.toLocaleString()}
-              </p>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Deduction Amount</label>
@@ -81,13 +73,10 @@ export function AddBonusForm({ salary, onAdjustmentAdded }: AddBonusFormProps) {
                 min="0"
                 step="0.01"
               />
-              <p className="text-sm text-muted-foreground">
-                Current Deductions: ₹{salary.otherDeductions.toLocaleString()}
-              </p>
             </div>
           </div>
           <Button type="submit" disabled={isSubmitting} className="w-full">
-            {isSubmitting ? 'Adding...' : 'Add Adjustments'}
+            {isSubmitting ? 'Updating...' : 'Update Adjustments'}
           </Button>
         </form>
       </CardContent>

@@ -11,6 +11,8 @@ export interface SalaryStatsDTO {
     deductions: number;
     leavesEarned: number;
     leaveSalary: number;
+    otherBonuses: number;
+    otherDeductions: number;
   };
   employee: {
     id: string;

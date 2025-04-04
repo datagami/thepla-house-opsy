@@ -25,24 +25,21 @@ export async function POST(
     }
 
     if (salary.status !== 'PENDING') {
-      return new NextResponse('Can only add adjustments to pending salary', { status: 400 })
+      return new NextResponse('Can only update adjustments for pending salary', { status: 400 })
     }
 
-    // Calculate net salary change
-    const netSalaryChange = (bonusAmount || 0) - (deductionAmount || 0)
+    // Calculate new net salary by replacing the old adjustments with new ones
+    const newNetSalary = salary.baseSalary + 
+                        salary.overtimeBonus + 
+                        (bonusAmount || 0) - 
+                        (deductionAmount || 0)
 
     const updatedSalary = await prisma.salary.update({
       where: { id },
       data: {
-        otherBonuses: {
-          increment: bonusAmount || 0,
-        },
-        otherDeductions: {
-          increment: deductionAmount || 0,
-        },
-        netSalary: {
-          increment: netSalaryChange,
-        },
+        otherBonuses: bonusAmount || 0,
+        otherDeductions: deductionAmount || 0,
+        netSalary: newNetSalary,
       },
       include: {
         user: true,
@@ -62,7 +59,7 @@ export async function POST(
 
     return NextResponse.json(updatedSalary)
   } catch (error) {
-    console.error('Error adding adjustments:', error)
+    console.error('Error updating adjustments:', error)
     return new NextResponse('Internal Server Error', { status: 500 })
   }
 } 

@@ -164,15 +164,20 @@ export function SalaryStatsTable({ salaryId }: SalaryStatsTableProps) {
                   <TableCell>{stats.attendance.overtimeDays} days × 0.5 × {formatCurrency(stats.calculation.perDaySalary)}</TableCell>
                   <TableCell>{formatCurrency(stats.calculation.overtimeSalary)}</TableCell>
                 </TableRow>
-                <TableRow className="bg-muted/50">
-                  <TableCell className="font-medium">Base Salary Earned</TableCell>
-                  <TableCell>Present Days Salary + Overtime Bonus</TableCell>
-                  <TableCell className="font-medium">{formatCurrency(stats.calculation.baseSalaryEarned)}</TableCell>
+                <TableRow>
+                  <TableCell>Other Bonuses</TableCell>
+                  <TableCell></TableCell>
+                  <TableCell>{formatCurrency(stats.salary.otherBonuses)}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>Earned Leaves</TableCell>
                   <TableCell>{stats.calculation.leavesEarned} days × {formatCurrency(stats.calculation.perDaySalary)}</TableCell>
                   <TableCell>{formatCurrency(stats.calculation.leaveSalary)}</TableCell>
+                </TableRow>
+                <TableRow className="bg-muted/50">
+                  <TableCell className="font-medium">Base Salary Earned</TableCell>
+                  <TableCell>Present Days Salary + Overtime Bonus</TableCell>
+                  <TableCell className="font-medium">{formatCurrency(stats.calculation.baseSalaryEarned)}</TableCell>
                 </TableRow>
                 <TableRow className="text-destructive">
                   <TableCell>Deductions</TableCell>
@@ -181,6 +186,11 @@ export function SalaryStatsTable({ salaryId }: SalaryStatsTableProps) {
                     ({stats.deductions.filter(d => d.status === 'APPROVED').length} of {stats.deductions.length})
                   </TableCell>
                   <TableCell>-{formatCurrency(stats.calculation.totalDeductions)}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Other Deductions</TableCell>
+                  <TableCell></TableCell>
+                  <TableCell>-{formatCurrency(stats.salary.otherDeductions)}</TableCell>
                 </TableRow>
                 <TableRow className="bg-muted/50">
                   <TableCell className="font-bold">Net Salary</TableCell>
