@@ -166,16 +166,18 @@ CREATE TABLE "Salary" (
     "month" INTEGER NOT NULL,
     "year" INTEGER NOT NULL,
     "baseSalary" DOUBLE PRECISION NOT NULL,
-    "advanceDeduction" DOUBLE PRECISION NOT NULL,
-    "bonuses" DOUBLE PRECISION NOT NULL,
-    "deductions" DOUBLE PRECISION NOT NULL,
+    "advanceDeduction" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "deductions" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "overtimeBonus" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "otherBonuses" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "otherDeductions" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "netSalary" DOUBLE PRECISION NOT NULL,
     "presentDays" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "overtimeDays" INTEGER NOT NULL DEFAULT 0,
     "halfDays" INTEGER NOT NULL DEFAULT 0,
     "leavesEarned" INTEGER NOT NULL DEFAULT 0,
     "leaveSalary" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "status" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
     "paidAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -243,6 +245,9 @@ CREATE INDEX "users1_approved_by_id_idx" ON "users1"("approved_by_id");
 CREATE UNIQUE INDEX "verification_tokens_identifier_token_key" ON "verification_tokens"("identifier", "token");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "branches_name_key" ON "branches"("name");
+
+-- CreateIndex
 CREATE INDEX "attendance_verified_by_id_idx" ON "attendance"("verified_by_id");
 
 -- CreateIndex
@@ -259,6 +264,9 @@ CREATE INDEX "Salary_userId_idx" ON "Salary"("userId");
 
 -- CreateIndex
 CREATE INDEX "Salary_month_year_idx" ON "Salary"("month", "year");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Salary_userId_month_year_key" ON "Salary"("userId", "month", "year");
 
 -- CreateIndex
 CREATE INDEX "advance_payments_user_id_idx" ON "advance_payments"("user_id");

@@ -105,7 +105,8 @@ export async function POST(request: Request) {
             year,
             baseSalary: salaryDetails.baseSalary,
             advanceDeduction: 0, // Will be updated when installments are approved
-            bonuses: salaryDetails.overtimeAmount,
+            overtimeBonus: salaryDetails.overtimeAmount,
+            otherBonuses: salaryDetails.otherBonuses,
             deductions: 0,
             netSalary: salaryDetails.netSalary,
             presentDays: salaryDetails.presentDays,
@@ -227,8 +228,10 @@ export async function PATCH(req: Request) {
             status: 'PROCESSING',
             advanceDeduction: totalApprovedDeductions,
             netSalary: existingSalary.baseSalary + 
-                      existingSalary.bonuses - 
-                      totalApprovedDeductions
+                      existingSalary.overtimeBonus + 
+                      existingSalary.otherBonuses - 
+                      totalApprovedDeductions - 
+                      existingSalary.deductions
           }
         })
 
@@ -295,8 +298,10 @@ export async function PATCH(req: Request) {
             data: {
               advanceDeduction: totalDeductions,
               netSalary: installment.salary.baseSalary + 
-                        installment.salary.bonuses - 
-                        totalDeductions
+                        installment.salary.overtimeBonus + 
+                        installment.salary.otherBonuses - 
+                        totalDeductions - 
+                        installment.salary.deductions
             }
           })
         } else if (installmentAction === 'APPROVE') {
@@ -403,8 +408,10 @@ export async function PATCH(req: Request) {
           data: {
             advanceDeduction: totalDeductions,
             netSalary: existingSalary.baseSalary + 
-                      existingSalary.bonuses - 
-                      totalDeductions
+                      existingSalary.overtimeBonus + 
+                      existingSalary.otherBonuses - 
+                      totalDeductions - 
+                      existingSalary.deductions
           }
         })
       })
@@ -489,8 +496,10 @@ export async function PUT(request: Request) {
         data: {
           advanceDeduction: totalDeductions,
           netSalary: installment.salary.baseSalary + 
-                     installment.salary.bonuses - 
-                     totalDeductions
+                     installment.salary.overtimeBonus + 
+                     installment.salary.otherBonuses - 
+                     totalDeductions - 
+                     installment.salary.deductions
         }
       })
     })

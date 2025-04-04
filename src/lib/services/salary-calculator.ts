@@ -187,7 +187,7 @@ export async function calculateSalary(userId: string, month: number, year: numbe
 
   const baseSalary = employee.salary;
   const deductions = totalAdvanceDeduction;
-  const bonuses = performanceBonus;
+  const otherBonuses = performanceBonus;
 
   // Calculate earned leaves based on attendance
   let leavesEarned = 0;
@@ -204,18 +204,17 @@ export async function calculateSalary(userId: string, month: number, year: numbe
   const totalSalaryWithLeaves = totalSalary + leaveSalary;
   
   // Update net salary calculation to include leave salary
-  const netSalary = totalSalaryWithLeaves + bonuses - deductions;
+  const netSalary = totalSalaryWithLeaves + otherBonuses - deductions;
 
   return {
     baseSalary,
     deductions,
-    bonuses,
     netSalary,
     // Additional details for breakdown
     attendanceDeduction: 0, // Not used in this calculation
     suggestedAdvanceDeductions,
     overtimeAmount,
-    performanceBonus,
+    otherBonuses,
     attendance,
     leavesEarned,
     leaveSalary,
@@ -266,7 +265,9 @@ export async function createOrUpdateSalary({
         baseSalary: salaryDetails.baseSalary,
         advanceDeduction: totalAdvanceDeduction,
         deductions: totalAdvanceDeduction,
-        bonuses: salaryDetails.bonuses,
+        overtimeBonus: salaryDetails.overtimeAmount,
+        otherBonuses: 0,
+        otherDeductions: 0,
         netSalary: salaryDetails.netSalary - totalAdvanceDeduction,
         presentDays: salaryDetails.presentDays,
         overtimeDays: salaryDetails.overtimeDays || 0,

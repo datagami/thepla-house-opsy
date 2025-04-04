@@ -1,8 +1,13 @@
 import { SalaryDetails } from '@/components/salary/salary-details'
 import { prisma } from '@/lib/prisma'
 import {Salary} from "@/models/models";
+import { auth } from '@/auth'
 
 async function getSalaryDetails(id: string) {
+  const session = await auth();
+
+  //@ts-expect-error - role is not defined in the session type
+  const role = session?.user?.role;
   const salary = await prisma.salary.findUnique({
     where: { id },
     include: {
@@ -25,7 +30,10 @@ async function getSalaryDetails(id: string) {
     throw new Error('Salary not found')
   }
 
-  return salary;
+  return {
+    salary,
+    canEdit: role === 'HR' || role === 'MANAGEMENT'
+  }
 }
 
 export default async function SalaryDetailsPage({
@@ -37,7 +45,7 @@ export default async function SalaryDetailsPage({
 }) {
   const {id} = await params;
   const {month, year} = await searchParams;
-  const salary = await getSalaryDetails(id);
+  const {salary, canEdit} = await getSalaryDetails(id);
 
-  return <SalaryDetails salary={salary} month={month} year={year} />
+  return <SalaryDetails salary={salary} month={month} year={year} canEdit={canEdit} />
 } 
