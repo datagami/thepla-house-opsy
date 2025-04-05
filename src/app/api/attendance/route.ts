@@ -23,6 +23,26 @@ export async function POST(req: Request) {
       return new Response('User not found', { status: 404 });
     }
 
+    // Check if salary exists for this month and its status
+    const attendanceDate = new Date(data.date);
+    const existingSalary = await prisma.salary.findFirst({
+      where: {
+        userId: data.userId,
+        month: attendanceDate.getMonth() + 1,
+        year: attendanceDate.getFullYear(),
+        status: {
+          in: ['PENDING', 'PROCESSING']
+        }
+      }
+    });
+
+    if (existingSalary?.status === 'PROCESSING') {
+      return new NextResponse(
+        { error: 'Cannot edit attendance as salary is already in processing state' },
+        { status: 400 }
+      );
+    }
+
     // Set initial status based on who's creating the attendance
     // @ts-expect-error - role is not in the session type
     const creatorRole = session.user.role;
@@ -50,6 +70,24 @@ export async function POST(req: Request) {
       },
     });
 
+    // If salary exists and is in PENDING state, recalculate it
+    if (existingSalary?.status === 'PENDING') {
+      const { calculateSalary } = await import('@/lib/services/salary-calculator');
+      const salaryDetails = await calculateSalary(data.userId, attendanceDate.getMonth() + 1, attendanceDate.getFullYear());
+
+      await prisma.salary.update({
+        where: { id: existingSalary.id },
+        data: {
+          presentDays: salaryDetails.presentDays,
+          overtimeDays: salaryDetails.overtimeDays,
+          halfDays: salaryDetails.halfDays,
+          leavesEarned: salaryDetails.leavesEarned,
+          leaveSalary: salaryDetails.leaveSalary,
+          netSalary: salaryDetails.netSalary
+        }
+      });
+    }
+
     return new Response(JSON.stringify(attendance), { status: 201 });
   } catch (error) {
     console.error('Error creating attendance:', error);
@@ -76,6 +114,38 @@ export async function PATCH(req: Request) {
       verificationNote,
     } = await req.json();
 
+    // Get the attendance record to check its date
+    const attendance = await prisma.attendance.findUnique({
+      where: { id: attendanceId }
+    });
+
+    if (!attendance) {
+      return NextResponse.json(
+        { error: "Attendance not found" },
+        { status: 404 }
+      );
+    }
+
+    // Check if salary exists for this month and its status
+    const attendanceDate = new Date(attendance.date);
+    const existingSalary = await prisma.salary.findFirst({
+      where: {
+        userId: attendance.userId,
+        month: attendanceDate.getMonth() + 1,
+        year: attendanceDate.getFullYear(),
+        status: {
+          in: ['PENDING', 'PROCESSING']
+        }
+      }
+    });
+
+    if (existingSalary?.status === 'PROCESSING') {
+      return new NextResponse(
+        { error: 'Cannot edit attendance as salary is already in processing state' },
+        { status: 400 }
+      );
+    }
+
     const updatedAttendance = await prisma.attendance.update({
       where: {
         id: attendanceId,
@@ -88,6 +158,24 @@ export async function PATCH(req: Request) {
         verificationNote,
       },
     });
+
+    // If salary exists and is in PENDING state, recalculate it
+    if (existingSalary?.status === 'PENDING') {
+      const { calculateSalary } = await import('@/lib/services/salary-calculator');
+      const salaryDetails = await calculateSalary(attendance.userId, attendanceDate.getMonth() + 1, attendanceDate.getFullYear());
+
+      await prisma.salary.update({
+        where: { id: existingSalary.id },
+        data: {
+          presentDays: salaryDetails.presentDays,
+          overtimeDays: salaryDetails.overtimeDays,
+          halfDays: salaryDetails.halfDays,
+          leavesEarned: salaryDetails.leavesEarned,
+          leaveSalary: salaryDetails.leaveSalary,
+          netSalary: salaryDetails.netSalary
+        }
+      });
+    }
 
     return NextResponse.json(updatedAttendance);
   } catch (error) {
