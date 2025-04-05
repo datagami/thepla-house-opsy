@@ -14,7 +14,7 @@ import {
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, UserCog } from "lucide-react";
+import { MoreHorizontal, UserCog, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { hasAccess } from "@/lib/access-control";
 import { User } from "@/models/models";
@@ -28,6 +28,9 @@ interface UserActionsProps {
 export function UserActions({ user, currentUserRole, onUpdate }: UserActionsProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const canApproveUser = hasAccess(currentUserRole, "users.approve");
+  const canChangeRole = hasAccess(currentUserRole, "users.change_role");
+  const canViewAttendance = ['HR', 'MANAGEMENT'].includes(currentUserRole);
 
   const handleApprove = async () => {
     setIsLoading(true);
@@ -84,6 +87,7 @@ export function UserActions({ user, currentUserRole, onUpdate }: UserActionsProp
   };
 
   const handleStatusUpdate = async (userId: string, newStatus: string) => {
+    setIsLoading(true);
     try {
       const response = await fetch('/api/users/update-status', {
         method: 'POST',
@@ -111,11 +115,17 @@ export function UserActions({ user, currentUserRole, onUpdate }: UserActionsProp
     } catch (error) {
       console.error('Error updating status:', error);
       toast.error('Failed to update status');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const canApproveUser = hasAccess(currentUserRole, "users.approve");
-  const canChangeRole = hasAccess(currentUserRole, "users.change_role");
+  const handleViewAttendance = () => {
+    const currentDate = new Date();
+    const month = currentDate.getMonth() + 1;
+    const year = currentDate.getFullYear();
+    router.push(`/attendance/${user.id}?month=${year}-${month.toString().padStart(2, '0')}`);
+  };
 
   return (
     <DropdownMenu>
@@ -173,6 +183,14 @@ export function UserActions({ user, currentUserRole, onUpdate }: UserActionsProp
               )}
             </DropdownMenuSubContent>
           </DropdownMenuSub>
+        )}
+        {canViewAttendance && (
+          <DropdownMenuItem
+            onClick={handleViewAttendance}
+          >
+            <Calendar className="mr-2 h-4 w-4" />
+            View & Manage Attendance
+          </DropdownMenuItem>
         )}
         {user.status === "ACTIVE" ? (
           <DropdownMenuItem
