@@ -36,6 +36,8 @@ export interface SalaryStatsDTO {
     baseSalaryEarned: number;
     leavesEarned: number;
     leaveSalary: number;
+    totalAdvanceDeductions: number;
+    totalOtherDeductions: number;
     totalDeductions: number;
     netSalary: number;
   };

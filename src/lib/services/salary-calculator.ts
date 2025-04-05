@@ -42,7 +42,7 @@ export function calculateMonthlySalary(
   const totalDays = attendance.length;
   
   // Calculate per day salary
-  const perDaySalary = basicSalary / totalDays;
+  const perDaySalary = Math.ceil(basicSalary / totalDays);
 
   // Initialize counters
   let presentDays = 0;
@@ -150,7 +150,7 @@ export async function calculateSalary(userId: string, month: number, year: numbe
 
   // Calculate attendance-based salary
   const workingDays = endDate.getDate()
-  const perDaySalary = parseFloat((employee.salary.valueOf() / workingDays).toFixed(2));
+  const perDaySalary = Math.ceil(employee.salary.valueOf() / workingDays);
   
   // Regular days get 1x per day salary
   const presentDaysAmount = parseFloat((presentDays * perDaySalary).toFixed(2));
