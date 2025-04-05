@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { startOfMonth, endOfMonth, format, addMonths, subMonths } from "date-fns";
 import { AttendanceStats } from "@/components/attendance/attendance-stats";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {Attendance, User} from "@/models/models";
+import { Attendance, User } from "@/models/models";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -26,6 +26,9 @@ export default async function EmployeeAttendancePage({
   const session = await auth();
   const { userId } = await params;
   const { month } = await searchParams;
+
+  // @ts-expect-error - session is not null
+  const role = session?.user?.role;
 
   if (!session) {
     redirect("/login");
@@ -116,7 +119,6 @@ export default async function EmployeeAttendancePage({
             </Button>
           </Link>
 
-          
           <span className="font-medium">
             {format(startDate, "MMMM yyyy")}
           </span>
@@ -131,7 +133,6 @@ export default async function EmployeeAttendancePage({
               <ChevronRight className="h-4 w-4" />
             </Button>
           </Link>
-
         </div>
       </div>
 
@@ -188,6 +189,9 @@ export default async function EmployeeAttendancePage({
             <DetailedAttendanceCalendar 
               attendance={attendance}
               month={startDate}
+              userId={employee.id}
+              userName={employee.name || ""}
+              userRole={role}
             />
           </div>
         </div>
@@ -197,7 +201,7 @@ export default async function EmployeeAttendancePage({
             <h3 className="text-lg font-medium">Monthly Statistics</h3>
             <AttendanceStats
               user={employee}
-              attendance={attendance as Attendance[]}
+              attendance={attendance}
               month={startDate}
             />
           </div>

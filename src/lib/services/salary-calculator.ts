@@ -38,6 +38,7 @@ export function calculateMonthlySalary(
       halfDayAmount: 0
     }
   }
+
   // Calculate total working days in the month
   const totalDays = attendance.length;
   
@@ -46,24 +47,24 @@ export function calculateMonthlySalary(
 
   // Initialize counters
   let presentDays = 0;
-  let absentDays = 0;
-  let halfDays = 0;
   let overtimeDays = 0;
-  
+  let halfDays = 0;
+
   // Calculate attendance and amounts
   attendance.forEach(day => {
     if (!day.isPresent) {
-      absentDays++;
       return;
     }
 
     if (day.isHalfDay) {
-      halfDays++;
+      presentDays += 0.5;
+      halfDays += 1;
       return;
     }
 
     if (day.overtime) {
       overtimeDays++;
+      presentDays += 1;
       return;
     }
 
@@ -71,26 +72,34 @@ export function calculateMonthlySalary(
   });
 
   // Calculate detailed amounts
-  const fullDayAmount = presentDays * perDaySalary;
-  const halfDayAmount = halfDays * (perDaySalary * 0.5);
-  const overtimeAmount = overtimeDays * (perDaySalary * 1.5);
-  const deductions = absentDays * perDaySalary;
+  const fullDayAmount = parseFloat((presentDays * perDaySalary).toFixed(2));
+  const halfDayAmount = parseFloat((halfDays * (perDaySalary * 0.5)).toFixed(2));
+  const overtimeAmount = parseFloat((overtimeDays * (perDaySalary * 0.5)).toFixed(2));
 
+  let leavesEarned = 0;
+  if (presentDays >= 25) {
+    leavesEarned = 2;
+  } else if (presentDays >= 15) {
+    leavesEarned = 1;
+  }
+
+  const leaveSalary = parseFloat((leavesEarned * perDaySalary).toFixed(2));
+  
   // Calculate total regular days amount
   const regularDaysAmount = fullDayAmount + halfDayAmount;
 
   // Calculate total salary
-  const totalSalary = regularDaysAmount + overtimeAmount;
+  const totalSalary = regularDaysAmount + overtimeAmount + leaveSalary;
 
   return {
     basicSalary,
     perDaySalary,
     regularDaysAmount,
     overtimeAmount,
-    deductions,
+    deductions: 0, // No deductions in this calculation
     totalSalary,
-    presentDays,
-    absentDays,
+    presentDays: parseFloat(presentDays.toFixed(2)),
+    absentDays: 0, // No absent days in this calculation
     halfDays,
     overtimeDays,
     fullDayAmount,

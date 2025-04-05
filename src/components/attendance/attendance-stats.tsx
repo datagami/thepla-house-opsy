@@ -8,10 +8,8 @@ import {
   YAxis,
   Tooltip,
 } from "recharts";
-import {Attendance, User} from "@/models/models";
-import { calculateMonthlySalary } from "@/lib/services/salary-calculator";
+import { Attendance, User } from "@/models/models";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatCurrency } from "@/lib/utils";
 
 interface AttendanceStatsProps {
   attendance: Attendance[];
@@ -22,7 +20,6 @@ interface AttendanceStatsProps {
 interface WeeklyStats {
   week: string;
   present: number;
-  absent: number;
   halfDay: number;
   overtime: number;
 }
@@ -31,34 +28,32 @@ export function AttendanceStats({ attendance, month, user }: AttendanceStatsProp
   // Calculate weekly stats
   const weeklyStats = attendance.reduce((acc, curr) => {
     const date = new Date(curr.date);
-    
-    // Get the first day of the month
-    const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-    
-    // Calculate week number (0-based)
-    // Adding the day of week of the first day to get complete weeks
-    const firstDayOffset = firstDay.getDay();
-    const dayOfMonth = date.getDate() - 1; // 0-based day of month
-    
-    // Calculate which week the date belongs to (Saturday is end of week)
-    // We add firstDayOffset to account for partial first week
-    const week = Math.floor((dayOfMonth + firstDayOffset) / 7);
+    const week = Math.floor((date.getDate() - 1) / 7);
     
     if (!acc[week]) {
       acc[week] = {
         week: `Week ${week + 1}`,
         present: 0,
-        absent: 0,
         halfDay: 0,
         overtime: 0,
       };
     }
 
-    if (curr.isPresent) acc[week].present++;
-    else acc[week].absent++;
-    if (curr.isHalfDay) acc[week].halfDay++;
-    if (curr.overtime) acc[week].overtime++;
+    if (!curr.isPresent) return acc;
 
+    if (curr.isHalfDay) {
+      acc[week].present += 0.5;
+      acc[week].halfDay += 1;
+      return acc;
+    }
+
+    if (curr.overtime) {
+      acc[week].overtime += 1;
+      acc[week].present += 1;
+      return acc;
+    }
+
+    acc[week].present += 1;
     return acc;
   }, {} as Record<number, WeeklyStats>);
 
@@ -67,119 +62,95 @@ export function AttendanceStats({ attendance, month, user }: AttendanceStatsProp
     parseInt(a.week.split(' ')[1]) - parseInt(b.week.split(' ')[1])
   );
 
-  // Check if month has ended
-  const today = new Date();
-  const isMonthEnded = month.getMonth() < today.getMonth() || 
-                       month.getFullYear() < today.getFullYear();
+  // Initialize counters for monthly stats
+  let presentDays = 0;
+  let overtimeDays = 0;
+  let halfDays = 0;
 
-  // Calculate salary breakup if month has ended
-  const salaryBreakup = isMonthEnded ? calculateMonthlySalary(attendance, user?.salary) : null;
+  attendance.forEach(day => {
+    if (!day.isPresent) {
+      return;
+    }
+
+    if (day.isHalfDay) {
+      presentDays += 0.5;
+      halfDays += 1;
+      return;
+    }
+
+    if (day.overtime) {
+      overtimeDays++;
+      presentDays += 1;
+      return;
+    }
+
+    presentDays++;
+  });
+
+  let leavesEarned = 0;
+  if (presentDays >= 25) {
+    leavesEarned = 2;
+  } else if (presentDays >= 15) {
+    leavesEarned = 1;
+  }
+
+  // Calculate monthly stats
+  const monthlyStats = {
+    totalDays: attendance.length,
+    presentDays: parseFloat(presentDays.toFixed(2)),
+    halfDays,
+    overtimeDays,
+    leavesEarned,
+  };
 
   return (
     <div className="space-y-6">
-      {salaryBreakup && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-medium">
-                  Total Salary
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(salaryBreakup.totalSalary)}
-                </div>
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <p>Basic: {formatCurrency(salaryBreakup.basicSalary)}</p>
-                  <p>Per Day: {formatCurrency(salaryBreakup.perDaySalary)}</p>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-medium">
-                  Regular Days
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(salaryBreakup.regularDaysAmount)}
-                </div>
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <p>Full Days ({salaryBreakup.presentDays}): {formatCurrency(salaryBreakup.fullDayAmount)}</p>
-                  <p>Half Days ({salaryBreakup.halfDays}): {formatCurrency(salaryBreakup.halfDayAmount)}</p>
-                </div>
-              </CardContent>
-            </Card>
+      <div className="grid gap-4 md:grid-cols-5">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Days</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{monthlyStats.totalDays}</div>
+          </CardContent>
+        </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-medium">
-                  Overtime Days
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(salaryBreakup.overtimeAmount)}
-                </div>
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <p>Days: {salaryBreakup.overtimeDays}</p>
-                  <p>Rate: 1.5x per day</p>
-                </div>
-              </CardContent>
-            </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Present Days</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{monthlyStats.presentDays}</div>
+          </CardContent>
+        </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-medium">
-                  Deductions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-destructive">
-                  {formatCurrency(salaryBreakup.deductions)}
-                </div>
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <p>Absent Days: {salaryBreakup.absentDays}</p>
-                  <p>Rate: 1x per day</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Half Days</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">{monthlyStats.halfDays}</div>
+          </CardContent>
+        </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-medium">
-                  Attendance Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Full Days:</span>
-                    <span className="font-medium">{salaryBreakup.presentDays}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Half Days:</span>
-                    <span className="font-medium">{salaryBreakup.halfDays}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Overtime Days:</span>
-                    <span className="font-medium">{salaryBreakup.overtimeDays}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Absent Days:</span>
-                    <span className="font-medium">{salaryBreakup.absentDays}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      )}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Overtime Days</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-600">{monthlyStats.overtimeDays}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Leaves Earned</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-amber-600">{monthlyStats.leavesEarned}</div>
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="h-[300px] w-full">
         <ResponsiveContainer width="100%" height="100%">
@@ -188,7 +159,6 @@ export function AttendanceStats({ attendance, month, user }: AttendanceStatsProp
             <YAxis />
             <Tooltip />
             <Bar dataKey="present" name="Present" fill="#22c55e" />
-            <Bar dataKey="absent" name="Absent" fill="#ef4444" />
             <Bar dataKey="halfDay" name="Half Day" fill="#3b82f6" />
             <Bar dataKey="overtime" name="Overtime" fill="#a855f7" />
           </BarChart>
