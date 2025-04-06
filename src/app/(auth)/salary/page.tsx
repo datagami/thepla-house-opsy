@@ -18,7 +18,9 @@ export default async function SalaryPage({
   // Pass the selected year and month from URL to SalaryManagement
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold">Salary Management</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Salary Management</h1>
+      </div>
       <SalaryManagement 
         initialYear={year ? parseInt(year) : undefined}
         initialMonth={month ? parseInt(month) : undefined}
