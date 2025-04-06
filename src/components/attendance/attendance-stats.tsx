@@ -24,7 +24,7 @@ interface WeeklyStats {
   overtime: number;
 }
 
-export function AttendanceStats({ attendance, month, user }: AttendanceStatsProps) {
+export function AttendanceStats({ attendance }: AttendanceStatsProps) {
   // Calculate weekly stats
   const weeklyStats = attendance.reduce((acc, curr) => {
     const date = new Date(curr.date);
