@@ -3,6 +3,8 @@ import { hash } from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
+
+
 // TODO: create branches
 const BRANCHES_DATA = [
   {
@@ -148,6 +150,72 @@ async function main() {
 
     console.log(`Created 10 employees for ${branch.name}`);
   }
+
+  // Create Management users
+  for (let i = 0; i < 2; i++) {
+    const firstName = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
+    const lastName = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
+    const name = `${firstName} ${lastName}`;
+    const email = `management${i + 1}@example.com`;
+
+    await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: await hash('password123', 12),
+        role: UserRole.MANAGEMENT,
+        status: UserStatus.ACTIVE,
+        // Additional fields for management
+        title: TITLES[Math.floor(Math.random() * TITLES.length)],
+        department: 'Management',
+        dob: randomDate(new Date(1970, 0, 1), new Date(1990, 11, 31)),
+        doj: randomDate(new Date(2020, 0, 1), new Date(2024, 11, 31)),
+        gender: Math.random() > 0.5 ? 'MALE' : 'FEMALE',
+        mobileNo: generateRandomNumber(10),
+        panNo: `ABCDE${generateRandomNumber(4)}F`,
+        aadharNo: generateRandomNumber(12),
+        salary: Math.floor(generateRandomSalary(50000, 100000) / 1000) * 1000,
+        bankAccountNo: generateRandomNumber(12),
+        bankIfscCode: `${BANKS[Math.floor(Math.random() * BANKS.length)].ifscPrefix}${generateRandomNumber(6)}`,
+        totalAdvanceBalance: 0,
+        totalEmiDeduction: 0
+      },
+    });
+  }
+  console.log('Created Management users');
+
+  // Create HR users
+  for (let i = 0; i < 2; i++) {
+    const firstName = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
+    const lastName = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
+    const name = `${firstName} ${lastName}`;
+    const email = `hr${i + 1}@example.com`;
+
+    await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: await hash('password123', 12),
+        role: UserRole.HR,
+        status: UserStatus.ACTIVE,
+        // Additional fields for HR
+        title: TITLES[Math.floor(Math.random() * TITLES.length)],
+        department: 'HR',
+        dob: randomDate(new Date(1980, 0, 1), new Date(1995, 11, 31)),
+        doj: randomDate(new Date(2020, 0, 1), new Date(2024, 11, 31)),
+        gender: Math.random() > 0.5 ? 'MALE' : 'FEMALE',
+        mobileNo: generateRandomNumber(10),
+        panNo: `ABCDE${generateRandomNumber(4)}F`,
+        aadharNo: generateRandomNumber(12),
+        salary: Math.floor(generateRandomSalary(40000, 80000) / 1000) * 1000,
+        bankAccountNo: generateRandomNumber(12),
+        bankIfscCode: `${BANKS[Math.floor(Math.random() * BANKS.length)].ifscPrefix}${generateRandomNumber(6)}`,
+        totalAdvanceBalance: 0,
+        totalEmiDeduction: 0
+      },
+    });
+  }
+  console.log('Created HR users');
 
   console.log('Seeding completed!');
 }

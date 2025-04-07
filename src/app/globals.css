@@ -39,6 +39,10 @@
 
     --destructive-foreground: 210 40% 98%;
 
+    --success: #25b525;
+
+    --success-foreground: 210 40% 98%;
+
     --border: 214.3 31.8% 91.4%;
 
     --input: 214.3 31.8% 91.4%;
@@ -118,4 +122,9 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+
+.text-green {
+  color: var(--success);
 }

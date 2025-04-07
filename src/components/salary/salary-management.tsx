@@ -19,6 +19,7 @@ import {
 import { SalaryList } from './salary-list'
 import {toast} from "sonner";
 import { useRouter } from 'next/navigation'
+import { DownloadENETButton } from './download-enet-button'
 
 interface SalaryManagementProps {
   initialYear?: number
@@ -156,6 +157,11 @@ export function SalaryManagement({ initialYear, initialMonth }: SalaryManagement
                 disabled={isGenerating || !selectedMonth || !selectedYear}>
                 {isGenerating ? 'Generating...' : 'Generate Salaries'}
               </Button>
+
+              <DownloadENETButton 
+                year={selectedYear}
+                month={selectedMonth}
+              />
             </div>
           </div>
         </CardContent>

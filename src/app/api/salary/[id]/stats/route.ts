@@ -55,7 +55,7 @@ export async function GET(
 
     // Calculate attendance stats
     const totalDaysInMonth = endDate.getDate()
-    const perDaySalary = parseFloat((salary.baseSalary / totalDaysInMonth).toFixed(2))
+    const perDaySalary = Math.ceil(salary.baseSalary / totalDaysInMonth)
     
     // Count different attendance types
     const regularDays = attendance.filter(a => a.isPresent && !a.isHalfDay && !a.overtime).length
@@ -73,8 +73,7 @@ export async function GET(
     // Calculate overtime bonus (only the extra 0.5x part)
     const overtimeSalary = overtimeDays * 0.5 * perDaySalary
     
-    // Base salary earned is present days salary plus overtime bonus
-    const baseSalaryEarned = presentDaysSalary + overtimeSalary
+    
     
     // Calculate earned leaves
     let leavesEarned = 0
@@ -84,17 +83,24 @@ export async function GET(
       leavesEarned = 1
     }
     const leaveSalary = leavesEarned * perDaySalary
+
+    // Base salary earned is present days salary plus overtime bonus
+    const baseSalaryEarned = presentDaysSalary + overtimeSalary + salary.otherBonuses + leaveSalary;
     
     // Calculate total deductions from approved installments only
-    const totalDeductions = advanceInstallments
+    const totalAdvanceDeductions = advanceInstallments
       .filter(i => i.status === 'APPROVED')
       .reduce((sum, i) => sum + i.amountPaid, 0)
+
+    const totalOtherDeductions = salary.otherDeductions
+
+    const totalDeductions = totalAdvanceDeductions + totalOtherDeductions
     
     // Add a count of approved deductions to the response
     const approvedDeductionsCount = advanceInstallments.filter(i => i.status === 'APPROVED').length
     
     // Calculate net salary
-    const netSalary = baseSalaryEarned + leaveSalary - totalDeductions
+    const netSalary = baseSalaryEarned - totalDeductions
     
     // Prepare the response
     const stats = {
@@ -107,7 +113,9 @@ export async function GET(
         netSalary: salary.netSalary,
         deductions: salary.deductions,
         leavesEarned: salary.leavesEarned,
-        leaveSalary: salary.leaveSalary
+        leaveSalary: salary.leaveSalary,
+        otherBonuses: salary.otherBonuses,
+        otherDeductions: salary.otherDeductions
       },
       employee: {
         id: salary.userId,
@@ -131,6 +139,8 @@ export async function GET(
         leavesEarned,
         leaveSalary,
         totalDeductions,
+        totalAdvanceDeductions,
+        totalOtherDeductions,
         approvedDeductionsCount,
         netSalary
       },

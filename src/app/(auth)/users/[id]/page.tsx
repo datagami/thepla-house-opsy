@@ -37,7 +37,7 @@ export default async function UserProfilePage({ params }: Props) {
   }
 
   const user = await prisma.user.findUnique({
-    where: { id: id },
+    where: { id },
     include: {
       branch: {
         select: {
@@ -51,9 +51,20 @@ export default async function UserProfilePage({ params }: Props) {
           name: true,
           contactNo: true
         },
-      }
+      },
+      accounts: true,
+      sessions: true,
+      attendance: true,
+      leaveRequests: true,
+      approvedBy: true,
+      approvedUsers: true,
+      verifiedAttendance: true,
+      salaries: true,
+      advances: true,
+      approvedAdvances: true,
+      approvedInstallments: true
     },
-  }) as User;
+  }) as unknown as User;
 
 
   if (!user) {
