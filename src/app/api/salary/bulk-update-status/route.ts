@@ -81,7 +81,7 @@ export async function PATCH(request: Request) {
           data: {
             status: 'PROCESSING',
             advanceDeduction: totalApprovedDeductions,
-            netSalary: salary.baseSalary + salary.bonuses - totalApprovedDeductions
+            netSalary: salary.baseSalary + salary.overtimeBonus + salary.otherBonuses - totalApprovedDeductions - salary.deductions
           }
         })
 

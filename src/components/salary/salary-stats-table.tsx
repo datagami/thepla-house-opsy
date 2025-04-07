@@ -155,36 +155,51 @@ export function SalaryStatsTable({ salaryId }: SalaryStatsTableProps) {
                   <TableCell>{formatCurrency(stats.calculation.perDaySalary)}</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell>Present Days Salary</TableCell>
+                  <TableCell>Present Days Salary (A)</TableCell>
                   <TableCell>{stats.attendance.presentDays.toFixed(1)} days × {formatCurrency(stats.calculation.perDaySalary)}</TableCell>
-                  <TableCell>{formatCurrency(stats.calculation.presentDaysSalary)}</TableCell>
+                  <TableCell className="text-green">{formatCurrency(stats.calculation.presentDaysSalary)}</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell>Overtime Bonus</TableCell>
+                  <TableCell>Overtime Bonus (B)</TableCell>
                   <TableCell>{stats.attendance.overtimeDays} days × 0.5 × {formatCurrency(stats.calculation.perDaySalary)}</TableCell>
-                  <TableCell>{formatCurrency(stats.calculation.overtimeSalary)}</TableCell>
+                  <TableCell className="text-green">{formatCurrency(stats.calculation.overtimeSalary)}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Other Bonuses (C)</TableCell>
+                  <TableCell></TableCell>
+                  <TableCell className="text-green">{formatCurrency(stats.salary.otherBonuses)}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Earned Leaves (D)</TableCell>
+                  <TableCell>{stats.calculation.leavesEarned} days × {formatCurrency(stats.calculation.perDaySalary)}</TableCell>
+                  <TableCell className="text-green">{formatCurrency(stats.calculation.leaveSalary)}</TableCell>
                 </TableRow>
                 <TableRow className="bg-muted/50">
-                  <TableCell className="font-medium">Base Salary Earned</TableCell>
-                  <TableCell>Present Days Salary + Overtime Bonus</TableCell>
+                  <TableCell className="font-bold">Base Salary Earned</TableCell>
+                  <TableCell>A + B + C + D</TableCell>
                   <TableCell className="font-medium">{formatCurrency(stats.calculation.baseSalaryEarned)}</TableCell>
                 </TableRow>
-                <TableRow>
-                  <TableCell>Earned Leaves</TableCell>
-                  <TableCell>{stats.calculation.leavesEarned} days × {formatCurrency(stats.calculation.perDaySalary)}</TableCell>
-                  <TableCell>{formatCurrency(stats.calculation.leaveSalary)}</TableCell>
-                </TableRow>
                 <TableRow className="text-destructive">
-                  <TableCell>Deductions</TableCell>
+                  <TableCell>Deductions (E)</TableCell>
                   <TableCell>
-                    Approved Advance Payment Installments 
+                    Approved Advance Payment Installments
                     ({stats.deductions.filter(d => d.status === 'APPROVED').length} of {stats.deductions.length})
                   </TableCell>
-                  <TableCell>-{formatCurrency(stats.calculation.totalDeductions)}</TableCell>
+                  <TableCell className="text-destructive">- {formatCurrency(stats.calculation.totalAdvanceDeductions)}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Other Deductions (F)</TableCell>
+                  <TableCell></TableCell>
+                  <TableCell className="text-destructive">- {formatCurrency(stats.calculation.totalOtherDeductions)}</TableCell>
+                </TableRow>
+                <TableRow className="bg-muted/50">
+                  <TableCell className="font-bold">Total Deductions</TableCell>
+                  <TableCell>E + F</TableCell>
+                  <TableCell className="font-medium">{formatCurrency(stats.calculation.totalDeductions)}</TableCell>
                 </TableRow>
                 <TableRow className="bg-muted/50">
                   <TableCell className="font-bold">Net Salary</TableCell>
-                  <TableCell className="font-medium">Base Salary + Leave Salary - Deductions</TableCell>
+                  <TableCell className="font-medium">Base Salary Earned - Total Deductions</TableCell>
                   <TableCell className="font-bold">{formatCurrency(stats.calculation.netSalary)}</TableCell>
                 </TableRow>
               </TableBody>

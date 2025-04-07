@@ -25,14 +25,16 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { toast } from 'sonner';
 import { SalaryStatsTable } from '@/components/salary/salary-stats-table'
 import { Input } from "@/components/ui/input"
+import { AddBonusForm } from './add-bonus-form'
 
 interface SalaryDetailsProps {
   salary: Salary;
   month?: string;
   year?: string;
+  canEdit?: boolean;
 }
 
-export function SalaryDetails({ salary, month, year }: SalaryDetailsProps) {
+export function SalaryDetails({ salary, month, year, canEdit = false }: SalaryDetailsProps) {
   const router = useRouter()
   const [isUpdating, setIsUpdating] = useState(false)
   const [, setAdvanceDeductions] = useState<Array<{
@@ -176,6 +178,12 @@ export function SalaryDetails({ salary, month, year }: SalaryDetailsProps) {
     } finally {
       setIsUpdating(false)
     }
+  }
+
+  const handleBonusAdded = () => {
+    // Update the salary in the parent component
+    // This will trigger a re-render with the new salary data
+    router.refresh()
   }
 
   const renderAdvanceInstallments = () => {
@@ -384,14 +392,16 @@ export function SalaryDetails({ salary, month, year }: SalaryDetailsProps) {
 
   return (
     <div className="container mx-auto p-10 space-y-6">
-      <Button
-        variant="ghost"
-        onClick={handleBack}
-        className="mb-4"
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Salaries
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button
+          variant="ghost"
+          onClick={handleBack}
+          className="gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Button>
+      </div>
 
       {renderConfirmationDialog()}
       <Card>
@@ -432,6 +442,13 @@ export function SalaryDetails({ salary, month, year }: SalaryDetailsProps) {
       <SalaryStatsTable salaryId={salary.id} />
 
       {renderAdvanceInstallments()}
+
+      {canEdit && salary.status === 'PENDING' && (
+        <div className="pt-4">
+          <h3 className="text-lg font-medium mb-2">Adjustments</h3>
+          <AddBonusForm salary={salary} onAdjustmentAdded={handleBonusAdded} />
+        </div>
+      )}
 
     </div>
   )

@@ -244,7 +244,9 @@ model Salary {
   baseSalary        Float
   advanceDeduction  Float     @default(0)
   deductions        Float     @default(0)
-  bonuses           Float     @default(0)
+  overtimeBonus     Float     @default(0)
+  otherBonuses      Float     @default(0)
+  otherDeductions   Float     @default(0)
   netSalary         Float
   presentDays       Float     @default(0)
   overtimeDays      Int       @default(0)

@@ -1,111 +1,159 @@
+"use client";
+
 import { eachDayOfInterval, endOfMonth, format, getDay, startOfMonth } from "date-fns";
 import { cn } from "@/lib/utils";
-import {Attendance} from "@/models/models";
+import { Attendance } from "@/models/models";
+import { useState } from "react";
+import { AttendanceForm } from "./attendance-form";
+import { Badge } from "@/components/ui/badge";
 
 interface DetailedAttendanceCalendarProps {
   attendance: Attendance[];
   month: Date;
+  userId: string;
+  userName: string;
+  userRole: string;
 }
 
-export function DetailedAttendanceCalendar({
-  attendance,
+export function DetailedAttendanceCalendar({ 
+  attendance, 
   month,
+  userId,
+  userName,
+  userRole
 }: DetailedAttendanceCalendarProps) {
-  // Get all days in the month
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedAttendance, setSelectedAttendance] = useState<Attendance | null>(null);
+
   const days = eachDayOfInterval({
     start: startOfMonth(month),
     end: endOfMonth(month),
   });
 
-  // Create calendar grid with empty cells for proper alignment
-  const startWeekday = getDay(days[0]);
-  const prefixDays = Array(startWeekday).fill(null);
-  const calendarDays = [...prefixDays, ...days];
+  const firstDayOfMonth = getDay(startOfMonth(month));
+  const paddingDays = Array(firstDayOfMonth).fill(null);
 
-  // Create attendance lookup map
   const attendanceMap = new Map(
-    attendance.map(a => [format(a.date, 'yyyy-MM-dd'), a])
+    attendance.map((record) => [
+      format(new Date(record.date), "yyyy-MM-dd"),
+      record,
+    ])
   );
 
+  const handleDateClick = (date: Date) => {
+    const dateKey = format(date, "yyyy-MM-dd");
+    const existingAttendance = attendanceMap.get(dateKey);
+    setSelectedDate(date);
+    setSelectedAttendance(existingAttendance || null);
+  };
+
+  const getAttendanceStatus = (date: Date) => {
+    const dateKey = format(date, "yyyy-MM-dd");
+    const record = attendanceMap.get(dateKey);
+    if (!record) return "PENDING";
+    if (!record.isPresent) return "ABSENT";
+    if (record.isHalfDay) return "HALF_DAY";
+    return "PRESENT";
+  };
+
+  const statusColors = {
+    PRESENT: "bg-green-100 text-green-800",
+    ABSENT: "bg-red-100 text-red-800",
+    PENDING: "bg-yellow-100 text-yellow-800",
+    HALF_DAY: "bg-blue-100 text-blue-800",
+  } as const;
+
   return (
-    <div className="rounded-md border">
-      {/* Calendar Header */}
-      <div className="grid grid-cols-7 gap-px border-b bg-muted text-center text-sm font-medium">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-          <div key={day} className="py-2">
+    <div className="space-y-4">
+      <div className="grid grid-cols-7 gap-1 text-center text-sm font-medium">
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+          <div key={day} className="p-2">
             {day}
           </div>
         ))}
       </div>
-
-      {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-px bg-muted">
-        {calendarDays.map((day, idx) => {
-          if (!day) {
-            return <div key={`empty-${idx}`} className="bg-background p-3 h-32" />;
-          }
-
-          const dateKey = format(day, 'yyyy-MM-dd');
-          const dayAttendance = attendanceMap.get(dateKey);
+      <div className="grid grid-cols-7 gap-1">
+        {paddingDays.map((_, index) => (
+          <div key={`padding-${index}`} className="p-2" />
+        ))}
+        {days.map((date) => {
+          const dateKey = format(date, "yyyy-MM-dd");
+          const attendance = attendanceMap.get(dateKey);
+          const status = getAttendanceStatus(date);
+          const isToday = format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
 
           return (
             <div
-              key={dateKey}
+              key={date.toString()}
               className={cn(
-                "bg-background p-3 h-32",
-                "hover:bg-muted/50 transition-colors",
-                "relative"
+                "p-2 cursor-pointer rounded-md hover:bg-muted/50 transition-colors",
+                isToday && "ring-2 ring-primary",
+                statusColors[status]
               )}
+              onClick={() => handleDateClick(date)}
             >
-              <div className="flex flex-col h-full">
-                {/* Date */}
-                <span className="text-sm font-medium">
-                  {format(day, 'd')}
-                </span>
-
-                {/* Attendance Status */}
-                {dayAttendance ? (
-                  <div className="mt-1 flex flex-col gap-1">
-                    <div className={cn(
-                      "text-xs font-medium rounded-full px-2 py-1 w-fit",
-                      dayAttendance.isPresent 
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    )}>
-                      {dayAttendance.isPresent ? "Present" : "Absent"}
-                    </div>
-
-                    {/* Branch Name */}
-                    {dayAttendance.branch && (
-                      <div className="text-xs text-muted-foreground">
-                        {dayAttendance.branch.name}
+              <div className="text-sm font-medium text-center">{format(date, "d")}</div>
+              {attendance && (
+                <div className="mt-1 space-y-1">
+                  {attendance.isPresent && (
+                    <div className="flex flex-col gap-1">
+                      <div className="text-xs">
+                        {attendance.checkIn && attendance.checkOut
+                          ? `${attendance.checkIn} - ${attendance.checkOut}`
+                          : "No time record"}
                       </div>
-                    )}
-
-                    {/* Status Flags */}
-                    <div className="flex gap-1 flex-wrap">
-                      {dayAttendance.isHalfDay && (
-                        <span className="bg-blue-100 text-blue-700 text-xs rounded-full px-2 py-0.5">
-                          Half Day
-                        </span>
-                      )}
-                      {dayAttendance.overtime && (
-                        <span className="bg-purple-100 text-purple-700 text-xs rounded-full px-2 py-0.5">
-                          Overtime
-                        </span>
-                      )}
+                      <div className="flex flex-wrap gap-1">
+                        {attendance.shift1 && (
+                          <Badge variant="outline" className="text-xs px-1 py-0">
+                            M
+                          </Badge>
+                        )}
+                        {attendance.shift2 && (
+                          <Badge variant="outline" className="text-xs px-1 py-0">
+                            A
+                          </Badge>
+                        )}
+                        {attendance.shift3 && (
+                          <Badge variant="outline" className="text-xs px-1 py-0">
+                            N
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {attendance.isHalfDay && (
+                          <Badge variant="outline" className="text-xs px-1 py-0 bg-blue-100 text-blue-800">
+                            HD
+                          </Badge>
+                        )}
+                        {attendance.overtime && (
+                          <Badge variant="outline" className="text-xs px-1 py-0 bg-purple-100 text-purple-800">
+                            OT
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    No record
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
       </div>
+
+      {selectedDate && (
+        <AttendanceForm
+          userId={userId}
+          userName={userName}
+          date={selectedDate}
+          currentAttendance={selectedAttendance || undefined}
+          isOpen={!!selectedDate}
+          onCloseAction={() => {
+            setSelectedDate(null);
+            setSelectedAttendance(null);
+          }}
+          userRole={userRole}
+        />
+      )}
     </div>
   );
 } 

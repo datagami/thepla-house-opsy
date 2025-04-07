@@ -42,14 +42,14 @@ export default async function UsersPage() {
     orderBy: {
       createdAt: 'desc',
     },
-  }) as User[];
+  }) as unknown as User[];
 
   const branches = await prisma.branch.findMany({
     select: {
       id: true,
       name: true,
     },
-  }) as Branch[];
+  }) as unknown as Branch[];
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">

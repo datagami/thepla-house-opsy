@@ -25,6 +25,7 @@ import {
 import { toast } from "sonner";
 import { Branch, User } from "@/models/models";
 import { DatePicker } from "@/components/ui/date-picker";
+import { UserImageUpload } from './user-image-upload';
 
 const userFormSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
@@ -139,6 +140,17 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
 
   return (
     <Form {...form}>
+      <div className="mb-8">
+        <UserImageUpload 
+          userId={user?.id || ''} 
+          currentImage={user?.image}
+          onImageUpdate={(imageUrl) => {
+            if (user) {
+              user.image = imageUrl;
+            }
+          }}
+        />
+      </div>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Basic Information</h3>

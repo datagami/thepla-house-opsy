@@ -38,32 +38,33 @@ export function calculateMonthlySalary(
       halfDayAmount: 0
     }
   }
+
   // Calculate total working days in the month
   const totalDays = attendance.length;
   
   // Calculate per day salary
-  const perDaySalary = basicSalary / totalDays;
+  const perDaySalary = Math.ceil(basicSalary / totalDays);
 
   // Initialize counters
   let presentDays = 0;
-  let absentDays = 0;
-  let halfDays = 0;
   let overtimeDays = 0;
-  
+  let halfDays = 0;
+
   // Calculate attendance and amounts
   attendance.forEach(day => {
     if (!day.isPresent) {
-      absentDays++;
       return;
     }
 
     if (day.isHalfDay) {
-      halfDays++;
+      presentDays += 0.5;
+      halfDays += 1;
       return;
     }
 
     if (day.overtime) {
       overtimeDays++;
+      presentDays += 1;
       return;
     }
 
@@ -71,26 +72,34 @@ export function calculateMonthlySalary(
   });
 
   // Calculate detailed amounts
-  const fullDayAmount = presentDays * perDaySalary;
-  const halfDayAmount = halfDays * (perDaySalary * 0.5);
-  const overtimeAmount = overtimeDays * (perDaySalary * 1.5);
-  const deductions = absentDays * perDaySalary;
+  const fullDayAmount = parseFloat((presentDays * perDaySalary).toFixed(2));
+  const halfDayAmount = parseFloat((halfDays * (perDaySalary * 0.5)).toFixed(2));
+  const overtimeAmount = parseFloat((overtimeDays * (perDaySalary * 0.5)).toFixed(2));
 
+  let leavesEarned = 0;
+  if (presentDays >= 25) {
+    leavesEarned = 2;
+  } else if (presentDays >= 15) {
+    leavesEarned = 1;
+  }
+
+  const leaveSalary = parseFloat((leavesEarned * perDaySalary).toFixed(2));
+  
   // Calculate total regular days amount
   const regularDaysAmount = fullDayAmount + halfDayAmount;
 
   // Calculate total salary
-  const totalSalary = regularDaysAmount + overtimeAmount;
+  const totalSalary = regularDaysAmount + overtimeAmount + leaveSalary;
 
   return {
     basicSalary,
     perDaySalary,
     regularDaysAmount,
     overtimeAmount,
-    deductions,
+    deductions: 0, // No deductions in this calculation
     totalSalary,
-    presentDays,
-    absentDays,
+    presentDays: parseFloat(presentDays.toFixed(2)),
+    absentDays: 0, // No absent days in this calculation
     halfDays,
     overtimeDays,
     fullDayAmount,
@@ -150,7 +159,7 @@ export async function calculateSalary(userId: string, month: number, year: numbe
 
   // Calculate attendance-based salary
   const workingDays = endDate.getDate()
-  const perDaySalary = parseFloat((employee.salary.valueOf() / workingDays).toFixed(2));
+  const perDaySalary = Math.ceil(employee.salary.valueOf() / workingDays);
   
   // Regular days get 1x per day salary
   const presentDaysAmount = parseFloat((presentDays * perDaySalary).toFixed(2));
@@ -187,7 +196,7 @@ export async function calculateSalary(userId: string, month: number, year: numbe
 
   const baseSalary = employee.salary;
   const deductions = totalAdvanceDeduction;
-  const bonuses = performanceBonus;
+  const otherBonuses = performanceBonus;
 
   // Calculate earned leaves based on attendance
   let leavesEarned = 0;
@@ -204,18 +213,17 @@ export async function calculateSalary(userId: string, month: number, year: numbe
   const totalSalaryWithLeaves = totalSalary + leaveSalary;
   
   // Update net salary calculation to include leave salary
-  const netSalary = totalSalaryWithLeaves + bonuses - deductions;
+  const netSalary = totalSalaryWithLeaves + otherBonuses - deductions;
 
   return {
     baseSalary,
     deductions,
-    bonuses,
     netSalary,
     // Additional details for breakdown
     attendanceDeduction: 0, // Not used in this calculation
     suggestedAdvanceDeductions,
     overtimeAmount,
-    performanceBonus,
+    otherBonuses,
     attendance,
     leavesEarned,
     leaveSalary,
@@ -266,7 +274,9 @@ export async function createOrUpdateSalary({
         baseSalary: salaryDetails.baseSalary,
         advanceDeduction: totalAdvanceDeduction,
         deductions: totalAdvanceDeduction,
-        bonuses: salaryDetails.bonuses,
+        overtimeBonus: salaryDetails.overtimeAmount,
+        otherBonuses: 0,
+        otherDeductions: 0,
         netSalary: salaryDetails.netSalary - totalAdvanceDeduction,
         presentDays: salaryDetails.presentDays,
         overtimeDays: salaryDetails.overtimeDays || 0,
