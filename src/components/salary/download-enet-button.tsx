@@ -81,9 +81,7 @@ export function DownloadENETButton({ year, month }: DownloadENETButtonProps) {
     }
   };
 
-  if (!year || !month) {
-    return null;
-  }
+  if (!year || !month) return null;
 
   return (
     <Button 
