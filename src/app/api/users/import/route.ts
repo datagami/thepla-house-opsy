@@ -77,10 +77,6 @@ export async function POST(request: Request) {
           where: {email: userData['Email*']},
           include: {references: true}
         });
-
-        console.log(userData['DOB*'], 'DOB*', userData);
-        console.log(parseDate(userData['DOB*']));
-        console.log(userData['DOJ*'], 'DOJ*', parseDate(userData['DOJ*']));
         // Common user data
         const userCommonData = {
           name: userData['Name*'],
@@ -139,6 +135,9 @@ export async function POST(request: Request) {
           });
         }
       }
+    }, {
+      timeout: 200000,
+      maxWait: 10000,
     });
 
     return NextResponse.json({message: 'Users imported successfully'})
