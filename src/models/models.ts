@@ -163,7 +163,6 @@ export interface Salary {
   year: number;
   baseSalary: number;
   advanceDeduction: number;
-  bonuses: number;
   deductions: number;
   overtimeBonus: number;
   otherBonuses: number;

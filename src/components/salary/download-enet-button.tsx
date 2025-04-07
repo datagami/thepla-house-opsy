@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
+import {Salary} from "@/models/models";
 
 interface DownloadENETButtonProps {
   year?: number;
@@ -26,7 +27,7 @@ export function DownloadENETButton({ year, month }: DownloadENETButtonProps) {
           throw new Error('Failed to fetch salary status');
         }
         const data = await response.json();
-        const hasProcessing = data.some((salary: any) => salary.status === 'PROCESSING');
+        const hasProcessing = data.some((salary: Salary) => salary.status === 'PROCESSING');
         console.log('Processing salaries found:', hasProcessing, data);
         setHasProcessingSalaries(hasProcessing);
       } catch (error) {

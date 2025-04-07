@@ -37,10 +37,7 @@ export async function POST(req: Request) {
     });
 
     if (existingSalary?.status === 'PROCESSING') {
-      return new NextResponse(
-        { error: 'Cannot edit attendance as salary is already in processing state' },
-        { status: 400 }
-      );
+      throw new Error('Cannot edit attendance as salary is already in processing state');
     }
 
     // Set initial status based on who's creating the attendance
@@ -140,10 +137,7 @@ export async function PATCH(req: Request) {
     });
 
     if (existingSalary?.status === 'PROCESSING') {
-      return new NextResponse(
-        { error: 'Cannot edit attendance as salary is already in processing state' },
-        { status: 400 }
-      );
+      throw new Error('Cannot edit attendance as salary is already in processing state');
     }
 
     const updatedAttendance = await prisma.attendance.update({
