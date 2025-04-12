@@ -43,6 +43,27 @@ export function DetailedAttendanceCalendar({
   const handleDateClick = (date: Date) => {
     const dateKey = format(date, "yyyy-MM-dd");
     const existingAttendance = attendanceMap.get(dateKey);
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const clickedDate = new Date(date);
+    clickedDate.setHours(0, 0, 0, 0);
+    
+    // No one can edit future dates
+    if (clickedDate > today) {
+      return;
+    }
+
+    // Only BRANCH_MANAGER can edit today's attendance
+    if (clickedDate.getTime() === today.getTime() && userRole !== "BRANCH_MANAGER") {
+      return;
+    }
+
+    // Only HR and MANAGEMENT can edit past dates
+    if (clickedDate < today && !["HR", "MANAGEMENT"].includes(userRole)) {
+      return;
+    }
+
     setSelectedDate(date);
     setSelectedAttendance(existingAttendance || null);
   };
@@ -81,12 +102,32 @@ export function DetailedAttendanceCalendar({
           const attendance = attendanceMap.get(dateKey);
           const status = getAttendanceStatus(date);
           const isToday = format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+          
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const cellDate = new Date(date);
+          cellDate.setHours(0, 0, 0, 0);
+          
+          const isFutureDate = cellDate > today;
+          const isPastDate = cellDate < today;
+          
+          let canEdit = false;
+          
+          if (isFutureDate) {
+            canEdit = false; // No one can edit future dates
+          } else if (isToday) {
+            canEdit = userRole === "BRANCH_MANAGER"; // Only BRANCH_MANAGER can edit today
+          } else if (isPastDate) {
+            canEdit = ["HR", "MANAGEMENT"].includes(userRole); // Only HR and MANAGEMENT can edit past dates
+          }
 
           return (
             <div
               key={date.toString()}
               className={cn(
-                "p-2 cursor-pointer rounded-md hover:bg-muted/50 transition-colors",
+                "p-2 rounded-md transition-colors",
+                canEdit && "cursor-pointer hover:bg-muted/50",
+                !canEdit && "opacity-70",
                 isToday && "ring-2 ring-primary",
                 statusColors[status]
               )}
