@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import {useState} from "react";
+import {useRouter} from "next/navigation";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {useForm} from "react-hook-form";
 import * as z from "zod";
-import { Button } from "@/components/ui/button";
+import {Button} from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -14,7 +14,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import {Input} from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -22,10 +22,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
-import { Branch, User } from "@/models/models";
-import { DatePicker } from "@/components/ui/date-picker";
-import { UserImageUpload } from './user-image-upload';
+import {toast} from "sonner";
+import {Branch, User} from "@/models/models";
+import {UserImageUpload} from './user-image-upload';
+import {DateInput} from "@/components/ui/date-input";
 
 const userFormSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
@@ -68,7 +68,7 @@ interface UserProfileFormProps {
   canEdit?: boolean;
 }
 
-export function UserProfileForm({ user, branches, canEdit = true }: UserProfileFormProps) {
+export function UserProfileForm({user, branches, canEdit = true}: UserProfileFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -90,12 +90,12 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
       salary: user?.salary || 0,
       bankAccountNo: user?.bankAccountNo || "",
       bankIfscCode: user?.bankIfscCode || "",
-      references: user?.references?.length 
-        ? user.references.map(ref => ({ 
-            name: ref.name, 
-            contactNo: ref.contactNo 
-          }))
-        : [{ name: "", contactNo: "" }],
+      references: user?.references?.length
+        ? user.references.map(ref => ({
+          name: ref.name,
+          contactNo: ref.contactNo
+        }))
+        : [{name: "", contactNo: ""}],
       password: "",
     },
   });
@@ -108,7 +108,7 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
 
       const submitData = {
         ...values,
-        ...(values.password ? { password: values.password } : {}),
+        ...(values.password ? {password: values.password} : {}),
         branchId: values.branch === "null" ? null : values.branch,
       };
       delete submitData.branch;
@@ -141,8 +141,8 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
   return (
     <Form {...form}>
       <div className="mb-8">
-        <UserImageUpload 
-          userId={user?.id || ''} 
+        <UserImageUpload
+          userId={user?.id || ''}
           currentImage={user?.image}
           onImageUpdate={(imageUrl) => {
             if (user) {
@@ -158,13 +158,13 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
             <FormField
               control={form.control}
               name="title"
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input {...field} disabled={!canEdit} />
+                    <Input {...field} disabled={!canEdit}/>
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage/>
                 </FormItem>
               )}
             />
@@ -172,13 +172,13 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
             <FormField
               control={form.control}
               name="name"
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input {...field} disabled={!canEdit} />
+                    <Input {...field} disabled={!canEdit}/>
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage/>
                 </FormItem>
               )}
             />
@@ -186,13 +186,13 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
             <FormField
               control={form.control}
               name="email"
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input {...field} type="email" disabled={!canEdit} />
+                    <Input {...field} type="email" disabled={!canEdit}/>
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage/>
                 </FormItem>
               )}
             />
@@ -201,18 +201,18 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
               <FormField
                 control={form.control}
                 name="password"
-                render={({ field }) => (
+                render={({field}) => (
                   <FormItem>
                     <FormLabel>{user ? "New Password" : "Password"}</FormLabel>
                     <FormControl>
-                      <Input 
-                        {...field} 
+                      <Input
+                        {...field}
                         type="password"
                         placeholder={user ? "Leave blank to keep current password" : ""}
                         disabled={!canEdit}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage/>
                   </FormItem>
                 )}
               />
@@ -226,7 +226,7 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
             <FormField
               control={form.control}
               name="role"
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormLabel>Role</FormLabel>
                   <Select
@@ -236,7 +236,7 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a role" />
+                        <SelectValue placeholder="Select a role"/>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -246,7 +246,7 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
                       <SelectItem value="MANAGEMENT">Management</SelectItem>
                     </SelectContent>
                   </Select>
-                  <FormMessage />
+                  <FormMessage/>
                 </FormItem>
               )}
             />
@@ -254,7 +254,7 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
             <FormField
               control={form.control}
               name="branch"
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormLabel>Branch</FormLabel>
                   <Select
@@ -264,7 +264,7 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a branch" />
+                        <SelectValue placeholder="Select a branch"/>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -277,7 +277,7 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormMessage />
+                  <FormMessage/>
                 </FormItem>
               )}
             />
@@ -285,13 +285,13 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
             <FormField
               control={form.control}
               name="department"
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormLabel>Department</FormLabel>
                   <FormControl>
-                    <Input {...field} disabled={!canEdit} />
+                    <Input {...field} disabled={!canEdit}/>
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage/>
                 </FormItem>
               )}
             />
@@ -299,37 +299,33 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
             <FormField
               control={form.control}
               name="salary"
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormLabel>Salary</FormLabel>
                   <FormControl>
-                    <Input 
-                      {...field} 
+                    <Input
+                      {...field}
                       type="number"
                       disabled={!canEdit}
                       onChange={e => field.onChange(parseFloat(e.target.value))}
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage/>
                 </FormItem>
               )}
             />
 
             <FormField
+              disabled={!canEdit}
               control={form.control}
               name="doj"
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormLabel>Date of Joining</FormLabel>
                   <FormControl>
-                    <DatePicker
-                      date={field.value}
-                      onSelect={field.onChange}
-                      disabled={!canEdit}
-                      placeholder="Select joining date"
-                    />
+                    <DateInput onChange={field.onChange} value={field.value}/>
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage/>
                 </FormItem>
               )}
             />
@@ -337,12 +333,12 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
             <FormField
               control={form.control}
               name="mobileNo"
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormLabel>Mobile Number</FormLabel>
                   <FormControl>
-                    <Input 
-                      {...field} 
+                    <Input
+                      {...field}
                       type="tel"
                       disabled={!canEdit}
                       maxLength={10}
@@ -350,7 +346,7 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
                       inputMode="numeric"
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage/>
                 </FormItem>
               )}
             />
@@ -362,19 +358,15 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
+              disabled={!canEdit}
               name="dob"
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormLabel>Date of Birth</FormLabel>
                   <FormControl>
-                    <DatePicker
-                      date={field.value}
-                      onSelect={field.onChange}
-                      disabled={!canEdit}
-                      placeholder="Select birth date"
-                    />
+                    <DateInput onChange={field.onChange} value={field.value}/>
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage/>
                 </FormItem>
               )}
             />
@@ -382,7 +374,7 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
             <FormField
               control={form.control}
               name="gender"
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormLabel>Gender</FormLabel>
                   <Select
@@ -392,7 +384,7 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select gender" />
+                        <SelectValue placeholder="Select gender"/>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -401,7 +393,7 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
                       <SelectItem value="OTHER">Other</SelectItem>
                     </SelectContent>
                   </Select>
-                  <FormMessage />
+                  <FormMessage/>
                 </FormItem>
               )}
             />
@@ -409,19 +401,19 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
             <FormField
               control={form.control}
               name="panNo"
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormLabel>PAN Number</FormLabel>
                   <FormControl>
-                    <Input 
-                      {...field} 
+                    <Input
+                      {...field}
                       placeholder="ABCDE1234F"
                       disabled={!canEdit}
                       maxLength={10}
                       className="uppercase"
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage/>
                 </FormItem>
               )}
             />
@@ -429,12 +421,12 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
             <FormField
               control={form.control}
               name="aadharNo"
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormLabel>Aadhar Number</FormLabel>
                   <FormControl>
-                    <Input 
-                      {...field} 
+                    <Input
+                      {...field}
                       placeholder="1234 5678 9012"
                       disabled={!canEdit}
                       maxLength={12}
@@ -442,7 +434,7 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
                       inputMode="numeric"
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage/>
                 </FormItem>
               )}
             />
@@ -455,12 +447,12 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
             <FormField
               control={form.control}
               name="bankAccountNo"
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormLabel>Bank Account Number</FormLabel>
                   <FormControl>
-                    <Input 
-                      {...field} 
+                    <Input
+                      {...field}
                       placeholder="Enter account number"
                       disabled={!canEdit}
                       type="text"
@@ -468,7 +460,7 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
                       pattern="\d*"
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage/>
                 </FormItem>
               )}
             />
@@ -476,19 +468,19 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
             <FormField
               control={form.control}
               name="bankIfscCode"
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormLabel>IFSC Code</FormLabel>
                   <FormControl>
-                    <Input 
-                      {...field} 
+                    <Input
+                      {...field}
                       placeholder="HDFC0123456"
                       disabled={!canEdit}
                       className="uppercase"
                       maxLength={11}
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage/>
                 </FormItem>
               )}
             />
@@ -502,26 +494,26 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
               <FormField
                 control={form.control}
                 name={`references.${index}.name`}
-                render={({ field }) => (
+                render={({field}) => (
                   <FormItem>
                     <FormLabel>Reference Name {index + 1}</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled={!canEdit} />
+                      <Input {...field} disabled={!canEdit}/>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage/>
                   </FormItem>
                 )}
               />
               <FormField
                 control={form.control}
                 name={`references.${index}.contactNo`}
-                render={({ field }) => (
+                render={({field}) => (
                   <FormItem>
                     <FormLabel>Contact Number</FormLabel>
                     <FormControl>
-                      <Input {...field} type="tel" disabled={!canEdit} />
+                      <Input {...field} type="tel" disabled={!canEdit}/>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage/>
                   </FormItem>
                 )}
               />
@@ -536,7 +528,7 @@ export function UserProfileForm({ user, branches, canEdit = true }: UserProfileF
                 if (currentRefs.length < 2) {
                   form.setValue("references", [
                     ...currentRefs,
-                    { name: "", contactNo: "" },
+                    {name: "", contactNo: ""},
                   ]);
                 }
               }}
