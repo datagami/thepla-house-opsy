@@ -3,7 +3,7 @@ import {auth} from "@/auth";
 import {redirect} from "next/navigation";
 import {prisma} from "@/lib/prisma";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {Clock, CalendarCheck, Users, AlertCircle} from "lucide-react";
+import {Clock, CalendarCheck, Users, AlertCircle, UserCheck} from "lucide-react";
 import Link from "next/link";
 import {Attendance} from "@/models/models";
 
@@ -43,6 +43,7 @@ export default async function DashboardPage() {
 
   // @ts-expect-error - role is not in the User type
   const role = session.user.role
+  const canManageSelfAttendance = ["HR", "MANAGEMENT", "SELF_ATTENDANCE"].includes(role);
 
   if (role === "BRANCH_MANAGER") {
     const today = new Date();
@@ -234,7 +235,6 @@ export default async function DashboardPage() {
                 </p>
               </CardContent>
             </Card>
-            {stats.rejectedAttendance?.length}
             {stats.rejectedAttendance && stats.rejectedAttendance.length > 0 && (
               <Link href="/attendance" className="block">
                 <Card className="hover:bg-accent/5 transition-colors">
@@ -254,6 +254,24 @@ export default async function DashboardPage() {
               </Link>
             )}
           </>
+        )}
+        {canManageSelfAttendance && (
+          <Link href="/attendance/self" className="block">
+            <Card className="hover:bg-accent/5 transition-colors">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  My Attendance
+                </CardTitle>
+                <UserCheck className="h-4 w-4 text-muted-foreground"/>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">Mark Today</div>
+                <p className="text-xs text-muted-foreground">
+                  submit your attendance for today
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
         )}
         {role === "HR" && (
           <>

@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     const isSelfAttendance = creatorId === data.userId;
 
     // Define roles that can submit their own attendance
-    const canSubmitSelfAttendance = ["EMPLOYEE", "BRANCH_MANAGER", "SELF_ATTENDANCE"].includes(user.role);
+    const canSubmitSelfAttendance = ["HR", "MANAGEMENT", "SELF_ATTENDANCE"].includes(user.role);
 
     // Validate attendance submission rules
     if (isSelfAttendance) {
