@@ -10,7 +10,20 @@ export async function POST(req: Request) {
     }
 
     const data = await req.json();
-    
+
+    // Check if the attendance date is in the past
+    const attendanceDate = new Date(data.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    attendanceDate.setHours(0, 0, 0, 0);
+
+    // @ts-expect-error - role is not in the session type
+    const creatorRole = session.user.role;
+
+    if (attendanceDate < today && creatorRole !== "HR" && creatorRole !== "MANAGEMENT") {
+      return new Response('Cannot create attendance for past dates', { status: 403 });
+    }
+
     // Get the user's current branch assignment and the creator's role
     const user = await prisma.user.findUnique({
       where: { id: data.userId },
@@ -24,7 +37,6 @@ export async function POST(req: Request) {
     }
 
     // Check if salary exists for this month and its status
-    const attendanceDate = new Date(data.date);
     const existingSalary = await prisma.salary.findFirst({
       where: {
         userId: data.userId,
@@ -41,9 +53,7 @@ export async function POST(req: Request) {
     }
 
     // Set initial status based on who's creating the attendance
-    // @ts-expect-error - role is not in the session type
-    const creatorRole = session.user.role;
-    const status = creatorRole === "HR"
+    const status = creatorRole === "HR" || creatorRole === "BRANCH_MANAGER"
       ? "APPROVED" 
       : "PENDING_VERIFICATION";
 
