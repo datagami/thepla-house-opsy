@@ -10,6 +10,19 @@ export async function POST(req: Request) {
     }
 
     const data = await req.json();
+    
+    // Get the user's current branch assignment and the creator's role
+    const user = await prisma.user.findUnique({
+      where: { id: data.userId },
+      select: { 
+        branchId: true,
+        role: true
+      }
+    });
+
+    if (!user) {
+      return new Response('User not found', { status: 404 });
+    }
 
     // Check if the attendance date is in the past
     const attendanceDate = new Date(data.date);
@@ -19,21 +32,40 @@ export async function POST(req: Request) {
 
     // @ts-expect-error - role is not in the session type
     const creatorRole = session.user.role;
+    // @ts-expect-error - id is not in the session type
+    const creatorId = session.user.id;
 
-    if (attendanceDate < today && creatorRole !== "HR" && creatorRole !== "MANAGEMENT") {
-      return new Response('Cannot create attendance for past dates', { status: 403 });
-    }
+    // Check if user is trying to submit attendance for themselves
+    const isSelfAttendance = creatorId === data.userId;
 
-    // Get the user's current branch assignment and the creator's role
-    const user = await prisma.user.findUnique({
-      where: { id: data.userId },
-      select: { 
-        branchId: true 
+    // Define roles that can submit their own attendance
+    const canSubmitSelfAttendance = ["EMPLOYEE", "BRANCH_MANAGER", "SELF_ATTENDANCE"].includes(user.role);
+
+    // Validate attendance submission rules
+    if (isSelfAttendance) {
+      // Only allow self-attendance for specific roles
+      if (!canSubmitSelfAttendance) {
+        return NextResponse.json(
+          { error: "Your role cannot submit self-attendance" },
+          { status: 403 }
+        );
       }
-    });
 
-    if (!user) {
-      return new Response('User not found', { status: 404 });
+      // Only allow self-attendance for today
+      if (attendanceDate.getTime() !== today.getTime()) {
+        return NextResponse.json(
+          { error: "You can only submit attendance for today" },
+          { status: 403 }
+        );
+      }
+    } else {
+      // For non-self attendance, only HR and MANAGEMENT can create past attendance
+      if (attendanceDate < today && !["HR", "MANAGEMENT"].includes(creatorRole)) {
+        return NextResponse.json(
+          { error: "Only HR and MANAGEMENT can create attendance for past dates" },
+          { status: 403 }
+        );
+      }
     }
 
     // Check if salary exists for this month and its status
@@ -53,7 +85,7 @@ export async function POST(req: Request) {
     }
 
     // Set initial status based on who's creating the attendance
-    const status = creatorRole === "HR" || creatorRole === "BRANCH_MANAGER"
+    const status = ["HR", "MANAGEMENT"].includes(creatorRole)
       ? "APPROVED" 
       : "PENDING_VERIFICATION";
 
@@ -65,13 +97,11 @@ export async function POST(req: Request) {
         isHalfDay: data.isHalfDay,
         overtime: data.overtime,
         userId: data.userId,
-        // @ts-expect-error - branchId is not in the User
-        branchId: user.branchId,
+        branchId: user.branchId!,
         status,
-        // If HR or Branch Manager is creating, set verification details
+        // If HR or MANAGEMENT is creating, set verification details
         ...(status === "APPROVED" && {
-          // @ts-expect-error - id is not in the session type
-          verifiedById: session.user.id,
+          verifiedById: creatorId,
           verifiedAt: new Date()
         })
       },

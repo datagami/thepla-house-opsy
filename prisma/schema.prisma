@@ -12,6 +12,7 @@ enum UserRole {
   BRANCH_MANAGER
   HR
   MANAGEMENT
+  SELF_ATTENDANCE
 }
 
 enum UserStatus {
