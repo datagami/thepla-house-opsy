@@ -15,6 +15,8 @@ export async function GET() {
 
     const users = await prisma.user.findMany({
       select: {
+        id: true,
+        numId: true,
         name: true,
         email: true,
         mobileNo: true,
@@ -30,6 +32,7 @@ export async function GET() {
         aadharNo: true,
         bankAccountNo: true,
         bankIfscCode: true,
+        status: true,
         references: {
           select: {
             name: true,

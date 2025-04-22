@@ -72,14 +72,23 @@ export async function POST(request: Request) {
           });
         }
 
-        // Try to find existing user by email
-        const existingUser = await tx.user.findUnique({
-          where: {email: userData['Email*']},
-          include: {references: true}
+        console.log(userData.numId);
+
+        // Try to find existing user by id or numId
+        const existingUser = await tx.user.findFirst({
+          where: {
+            OR: [
+              { id: userData.id },
+              { numId: Number(userData.numId) }
+            ]
+          },
+          include: { references: true }
         });
+
         // Common user data
         const userCommonData = {
           name: userData['Name*'],
+          email: userData['Email*'],
           mobileNo: userData['Mobile No*'].toString(),
           gender: userData['Gender*'],
           department: userData['Department*'],
@@ -94,18 +103,19 @@ export async function POST(request: Request) {
           bankAccountNo: userData['Bank Account No*'].toString(),
           bankIfscCode: userData['Bank IFSC Code*'].toString(),
           branchId: branchId,
+          status: userData.status || 'ACTIVE',
         };
 
         if (existingUser) {
           // Update existing user
           await tx.user.update({
-            where: {id: existingUser.id},
+            where: { id: existingUser.id },
             data: userCommonData
           });
 
           // Delete existing references
           await tx.reference.deleteMany({
-            where: {userId: existingUser.id}
+            where: { userId: existingUser.id }
           });
 
           // Create new references
@@ -120,9 +130,7 @@ export async function POST(request: Request) {
           const newUser = await tx.user.create({
             data: {
               ...userCommonData,
-              email: userData['Email*'],
               password: await hash('password123', 12),
-              status: 'ACTIVE',
             }
           });
 

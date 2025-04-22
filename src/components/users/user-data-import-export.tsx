@@ -17,6 +17,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {User} from "@/models/models";
 
 export interface ExcelObject {
+  "UID": string;
+  "Employee Number": string;
   "Name*": string;
   "Email*": string;
   "Mobile No*": string;
@@ -27,7 +29,7 @@ export interface ExcelObject {
   "Branch*"?: string;
   "DOB*": string;
   "DOJ*": string;
-  "Salary*": string | number; // Handle both string and number
+  "Salary*": string | number;
   "PAN No*": string;
   "Aadhar No*": string;
   "Bank Account No*": string;
@@ -56,7 +58,9 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
       const users = await response.json();
 
       // Format data for Excel with date formatting
-      const userData = users.map((user: User) => ({
+      const formatUserData = (user: User) => ({
+        'UID': user.id || '',
+        'Employee Number': Number(user.numId) || '',
         'Name*': user.name,
         'Email*': user.email,
         'Mobile No*': user.mobileNo,
@@ -65,7 +69,6 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
         'Title*': user.title,
         'Role*': user.role,
         'Branch*': user.branch?.name || '',
-        // Format dates with single quotes to prevent Excel conversion
         'DOB*': user.dob ? `'${new Date(user.dob).toLocaleDateString('en-GB')}` : '',
         'DOJ*': user.doj ? `'${new Date(user.doj).toLocaleDateString('en-GB')}` : '',
         'Salary*': user.salary,
@@ -73,18 +76,25 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
         'Aadhar No*': user.aadharNo,
         'Bank Account No*': user.bankAccountNo,
         'Bank IFSC Code*': user.bankIfscCode,
-        // References
         'Reference 1 Name*': user.references?.[0]?.name || '',
         'Reference 1 Contact*': user.references?.[0]?.contactNo || '',
         'Reference 2 Name': user.references?.[1]?.name || '',
         'Reference 2 Contact': user.references?.[1]?.contactNo || '',
-      }));
+      });
 
       const workbook = XLSX.utils.book_new();
-      const sheet = XLSX.utils.json_to_sheet(userData);
+      
+      // Create sheets for active and inactive users
+      const activeUsers = users.filter((user: User) => user.status === 'ACTIVE');
+      const inactiveUsers = users.filter((user: User) => user.status === 'INACTIVE');
+
+      const activeSheet = XLSX.utils.json_to_sheet(activeUsers.map(formatUserData));
+      const inactiveSheet = XLSX.utils.json_to_sheet(inactiveUsers.map(formatUserData));
 
       // Set column width and format
       const columnWidths = [
+        { wch: 10, hidden: true }, // UID
+        { wch: 15 }, // Employee Number
         { wch: 20 }, // Name
         { wch: 25 }, // Email
         { wch: 15 }, // Mobile
@@ -106,10 +116,12 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
         { wch: 15 }, // Ref2 Contact
       ];
 
-      sheet['!cols'] = columnWidths;
+      activeSheet['!cols'] = columnWidths;
+      inactiveSheet['!cols'] = columnWidths;
 
-      XLSX.utils.book_append_sheet(workbook, sheet, 'Users');
-      XLSX.writeFile(workbook, 'users-data.xlsx');
+      XLSX.utils.book_append_sheet(workbook, activeSheet, 'Active Users');
+      XLSX.utils.book_append_sheet(workbook, inactiveSheet, 'Inactive Users');
+      XLSX.writeFile(workbook, `users-data-${new Date().toLocaleDateString('en-GB')}.xlsx`);
     } catch (error) {
       console.error('Export failed:', error);
       toast.error('Failed to export users data');
@@ -156,7 +168,6 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
       errors.push('Reference 2 contact must be 10 digits');
     }
 
-    // Other validations...
     return errors;
   };
 
@@ -172,32 +183,42 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
         try {
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: 'array' });
-          const sheetName = workbook.SheetNames[0];
-          const sheet = workbook.Sheets[sheetName];
+          
+          // Process both sheets if they exist
+          const sheets = workbook.SheetNames;
+          const allUserData: ExcelObject[] = [];
 
-          // Configure date parsing
-          const jsonData = XLSX.utils.sheet_to_json<ExcelObject>(sheet, {
-            raw: false, // Don't convert values
-            dateNF: 'dd/mm/yyyy', // Set date format
+          sheets.forEach(sheetName => {
+            const sheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json<ExcelObject>(sheet, {
+              raw: false,
+              dateNF: 'dd/mm/yyyy',
+            });
+
+            // Process the data before validation
+            const processedData = jsonData.map(row => ({
+              ...row,
+              // Remove any leading single quotes from dates
+              'DOB*': row['DOB*']?.replace(/^'/, ''),
+              'DOJ*': row['DOJ*']?.replace(/^'/, ''),
+              // Convert number values to strings where needed
+              'Mobile No*': row['Mobile No*']?.toString(),
+              'Aadhar No*': row['Aadhar No*']?.toString(),
+              'Bank Account No*': row['Bank Account No*']?.toString(),
+              'Reference 1 Contact*': row['Reference 1 Contact*']?.toString(),
+              'Reference 2 Contact': row['Reference 2 Contact']?.toString(),
+              // Handle UID and Employee Number
+              'id': row['UID']?.toString() || '',
+              'numId': row['Employee Number']?.toString() || '',
+              'status': sheetName === 'Active Users' ? 'ACTIVE' : 'INACTIVE',
+            }));
+
+            allUserData.push(...processedData);
           });
-
-          // Process the data before validation
-          const processedData = jsonData.map(row => ({
-            ...row,
-            // Remove any leading single quotes from dates (if present from export)
-            'DOB*': row['DOB*']?.replace(/^'/, ''),
-            'DOJ*': row['DOJ*']?.replace(/^'/, ''),
-            // Convert number values to strings where needed
-            'Mobile No*': row['Mobile No*']?.toString(),
-            'Aadhar No*': row['Aadhar No*']?.toString(),
-            'Bank Account No*': row['Bank Account No*']?.toString(),
-            'Reference 1 Contact*': row['Reference 1 Contact*']?.toString(),
-            'Reference 2 Contact': row['Reference 2 Contact']?.toString(),
-          }));
 
           // Validate all rows
           const allErrors: string[] = [];
-          processedData.forEach((row: ExcelObject, index: number) => {
+          allUserData.forEach((row: ExcelObject, index: number) => {
             const rowErrors = validateUserData(row);
             if (rowErrors.length > 0) {
               allErrors.push(`Row ${index + 2}: ${rowErrors.join(', ')}`);
@@ -215,7 +236,7 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ users: processedData }),
+            body: JSON.stringify({ users: allUserData }),
           });
 
           if (!response.ok) throw new Error('Import failed');

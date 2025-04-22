@@ -47,6 +47,7 @@ export interface User {
   password?: string | null;
   role: UserRole;
   status: UserStatus;
+  isActive: boolean;
   image?: string | null;
   branchId?: string | null;
   managedBranchId?: string | null;
