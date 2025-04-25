@@ -11,8 +11,20 @@ import {
   Building,
   FileText,
   CalendarCheck,
-  Plus, DollarSign
+  Plus,
+  DollarSign,
+  Menu,
+  X
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { useState, useEffect } from "react";
 
 interface NavItem {
   title: string;
@@ -20,8 +32,6 @@ interface NavItem {
   icon: React.ReactNode;
   feature: string;
 }
-
-
 
 const roleNavItems: Record<string, NavItem[]> = {
   HR: [
@@ -161,13 +171,32 @@ interface SideNavProps {
 export function SideNav({ userRole }: SideNavProps) {
   const pathname = usePathname();
   const navItems = roleNavItems[userRole] || [];
+  const [isOpen, setIsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  return (
+  // Handle window resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024); // lg breakpoint
+    };
+    
+    // Check initially
+    checkMobile();
+    
+    // Add resize listener
+    window.addEventListener('resize', checkMobile);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const NavLinks = () => (
     <nav className="space-y-2">
       {navItems.map((item) => (
         <Link
           key={item.href}
           href={item.href}
+          onClick={() => isMobile && setIsOpen(false)}
           className={cn(
             "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-primary",
             pathname === item.href 
@@ -180,5 +209,34 @@ export function SideNav({ userRole }: SideNavProps) {
         </Link>
       ))}
     </nav>
+  );
+
+  return (
+    <>
+      {/* Mobile Menu Button - Only visible on mobile */}
+      <div className="lg:hidden">
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="lg:hidden">
+              <Menu className="h-6 w-6" />
+              <span className="sr-only">Toggle navigation menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[240px] sm:w-[300px]">
+            <SheetHeader>
+              <SheetTitle>Menu</SheetTitle>
+            </SheetHeader>
+            <div className="mt-4">
+              <NavLinks />
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Desktop Sidebar - Only visible on desktop */}
+      <aside className="hidden lg:block w-64 border-r bg-muted/10 p-6">
+        <NavLinks />
+      </aside>
+    </>
   );
 } 

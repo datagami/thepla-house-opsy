@@ -35,9 +35,7 @@ export default async function AuthLayout({
     <div className="min-h-screen">
       <Header />
       <div className="flex">
-        <aside className="hidden w-64 border-r bg-muted/10 lg:block p-6">
-          <SideNav userRole={role} />
-        </aside>
+        <SideNav userRole={role} />
         <main className="flex-1">{children}</main>
       </div>
     </div>

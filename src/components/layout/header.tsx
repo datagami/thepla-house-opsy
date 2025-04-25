@@ -44,6 +44,7 @@ export async function Header() {
         email: session.user.email,
       } as User}
       branchName={branchName || ""}
+      userRole={role}
     />
   );
 } 
