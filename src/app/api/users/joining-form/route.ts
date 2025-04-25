@@ -95,10 +95,10 @@ async function addJoiningFormDetails(page: PDFPage, user: any, y: number): Promi
   });
   y -= STYLES.sectionHeader.spacing;
 
-  // Left column
+  // Left column - Personal Information
   y = await addText(page, `Name: ${user.name || 'N/A'}`, leftMargin, y);
   y = await addText(page, `Email: ${user.email || 'N/A'}`, leftMargin, y);
-  y = await addText(page, `Phone: ${user.phone || 'N/A'}`, leftMargin, y);
+  y = await addText(page, `Phone: ${user.mobileNo || 'N/A'}`, leftMargin, y);
   y = await addText(page, `Date of Birth: ${user.dob ? new Date(user.dob).toLocaleDateString() : 'N/A'}`, leftMargin, y);
 
   // Add some spacing before employment details
@@ -148,6 +148,44 @@ async function addJoiningFormDetails(page: PDFPage, user: any, y: number): Promi
 
   y = await addText(page, `Account Number: ${user.bankAccountNo || 'N/A'}`, leftMargin, y);
   y = await addText(page, `IFSC Code: ${user.bankIfscCode || 'N/A'}`, leftMargin, y);
+
+  // Add some spacing before references
+  y -= STYLES.sectionHeader.spacing;
+
+  // References section
+  page.drawText('References', {
+    x: leftMargin,
+    y,
+    size: STYLES.sectionHeader.size,
+    color: rgb(0, 0, 0),
+  });
+  y -= STYLES.sectionHeader.spacing;
+
+  // Add references in two columns
+  if (user.references && user.references.length > 0) {
+    const midY = y;
+    let leftY = y;
+    let rightY = y;
+
+    // First reference on left
+    if (user.references[0]) {
+      leftY = await addText(page, `Reference 1:`, leftMargin, leftY);
+      leftY = await addText(page, `Name: ${user.references[0].name || 'N/A'}`, leftMargin, leftY);
+      leftY = await addText(page, `Phone: ${user.references[0].contactNo || 'N/A'}`, leftMargin, leftY);
+    }
+
+    // Second reference on right
+    if (user.references[1]) {
+      rightY = await addText(page, `Reference 2:`, rightColumn, rightY);
+      rightY = await addText(page, `Name: ${user.references[1].name || 'N/A'}`, rightColumn, rightY);
+      rightY = await addText(page, `Phone: ${user.references[1].contactNo || 'N/A'}`, rightColumn, rightY);
+    }
+
+    // Use the lower Y position of the two columns
+    y = Math.min(leftY, rightY);
+  } else {
+    y = await addText(page, 'No references provided', leftMargin, y);
+  }
 
   // Add some spacing before signature section
   y -= STYLES.sectionHeader.spacing * 2;
