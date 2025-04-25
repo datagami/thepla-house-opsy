@@ -21,6 +21,8 @@ import {
 import { UserActions } from "./user-actions";
 import {Branch, User} from "@/models/models";
 import { formatDate } from "@/lib/utils";
+import { ArrowUpDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface UserTableProps {
   users: User[];
@@ -42,10 +44,42 @@ const statusColors = {
   INACTIVE: "text-red-600 bg-red-100",
 } as const;
 
+type SortField = 'numId' | 'name' | 'branch';
+type SortOrder = 'asc' | 'desc';
+
 export function UserTable({ users, branches, currentUserRole, canEdit }: UserTableProps) {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [branchFilter, setBranchFilter] = useState("ALL");
+  const [sortField, setSortField] = useState<SortField>('numId');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const sortUsers = (users: User[]) => {
+    return [...users].sort((a, b) => {
+      const multiplier = sortOrder === 'asc' ? 1 : -1;
+      
+      switch (sortField) {
+        case 'numId':
+          return multiplier * ((a.numId || 0) - (b.numId || 0));
+        case 'name':
+          return multiplier * ((a.name || '').localeCompare(b.name || ''));
+        case 'branch':
+          return multiplier * ((a.branch?.name || '').localeCompare(b.branch?.name || ''));
+        default:
+          return 0;
+      }
+    });
+  };
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
@@ -55,9 +89,12 @@ export function UserTable({ users, branches, currentUserRole, canEdit }: UserTab
 
     const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
     const matchesStatus = statusFilter === "ALL" || user.status === statusFilter;
+    const matchesBranch = branchFilter === "ALL" || user.branch?.id === branchFilter;
 
-    return matchesSearch && matchesRole && matchesStatus;
+    return matchesSearch && matchesRole && matchesStatus && matchesBranch;
   });
+
+  const sortedUsers = sortUsers(filteredUsers);
 
   return (
     <div className="space-y-4">
@@ -91,23 +128,63 @@ export function UserTable({ users, branches, currentUserRole, canEdit }: UserTab
             <SelectItem value="INACTIVE">Inactive</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={branchFilter} onValueChange={setBranchFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by branch" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Branches</SelectItem>
+            {branches.map((branch) => (
+              <SelectItem key={branch.id} value={branch.id}>
+                {branch.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Emp No.</TableHead>
-              <TableHead>Name</TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  onClick={() => handleSort('numId')}
+                  className="h-8 flex items-center gap-1"
+                >
+                  Emp No.
+                  <ArrowUpDown className="h-4 w-4" />
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  onClick={() => handleSort('name')}
+                  className="h-8 flex items-center gap-1"
+                >
+                  Name
+                  <ArrowUpDown className="h-4 w-4" />
+                </Button>
+              </TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Position</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Branch</TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  onClick={() => handleSort('branch')}
+                  className="h-8 flex items-center gap-1"
+                >
+                  Branch
+                  <ArrowUpDown className="h-4 w-4" />
+                </Button>
+              </TableHead>
               <TableHead>Joined</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers.map((user) => (
+            {sortedUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>{user.numId || "-"}</TableCell>
                 <TableCell>{user.name}</TableCell>
