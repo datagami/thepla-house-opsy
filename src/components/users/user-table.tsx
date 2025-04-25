@@ -51,7 +51,8 @@ export function UserTable({ users, branches, currentUserRole }: UserTableProps) 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name?.toLowerCase().includes(search.toLowerCase()) ||
-      user.email?.toLowerCase().includes(search.toLowerCase());
+      user.email?.toLowerCase().includes(search.toLowerCase()) ||
+      user.numId?.toLowerCase().includes(search.toLowerCase());
 
     const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
     const matchesStatus = statusFilter === "ALL" || user.status === statusFilter;
@@ -96,6 +97,7 @@ export function UserTable({ users, branches, currentUserRole }: UserTableProps) 
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Emp No.</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
@@ -109,6 +111,7 @@ export function UserTable({ users, branches, currentUserRole }: UserTableProps) 
           <TableBody>
             {filteredUsers.map((user) => (
               <TableRow key={user.id}>
+                <TableCell>{user.numId || "-"}</TableCell>
                 <TableCell>{user.name}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>
