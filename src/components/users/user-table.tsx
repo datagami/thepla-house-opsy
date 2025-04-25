@@ -20,13 +20,13 @@ import {
 } from "@/components/ui/select";
 import { UserActions } from "./user-actions";
 import {Branch, User} from "@/models/models";
-import { useRouter } from "next/navigation";
 import { formatDate } from "@/lib/utils";
 
 interface UserTableProps {
   users: User[];
   branches: Branch[];
   currentUserRole: string;
+  canEdit: boolean;
 }
 
 const roleColors = {
@@ -46,13 +46,12 @@ export function UserTable({ users, branches, currentUserRole }: UserTableProps) 
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const router = useRouter();
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name?.toLowerCase().includes(search.toLowerCase()) ||
       user.email?.toLowerCase().includes(search.toLowerCase()) ||
-      user.numId?.toLowerCase().includes(search.toLowerCase());
+      user.numId?.toString().toLowerCase().includes(search.toLowerCase());
 
     const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
     const matchesStatus = statusFilter === "ALL" || user.status === statusFilter;
