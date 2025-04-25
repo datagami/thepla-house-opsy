@@ -14,7 +14,7 @@ import {
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, UserCog, Calendar } from "lucide-react";
+import { MoreHorizontal, UserCog, Calendar, Printer, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { hasAccess } from "@/lib/access-control";
 import { User } from "@/models/models";
@@ -23,9 +23,11 @@ interface UserActionsProps {
   user: User;
   currentUserRole: string;
   onUpdate?: () => void;
+  onEdit: (user: User) => void;
+  onDelete: (user: User) => void;
 }
 
-export function UserActions({ user, currentUserRole, onUpdate }: UserActionsProps) {
+export function UserActions({ user, currentUserRole, onUpdate, onEdit, onDelete }: UserActionsProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const canApproveUser = hasAccess(currentUserRole, "users.approve");
@@ -127,6 +129,26 @@ export function UserActions({ user, currentUserRole, onUpdate }: UserActionsProp
     router.push(`/attendance/${user.id}?month=${year}-${month.toString().padStart(2, '0')}`);
   };
 
+  const handlePrintJoiningForm = async () => {
+    try {
+      const response = await fetch(`/api/users/joining-form?userId=${user.id}`);
+      if (!response.ok) throw new Error('Failed to generate joining form');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `joining-form-${user.numId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Failed to print joining form:', error);
+      toast.error('Failed to generate joining form');
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -207,6 +229,24 @@ export function UserActions({ user, currentUserRole, onUpdate }: UserActionsProp
             Mark as Active
           </DropdownMenuItem>
         )}
+        <DropdownMenuItem
+          onClick={handlePrintJoiningForm}
+        >
+          <Printer className="mr-2 h-4 w-4" />
+          Print Joining Form
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => onEdit(user)}
+        >
+          <Pencil className="mr-2 h-4 w-4" />
+          Edit User
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => onDelete(user)}
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          Delete User
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
