@@ -42,7 +42,7 @@ const statusColors = {
   INACTIVE: "text-red-600 bg-red-100",
 } as const;
 
-export function UserTable({ users, branches, currentUserRole }: UserTableProps) {
+export function UserTable({ users, branches, currentUserRole, canEdit }: UserTableProps) {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -99,10 +99,9 @@ export function UserTable({ users, branches, currentUserRole }: UserTableProps) 
               <TableHead>Emp No.</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
+              <TableHead>Position</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Branch</TableHead>
-              <TableHead>Department</TableHead>
               <TableHead>Joined</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -115,7 +114,7 @@ export function UserTable({ users, branches, currentUserRole }: UserTableProps) 
                 <TableCell>{user.email}</TableCell>
                 <TableCell>
                   <Badge variant="secondary" className={roleColors[user.role as keyof typeof roleColors]}>
-                    {user.role}
+                    {user.role} {user.department ? `(${user.department})` : ''}
                   </Badge>
                 </TableCell>
                 <TableCell>
@@ -124,7 +123,6 @@ export function UserTable({ users, branches, currentUserRole }: UserTableProps) 
                   </Badge>
                 </TableCell>
                 <TableCell>{user.branch?.name || "-"}</TableCell>
-                <TableCell>{user.department}</TableCell>
                 <TableCell>{user.doj ? formatDate(user.doj) : "-"}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end">

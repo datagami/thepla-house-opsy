@@ -6,6 +6,7 @@ interface AppointmentLetterData {
   employeeName: string;
   joiningDate: string;
   jobTitle: string;
+  department?: string;
   salary: number;
   contractStartDate: string;
   contractEndDate: string;
@@ -244,8 +245,11 @@ export async function generateAppointmentLetter(
   );
 
   // Section 2: Job Title
+  const jobTitleText = data.department 
+    ? `${data.jobTitle} (${data.department})`
+    : data.jobTitle;
   await addSection('2. Job Title',
-    `You will be employed as ${data.jobTitle} or in such other position(s) as the Company may designate from time to time. Your duties may include, but may not be limited to, duties usually associated with the position at the sites and such other duties as may be required by the company. Your service shall be transferable in whole or in part to any of our sites/locations in India. The reimbursement for outstation travel, long stay transfers will be according to the company travel policy.`
+    `You will be employed as ${jobTitleText} or in such other position(s) as the Company may designate from time to time. Your duties may include, but may not be limited to, duties usually associated with the position at the sites and such other duties as may be required by the company. Your service shall be transferable in whole or in part to any of our sites/locations in India. The reimbursement for outstation travel, long stay transfers will be according to the company travel policy.`
   );
 
   // Section 3: Duration of Employment

@@ -110,7 +110,7 @@ async function addJoiningFormDetails(page: PDFPage, user: User, y: number): Prom
   y -= STYLES.sectionHeader.spacing;
 
   y = await addText(page, `Employee ID: ${user.numId || 'N/A'}`, leftMargin, y);
-  y = await addText(page, `Position: ${user.role || 'N/A'}`, leftMargin, y);
+  y = await addText(page, `Position: ${user.role}${user.department ? ` (${user.department})` : ''}`, leftMargin, y);
   y = await addText(page, `Branch: ${user.branch?.name || 'N/A'}`, leftMargin, y);
   y = await addText(page, `Date of Joining: ${user.doj ? new Date(user.doj).toLocaleDateString() : 'N/A'}`, leftMargin, y);
   y = await addText(page, `Salary: Rs.${user.salary?.toLocaleString() || 'N/A'}`, leftMargin, y);
@@ -299,6 +299,7 @@ export async function GET(request: Request) {
       employeeName: user.name || '',
       joiningDate: user.doj ? new Date(user.doj).toLocaleDateString() : 'N/A',
       jobTitle: user.role || '',
+      department: user.department || '',
       salary: user.salary || 0,
       contractStartDate: user.doj ? new Date(user.doj).toLocaleDateString() : 'N/A',
       contractEndDate: user.doj 
