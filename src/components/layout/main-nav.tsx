@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,6 +8,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { SideNav } from "./side-nav";
+import { Logo } from "./logo";
 
 interface MainNavProps {
   userRole: string;
@@ -31,12 +31,7 @@ export function MainNav({ userRole }: MainNavProps) {
         </SheetContent>
       </Sheet>
       
-      <Link
-        href="/dashboard"
-        className="text-xl font-bold"
-      >
-        HRMS
-      </Link>
+      <Logo />
     </div>
   );
 } 
