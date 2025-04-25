@@ -52,21 +52,7 @@ export default async function SelfAttendancePage({ searchParams }: Props) {
     where: {
       userId: user.id,
       date: selectedDate,
-    },
-    select: {
-      id: true,
-      isPresent: true,
-      checkIn: true,
-      checkOut: true,
-      isHalfDay: true,
-      status: true,
-      verifiedAt: true,
-      verifiedBy: {
-        select: {
-          name: true,
-        },
-      },
-    },
+    }
   }) as Attendance;
 
   return (
@@ -106,9 +92,35 @@ export default async function SelfAttendancePage({ searchParams }: Props) {
                 )}
                 {attendance.verifiedAt && (
                   <p className="text-sm text-muted-foreground">
-                    Verified by: {attendance.verifiedBy?.name}
+                    Verified At: {attendance.verifiedAt.toLocaleString()}
                   </p>
                 )}
+                {attendance.shift1 && (
+                  <p className="text-sm text-muted-foreground">
+                    Shift1: {attendance.shift1 ? 'Yes' : 'No'}
+                  </p>
+                )}
+                {attendance.shift2 && (
+                  <p className="text-sm text-muted-foreground">
+                    Shift2: {attendance.shift2 ? 'Yes' : 'No'}
+                  </p>
+                )}
+                {attendance.shift3 && (
+                  <p className="text-sm text-muted-foreground">
+                    Shift3: {attendance.shift3 ? 'Yes' : 'No'}
+                  </p>
+                )}
+                {attendance.isHalfDay && (
+                  <p className="text-sm text-muted-foreground">
+                    Half Day: {attendance.isHalfDay ? 'Yes' : 'No'}
+                  </p>
+                )}
+                {attendance.overtime && (
+                  <p className="text-sm text-muted-foreground">
+                    Overtime: {attendance.overtime ? 'Yes' : 'No'}
+                  </p>
+                )}
+
               </div>
             ) : (
               <div className="text-2xl font-bold text-muted-foreground">
