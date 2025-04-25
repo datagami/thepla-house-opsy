@@ -13,8 +13,7 @@ import {
   CalendarCheck,
   Plus,
   DollarSign,
-  Menu,
-  X
+  Menu
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {

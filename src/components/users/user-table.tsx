@@ -47,7 +47,7 @@ const statusColors = {
 type SortField = 'numId' | 'name' | 'branch';
 type SortOrder = 'asc' | 'desc';
 
-export function UserTable({ users, branches, currentUserRole, canEdit }: UserTableProps) {
+export function UserTable({ users, branches, currentUserRole }: UserTableProps) {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
