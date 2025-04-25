@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Branch } from '@/models/models';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuItem, DropdownMenuContent } from '../ui/dropdown-menu';
 import { Button } from '../ui/button';
-import { Check } from 'lucide-react';
+import { Check, X, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import {useRouter} from "next/navigation";
 
@@ -56,59 +56,74 @@ const AssignBranchModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">Assign Branch</h2>
+      <div className="bg-white rounded-lg w-full max-w-md">
+        <div className="flex items-center justify-between border-b p-4">
+          <h2 className="text-xl font-semibold">Assign Branch</h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-6 w-6 p-0"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
         
-        {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
-            {error}
-          </div>
-        )}
+        <div className="p-4">
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
+              {error}
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Branch
-            </label>
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex w-full justify-between items-center px-3 py-2 border rounded-md">
-                {selectedBranch?.name || 'Select Branch'}
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-full">
-                {branches.map((branch) => (
-                  <DropdownMenuItem 
-                    key={branch.id} 
-                    onClick={() => {
-                      setSelectedBranchId(branch.id);
-                      setSelectedBranch(branch);
-                    }}
-                    className={branch.id === currentBranchId ? "bg-accent" : ""}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between"
                   >
-                    {branch.name}
-                    {branch.id === currentBranchId && <Check className="ml-auto h-4 w-4" />}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+                    <span>{selectedBranch?.name || 'Select Branch'}</span>
+                    <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-[--radix-dropdown-trigger-width]">
+                  {branches.map((branch) => (
+                    <DropdownMenuItem 
+                      key={branch.id} 
+                      onClick={() => {
+                        setSelectedBranchId(branch.id);
+                        setSelectedBranch(branch);
+                      }}
+                      className={branch.id === currentBranchId ? "bg-accent" : ""}
+                    >
+                      <span>{branch.name}</span>
+                      {branch.id === currentBranchId && <Check className="ml-auto h-4 w-4" />}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
-          <div className="flex justify-end space-x-3">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onClose}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading || !hasChanges}
-            >
-              {loading ? 'Assigning...' : 'Assign Branch'}
-            </Button>
-          </div>
-        </form>
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={onClose}
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={loading || !hasChanges}
+              >
+                {loading ? 'Assigning...' : 'Assign Branch'}
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

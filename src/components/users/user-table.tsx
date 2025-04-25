@@ -19,10 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { UserActions } from "./user-actions";
-import AssignBranchModal from './assign-branch-modal';
 import {Branch, User} from "@/models/models";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
 
 interface UserTableProps {
@@ -48,38 +46,7 @@ export function UserTable({ users, branches, currentUserRole }: UserTableProps) 
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isAssignBranchModalOpen, setIsAssignBranchModalOpen] = useState(false);
   const router = useRouter();
-
-  const handleAssignBranch = async (branchId: string) => {
-    if (!selectedUser) return;
-
-    try {
-      const response = await fetch('/api/users/assign-branch', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: selectedUser.id,
-          branchId,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to assign branch');
-      }
-
-      router.refresh();
-      setIsAssignBranchModalOpen(false);
-      setSelectedUser(null);
-    } catch (error) {
-      console.error('Error assigning branch:', error);
-      throw error;
-    }
-  };
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
@@ -158,19 +125,11 @@ export function UserTable({ users, branches, currentUserRole }: UserTableProps) 
                 <TableCell>{user.department}</TableCell>
                 <TableCell>{user.doj ? formatDate(user.doj) : "-"}</TableCell>
                 <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => {
-                        setSelectedUser(user);
-                        setIsAssignBranchModalOpen(true);
-                      }}
-                      className="text-sm font-medium text-blue-600 hover:text-blue-800"
-                    >
-                      Assign Branch
-                    </button>
+                  <div className="flex justify-end">
                     <UserActions 
                       user={user} 
                       currentUserRole={currentUserRole}
+                      branches={branches}
                     />
                   </div>
                 </TableCell>
@@ -179,19 +138,6 @@ export function UserTable({ users, branches, currentUserRole }: UserTableProps) 
           </TableBody>
         </Table>
       </div>
-
-      {isAssignBranchModalOpen && selectedUser && (
-        <AssignBranchModal
-          isOpen={isAssignBranchModalOpen}
-          onClose={() => {
-            setIsAssignBranchModalOpen(false);
-            setSelectedUser(null);
-          }}
-          onAssign={handleAssignBranch}
-          branches={branches}
-          currentBranchId={selectedUser.branch?.id}
-        />
-      )}
     </div>
   );
 } 
