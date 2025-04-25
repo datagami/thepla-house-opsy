@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { PDFDocument, PDFPage, rgb } from 'pdf-lib';
 import { addCompanyHeader } from '@/components/pdf/company-header';
 import { generateAppointmentLetter } from '@/components/pdf/appointment-letter';
+import {User} from "@/models/models";
 
 // Company information
 const companyInfo = {
@@ -28,11 +29,6 @@ function addNewPage(pdfDoc: PDFDocument): [PDFPage, number] {
   const page = pdfDoc.addPage([595, 842]); // A4 size
   const startY = page.getSize().height - 50;
   return [page, startY];
-}
-
-// Helper function to check if we need a new page
-function needsNewPage(currentY: number): boolean {
-  return currentY < 100; // Leave some margin at the bottom
 }
 
 // Helper function to add text
@@ -81,7 +77,7 @@ async function addUserImage(pdfDoc: PDFDocument, page: PDFPage, imageUrl: string
 }
 
 // Helper function to add joining form details
-async function addJoiningFormDetails(page: PDFPage, user: any, y: number): Promise<number> {
+async function addJoiningFormDetails(page: PDFPage, user: User, y: number): Promise<number> {
   const { width } = page.getSize();
   const leftMargin = STYLES.margin.left;
   const rightColumn = width / 2 + 20;
@@ -163,7 +159,6 @@ async function addJoiningFormDetails(page: PDFPage, user: any, y: number): Promi
 
   // Add references in two columns
   if (user.references && user.references.length > 0) {
-    const midY = y;
     let leftY = y;
     let rightY = y;
 
@@ -259,7 +254,7 @@ async function addJoiningFormDetails(page: PDFPage, user: any, y: number): Promi
 export async function GET(request: Request) {
   try {
     const session = await auth();
-    // @ts-ignore - Ignoring role type error as it's handled by auth configuration
+    // @ts-expect-error - Ignoring role type error as it's handled by auth configuration
     if (!session?.user || !session.user.role || !['HR', 'MANAGEMENT'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -285,6 +280,7 @@ export async function GET(request: Request) {
 
     // Create a new PDF document
     const pdfDoc = await PDFDocument.create();
+    // eslint-disable-next-line prefer-const
     let [page, y] = addNewPage(pdfDoc);
 
     // Add company header
@@ -295,7 +291,8 @@ export async function GET(request: Request) {
     y = await addUserImage(pdfDoc, page, user.image || null, y);
 
     // Add joining form details
-    y = await addJoiningFormDetails(page, user, y);
+    // @ts-expect-error - Ignoring type error as user is already defined
+    await addJoiningFormDetails(page, user, y);
 
     // Generate appointment letter data with null checks
     const appointmentData = {

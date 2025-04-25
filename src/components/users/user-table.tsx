@@ -23,14 +23,12 @@ import AssignBranchModal from './assign-branch-modal';
 import {Branch, User} from "@/models/models";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Edit, Eye } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 interface UserTableProps {
   users: User[];
   branches: Branch[];
   currentUserRole: string;
-  canEdit?: boolean;
 }
 
 const roleColors = {
@@ -46,7 +44,7 @@ const statusColors = {
   INACTIVE: "text-red-600 bg-red-100",
 } as const;
 
-export function UserTable({ users, branches, currentUserRole, canEdit = false }: UserTableProps) {
+export function UserTable({ users, branches, currentUserRole }: UserTableProps) {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -161,17 +159,6 @@ export function UserTable({ users, branches, currentUserRole, canEdit = false }:
                 <TableCell>{user.doj ? formatDate(user.doj) : "-"}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => router.push(`/users/${user.id}`)}
-                    >
-                      {canEdit ? (
-                        <Edit className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </Button>
                     <button
                       onClick={() => {
                         setSelectedUser(user);

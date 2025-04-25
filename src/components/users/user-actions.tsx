@@ -14,7 +14,7 @@ import {
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, UserCog, Calendar, Printer, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, UserCog, Calendar, Printer, Edit, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { hasAccess } from "@/lib/access-control";
 import { User } from "@/models/models";
@@ -23,16 +23,15 @@ interface UserActionsProps {
   user: User;
   currentUserRole: string;
   onUpdate?: () => void;
-  onEdit: (user: User) => void;
-  onDelete: (user: User) => void;
 }
 
-export function UserActions({ user, currentUserRole, onUpdate, onEdit, onDelete }: UserActionsProps) {
+export function UserActions({ user, currentUserRole, onUpdate }: UserActionsProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const canApproveUser = hasAccess(currentUserRole, "users.approve");
   const canChangeRole = hasAccess(currentUserRole, "users.change_role");
   const canViewAttendance = ['HR', 'MANAGEMENT'].includes(currentUserRole);
+  const canEdit = ['HR', 'MANAGEMENT'].includes(currentUserRole);
 
   const handleApprove = async () => {
     setIsLoading(true);
@@ -149,6 +148,14 @@ export function UserActions({ user, currentUserRole, onUpdate, onEdit, onDelete 
     }
   };
 
+  const handleEdit = () => {
+    router.push(`/users/${user.id}`);
+  };
+
+  const handleView = () => {
+    router.push(`/users/${user.id}`);
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -158,18 +165,56 @@ export function UserActions({ user, currentUserRole, onUpdate, onEdit, onDelete 
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-        {user.status === "PENDING" && canApproveUser && (
-          <>
-            <DropdownMenuItem
-              onClick={handleApprove}
-              disabled={isLoading}
-            >
-              Approve User
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-          </>
+        {/* Primary Actions */}
+        <DropdownMenuLabel>Primary Actions</DropdownMenuLabel>
+        {canEdit ? (
+          <DropdownMenuItem onClick={handleEdit}>
+            <Edit className="mr-2 h-4 w-4" />
+            Edit User
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem onClick={handleView}>
+            <Eye className="mr-2 h-4 w-4" />
+            View User
+          </DropdownMenuItem>
         )}
+        <DropdownMenuItem
+          onClick={handlePrintJoiningForm}
+        >
+          <Printer className="mr-2 h-4 w-4" />
+          Print Joining Form
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+
+        {/* Status Management */}
+        <DropdownMenuLabel>Status Management</DropdownMenuLabel>
+        {user.status === "PENDING" && canApproveUser && (
+          <DropdownMenuItem
+            onClick={handleApprove}
+            disabled={isLoading}
+          >
+            Approve User
+          </DropdownMenuItem>
+        )}
+        {user.status === "ACTIVE" ? (
+          <DropdownMenuItem
+            className="text-red-600"
+            onClick={() => handleStatusUpdate(user.id, "INACTIVE")}
+          >
+            Mark as Inactive
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem
+            className="text-green-600"
+            onClick={() => handleStatusUpdate(user.id, "ACTIVE")}
+          >
+            Mark as Active
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+
+        {/* Role & Access Management */}
+        <DropdownMenuLabel>Role & Access</DropdownMenuLabel>
         {canChangeRole && (
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
@@ -206,6 +251,10 @@ export function UserActions({ user, currentUserRole, onUpdate, onEdit, onDelete 
             </DropdownMenuSubContent>
           </DropdownMenuSub>
         )}
+        <DropdownMenuSeparator />
+
+        {/* Additional Features */}
+        <DropdownMenuLabel>Additional Features</DropdownMenuLabel>
         {canViewAttendance && (
           <DropdownMenuItem
             onClick={handleViewAttendance}
@@ -214,39 +263,6 @@ export function UserActions({ user, currentUserRole, onUpdate, onEdit, onDelete 
             View & Manage Attendance
           </DropdownMenuItem>
         )}
-        {user.status === "ACTIVE" ? (
-          <DropdownMenuItem
-            className="text-red-600"
-            onClick={() => handleStatusUpdate(user.id, "INACTIVE")}
-          >
-            Mark as Inactive
-          </DropdownMenuItem>
-        ) : (
-          <DropdownMenuItem
-            className="text-green-600"
-            onClick={() => handleStatusUpdate(user.id, "ACTIVE")}
-          >
-            Mark as Active
-          </DropdownMenuItem>
-        )}
-        <DropdownMenuItem
-          onClick={handlePrintJoiningForm}
-        >
-          <Printer className="mr-2 h-4 w-4" />
-          Print Joining Form
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => onEdit(user)}
-        >
-          <Pencil className="mr-2 h-4 w-4" />
-          Edit User
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => onDelete(user)}
-        >
-          <Trash2 className="mr-2 h-4 w-4" />
-          Delete User
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
