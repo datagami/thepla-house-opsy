@@ -7,7 +7,7 @@ import { generateAppointmentLetter } from '@/components/pdf/appointment-letter';
 
 // Company information
 const companyInfo = {
-  name: 'Thepla House',
+  name: 'Thepla House By Tejal\'s Kitchen',
   address: 'Gala No. 6, Shriguppi Industrial Estate, Sakivihar Road, Andheri (E), Mumbai - 400072',
   phone: '+91 9819555065',
   website: 'www.theplahouse.com',
@@ -17,9 +17,9 @@ const companyInfo = {
 
 // Font sizes and spacing
 const STYLES = {
-  title: { size: 24, spacing: 50 },
-  sectionHeader: { size: 14, spacing: 25 },
-  content: { size: 12, spacing: 20 },
+  title: { size: 24, spacing: 30 },
+  sectionHeader: { size: 14, spacing: 20 },
+  content: { size: 12, spacing: 15 },
   margin: { left: 50, right: 50 },
 };
 
@@ -35,10 +35,194 @@ function needsNewPage(currentY: number): boolean {
   return currentY < 100; // Leave some margin at the bottom
 }
 
+// Helper function to add text
+async function addText(page: PDFPage, text: string, x: number, y: number, fontSize: number = STYLES.content.size): Promise<number> {
+  // Replace Rupee symbol with "Rs." to avoid encoding issues
+  const safeText = text.replace('₹', 'Rs.');
+  
+  page.drawText(safeText, {
+    x,
+    y,
+    size: fontSize,
+    color: rgb(0, 0, 0),
+  });
+  return y - STYLES.content.spacing;
+}
+
+// Helper function to add user image
+async function addUserImage(pdfDoc: PDFDocument, page: PDFPage, imageUrl: string | null, y: number): Promise<number> {
+  if (!imageUrl) return y - 50; // Return with some spacing even if no image
+
+  try {
+    const response = await fetch(imageUrl);
+    if (!response.ok) throw new Error('Failed to fetch image');
+    const imageBuffer = await response.arrayBuffer();
+    
+    const image = await pdfDoc.embedPng(new Uint8Array(imageBuffer));
+    
+    // Scale image to reasonable size (80x80 pixels - slightly smaller)
+    const scaledDims = image.scale(80 / image.width);
+    
+    const { width } = page.getSize();
+    const x = (width - scaledDims.width) / 2;
+    
+    page.drawImage(image, {
+      x,
+      y: y - scaledDims.height,
+      width: scaledDims.width,
+      height: scaledDims.height,
+    });
+
+    return y - scaledDims.height - 30; // Return new Y position with padding
+  } catch (error) {
+    console.error('Error adding user image:', error);
+    return y - 50; // Return with some spacing even if image fails
+  }
+}
+
+// Helper function to add joining form details
+async function addJoiningFormDetails(page: PDFPage, user: any, y: number): Promise<number> {
+  const { width } = page.getSize();
+  const leftMargin = STYLES.margin.left;
+  const rightColumn = width / 2 + 20;
+  
+  // Add section title
+  page.drawText('Personal Information', {
+    x: leftMargin,
+    y,
+    size: STYLES.sectionHeader.size,
+    color: rgb(0, 0, 0),
+  });
+  y -= STYLES.sectionHeader.spacing;
+
+  // Left column
+  y = await addText(page, `Name: ${user.name || 'N/A'}`, leftMargin, y);
+  y = await addText(page, `Email: ${user.email || 'N/A'}`, leftMargin, y);
+  y = await addText(page, `Phone: ${user.phone || 'N/A'}`, leftMargin, y);
+  y = await addText(page, `Date of Birth: ${user.dob ? new Date(user.dob).toLocaleDateString() : 'N/A'}`, leftMargin, y);
+
+  // Add some spacing before employment details
+  y -= STYLES.sectionHeader.spacing;
+
+  // Employment Details section
+  page.drawText('Employment Details', {
+    x: leftMargin,
+    y,
+    size: STYLES.sectionHeader.size,
+    color: rgb(0, 0, 0),
+  });
+  y -= STYLES.sectionHeader.spacing;
+
+  y = await addText(page, `Employee ID: ${user.numId || 'N/A'}`, leftMargin, y);
+  y = await addText(page, `Position: ${user.role || 'N/A'}`, leftMargin, y);
+  y = await addText(page, `Branch: ${user.branch?.name || 'N/A'}`, leftMargin, y);
+  y = await addText(page, `Date of Joining: ${user.doj ? new Date(user.doj).toLocaleDateString() : 'N/A'}`, leftMargin, y);
+  y = await addText(page, `Salary: Rs.${user.salary?.toLocaleString() || 'N/A'}`, leftMargin, y);
+
+  // Add some spacing before government IDs
+  y -= STYLES.sectionHeader.spacing;
+
+  // Government IDs section
+  page.drawText('Government IDs', {
+    x: leftMargin,
+    y,
+    size: STYLES.sectionHeader.size,
+    color: rgb(0, 0, 0),
+  });
+  y -= STYLES.sectionHeader.spacing;
+
+  y = await addText(page, `Aadhaar Number: ${user.aadharNo || 'N/A'}`, leftMargin, y);
+  y = await addText(page, `PAN Number: ${user.panNo || 'N/A'}`, leftMargin, y);
+
+  // Add some spacing before bank details
+  y -= STYLES.sectionHeader.spacing;
+
+  // Bank Details section
+  page.drawText('Bank Details', {
+    x: leftMargin,
+    y,
+    size: STYLES.sectionHeader.size,
+    color: rgb(0, 0, 0),
+  });
+  y -= STYLES.sectionHeader.spacing;
+
+  y = await addText(page, `Account Number: ${user.bankAccountNo || 'N/A'}`, leftMargin, y);
+  y = await addText(page, `IFSC Code: ${user.bankIfscCode || 'N/A'}`, leftMargin, y);
+
+  // Add some spacing before signature section
+  y -= STYLES.sectionHeader.spacing * 2;
+
+  // Signature section
+  const signatureY = y;
+
+  // Employee signature
+  page.drawText('Employee Signature:', {
+    x: leftMargin,
+    y: signatureY,
+    size: STYLES.content.size,
+    color: rgb(0, 0, 0),
+  });
+  
+  // Draw signature line for employee
+  page.drawLine({
+    start: { x: leftMargin, y: signatureY - 30 },
+    end: { x: leftMargin + 200, y: signatureY - 30 },
+    thickness: 1,
+    color: rgb(0, 0, 0),
+  });
+
+  // Draw date line for employee
+  page.drawText('Date:', {
+    x: leftMargin,
+    y: signatureY - 50,
+    size: STYLES.content.size,
+    color: rgb(0, 0, 0),
+  });
+  page.drawLine({
+    start: { x: leftMargin + 40, y: signatureY - 50 },
+    end: { x: leftMargin + 200, y: signatureY - 50 },
+    thickness: 1,
+    color: rgb(0, 0, 0),
+  });
+
+  // HR signature
+  page.drawText('HR Signature:', {
+    x: width - STYLES.margin.right - 200,
+    y: signatureY,
+    size: STYLES.content.size,
+    color: rgb(0, 0, 0),
+  });
+  
+  // Draw signature line for HR
+  page.drawLine({
+    start: { x: width - STYLES.margin.right - 200, y: signatureY - 30 },
+    end: { x: width - STYLES.margin.right, y: signatureY - 30 },
+    thickness: 1,
+    color: rgb(0, 0, 0),
+  });
+
+  // Draw date line for HR
+  page.drawText('Date:', {
+    x: width - STYLES.margin.right - 200,
+    y: signatureY - 50,
+    size: STYLES.content.size,
+    color: rgb(0, 0, 0),
+  });
+  page.drawLine({
+    start: { x: width - STYLES.margin.right - 160, y: signatureY - 50 },
+    end: { x: width - STYLES.margin.right, y: signatureY - 50 },
+    thickness: 1,
+    color: rgb(0, 0, 0),
+  });
+
+  return signatureY - 70; // Return new Y position with padding
+}
+
 export async function GET(request: Request) {
   try {
     const session = await auth();
-    if (!session?.user || !['HR', 'MANAGEMENT'].includes(session.user.role as string)) {
+    // @ts-ignore - Ignoring role type error as it's handled by auth configuration
+    if (!session?.user || !session.user.role || !['HR', 'MANAGEMENT'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -64,217 +248,31 @@ export async function GET(request: Request) {
     // Create a new PDF document
     const pdfDoc = await PDFDocument.create();
     let [page, y] = addNewPage(pdfDoc);
-    const { width } = page.getSize();
 
     // Add company header
     y = await addCompanyHeader(pdfDoc, page, companyInfo);
     y -= STYLES.title.spacing;
 
-    // Add form title
-    page.drawText('Employee Joining Form', {
-      x: STYLES.margin.left,
-      y,
-      size: STYLES.title.size,
-    });
+    // Add user image
+    y = await addUserImage(pdfDoc, page, user.image || null, y);
 
-    // Draw underline for the title
-    page.drawLine({
-      start: { x: STYLES.margin.left, y: y - 5 },
-      end: { x: width - STYLES.margin.right, y: y - 5 },
-      thickness: 1,
-      color: rgb(0, 0, 0),
-    });
+    // Add joining form details
+    y = await addJoiningFormDetails(page, user, y);
 
-    y -= STYLES.title.spacing;
-
-    // Calculate column widths and positions
-    const contentWidth = width - STYLES.margin.left - STYLES.margin.right;
-    const columnWidth = contentWidth / 2;
-    const column2X = STYLES.margin.left + columnWidth + 20;
-
-    // First Column: Personal & Employment Info
-    // Add personal information
-    page.drawText('Personal Information:', {
-      x: STYLES.margin.left,
-      y,
-      size: STYLES.sectionHeader.size,
-    });
-    y -= STYLES.sectionHeader.spacing;
-
-    const personalInfo = [
-      `Name: ${user.name}`,
-      `Employee ID: ${user.numId}`,
-      `Mobile: ${user.mobileNo}`,
-      `Gender: ${user.gender}`,
-      `Date of Birth: ${user.dob ? new Date(user.dob).toLocaleDateString() : 'N/A'}`,
-    ];
-
-    let column2Y = y; // Save Y position for second column
-
-    personalInfo.forEach(info => {
-      page.drawText(info, {
-        x: STYLES.margin.left,
-        y,
-        size: STYLES.content.size,
-      });
-      y -= STYLES.content.spacing;
-    });
-
-    y -= STYLES.sectionHeader.spacing;
-
-    // Add employment details
-    page.drawText('Employment Details:', {
-      x: STYLES.margin.left,
-      y,
-      size: STYLES.sectionHeader.size,
-    });
-    y -= STYLES.sectionHeader.spacing;
-
-    const employmentInfo = [
-      `Department: ${user.department}`,
-      `Title: ${user.title}`,
-      `Role: ${user.role}`,
-      `Branch: ${user.branch?.name || 'N/A'}`,
-      `Date of Joining: ${user.doj ? new Date(user.doj).toLocaleDateString() : 'N/A'}`,
-      `Salary: Rs. ${user.salary}`,
-    ];
-
-    employmentInfo.forEach(info => {
-      page.drawText(info, {
-        x: STYLES.margin.left,
-        y,
-        size: STYLES.content.size,
-      });
-      y -= STYLES.content.spacing;
-    });
-
-    // Second Column: Bank Details & Government IDs
-    // Add bank details
-    page.drawText('Bank Details:', {
-      x: column2X,
-      y: column2Y,
-      size: STYLES.sectionHeader.size,
-    });
-    column2Y -= STYLES.sectionHeader.spacing;
-
-    const bankInfo = [
-      `Account Number: ${user.bankAccountNo}`,
-      `IFSC Code: ${user.bankIfscCode}`,
-    ];
-
-    bankInfo.forEach(info => {
-      page.drawText(info, {
-        x: column2X,
-        y: column2Y,
-        size: STYLES.content.size,
-      });
-      column2Y -= STYLES.content.spacing;
-    });
-
-    column2Y -= STYLES.sectionHeader.spacing;
-
-    // Add government IDs
-    page.drawText('Government IDs:', {
-      x: column2X,
-      y: column2Y,
-      size: STYLES.sectionHeader.size,
-    });
-    column2Y -= STYLES.sectionHeader.spacing;
-
-    const govInfo = [
-      `PAN: ${user.panNo}`,
-      `Aadhar: ${user.aadharNo}`,
-    ];
-
-    govInfo.forEach(info => {
-      page.drawText(info, {
-        x: column2X,
-        y: column2Y,
-        size: STYLES.content.size,
-      });
-      column2Y -= STYLES.content.spacing;
-    });
-
-    // Use the lowest Y value between the two columns
-    y = Math.min(y, column2Y);
-    y -= STYLES.title.spacing;
-
-    // Check if we need a new page for signatures
-    if (needsNewPage(y)) {
-      [page, y] = addNewPage(pdfDoc);
-    }
-
-    // Add signature sections with lines
-    const signatureY = y;
-    
-    // Employee signature
-    page.drawText('Employee Signature:', {
-      x: STYLES.margin.left,
-      y: signatureY,
-      size: STYLES.content.size,
-    });
-    
-    // Draw signature line for employee
-    page.drawLine({
-      start: { x: STYLES.margin.left, y: signatureY - 30 },
-      end: { x: STYLES.margin.left + 200, y: signatureY - 30 },
-      thickness: 1,
-      color: rgb(0, 0, 0),
-    });
-
-    // Draw date line for employee
-    page.drawText('Date:', {
-      x: STYLES.margin.left,
-      y: signatureY - 50,
-      size: STYLES.content.size,
-    });
-    page.drawLine({
-      start: { x: STYLES.margin.left + 40, y: signatureY - 50 },
-      end: { x: STYLES.margin.left + 200, y: signatureY - 50 },
-      thickness: 1,
-      color: rgb(0, 0, 0),
-    });
-
-    // HR signature
-    page.drawText('HR Signature:', {
-      x: width - STYLES.margin.right - 200,
-      y: signatureY,
-      size: STYLES.content.size,
-    });
-    
-    // Draw signature line for HR
-    page.drawLine({
-      start: { x: width - STYLES.margin.right - 200, y: signatureY - 30 },
-      end: { x: width - STYLES.margin.right, y: signatureY - 30 },
-      thickness: 1,
-      color: rgb(0, 0, 0),
-    });
-
-    // Draw date line for HR
-    page.drawText('Date:', {
-      x: width - STYLES.margin.right - 200,
-      y: signatureY - 50,
-      size: STYLES.content.size,
-    });
-    page.drawLine({
-      start: { x: width - STYLES.margin.right - 160, y: signatureY - 50 },
-      end: { x: width - STYLES.margin.right, y: signatureY - 50 },
-      thickness: 1,
-      color: rgb(0, 0, 0),
-    });
-
-    // Generate appointment letter
+    // Generate appointment letter data with null checks
     const appointmentData = {
-      employeeName: user.name,
-      joiningDate: new Date(user.doj).toLocaleDateString(),
-      jobTitle: user.role,
-      salary: user.salary,
-      contractStartDate: new Date(user.doj).toLocaleDateString(),
-      contractEndDate: new Date(new Date(user.doj).setFullYear(new Date(user.doj).getFullYear() + 5)).toLocaleDateString(),
+      employeeName: user.name || '',
+      joiningDate: user.doj ? new Date(user.doj).toLocaleDateString() : 'N/A',
+      jobTitle: user.role || '',
+      salary: user.salary || 0,
+      contractStartDate: user.doj ? new Date(user.doj).toLocaleDateString() : 'N/A',
+      contractEndDate: user.doj 
+        ? new Date(new Date(user.doj).setFullYear(new Date(user.doj).getFullYear() + 5)).toLocaleDateString()
+        : 'N/A',
     };
 
     // Add appointment letter pages
-    await generateAppointmentLetter(pdfDoc, appointmentData, companyInfo);
+    await generateAppointmentLetter(pdfDoc, appointmentData);
 
     // Save the PDF
     const pdfBytes = await pdfDoc.save();
@@ -293,4 +291,4 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-} 
+}

@@ -9,6 +9,7 @@ interface AppointmentLetterData {
   salary: number;
   contractStartDate: string;
   contractEndDate: string;
+  userImagePath?: string;
 }
 
 // Company information
@@ -27,9 +28,9 @@ function needsNewPage(currentY: number, requiredSpace: number = 100): boolean {
 }
 
 // Helper function to create a new page
-async function createNewPage(pdfDoc: PDFDocument): Promise<[PDFPage, number]> {
+async function createNewPage(pdfDoc: PDFDocument, data: AppointmentLetterData, isFirstPage: boolean = false): Promise<[PDFPage, number]> {
   const page = pdfDoc.addPage([595, 842]); // A4 size
-  const y = await addPageHeader(pdfDoc, page);
+  const y = await addPageHeader(pdfDoc, page, data, isFirstPage);
   return [page, y];
 }
 
@@ -96,7 +97,7 @@ async function addTextBlock(page: PDFPage, text: string, x: number, y: number, w
 }
 
 // Helper function to add page header
-async function addPageHeader(pdfDoc: PDFDocument, page: PDFPage): Promise<number> {
+async function addPageHeader(pdfDoc: PDFDocument, page: PDFPage, data?: AppointmentLetterData, isFirstPage: boolean = false): Promise<number> {
   const { width } = page.getSize();
   let logoWidth = 0;
   const startY = page.getSize().height - 50;
@@ -121,6 +122,25 @@ async function addPageHeader(pdfDoc: PDFDocument, page: PDFPage): Promise<number
     }
   }
 
+  // Add user image on the right side if available and it's the first page
+  if (isFirstPage && data?.userImagePath) {
+    try {
+      const userImagePath = path.join(process.cwd(), 'public', data.userImagePath);
+      const imageBuffer = fs.readFileSync(userImagePath);
+      const userImage = await pdfDoc.embedPng(imageBuffer);
+      const imageDims = userImage.scale(0.2); // Adjust scale as needed
+      
+      page.drawImage(userImage, {
+        x: width - 50 - imageDims.width, // Position from right
+        y: startY - imageDims.height + 15,
+        width: imageDims.width,
+        height: imageDims.height,
+      });
+    } catch (error) {
+      console.error('Error embedding user image:', error);
+    }
+  }
+
   // Add company name
   page.drawText(companyInfo.name, {
     x: 50 + logoWidth,
@@ -137,7 +157,7 @@ async function addPageHeader(pdfDoc: PDFDocument, page: PDFPage): Promise<number
 
   // Add contact details in a row
   const contactY = startY - 35;
-  const contactWidth = (width - 100 - logoWidth) / 2; // Divide space for 2 items instead of 3
+  const contactWidth = (width - 100 - logoWidth) / 2;
 
   // Phone
   page.drawText(`Phone: ${companyInfo.phone}`, {
@@ -168,19 +188,20 @@ async function addPageHeader(pdfDoc: PDFDocument, page: PDFPage): Promise<number
     color: rgb(0, 0, 0),
   });
 
-  return contactY - 40; // Return the new y position for the next content
+  // Return a lower Y position to add more padding after the header
+  return contactY - 70;
 }
 
 export async function generateAppointmentLetter(
   pdfDoc: PDFDocument,
   data: AppointmentLetterData,
 ) {
-  let [currentPage, y] = await createNewPage(pdfDoc);
+  let [currentPage, y] = await createNewPage(pdfDoc, data, true); // true for first page
 
   // Function to handle page breaks
   const handlePageBreak = async (requiredSpace: number = 100) => {
     if (needsNewPage(y, requiredSpace)) {
-      [currentPage, y] = await createNewPage(pdfDoc);
+      [currentPage, y] = await createNewPage(pdfDoc, data, false); // false for subsequent pages
     }
   };
 

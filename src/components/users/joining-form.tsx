@@ -1,16 +1,22 @@
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import { User } from '@prisma/client';
+import path from 'path';
 
 const styles = StyleSheet.create({
   page: {
     padding: 30,
     fontFamily: 'Helvetica',
   },
-  header: {
-    fontSize: 24,
+  imageContainer: {
     marginBottom: 20,
-    textAlign: 'center',
-    textDecoration: 'underline',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  userImage: {
+    width: 100,
+    height: 100,
+    objectFit: 'cover',
+    borderRadius: '50%',
   },
   section: {
     marginBottom: 10,
@@ -48,10 +54,17 @@ interface JoiningFormProps {
 }
 
 export function JoiningForm({ user }: JoiningFormProps) {
+  // Get user image path
+  const userImagePath = user.image ? path.join(process.cwd(), 'public', user.image) : null;
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <Text style={styles.header}>Employee Joining Form</Text>
+        {userImagePath && (
+          <View style={styles.imageContainer}>
+            <Image src={userImagePath} style={styles.userImage} />
+          </View>
+        )}
         
         <View style={styles.section}>
           <Text style={styles.label}>Personal Information</Text>
@@ -59,7 +72,7 @@ export function JoiningForm({ user }: JoiningFormProps) {
             <View style={styles.column}>
               <Text style={styles.value}>Name: {user.name}</Text>
               <Text style={styles.value}>Employee ID: {user.numId}</Text>
-              <Text style={styles.value}>Date of Birth: {new Date(user.dob).toLocaleDateString()}</Text>
+              <Text style={styles.value}>Date of Birth: {user.dob ? new Date(user.dob).toLocaleDateString() : 'N/A'}</Text>
             </View>
             <View style={styles.column}>
               <Text style={styles.value}>Email: {user.email}</Text>
@@ -78,8 +91,8 @@ export function JoiningForm({ user }: JoiningFormProps) {
               <Text style={styles.value}>Role: {user.role}</Text>
             </View>
             <View style={styles.column}>
-              <Text style={styles.value}>Branch: {user.branch?.name}</Text>
-              <Text style={styles.value}>Date of Joining: {new Date(user.doj).toLocaleDateString()}</Text>
+              <Text style={styles.value}>Branch: {user.branchId}</Text>
+              <Text style={styles.value}>Date of Joining: {user.doj ? new Date(user.doj).toLocaleDateString() : 'N/A'}</Text>
               <Text style={styles.value}>Salary: ₹{user.salary}</Text>
             </View>
           </View>
