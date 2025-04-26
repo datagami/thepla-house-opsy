@@ -39,6 +39,9 @@ export async function GET() {
             contactNo: true
           }
         }
+      },
+      orderBy: {
+        numId: 'asc'
       }
     })
 
