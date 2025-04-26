@@ -143,6 +143,11 @@ export function DetailedAttendanceCalendar({
                           ? `${attendance.checkIn} - ${attendance.checkOut}`
                           : "No time record"}
                       </div>
+                      {attendance.branch?.name && (
+                        <div className="text-xs text-muted-foreground">
+                          {attendance.branch.name}
+                        </div>
+                      )}
                       <div className="flex flex-wrap gap-1">
                         {attendance.shift1 && (
                           <Badge variant="outline" className="text-xs px-1 py-0">
