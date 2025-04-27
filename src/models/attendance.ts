@@ -13,6 +13,7 @@ export interface AttendanceFormProps {
   defaultValues?: Attendance;
   isLoading?: boolean;
   isHR?: boolean;
+  department: string;
 }
 
 export interface AttendanceFormData {

@@ -142,6 +142,7 @@ export default async function SelfAttendancePage({ searchParams }: Props) {
                 userName={user.name}
                 userRole={user.role}
                 date={selectedDate}
+                department={user.role}
                 currentAttendance={attendance}
               />
             </CardContent>

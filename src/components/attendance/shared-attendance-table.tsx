@@ -130,6 +130,7 @@ export function SharedAttendanceTable({
           date={date}
           currentAttendance={selectedUser.attendance?.[0]}
           isOpen={!!selectedUser}
+          department={selectedUser.department || ''}
           onCloseAction={() => setSelectedUser(null)}
           isHR={userRole === "HR"}
         />

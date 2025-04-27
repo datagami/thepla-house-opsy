@@ -13,6 +13,7 @@ interface DetailedAttendanceCalendarProps {
   userId: string;
   userName: string;
   userRole: string;
+  department: string;
 }
 
 export function DetailedAttendanceCalendar({ 
@@ -20,7 +21,8 @@ export function DetailedAttendanceCalendar({
   month,
   userId,
   userName,
-  userRole
+  userRole,
+  department
 }: DetailedAttendanceCalendarProps) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedAttendance, setSelectedAttendance] = useState<Attendance | null>(null);
@@ -191,6 +193,7 @@ export function DetailedAttendanceCalendar({
           userId={userId}
           userName={userName}
           date={selectedDate}
+          department={department} 
           currentAttendance={selectedAttendance || undefined}
           isOpen={!!selectedDate}
           onCloseAction={() => {

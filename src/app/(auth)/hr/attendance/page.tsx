@@ -26,6 +26,7 @@ export default async function HRAttendancePage() {
     select: {
       id: true,
       name: true,
+      department: true,
       managedBranch: {
         select: {
           name: true,

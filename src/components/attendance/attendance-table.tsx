@@ -51,6 +51,7 @@ export function AttendanceTable({ users, date, viewOnly = false }: AttendanceTab
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
+            <TableHead>Position</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Time</TableHead>
             <TableHead>Shifts</TableHead>
@@ -70,6 +71,9 @@ export function AttendanceTable({ users, date, viewOnly = false }: AttendanceTab
                 onClick={() => setSelectedUser(user)}
               >
                 <TableCell>{user.name}</TableCell>
+                <TableCell>
+                  {user.department}
+                </TableCell>
                 <TableCell>
                   <Badge className={statusColors[status as keyof typeof statusColors]}>
                     {status}
@@ -123,6 +127,7 @@ export function AttendanceTable({ users, date, viewOnly = false }: AttendanceTab
           userId={selectedUser.id}
           userName={selectedUser.name}
           userRole={selectedUser.role}
+          department={selectedUser.department || ''}
           date={date}
           currentAttendance={selectedUser.attendance[0]}
           isOpen={!!selectedUser && !viewOnly}

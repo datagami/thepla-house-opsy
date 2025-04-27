@@ -23,6 +23,7 @@ export function AttendanceForm({
   isOpen,
   onCloseAction,
   userRole,
+  department
 }: AttendanceFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -107,7 +108,7 @@ export function AttendanceForm({
     <Dialog open={isOpen} onOpenChange={onCloseAction}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Mark Attendance for {userName}</DialogTitle>
+          <DialogTitle>Mark Attendance for {userName} ({department})</DialogTitle>
         </DialogHeader>
         <div className="space-y-6">
           <div className="flex items-center justify-between">
