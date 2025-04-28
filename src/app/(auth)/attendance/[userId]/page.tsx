@@ -87,10 +87,12 @@ export default async function EmployeeAttendancePage({
   // Calculate statistics
   const stats = {
     totalDays: attendance.length,
-    presentDays: attendance.filter(a => a.isPresent).length,
-    absentDays: attendance.filter(a => !a.isPresent).length,
-    halfDays: attendance.filter(a => a.isHalfDay).length,
-    overtimeDays: attendance.filter(a => a.overtime).length,
+    presentDays: attendance.filter(a => a.isPresent && a.verifiedAt).length,
+    absentDays: attendance.filter(a => !a.isPresent && a.verifiedAt).length,
+    halfDays: attendance.filter(a => a.isHalfDay && a.verifiedAt).length,
+    overtimeDays: attendance.filter(a => a.overtime && a.verifiedAt).length,
+    pendingPresentDays: attendance.filter(a => a.isPresent && !a.verifiedAt).length,
+    pendingAbsentDays: attendance.filter(a => !a.isPresent && !a.verifiedAt).length,
   };
 
   const prevMonth = format(subMonths(startDate, 1), "yyyy-MM");
@@ -140,7 +142,7 @@ export default async function EmployeeAttendancePage({
       <div className="grid gap-4 md:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Days</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Marked Attendance</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalDays}</div>
@@ -180,6 +182,22 @@ export default async function EmployeeAttendancePage({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">{stats.overtimeDays}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending Present Days</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">{stats.pendingPresentDays}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending Absent Days</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{stats.pendingAbsentDays}</div>
           </CardContent>
         </Card>
       </div>
