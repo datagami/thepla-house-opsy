@@ -254,7 +254,7 @@ export async function generateAppointmentLetter(
 
   // Section 3: Duration of Employment
   await addSection('3. Duration Of Employment',
-    'You will be employed on a probationary basis for an initial period of 3 months and based on the Company\'s view of your performance, you will be deemed confirmed.'
+    'You will be employed on a probationary basis for an initial period of 6 months and based on the Company\'s view of your performance, you will be deemed confirmed.'
   );
   y -= 10;
   await handlePageBreak();

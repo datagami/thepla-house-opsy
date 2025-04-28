@@ -12,7 +12,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, Building2, UserCircle } from "lucide-react";
+import { LogOut, Building2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {User} from "@/models/models";
 
@@ -68,10 +68,6 @@ export function UserNav({ user, branchName }: UserNavProps) {
               <span>{branchName}</span>
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem>
-            <UserCircle className="mr-2 h-4 w-4" />
-            <span>{user.role.replace("_", " ").toLowerCase()}</span>
-          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         {user.role === "MANAGEMENT" && (
