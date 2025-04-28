@@ -74,6 +74,9 @@ export function DetailedAttendanceCalendar({
     const dateKey = format(date, "yyyy-MM-dd");
     const record = attendanceMap.get(dateKey);
     if (!record) return "PENDING";
+    if (record.status === "PENDING_VERIFICATION") {
+      return record.isPresent ? "PENDING_PRESENT" : "PENDING_ABSENT";
+    }
     if (!record.isPresent) return "ABSENT";
     if (record.isHalfDay) return "HALF_DAY";
     return "PRESENT";
@@ -84,6 +87,8 @@ export function DetailedAttendanceCalendar({
     ABSENT: "bg-red-100 text-red-800",
     PENDING: "bg-yellow-100 text-yellow-800",
     HALF_DAY: "bg-blue-100 text-blue-800",
+    PENDING_PRESENT: "bg-amber-100 text-amber-800",
+    PENDING_ABSENT: "bg-orange-100 text-orange-800",
   } as const;
 
   return (
