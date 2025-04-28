@@ -34,10 +34,10 @@ function LoadingStats() {
 export default async function AttendanceVerificationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: 'PENDING_VERIFICATION' | 'APPROVED' | 'REJECTED' | 'ALL'; date?: string }>;
+  searchParams: Promise<{ status?: 'PENDING_VERIFICATION' | 'APPROVED' | 'REJECTED' | 'ALL'; date?: string; branch?: string }>;
 }) {
   const session = await auth();
-  const {status, date} = await searchParams;
+  const {status, date, branch} = await searchParams;
   
   // @ts-expect-error - We check for HR role
   if (!session || session.user.role !== "HR") {
@@ -45,12 +45,9 @@ export default async function AttendanceVerificationPage({
   }
 
   // Default to PENDING if no status is specified
-
-  // Get selected date or default to today
   const selectedStatus = status || "PENDING_VERIFICATION";
-  const selectedDate = date ? 
-    new Date(date) : 
-    new Date();
+  const selectedDate = date ? new Date(date) : new Date();
+  const selectedBranch = branch || "ALL";
   
   // Set time to start of day
   selectedDate.setHours(0, 0, 0, 0);
@@ -58,6 +55,16 @@ export default async function AttendanceVerificationPage({
   // Get end of selected day
   const nextDay = new Date(selectedDate);
   nextDay.setDate(nextDay.getDate() + 1);
+
+  // Get all branches for the filter
+  const branches = await prisma.branch.findMany({
+    select: {
+      name: true,
+    },
+    orderBy: {
+      name: 'asc',
+    },
+  });
 
   // Build where clause based on status and date
   const whereClause = {
@@ -68,6 +75,13 @@ export default async function AttendanceVerificationPage({
     ...(selectedStatus !== "ALL" && {
       status: {
         equals: selectedStatus,
+      },
+    }),
+    ...(selectedBranch !== "ALL" && {
+      user: {
+        branch: {
+          name: selectedBranch,
+        },
       },
     }),
   };
@@ -104,6 +118,13 @@ export default async function AttendanceVerificationPage({
         gte: selectedDate,
         lt: nextDay,
       },
+      ...(selectedBranch !== "ALL" && {
+        user: {
+          branch: {
+            name: selectedBranch,
+          },
+        },
+      }),
     },
     _count: {
       status: true,
@@ -197,6 +218,8 @@ export default async function AttendanceVerificationPage({
           records={attendanceRecords}
           currentStatus={selectedStatus}
           currentDate={selectedDate}
+          currentBranch={selectedBranch}
+          branches={branches.map(b => b.name)}
         />
       </div>
     </div>

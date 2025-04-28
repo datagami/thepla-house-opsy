@@ -19,7 +19,6 @@ interface AttendanceDateFilterProps {
 export function AttendanceDateFilter({ date, onChange }: AttendanceDateFilterProps) {
   return (
     <div className="flex items-center space-x-2">
-      <span className="text-sm font-medium">Filter by date:</span>
       <Popover>
         <PopoverTrigger asChild>
           <Button

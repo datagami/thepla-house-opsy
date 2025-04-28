@@ -17,20 +17,25 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { AttendanceStatusFilter } from "./attendance-status-filter";
 import { Loader2 } from "lucide-react";
 import { AttendanceDateFilter } from "./attendance-date-filter";
-import {Attendance} from "@/models/models";
-import {useRouter} from "next/navigation";
+import { AttendanceBranchFilter } from "./attendance-branch-filter";
+import { Attendance } from "@/models/models";
+import { useRouter } from "next/navigation";
 
 
 interface AttendanceVerificationTableProps {
   records: Attendance[];
   currentStatus: string;
   currentDate: Date;
+  currentBranch: string;
+  branches: string[];
 }
 
 export function AttendanceVerificationTable({ 
   records, 
   currentStatus,
   currentDate,
+  currentBranch,
+  branches,
 }: AttendanceVerificationTableProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -52,6 +57,13 @@ export function AttendanceVerificationTable({
     setIsLoading('filter');
     const params = new URLSearchParams(searchParams.toString());
     params.set("date", format(date, "yyyy-MM-dd"));
+    window.location.href = `${pathname}?${params.toString()}`;
+  };
+
+  const handleBranchChange = (branch: string) => {
+    setIsLoading('filter');
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("branch", branch);
     window.location.href = `${pathname}?${params.toString()}`;
   };
 
@@ -112,13 +124,15 @@ export function AttendanceVerificationTable({
             value={currentStatus}
             onChange={handleStatusChange}
           />
+          <AttendanceBranchFilter
+            value={currentBranch}
+            onChange={handleBranchChange}
+            branches={branches}
+          />
           <AttendanceDateFilter 
             date={currentDate}
             onChange={handleDateChange}
           />
-        </div>
-        <div className="text-sm text-muted-foreground">
-          Showing attendance for {format(currentDate, "PPP")}
         </div>
       </div>
       {isLoading === 'filter' ? (

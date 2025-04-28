@@ -23,7 +23,6 @@ interface AttendanceStatusFilterProps {
 export function AttendanceStatusFilter({ value, onChange }: AttendanceStatusFilterProps) {
   return (
     <div className="flex items-center space-x-2">
-      <span className="text-sm font-medium">Filter by status:</span>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger className="w-[180px]">
           <SelectValue>
