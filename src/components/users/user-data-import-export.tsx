@@ -146,7 +146,7 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
     });
 
     // Branch is required only for EMPLOYEE role
-    if (userData['Role*'] === 'EMPLOYEE' && !userData['Branch*']) {
+    if (['EMPLOYEE', 'BRANCH_MANAGER'].includes(userData['Role*']) && !userData['Branch*']) {
       errors.push('Branch is required for EMPLOYEE role');
     }
 

@@ -36,25 +36,23 @@ export async function POST(request: Request) {
       for (const userData of users) {
         // Handle branch based on role
         let branchId = null;
-        if (userData['Role*'] === 'EMPLOYEE') {
-          // First find branch by name
+        let managedBranchId = null;
+        // For all roles except MANAGEMENT and HR, try to assign branch if provided
+        if (['MANAGEMENT', 'HR', 'EMPLOYEE', 'BRANCH_MANAGER'].includes(userData['Role*']) && userData['Branch*']) {
           const existingBranch = await tx.branch.findFirst({
             where: { 
               name: userData['Branch*'] as string 
             }
           });
 
-          // Create branch if it doesn't exist
-          const branch = existingBranch || await tx.branch.create({
-            data: {
-              name: userData['Branch*'] as string,
-              address: '',
-              city: '',
-              state: ''
-            }
-          });
+          if (userData['Role*'] === 'BRANCH_MANAGER') {
+            managedBranchId = existingBranch?.id;
+          }
 
-          branchId = branch.id;
+          
+          if (existingBranch) {
+            branchId = existingBranch.id;
+          }
         }
 
         // Prepare references data
@@ -104,6 +102,7 @@ export async function POST(request: Request) {
           bankIfscCode: userData['Bank IFSC Code*'].toString(),
           branchId: branchId,
           status: userData.status || 'ACTIVE',
+          managedBranchId: managedBranchId,
         };
 
         if (existingUser) {
