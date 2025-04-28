@@ -15,7 +15,7 @@ interface AppointmentLetterData {
 
 // Company information
 const companyInfo = {
-  name: 'Thepla House',
+  name: 'Thepla House By Tejal\'s Kitchen',
   address: 'Gala No. 6, Shriguppi Industrial Estate, Sakivihar Road, Andheri (E), Mumbai - 400072',
   phone: '+91 9819555065',
   website: 'www.theplahouse.com',
