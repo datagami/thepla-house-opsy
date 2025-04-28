@@ -83,12 +83,12 @@ export function DetailedAttendanceCalendar({
   };
 
   const statusColors = {
-    PRESENT: "bg-green-100 text-green-800",
-    ABSENT: "bg-red-100 text-red-800",
+    PRESENT: "bg-green-400 text-green-800",
+    ABSENT: "bg-red-400 text-red-800",
     PENDING: "bg-yellow-100 text-yellow-800",
     HALF_DAY: "bg-blue-100 text-blue-800",
-    PENDING_PRESENT: "bg-amber-100 text-amber-800",
-    PENDING_ABSENT: "bg-orange-100 text-orange-800",
+    PENDING_PRESENT: "bg-green-100 text-green-800",
+    PENDING_ABSENT: "bg-red-100 text-red-800",
   } as const;
 
   return (
