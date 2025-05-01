@@ -47,14 +47,14 @@ const roleNavItems: Record<string, NavItem[]> = {
       feature: "users.view" 
     },
     { 
-      title: "Manager Attendance", 
-      href: "/hr/attendance", 
+      title: "Branch Attendance", 
+      href: "/attendance", 
       icon: <Clock className="h-5 w-5" />,
       feature: "attendance.mark" 
     },
     { 
-      title: "Verify Attendance", 
-      href: "/hr/attendance-verification", 
+      title: "Manager Attendance", 
+      href: "/hr/attendance", 
       icon: <ClipboardCheck className="h-5 w-5" />,
       feature: "attendance.verify" 
     },
