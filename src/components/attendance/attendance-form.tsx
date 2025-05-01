@@ -53,7 +53,7 @@ export function AttendanceForm({
         shift1: isPresent && shift1,
         shift2: isPresent && shift2,
         shift3: isPresent && shift3,
-        status: userRole === "HR" ? "APPROVED" : "PENDING",
+        status: userRole === "HR" || "MANAGEMENT" ? "APPROVED" : "PENDING_VERIFICATION",
         ...(currentAttendance?.id && userRole !== "HR" && {
           verificationNote: currentAttendance.verificationNote,
           verifiedById: currentAttendance.verifiedById,

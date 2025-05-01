@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { DetailedAttendanceCalendar } from "@/components/attendance/detailed-attendance-calendar";
+import { SalaryActions } from "@/components/salary/salary-actions";
 
 export const metadata: Metadata = {
   title: "Employee Attendance - HRMS",
@@ -84,6 +85,15 @@ export default async function EmployeeAttendancePage({
     },
   }) as Attendance[];
 
+  // Get salary for the selected month
+  const salary = await prisma.salary.findFirst({
+    where: {
+      userId,
+      month: startDate.getMonth() + 1,
+      year: startDate.getFullYear(),
+    },
+  });
+
   // Calculate statistics
   const stats = {
     totalDays: attendance.length,
@@ -106,6 +116,14 @@ export default async function EmployeeAttendancePage({
           <h2 className="text-3xl font-bold tracking-tight">{employee.name}</h2>
           <p className="text-muted-foreground">{employee.branch?.name}</p>
         </div>
+        {['HR', 'MANAGEMENT'].includes(role) && (
+          <SalaryActions
+            userId={userId}
+            month={startDate.getMonth() + 1}
+            year={startDate.getFullYear()}
+            salary={salary}
+          />
+        )}
       </div>
 
       <div className="flex items-center justify-between">
