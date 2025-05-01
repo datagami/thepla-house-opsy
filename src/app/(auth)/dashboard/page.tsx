@@ -6,8 +6,6 @@ import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Clock, CalendarCheck, Users, AlertCircle, UserCheck, AlertTriangle, FileClock} from "lucide-react";
 import Link from "next/link";
 import {Attendance} from "@/models/models";
-import {Button} from "@/components/ui/button";
-import {Plus} from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Dashboard - HRMS",

@@ -12,7 +12,7 @@ import { DatePicker } from "@/components/attendance/date-picker";
 export default async function HRAttendancePage({
   searchParams,
 }: {
-  searchParams: { date?: string };
+  searchParams: Promise<{ date?: string }>;
 }) {
   const session = await auth();
 
@@ -22,9 +22,11 @@ export default async function HRAttendancePage({
     redirect("/dashboard");
   }
 
+  const {date} = await searchParams;
+
   // Get the date from query params or use today
-  const selectedDate = searchParams.date
-    ? new Date(searchParams.date)
+  const selectedDate = date
+    ? new Date(date)
     : new Date();
   selectedDate.setHours(0, 0, 0, 0);
 
