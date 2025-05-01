@@ -3,9 +3,11 @@ import {auth} from "@/auth";
 import {redirect} from "next/navigation";
 import {prisma} from "@/lib/prisma";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {Clock, CalendarCheck, Users, AlertCircle, UserCheck} from "lucide-react";
+import {Clock, CalendarCheck, Users, AlertCircle, UserCheck, AlertTriangle, FileClock} from "lucide-react";
 import Link from "next/link";
 import {Attendance} from "@/models/models";
+import {Button} from "@/components/ui/button";
+import {Plus} from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Dashboard - HRMS",
@@ -119,6 +121,28 @@ export default async function DashboardPage() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Get pending attendance count for HR's branch
+    const employees = await prisma.user.findMany({
+      where: {
+        // @ts-expect-error - branchId is not in the User type
+        branchId: session.user.branchId,
+        role: "EMPLOYEE",
+        status: "ACTIVE",
+      },
+      select: {
+        id: true,
+        attendance: {
+          where: {
+            date: today,
+          },
+        },
+      },
+    });
+
+    const pendingAttendance = employees.filter(
+      employee => employee.attendance.length === 0
+    ).length;
+
     // Get pending manager attendance count
     const branchManagers = await prisma.user.findMany({
       where: {
@@ -139,7 +163,7 @@ export default async function DashboardPage() {
       manager => manager.attendance.length === 0
     ).length;
 
-    // Get pending attendance verifications - updated query
+    // Get pending attendance verifications
     const pendingVerifications = await prisma.attendance.count({
       where: {
         date: today,
@@ -156,13 +180,6 @@ export default async function DashboardPage() {
       },
     });
 
-    // Get pending user approvals
-    const pendingApprovals = await prisma.user.count({
-      where: {
-        status: "PENDING",
-      },
-    });
-
     // Get rejected attendance count
     const rejectedAttendanceCount = await prisma.attendance.count({
       where: {
@@ -172,9 +189,10 @@ export default async function DashboardPage() {
     });
 
     stats = {
+      pendingAttendance,
+      pendingLeaveRequests: 0,
       pendingManagerAttendance,
       pendingVerifications,
-      pendingApprovals,
       rejectedAttendanceCount,
     };
   }
@@ -275,13 +293,47 @@ export default async function DashboardPage() {
         )}
         {role === "HR" && (
           <>
+            <Link href="/attendance" className="block">
+              <Card className="hover:bg-accent/5 transition-colors">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Pending Attendance
+                  </CardTitle>
+                  <Clock className="h-4 w-4 text-muted-foreground"/>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.pendingAttendance}</div>
+                  <p className="text-xs text-muted-foreground">
+                    employees haven&#39;t marked attendance today
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link href="/hr/attendance" className="block">
+              <Card className="hover:bg-accent/5 transition-colors">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Pending Manager Attendance
+                  </CardTitle>
+                  <FileClock className="h-4 w-4 text-muted-foreground"/>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.pendingManagerAttendance}</div>
+                  <p className="text-xs text-muted-foreground">
+                    branch managers haven&#39;t marked attendance today
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+
             <Link href="/hr/attendance-verification" className="block">
               <Card className="hover:bg-accent/5 transition-colors">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
                     Pending Verifications
                   </CardTitle>
-                  <Clock className="h-4 w-4 text-muted-foreground"/>
+                  <AlertTriangle className="h-4 w-4 text-muted-foreground"/>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{stats.pendingVerifications}</div>
@@ -292,35 +344,18 @@ export default async function DashboardPage() {
               </Card>
             </Link>
 
-            <Link href="/hr/users" className="block">
+            <Link href="/hr/attendance-verification" className="block">
               <Card className="hover:bg-accent/5 transition-colors">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
-                    Pending Approvals
+                    Rejected Attendance
                   </CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground"/>
+                  <AlertTriangle className="h-4 w-4 text-muted-foreground"/>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.pendingApprovals}</div>
+                  <div className="text-2xl font-bold">{stats.rejectedAttendanceCount}</div>
                   <p className="text-xs text-muted-foreground">
-                    new user registrations
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-
-            <Link href="/hr/attendance" className="block">
-              <Card className="hover:bg-accent/5 transition-colors">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Manager Attendance
-                  </CardTitle>
-                  <CalendarCheck className="h-4 w-4 text-muted-foreground"/>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.pendingManagerAttendance}</div>
-                  <p className="text-xs text-muted-foreground">
-                    managers haven&#39;t marked attendance
+                    attendance records rejected today
                   </p>
                 </CardContent>
               </Card>
