@@ -1,4 +1,4 @@
-import { AdvancePayment } from "@/models/models";
+import { AdvancePayment, Salary } from "@/models/models";
 import { prisma } from '@/lib/prisma'
 import { SalaryStatus } from "@prisma/client";
 
@@ -237,4 +237,33 @@ export async function createOrUpdateSalary({
 
     return salary;
   });
+}
+
+export function calculateNetSalaryFromObject(salary: Salary) {
+  // Calculate present days salary
+  const daysInMonth = new Date(salary.year, salary.month, 0).getDate();
+  const perDaySalary = Math.ceil(salary.baseSalary / daysInMonth);
+  const presentDaysSalary = salary.presentDays * perDaySalary;
+  
+  // Calculate overtime bonus
+  const overtimeSalary = salary.overtimeDays * 0.5 * perDaySalary;
+  
+  // Calculate leave salary
+  const leaveSalary = salary.leavesEarned * perDaySalary;
+  
+  // Calculate base salary earned
+  const baseSalaryEarned = presentDaysSalary + overtimeSalary + salary.otherBonuses + leaveSalary;
+  
+  // Calculate total deductions
+  let totalAdvanceDeductions = 0;
+  if (salary.installments) {
+  totalAdvanceDeductions = salary.installments
+    .filter(i => i.status === 'APPROVED')
+    .reduce((sum, i) => sum + i.amountPaid, 0);
+  }
+  
+  const totalDeductions = totalAdvanceDeductions + salary.otherDeductions;
+  
+  // Calculate net salary
+  return baseSalaryEarned - totalDeductions;
 } 

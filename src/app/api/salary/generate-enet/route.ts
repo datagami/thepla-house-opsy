@@ -3,7 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
-
+import { calculateNetSalaryFromObject } from '@/lib/services/salary-calculator';
+import { SalaryStatus } from '@prisma/client';
+import { Salary } from '@/models/models';
 export async function POST(req: Request) {
   try {
     const session = await auth();
@@ -23,7 +25,7 @@ export async function POST(req: Request) {
       where: {
         month,
         year,
-        status: 'PROCESSING'
+        status: 'PROCESSING' as SalaryStatus
       },
       include: {
         user: {
@@ -36,9 +38,10 @@ export async function POST(req: Request) {
             email: true,
             branch: true
           }
-        }
+        },
+        installments: true
       }
-    });
+    }) as Salary[];
 
     if (salaries.length === 0) {
       return NextResponse.json(
@@ -68,7 +71,7 @@ export async function POST(req: Request) {
           "Transaction Type": "N",
           "Beneficiary Code": index + 1,
           "Beneficiary Account Number": salary.user.bankAccountNo || "",
-          "Transaction Amount": salary.netSalary,
+          "Transaction Amount": calculateNetSalaryFromObject(salary),
           "Beneficiary Name": `${salary.user.numId} - ${salary.user.name}`,
           "Unnamed: 5": "",
           "Unnamed: 6": "",

@@ -19,6 +19,7 @@ import {
 import { CalendarDays, Clock, CalendarOff, CalendarCheck } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { calculateNetSalaryFromObject } from '@/lib/services/salary-calculator'
 
 interface SalaryListProps {
   month: number
@@ -410,7 +411,7 @@ export function SalaryList({ month, year }: SalaryListProps) {
                     {new Intl.NumberFormat('en-IN', {
                       style: 'currency',
                       currency: 'INR'
-                    }).format(salary.netSalary)}
+                    }).format(calculateNetSalaryFromObject(salary))}
                   </span>
                 </div>
               </div>
