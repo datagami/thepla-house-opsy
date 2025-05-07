@@ -140,11 +140,11 @@ export function SalaryList({ month, year }: SalaryListProps) {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      // Only select PENDING salaries
-      const pendingSalaryIds = filteredSalaries
-        .filter(salary => salary.status === 'PENDING')
+      // Select all PENDING and PROCESSING salaries
+      const selectableSalaryIds = filteredSalaries
+        .filter(salary => ['PENDING', 'PROCESSING'].includes(salary.status))
         .map(salary => salary.id)
-      setSelectedSalaries(pendingSalaryIds)
+      setSelectedSalaries(selectableSalaryIds)
     } else {
       setSelectedSalaries([])
     }
@@ -158,7 +158,46 @@ export function SalaryList({ month, year }: SalaryListProps) {
     }
   }
 
-  const handleBulkUpdateStatus = async () => {
+  const handleUpdateStatus = async (salaryId: string, newStatus: 'PAID' | 'FAILED') => {
+    try {
+      setIsProcessing(true)
+      const response = await fetch(`/api/salary/${salaryId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: newStatus
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        toast.error(data.error || 'Failed to update salary status')
+        return
+      }
+
+      // Update local state
+      setSalaries(prevSalaries => 
+        prevSalaries.map(salary => 
+          salary.id === salaryId 
+            ? { ...salary, status: newStatus }
+            : salary
+        )
+      )
+
+      toast.success(`Salary status updated to ${newStatus}`)
+      router.refresh()
+    } catch (error) {
+      console.error('Error updating salary status:', error)
+      toast.error('Failed to update salary status')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const handleBulkUpdateStatus = async (newStatus: 'PAID' | 'FAILED' | 'PROCESSING') => {
     try {
       setIsProcessing(true)
       const response = await fetch('/api/salary/bulk-update-status', {
@@ -168,7 +207,7 @@ export function SalaryList({ month, year }: SalaryListProps) {
         },
         body: JSON.stringify({
           salaryIds: selectedSalaries,
-          status: 'PROCESSING'
+          status: newStatus
         }),
       })
 
@@ -176,8 +215,6 @@ export function SalaryList({ month, year }: SalaryListProps) {
 
       if (!response.ok) {
         if (data.details) {
-          // Show detailed error for each invalid salary
-
           toast.error(`Salary ${data.detail.salaryId}: ${data.detail.error}`)
         } else {
           toast.error(data.error || 'Failed to update salaries')
@@ -185,7 +222,16 @@ export function SalaryList({ month, year }: SalaryListProps) {
         return
       }
 
-      toast.success(`Successfully processed ${data.processedIds.length} salaries`)
+      // Update local state
+      setSalaries(prevSalaries => 
+        prevSalaries.map(salary => 
+          selectedSalaries.includes(salary.id)
+            ? { ...salary, status: newStatus }
+            : salary
+        )
+      )
+
+      toast.success(`Successfully updated ${data.processedIds.length} salaries to ${newStatus}`)
       setSelectedSalaries([])
       router.refresh()
     } catch (error) {
@@ -216,6 +262,18 @@ export function SalaryList({ month, year }: SalaryListProps) {
         return 'bg-gray-50 text-gray-700 border-gray-200'
     }
   }
+
+  const getSelectedSalariesStatus = () => {
+    const selectedSalariesData = filteredSalaries.filter(salary => selectedSalaries.includes(salary.id));
+    const allProcessing = selectedSalariesData.every(salary => salary.status === 'PROCESSING');
+    const allPending = selectedSalariesData.every(salary => salary.status === 'PENDING');
+    
+    return {
+      allProcessing,
+      allPending,
+      mixed: !allProcessing && !allPending
+    };
+  };
 
   if (!month || !year) {
     return null
@@ -350,7 +408,7 @@ export function SalaryList({ month, year }: SalaryListProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Checkbox
-            checked={selectedSalaries.length === filteredSalaries.filter(s => s.status === 'PENDING').length}
+            checked={selectedSalaries.length === filteredSalaries.filter(s => ['PENDING', 'PROCESSING'].includes(s.status)).length}
             onCheckedChange={handleSelectAll}
           />
           <span className="text-sm text-muted-foreground">
@@ -358,12 +416,61 @@ export function SalaryList({ month, year }: SalaryListProps) {
           </span>
         </div>
         {selectedSalaries.length > 0 && (
-          <Button
-            onClick={handleBulkUpdateStatus}
-            disabled={isProcessing}
-          >
-            {isProcessing ? 'Processing...' : 'Move to Processing'}
-          </Button>
+          <div className="flex gap-2">
+            {(() => {
+              const { allProcessing, allPending, mixed } = getSelectedSalariesStatus();
+              
+              if (mixed) {
+                return (
+                  <Button
+                    variant="outline"
+                    disabled={true}
+                    className="text-muted-foreground"
+                  >
+                    Select salaries with same status
+                  </Button>
+                );
+              }
+
+              if (allProcessing) {
+                return (
+                  <>
+                    <Button
+                      onClick={() => handleBulkUpdateStatus('PAID')}
+                      disabled={isProcessing}
+                      variant="outline"
+                      className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800"
+                    >
+                      {isProcessing ? 'Processing...' : 'Mark as Paid'}
+                    </Button>
+                    <Button
+                      onClick={() => handleBulkUpdateStatus('FAILED')}
+                      disabled={isProcessing}
+                      variant="outline"
+                      className="bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800"
+                    >
+                      {isProcessing ? 'Processing...' : 'Mark as Failed'}
+                    </Button>
+                  </>
+                );
+              }
+
+              if (allPending) {
+                return (
+                  <Button
+                    onClick={() => handleBulkUpdateStatus('PROCESSING')}
+                    disabled={isProcessing}
+                    variant="outline"
+                    className="bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800"
+                  >
+                    {isProcessing ? 'Processing...' : 'Move to Processing'}
+                  </Button>
+                );
+              }
+
+              return null;
+            })()}
+          </div>
         )}
       </div>
 
@@ -373,7 +480,7 @@ export function SalaryList({ month, year }: SalaryListProps) {
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-2">
-                  {salary.status === 'PENDING' && (
+                  {['PENDING', 'PROCESSING'].includes(salary.status) && (
                     <Checkbox
                       checked={selectedSalaries.includes(salary.id)}
                       onCheckedChange={(checked) => handleSelectSalary(salary.id, checked as boolean)}
@@ -472,14 +579,36 @@ export function SalaryList({ month, year }: SalaryListProps) {
                 </div>
               )}
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex gap-2">
               <Button 
                 variant="outline" 
-                className="w-full"
+                className="flex-1"
                 onClick={() => handleViewDetails(salary.id)}
               >
                 View Details
               </Button>
+              {(salary.status) === 'PROCESSING' && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800"
+                    onClick={() => handleUpdateStatus(salary.id, 'PAID')}
+                    disabled={isProcessing}
+                  >
+                    Paid
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800"
+                    onClick={() => handleUpdateStatus(salary.id, 'FAILED')}
+                    disabled={isProcessing}
+                  >
+                    Failed
+                  </Button>
+                </>
+              )}
             </CardFooter>
           </Card>
         ))}
