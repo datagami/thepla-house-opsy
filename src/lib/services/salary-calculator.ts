@@ -55,7 +55,7 @@ export async function calculateSalary(userId: string, month: number, year: numbe
 
   // Calculate attendance-based salary
   const workingDays = endDate.getDate()
-  const perDaySalary = Math.ceil(employee.salary.valueOf() / workingDays);
+  const perDaySalary = Math.round((employee.salary.valueOf() / workingDays) * 100) / 100;
   
   // Regular days get 1x per day salary
   const presentDaysAmount = parseFloat((presentDays * perDaySalary).toFixed(2));
@@ -242,7 +242,7 @@ export async function createOrUpdateSalary({
 export function calculateNetSalaryFromObject(salary: Salary) {
   // Calculate present days salary
   const daysInMonth = new Date(salary.year, salary.month, 0).getDate();
-  const perDaySalary = Math.ceil(salary.baseSalary / daysInMonth);
+  const perDaySalary = Math.round((salary.baseSalary / daysInMonth) * 100) / 100;
   const presentDaysSalary = salary.presentDays * perDaySalary;
   
   // Calculate overtime bonus

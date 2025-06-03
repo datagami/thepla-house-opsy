@@ -55,7 +55,7 @@ export async function GET(
 
     // Calculate attendance stats
     const totalDaysInMonth = endDate.getDate()
-    const perDaySalary = Math.ceil(salary.baseSalary / totalDaysInMonth)
+    const perDaySalary = Math.round((salary.baseSalary / totalDaysInMonth *100)) /100;
     
     // Count different attendance types
     const regularDays = attendance.filter(a => a.isPresent && !a.isHalfDay && !a.overtime).length
