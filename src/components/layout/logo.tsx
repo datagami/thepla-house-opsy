@@ -5,7 +5,7 @@ export function Logo() {
   return (
     <Link href="/dashboard" className="flex items-center">
       <Image
-        src="/app_logo.png"
+        src="/theplahouse_logo.png"
         alt="OPSY Logo"
         width={120}
         height={32}
