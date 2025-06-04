@@ -47,7 +47,7 @@ const statusColors = {
 type SortField = 'numId' | 'name' | 'branch';
 type SortOrder = 'asc' | 'desc';
 
-export function UserTable({ users, branches, currentUserRole }: UserTableProps) {
+export function  UserTable({ users, branches, currentUserRole }: UserTableProps) {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -166,7 +166,7 @@ export function UserTable({ users, branches, currentUserRole }: UserTableProps) 
                   <ArrowUpDown className="h-4 w-4" />
                 </Button>
               </TableHead>
-              <TableHead>Email</TableHead>
+              <TableHead>Salary</TableHead>
               <TableHead>Position</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>
@@ -179,7 +179,6 @@ export function UserTable({ users, branches, currentUserRole }: UserTableProps) 
                   <ArrowUpDown className="h-4 w-4" />
                 </Button>
               </TableHead>
-              <TableHead>Joined</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -188,7 +187,7 @@ export function UserTable({ users, branches, currentUserRole }: UserTableProps) 
               <TableRow key={user.id}>
                 <TableCell>{user.numId || "-"}</TableCell>
                 <TableCell>{user.name}</TableCell>
-                <TableCell>{user.email}</TableCell>
+                <TableCell>{user.salary}</TableCell>
                 <TableCell>
                   <Badge variant="secondary" className={roleColors[user.role as keyof typeof roleColors]}>
                     {user.role} {user.department ? `(${user.department})` : ''}
@@ -200,7 +199,6 @@ export function UserTable({ users, branches, currentUserRole }: UserTableProps) 
                   </Badge>
                 </TableCell>
                 <TableCell>{user.branch?.name || "-"}</TableCell>
-                <TableCell>{user.doj ? formatDate(user.doj) : "-"}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end">
                     <UserActions 
