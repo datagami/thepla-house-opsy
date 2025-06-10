@@ -110,6 +110,7 @@ export async function calculateSalary(userId: string, month: number, year: numbe
   
   // Update net salary calculation to include leave salary
   const netSalary = totalSalaryWithLeaves + otherBonuses - deductions;
+  const roundedSalary = Math.round(netSalary);
 
   return {
     baseSalary,
@@ -127,7 +128,8 @@ export async function calculateSalary(userId: string, month: number, year: numbe
     presentDaysAmount,
     presentDays,
     overtimeDays,
-    halfDays
+    halfDays,
+    roundedSalary
   }
 }
 
@@ -265,5 +267,5 @@ export function calculateNetSalaryFromObject(salary: Salary) {
   const totalDeductions = totalAdvanceDeductions + salary.otherDeductions;
   
   // Calculate net salary
-  return baseSalaryEarned - totalDeductions;
+  return Math.round(baseSalaryEarned - totalDeductions);
 } 

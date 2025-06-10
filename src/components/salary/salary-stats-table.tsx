@@ -202,6 +202,11 @@ export function SalaryStatsTable({ salaryId }: SalaryStatsTableProps) {
                   <TableCell className="font-medium">Base Salary Earned - Total Deductions</TableCell>
                   <TableCell className="font-bold">{formatCurrency(stats.calculation.netSalary)}</TableCell>
                 </TableRow>
+                <TableRow className="bg-muted/50">
+                  <TableCell className="font-bold">Rounded Net Salary</TableCell>
+                  <TableCell className="font-medium">Base Salary Earned - Total Deductions</TableCell>
+                  <TableCell className="font-bold">{formatCurrency(stats.calculation.roundedNetSalary)}</TableCell>
+                </TableRow>
               </TableBody>
             </Table>
           </div>

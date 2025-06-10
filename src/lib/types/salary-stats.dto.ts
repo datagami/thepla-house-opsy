@@ -40,6 +40,7 @@ export interface SalaryStatsDTO {
     totalOtherDeductions: number;
     totalDeductions: number;
     netSalary: number;
+    roundedNetSalary: number;
   };
   deductions: Array<{
     id: string;
