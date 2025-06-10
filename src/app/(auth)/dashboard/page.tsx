@@ -340,7 +340,7 @@ export default async function DashboardPage() {
               </Card>
             </Link>
 
-            <Link href="/hr/attendance-verification" className="block">
+            <Link href="/hr/attendance-verification?status=REJECTED" className="block">
               <Card className="hover:bg-accent/5 transition-colors">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
