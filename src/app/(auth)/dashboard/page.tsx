@@ -119,11 +119,9 @@ export default async function DashboardPage() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Get pending attendance count for HR's branch
+    // Get pending attendance count for all employees
     const employees = await prisma.user.findMany({
       where: {
-        // @ts-expect-error - branchId is not in the User type
-        branchId: session.user.branchId,
         role: "EMPLOYEE",
         status: "ACTIVE",
       },
@@ -291,7 +289,7 @@ export default async function DashboardPage() {
         )}
         {role === "HR" && (
           <>
-            <Link href="/attendance" className="block">
+            <Link href="/hr/pending-attendance" className="block">
               <Card className="hover:bg-accent/5 transition-colors">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
