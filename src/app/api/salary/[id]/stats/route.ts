@@ -100,7 +100,8 @@ export async function GET(
     const approvedDeductionsCount = advanceInstallments.filter(i => i.status === 'APPROVED').length
     
     // Calculate net salary
-    const netSalary = baseSalaryEarned - totalDeductions
+    const netSalary = baseSalaryEarned - totalDeductions;
+    const roundedNetSalary = Math.round(netSalary);
     
     // Prepare the response
     const stats = {
@@ -142,7 +143,8 @@ export async function GET(
         totalAdvanceDeductions,
         totalOtherDeductions,
         approvedDeductionsCount,
-        netSalary
+        netSalary,
+        roundedNetSalary
       },
       deductions: advanceInstallments.map(i => ({
         id: i.id,
