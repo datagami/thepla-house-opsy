@@ -405,6 +405,16 @@ export function SalaryDetails({ salary, month, year, canEdit = false }: SalaryDe
           <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
+        <Button
+          variant="outline"
+          onClick={() => {
+            if (salary.year && salary.month) {
+              router.push(`/attendance/${salary.userId}?month=${salary.year.toString()}-${salary.month.toString().padStart(2, '0')}`)
+            }
+          }}
+        >
+          View Attendance
+        </Button>
       </div>
 
       {renderConfirmationDialog()}
