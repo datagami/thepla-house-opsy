@@ -35,6 +35,7 @@ interface SalaryDetailsProps {
 }
 
 export function SalaryDetails({ salary, month, year, canEdit = false }: SalaryDetailsProps) {
+  console.log(canEdit)
   const router = useRouter()
   const [isUpdating, setIsUpdating] = useState(false)
   const [, setAdvanceDeductions] = useState<Array<{
@@ -235,6 +236,7 @@ export function SalaryDetails({ salary, month, year, canEdit = false }: SalaryDe
                         <Button
                           variant="outline"
                           size="sm"
+                          disabled={!canEdit}
                           onClick={() => setEditingInstallment({
                             id: installment.id,
                             amountPaid: installment.amountPaid,
@@ -248,7 +250,7 @@ export function SalaryDetails({ salary, month, year, canEdit = false }: SalaryDe
                           variant="default"
                           size="sm"
                           onClick={() => handleInstallmentAction(installment.id, 'APPROVE')}
-                          disabled={isUpdating}
+                          disabled={isUpdating || !canEdit}
                         >
                           Approve
                         </Button>
@@ -256,7 +258,7 @@ export function SalaryDetails({ salary, month, year, canEdit = false }: SalaryDe
                           variant="destructive"
                           size="sm"
                           onClick={() => handleInstallmentAction(installment.id, 'REJECT')}
-                          disabled={isUpdating}
+                          disabled={isUpdating || !canEdit}
                         >
                           Reject
                         </Button>
@@ -339,6 +341,7 @@ export function SalaryDetails({ salary, month, year, canEdit = false }: SalaryDe
               <Button
                 variant="outline"
                 onClick={() => setEditingInstallment(null)}
+                disabled={!canEdit}
               >
                 Cancel
               </Button>
@@ -348,7 +351,8 @@ export function SalaryDetails({ salary, month, year, canEdit = false }: SalaryDe
                   isUpdating || 
                   !editingInstallment || 
                   editingInstallment.amountPaid <= 0 ||
-                  editingInstallment.amountPaid > editingInstallment.advanceRemainingAmount
+                  editingInstallment.amountPaid > editingInstallment.advanceRemainingAmount ||
+                  !canEdit
                 }
               >
                 {isUpdating ? 'Saving...' : 'Save Changes'}
@@ -428,7 +432,7 @@ export function SalaryDetails({ salary, month, year, canEdit = false }: SalaryDe
             {salary.status === 'PENDING' && (
               <Button
                 onClick={handleUpdateStatus}
-                disabled={isUpdating || salary.installments?.some(i => i.status === 'PENDING')}
+                disabled={isUpdating || salary.installments?.some(i => i.status === 'PENDING') || !canEdit}
               >
                 {isUpdating ? 'Updating...' : 'Move to Processing'}
                 {salary.installments?.some(i => i.status === 'PENDING') && 

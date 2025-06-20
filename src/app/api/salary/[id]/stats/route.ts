@@ -9,10 +9,6 @@ export async function GET(
   try {
     const session = await auth();
     const {id} = await params;
-    // @ts-expect-error - role is not in the User type
-    if (!session || !['HR', 'MANAGEMENT'].includes(session.user.role)) {
-      return new NextResponse('Unauthorized', { status: 401 })
-    }
 
     const salaryId = id
 
@@ -23,6 +19,19 @@ export async function GET(
         user: true
       }
     })
+
+
+    if (!session) {
+      // @ts-expect-error - role is not in the User type
+      if (salary?.userId !== session?.user?.id) {
+        return new NextResponse('Unauthorized', { status: 401 })
+      } else {
+        // @ts-expect-error - role is not in the User type
+        if (!['HR', 'MANAGEMENT'].includes(session.user.role)) {
+          return new NextResponse('Unauthorized', { status: 401 })
+        }
+      }
+    }
 
     if (!salary) {
       return new NextResponse('Salary record not found', { status: 404 })

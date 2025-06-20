@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { hasAccess } from "@/lib/access-control";
 import { prisma } from "@/lib/prisma";
-import {Salary} from "@/models/models";
+import PayslipTableClient from "./PayslipTableClient";
 
 interface Props {
   params: Promise<{
@@ -52,34 +52,12 @@ export default async function PayslipsPage({ params }: Props) {
         <h2 className="text-3xl font-bold tracking-tight">Payslips</h2>
       </div>
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead>
-            <tr>
-              <th className="px-4 py-2 text-left">Month</th>
-              <th className="px-4 py-2 text-left">Year</th>
-              <th className="px-4 py-2 text-left">Net Salary</th>
-              <th className="px-4 py-2 text-left">Status</th>
-              <th className="px-4 py-2 text-left">Created At</th>
-            </tr>
-          </thead>
-          <tbody>
-            {salaries.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="text-center py-4">No payslips found.</td>
-              </tr>
-            ) : (
-              salaries.map((salary) => (
-                <tr key={salary.id} className="border-b">
-                  <td className="px-4 py-2">{salary.month}</td>
-                  <td className="px-4 py-2">{salary.year}</td>
-                  <td className="px-4 py-2">₹{salary.netSalary.toLocaleString()}</td>
-                  <td className="px-4 py-2">{salary.status}</td>
-                  <td className="px-4 py-2">{new Date(salary.createdAt).toLocaleDateString()}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <PayslipTableClient
+          salaries={salaries.map(s => ({
+            ...s,
+            createdAt: s.createdAt instanceof Date ? s.createdAt.toISOString() : s.createdAt
+          }))}
+        />
       </div>
     </div>
   );
