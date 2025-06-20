@@ -35,6 +35,14 @@ export default async function EmployeeAttendancePage({
     redirect("/login");
   }
 
+  // If the user is not HR or MANAGEMENT, restrict them to only their own attendance page
+  if (role !== "HR" && role !== "MANAGEMENT") {
+    const loggedInUserId = session?.user?.id;
+    if (userId !== loggedInUserId) {
+      redirect("/dashboard");
+    }
+  }
+
   // Get the month from query params or use current month
   const selectedMonth = month
     ? new Date(month)
