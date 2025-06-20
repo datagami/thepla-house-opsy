@@ -24,6 +24,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 
 interface NavItem {
   title: string;
@@ -142,6 +143,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       icon: <LayoutDashboard className="h-5 w-5" />,
       feature: "dashboard.view" 
     },
+    {
+      title: "My Attendance",
+      href: "/attendance/<user_id>",
+      icon: <Clock className="h-5 w-5" />,
+      feature: "attendance.view"
+    },
     { 
       title: "Leave Requests", 
       href: "/leave-requests", 
@@ -153,7 +160,7 @@ const roleNavItems: Record<string, NavItem[]> = {
       href: "/leave-requests/new", 
       icon: <Plus className="h-5 w-5" />,
       feature: "leave.request" 
-    },
+    }
   ],
 };
 
@@ -166,6 +173,23 @@ export function SideNav({ userRole }: SideNavProps) {
   const navItems = roleNavItems[userRole] || [];
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const { data: session } = useSession();
+
+  // Replace <user_id> with actual user id for EMPLOYEE
+  let processedNavItems = navItems;
+  if (
+    userRole === "EMPLOYEE" &&
+    session &&
+    session.user &&
+    typeof session.user.id === "string"
+  ) {
+    const userId = session.user.id;
+    processedNavItems = navItems.map((item) =>
+      item.href.includes("<user_id>")
+        ? { ...item, href: item.href.replace("<user_id>", userId) }
+        : item
+    );
+  }
 
   // Handle window resize
   useEffect(() => {
@@ -185,7 +209,7 @@ export function SideNav({ userRole }: SideNavProps) {
 
   const NavLinks = () => (
     <nav className="space-y-2">
-      {navItems.map((item) => (
+      {processedNavItems.map((item) => (
         <Link
           key={item.href}
           href={item.href}
