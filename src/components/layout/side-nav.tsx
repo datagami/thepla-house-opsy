@@ -70,7 +70,13 @@ const roleNavItems: Record<string, NavItem[]> = {
       href: "/salary",
       icon: <DollarSign className="h-5 w-5" />,
       feature: "salary.edit"
-    }
+    },
+    {
+      title: "Payslips",
+      href: "/users/<user_id>/payslips",
+      icon: <FileText className="h-5 w-5" />,
+      feature: "salary.view"
+    },
   ],
   BRANCH_MANAGER: [
     { 
@@ -103,6 +109,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       icon: <Plus className="h-5 w-5" />,
       feature: "leave.request" 
     },
+    {
+      title: "Payslips",
+      href: "/users/<user_id>/payslips",
+      icon: <FileText className="h-5 w-5" />,
+      feature: "salary.view"
+    },
   ],
   MANAGEMENT: [
     { 
@@ -134,7 +146,13 @@ const roleNavItems: Record<string, NavItem[]> = {
       href: "/salary",
       icon: <DollarSign className="h-5 w-5" />,
       feature: "salary.edit"
-    }
+    },
+    {
+      title: "Payslips",
+      href: "/users/<user_id>/payslips",
+      icon: <FileText className="h-5 w-5" />,
+      feature: "salary.view"
+    },
   ],
   EMPLOYEE: [
     { 
@@ -160,7 +178,13 @@ const roleNavItems: Record<string, NavItem[]> = {
       href: "/leave-requests/new", 
       icon: <Plus className="h-5 w-5" />,
       feature: "leave.request" 
-    }
+    },
+    {
+      title: "Payslips",
+      href: "/users/<user_id>/payslips",
+      icon: <FileText className="h-5 w-5" />,
+      feature: "salary.view"
+    },
   ],
 };
 
@@ -175,10 +199,9 @@ export function SideNav({ userRole }: SideNavProps) {
   const [isMobile, setIsMobile] = useState(false);
   const { data: session } = useSession();
 
-  // Replace <user_id> with actual user id for EMPLOYEE
+  // Replace <user_id> with actual user id for all roles
   let processedNavItems = navItems;
   if (
-    userRole === "EMPLOYEE" &&
     session &&
     session.user &&
     typeof session.user.id === "string"
