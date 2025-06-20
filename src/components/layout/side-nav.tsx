@@ -143,12 +143,6 @@ const roleNavItems: Record<string, NavItem[]> = {
       feature: "dashboard.view" 
     },
     { 
-      title: "Attendance", 
-      href: "/attendance", 
-      icon: <Clock className="h-5 w-5" />,
-      feature: "attendance.view" 
-    },
-    { 
       title: "Leave Requests", 
       href: "/leave-requests", 
       icon: <CalendarCheck className="h-5 w-5" />,
