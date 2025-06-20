@@ -32,6 +32,7 @@ export async function POST(request: Request) {
       gender,
       panNo,
       aadharNo,
+      bankAccountNo,
       salary,
       references 
     } = body;
@@ -84,6 +85,7 @@ export async function POST(request: Request) {
         panNo,
         aadharNo,
         salary: parseFloat(salary),
+        bankAccountNo: bankAccountNo || null,
         references: {
           create: references.map((ref: { name: string; contactNo: string }) => ({
             name: ref.name,
