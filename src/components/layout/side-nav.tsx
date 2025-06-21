@@ -72,7 +72,7 @@ const roleNavItems: Record<string, NavItem[]> = {
       feature: "salary.edit"
     },
     {
-      title: "Payslips",
+      title: "My Payslips",
       href: "/users/<user_id>/payslips",
       icon: <FileText className="h-5 w-5" />,
       feature: "salary.view"
@@ -110,7 +110,7 @@ const roleNavItems: Record<string, NavItem[]> = {
       feature: "leave.request" 
     },
     {
-      title: "Payslips",
+      title: "My Payslips",
       href: "/users/<user_id>/payslips",
       icon: <FileText className="h-5 w-5" />,
       feature: "salary.view"
@@ -148,7 +148,7 @@ const roleNavItems: Record<string, NavItem[]> = {
       feature: "salary.edit"
     },
     {
-      title: "Payslips",
+      title: "My Payslips",
       href: "/users/<user_id>/payslips",
       icon: <FileText className="h-5 w-5" />,
       feature: "salary.view"
@@ -167,6 +167,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       icon: <Clock className="h-5 w-5" />,
       feature: "attendance.view"
     },
+    {
+      title: "My Payslips",
+      href: "/users/<user_id>/payslips",
+      icon: <FileText className="h-5 w-5" />,
+      feature: "salary.view"
+    },
     { 
       title: "Leave Requests", 
       href: "/leave-requests", 
@@ -178,12 +184,6 @@ const roleNavItems: Record<string, NavItem[]> = {
       href: "/leave-requests/new", 
       icon: <Plus className="h-5 w-5" />,
       feature: "leave.request" 
-    },
-    {
-      title: "Payslips",
-      href: "/users/<user_id>/payslips",
-      icon: <FileText className="h-5 w-5" />,
-      feature: "salary.view"
     },
   ],
 };

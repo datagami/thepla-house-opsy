@@ -92,12 +92,6 @@ export function SalaryActions({userId, month, year, salary}: SalaryActionsProps)
         </Button>
       ) : (
         <>
-          <Link href={`/salary/${salary.id}`}>
-            <Button variant="outline" size="sm">
-              <Receipt className="mr-2 h-4 w-4"/>
-              View Salary
-            </Button>
-          </Link>
           <Button
             variant="destructive"
             onClick={() => setDeleteDialogOpen(true)}
@@ -108,6 +102,12 @@ export function SalaryActions({userId, month, year, salary}: SalaryActionsProps)
           </Button>
         </>
       )}
+      {salary && <Link href={`/salary/${salary?.id}`}>
+          <Button variant="outline" size="sm">
+              <Receipt className="mr-2 h-4 w-4"/>
+              View Salary
+          </Button>
+      </Link>}
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
