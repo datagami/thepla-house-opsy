@@ -138,6 +138,12 @@ model User {
 
   approvedInstallments AdvancePaymentInstallment[] @relation("InstallmentApprovals")
 
+  // --- Notes Feature Relations ---
+  ownedNotes          Note[]                    @relation("NoteOwner")
+  sharedNotes         NoteShare[]               @relation("NoteShareUser")
+  noteComments        NoteComment[]             @relation("NoteCommentAuthor")
+  noteEditHistories   NoteEditHistory[]         @relation("NoteEditHistoryEditor")
+
   @@map("users1")
   @@index([branchId])
   @@index([managedBranchId])
@@ -312,4 +318,59 @@ model AdvancePaymentInstallment {
   @@index([advanceId])
   @@index([salaryId])
   @@index([approvedById])
+}
+
+// --- Notes Feature ---
+
+model Note {
+  id          String      @id @default(cuid())
+  title       String
+  content     String
+  ownerId     String
+  isArchived  Boolean     @default(false)
+  isDeleted   Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  owner       User        @relation("NoteOwner", fields: [ownerId], references: [id])
+  sharedWith  NoteShare[]
+  comments    NoteComment[]
+  editHistory NoteEditHistory[]
+}
+
+model NoteShare {
+  id      String   @id @default(cuid())
+  noteId  String
+  userId  String
+
+  // Relations
+  note    Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  user    User     @relation("NoteShareUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([noteId, userId])
+}
+
+model NoteComment {
+  id        String   @id @default(cuid())
+  noteId    String
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
+
+  // Relations
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  author    User     @relation("NoteCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model NoteEditHistory {
+  id        String   @id @default(cuid())
+  noteId    String
+  editorId  String
+  content   String
+  editedAt  DateTime @default(now())
+
+  // Relations
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  editor    User     @relation("NoteEditHistoryEditor", fields: [editorId], references: [id], onDelete: Cascade)
 }
