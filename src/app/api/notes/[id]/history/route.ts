@@ -2,15 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 
-export async function GET(req: NextRequest, contextPromise: Promise<{ params: { id: string } }>) {
-  const { params } = await contextPromise;
+export async function GET(req: NextRequest, {params}: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const userId = session.user.id;
   const note = await prisma.note.findUnique({
-    where: { id: params.id },
+    where: { id: id },
     include: { sharedWith: true },
   });
   if (!note || note.isDeleted) {

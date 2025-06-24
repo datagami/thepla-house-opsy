@@ -2,15 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 
-export async function GET(req: NextRequest, contextPromise: Promise<{ params: { id: string } }>) {
-  const { params } = await contextPromise;
+export async function GET(req: NextRequest, {params}: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const userId = session.user.id;
   const note = await prisma.note.findUnique({
-    where: { id: params.id },
+    where: { id: id },
     include: { sharedWith: true },
   });
   if (!note || note.isDeleted) {
@@ -22,14 +22,14 @@ export async function GET(req: NextRequest, contextPromise: Promise<{ params: { 
   return NextResponse.json(note);
 }
 
-export async function PUT(req: NextRequest, contextPromise: Promise<{ params: { id: string } }>) {
-  const { params } = await contextPromise;
+export async function PUT(req: NextRequest, {params}: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const userId = session.user.id;
-  const note = await prisma.note.findUnique({ where: { id: params.id } });
+  const note = await prisma.note.findUnique({ where: { id: id } });
   if (!note || note.isDeleted) {
     return NextResponse.json({ error: 'Note not found' }, { status: 404 });
   }
@@ -50,7 +50,7 @@ export async function PUT(req: NextRequest, contextPromise: Promise<{ params: { 
   });
   // Update note
   const updatedNote = await prisma.note.update({
-    where: { id: params.id },
+    where: { id: id },
     data: {
       title: title ?? note.title,
       content: content ?? note.content,
@@ -60,14 +60,14 @@ export async function PUT(req: NextRequest, contextPromise: Promise<{ params: { 
   return NextResponse.json(updatedNote);
 }
 
-export async function DELETE(req: NextRequest, contextPromise: Promise<{ params: { id: string } }>) {
-  const { params } = await contextPromise;
+export async function DELETE(req: NextRequest, {params}: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const userId = session.user.id;
-  const note = await prisma.note.findUnique({ where: { id: params.id } });
+  const note = await prisma.note.findUnique({ where: { id: id } });
   if (!note || note.isDeleted) {
     return NextResponse.json({ error: 'Note not found' }, { status: 404 });
   }
@@ -75,7 +75,7 @@ export async function DELETE(req: NextRequest, contextPromise: Promise<{ params:
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
   const deletedNote = await prisma.note.update({
-    where: { id: params.id },
+    where: { id: id },
     data: { isDeleted: true, updatedAt: new Date() },
   });
   return NextResponse.json(deletedNote);

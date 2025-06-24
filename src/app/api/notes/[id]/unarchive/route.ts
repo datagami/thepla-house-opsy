@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 
-export async function POST(req: NextRequest, contextPromise: Promise<{ params: { id: string } }>) {
-  const { params } = await contextPromise;
+export async function POST(req: NextRequest, {params}: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = await auth();
 
   if (!session?.user) {
@@ -11,7 +11,7 @@ export async function POST(req: NextRequest, contextPromise: Promise<{ params: {
   }
 
   const note = await prisma.note.findUnique({
-    where: { id: params.id },
+    where: { id: id },
     select: { id: true, ownerId: true, isArchived: true, isDeleted: true },
   });
 
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest, contextPromise: Promise<{ params: {
   }
 
   const updatedNote = await prisma.note.update({
-    where: { id: params.id },
+    where: { id: id },
     data: { isArchived: false, updatedAt: new Date() },
   });
 

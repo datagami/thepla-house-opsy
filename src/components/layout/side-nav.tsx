@@ -77,6 +77,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       icon: <FileText className="h-5 w-5" />,
       feature: "salary.view"
     },
+    {
+      title: "Notes",
+      href: "/notes",
+      icon: <FileText className="h-5 w-5" />,
+      feature: "notes.view"
+    },
   ],
   BRANCH_MANAGER: [
     { 
@@ -114,6 +120,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       href: "/users/<user_id>/payslips",
       icon: <FileText className="h-5 w-5" />,
       feature: "salary.view"
+    },
+    {
+      title: "Notes",
+      href: "/notes",
+      icon: <FileText className="h-5 w-5" />,
+      feature: "notes.view"
     },
   ],
   MANAGEMENT: [
@@ -153,6 +165,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       icon: <FileText className="h-5 w-5" />,
       feature: "salary.view"
     },
+    {
+      title: "Notes",
+      href: "/notes",
+      icon: <FileText className="h-5 w-5" />,
+      feature: "notes.view"
+    },
   ],
   EMPLOYEE: [
     { 
@@ -184,6 +202,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       href: "/leave-requests/new", 
       icon: <Plus className="h-5 w-5" />,
       feature: "leave.request" 
+    },
+    {
+      title: "Notes",
+      href: "/notes",
+      icon: <FileText className="h-5 w-5" />,
+      feature: "notes.view"
     },
   ],
 };
