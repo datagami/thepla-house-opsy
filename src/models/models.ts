@@ -217,3 +217,45 @@ export interface AdvancePaymentInstallment {
   approvedBy?: User | null;
 }
 
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  ownerId: string;
+  isArchived: boolean;
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  owner: User;
+  sharedWith: NoteShare[];
+  comments: NoteComment[];
+  editHistory: NoteEditHistory[];
+}
+
+export interface NoteShare {
+  id: string;
+  noteId: string;
+  userId: string;
+  note: Note;
+  user: User;
+}
+
+export interface NoteComment {
+  id: string;
+  noteId: string;
+  authorId: string;
+  content: string;
+  createdAt: Date;
+  note: Note;
+  author: User;
+}
+
+export interface NoteEditHistory {
+  id: string;
+  noteId: string;
+  editorId: string;
+  content: string;
+  editedAt: Date;
+  note: Note;
+  editor: User;
+}
