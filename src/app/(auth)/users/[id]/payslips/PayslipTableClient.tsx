@@ -20,13 +20,17 @@ export default function PayslipTableClient({ salaries }: PayslipTableClientProps
     router.push(`/salary/${salaryId}`);
   };
 
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
   return (
     <table className="min-w-full divide-y divide-gray-200">
       <thead>
         <tr>
           <th className="px-4 py-2 text-left">Month</th>
           <th className="px-4 py-2 text-left">Year</th>
-          <th className="px-4 py-2 text-left">Net Salary</th>
           <th className="px-4 py-2 text-left">Status</th>
           <th className="px-4 py-2 text-left">Created At</th>
         </tr>
@@ -43,9 +47,8 @@ export default function PayslipTableClient({ salaries }: PayslipTableClientProps
               className="border-b cursor-pointer hover:bg-gray-100"
               onClick={() => handleRowClick(salary.id)}
             >
-              <td className="px-4 py-2">{salary.month}</td>
+              <td className="px-4 py-2">{monthNames[salary.month - 1]}</td>
               <td className="px-4 py-2">{salary.year}</td>
-              <td className="px-4 py-2">₹{salary.netSalary.toLocaleString()}</td>
               <td className="px-4 py-2">{salary.status}</td>
               <td className="px-4 py-2">{new Date(salary.createdAt).toLocaleDateString()}</td>
             </tr>
