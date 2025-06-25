@@ -2,22 +2,40 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const userId = session.user.id;
+  const { searchParams } = new URL(req.url);
+  const filter = searchParams.get('filter') || 'all';
 
-  // List notes owned by or shared with the user, not deleted
-  const notes = await prisma.note.findMany({
-    where: {
+  let where;
+  if (filter === 'created_by_me' || filter === 'created') {
+    where = {
+      isDeleted: false,
+      ownerId: userId,
+    };
+  } else if (filter === 'shared') {
+    where = {
+      isDeleted: false,
+      ownerId: { not: userId },
+      sharedWith: { some: { userId } },
+    };
+  } else {
+    // all
+    where = {
       isDeleted: false,
       OR: [
         { ownerId: userId },
         { sharedWith: { some: { userId } } },
       ],
-    },
+    };
+  }
+
+  const notes = await prisma.note.findMany({
+    where,
     orderBy: { updatedAt: 'desc' },
   });
 

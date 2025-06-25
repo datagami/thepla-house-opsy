@@ -13,7 +13,6 @@ export default async function NoteDetailPage({ params }: Props) {
   let note: Note | null = null;
   try {
     note = await getNote(id);
-    console.log(note);
   } catch (error: any) {
     if (error.name === 'NoteNotFoundError' || error.name === 'NotAuthorizedError') {
       return notFound();

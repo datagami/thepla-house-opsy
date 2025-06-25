@@ -13,6 +13,11 @@ export default function NoteDetail({ note }: { note: Note }) {
   const [history, setHistory] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
+  const [comments, setComments] = useState<any[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentsError, setCommentsError] = useState<string | null>(null);
+  const [newComment, setNewComment] = useState("");
+  const [addingComment, setAddingComment] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
@@ -47,8 +52,43 @@ export default function NoteDetail({ note }: { note: Note }) {
     }
   }, [tab, note.id]);
 
+  useEffect(() => {
+    if (tab === 'comments') {
+      setCommentsLoading(true);
+      setCommentsError(null);
+      fetch(`/api/notes/${note.id}/comments`)
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to fetch comments');
+          return res.json();
+        })
+        .then(data => setComments(data))
+        .catch(err => setCommentsError(err.message))
+        .finally(() => setCommentsLoading(false));
+    }
+  }, [tab, note.id]);
+
+  const handleAddComment = async () => {
+    if (!newComment.trim()) return;
+    setAddingComment(true);
+    try {
+      const res = await fetch(`/api/notes/${note.id}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: newComment }),
+      });
+      if (!res.ok) throw new Error('Failed to add comment');
+      const comment = await res.json();
+      setComments([comment, ...comments]);
+      setNewComment("");
+    } catch (err: any) {
+      setCommentsError(err.message);
+    } finally {
+      setAddingComment(false);
+    }
+  };
+
   return (
-    <div className="max-w-2xl mx-auto p-4">
+    <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="mb-4">
         <input
           className="w-full text-2xl font-bold mb-2 bg-transparent border-b border-muted focus:outline-none"
@@ -80,7 +120,41 @@ export default function NoteDetail({ note }: { note: Note }) {
         </div>
         <div>
           {tab === 'comments' ? (
-            <div>Comments section (to be implemented)</div>
+            <div>
+              {commentsLoading ? (
+                <div>Loading comments...</div>
+              ) : commentsError ? (
+                <div className="text-red-500">{commentsError}</div>
+              ) : (
+                <>
+                  <div className="mb-2">
+                    <textarea
+                      className="w-full border rounded p-2 mb-2"
+                      rows={2}
+                      placeholder="Add a comment..."
+                      value={newComment}
+                      onChange={e => setNewComment(e.target.value)}
+                      disabled={addingComment}
+                    />
+                    <Button onClick={handleAddComment} disabled={addingComment || !newComment.trim()}>
+                      {addingComment ? 'Adding...' : 'Add Comment'}
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {comments.length === 0 ? (
+                      <div className="text-muted-foreground">No comments yet.</div>
+                    ) : (
+                      comments.map((comment, idx) => (
+                        <div key={comment.id || idx} className="border rounded p-2">
+                          <div className="text-sm text-muted-foreground mb-1">{comment.author?.name || 'User'} • {comment.createdAt ? new Date(comment.createdAt).toLocaleString() : ''}</div>
+                          <div>{comment.content}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           ) : (
             <div>
               {historyLoading ? (
