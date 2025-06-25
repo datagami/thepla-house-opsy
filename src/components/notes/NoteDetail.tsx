@@ -1,11 +1,24 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import {Note} from "@/models/models";
+import {Note, User} from "@/models/models";
 import RichTextEditor, { RichTextEditorHandle } from "../rich-text-editor/rich-text-editor";
 import {Textarea} from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {auth} from "@/auth";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 
-export default function NoteDetail({ note }: { note: Note }) {
+export default function NoteDetail({ note, user }: { note: Note, user: User }) {
+
   const [title, setTitle] = useState(note.title);
   const editorRef = useRef<RichTextEditorHandle>(null);
   const [tab, setTab] = useState<'comments' | 'history'>('comments');
@@ -19,6 +32,14 @@ export default function NoteDetail({ note }: { note: Note }) {
   const [commentsError, setCommentsError] = useState<string | null>(null);
   const [newComment, setNewComment] = useState("");
   const [addingComment, setAddingComment] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>(note.sharedWith?.map((s: any) => s.userId) || []);
+  const [sharing, setSharing] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [userSearch, setUserSearch] = useState("");
+  console.log(user, note)
+  const isOwner = note.ownerId === user.id;
 
   const handleSave = async () => {
     setSaving(true);
@@ -68,6 +89,15 @@ export default function NoteDetail({ note }: { note: Note }) {
     }
   }, [tab, note.id]);
 
+  useEffect(() => {
+    if (shareModalOpen) {
+      fetch('/api/users')
+        .then(res => res.json())
+        .then(data => setAllUsers(data))
+        .catch(() => setAllUsers([]));
+    }
+  }, [shareModalOpen]);
+
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
     setAddingComment(true);
@@ -88,6 +118,36 @@ export default function NoteDetail({ note }: { note: Note }) {
     }
   };
 
+  const handleShareSubmit = async () => {
+    setSharing(true);
+    setShareError(null);
+    try {
+      const current = note.sharedWith?.map((s: any) => s.userId) || [];
+      const toShare = selectedUserIds.filter(id => !current.includes(id));
+      const toUnshare = current.filter(id => !selectedUserIds.includes(id));
+      if (toShare.length) {
+        await fetch(`/api/notes/${note.id}/share`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userIds: toShare }),
+        });
+      }
+      if (toUnshare.length) {
+        await fetch(`/api/notes/${note.id}/unshare`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userIds: toUnshare }),
+        });
+      }
+      setShareModalOpen(false);
+      window.location.reload();
+    } catch (err: any) {
+      setShareError('Failed to update sharing');
+    } finally {
+      setSharing(false);
+    }
+  };
+
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="mb-4">
@@ -102,6 +162,67 @@ export default function NoteDetail({ note }: { note: Note }) {
             {saving ? 'Saving...' : 'Save'}
           </Button>
           {message && <span className="text-xs text-muted-foreground ml-2">{message}</span>}
+          {isOwner && (
+            <Dialog open={shareModalOpen} onOpenChange={setShareModalOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="mb-2">Share</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Share Note</DialogTitle>
+                </DialogHeader>
+                <Input
+                  type="text"
+                  className="mb-2"
+                  placeholder="Search users by name..."
+                  value={userSearch}
+                  onChange={e => setUserSearch(e.target.value)}
+                />
+                <div className="max-h-64 overflow-y-auto space-y-2 my-4">
+                  {allUsers.length === 0 ? (
+                    <div>Loading users...</div>
+                  ) : (
+                    allUsers
+                      .filter(user =>
+                        user.name?.toLowerCase().includes(userSearch.toLowerCase())
+                      )
+                      .map(user => (
+                        <label key={user.id} className="flex items-center gap-2">
+                          <Checkbox
+                            checked={selectedUserIds.includes(user.id)}
+                            onCheckedChange={checked => {
+                              if (checked) {
+                                setSelectedUserIds(ids => [...ids, user.id]);
+                              } else {
+                                setSelectedUserIds(ids => ids.filter(id => id !== user.id));
+                              }
+                            }}
+                            disabled={user.id === note.ownerId}
+                          />
+                          <span>
+                          {user.name}
+                            {" ("}
+                            {user.branch?.name || "No Branch"}
+                            {user.title ? `, ${user.title}` : ""}
+                            {user.id === note.ownerId ? ", Owner" : ""}
+                            {")"}
+                        </span>
+                        </label>
+                      ))
+                  )}
+                </div>
+                {shareError && <div className="text-red-500 mb-2">{shareError}</div>}
+                <DialogFooter>
+                  <Button onClick={handleShareSubmit} disabled={sharing}>
+                    {sharing ? 'Saving...' : 'Save'}
+                  </Button>
+                  <DialogClose asChild>
+                    <Button variant="outline">Cancel</Button>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
       <div className="border-t pt-4 mt-6">
