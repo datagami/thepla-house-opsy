@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import Quill from "quill";
 
 // Define the ref type for the RichTextEditor component
 export type RichTextEditorHandle = {
@@ -13,15 +14,13 @@ type RichTextEditorProps = {
 
 const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(({ initialContent }, ref) => {
   const editorRef = useRef<HTMLDivElement>(null);
-  const quillRef = useRef<any>(null);
-  const isContentLoaded = useRef(false);
-
-  console.log(initialContent);
+  const quillRef = useRef<Quill>(null);
 
   useEffect(() => {
     let isMounted = true;
     const loadQuill = async () => {
       const Quill = (await import('quill')).default;
+      // @ts-expect-error expected error
       await import('quill/dist/quill.snow.css');
       if (editorRef.current && isMounted && !quillRef.current) {
         const quillInstance = new Quill(editorRef.current, {
@@ -40,7 +39,6 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(({ 
         quillRef.current = quillInstance;
         
         if (initialContent) {
-          console.log('inside if');
           quillInstance.clipboard.dangerouslyPasteHTML(initialContent);
         }
       }
@@ -52,14 +50,6 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(({ 
       isMounted = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (quillRef.current && initialContent && !isContentLoaded.current) {
-      const delta = quillRef.current.clipboard.convert(initialContent);
-      quillRef.current.setContents(delta, 'silent');
-      isContentLoaded.current = true;
-    }
-  }, [initialContent]);
 
   // Expose the getContent function to the parent component
   useImperativeHandle(ref, () => ({

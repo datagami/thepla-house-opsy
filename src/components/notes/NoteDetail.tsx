@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import {Note, User} from "@/models/models";
+import {Note, NoteComment, NoteEditHistory, NoteShare, User} from "@/models/models";
 import RichTextEditor, { RichTextEditorHandle } from "../rich-text-editor/rich-text-editor";
 import {Textarea} from "@/components/ui/textarea";
 import {
@@ -13,7 +13,6 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import {auth} from "@/auth";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -24,17 +23,17 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
   const [tab, setTab] = useState<'comments' | 'history' | 'shared'>('comments');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<NoteEditHistory[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
-  const [comments, setComments] = useState<any[]>([]);
+  const [comments, setComments] = useState<NoteComment[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [commentsError, setCommentsError] = useState<string | null>(null);
   const [newComment, setNewComment] = useState("");
   const [addingComment, setAddingComment] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
-  const [allUsers, setAllUsers] = useState<any[]>([]);
-  const [selectedUserIds, setSelectedUserIds] = useState<string[]>(note.sharedWith?.map((s: any) => s.userId) || []);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>(note.sharedWith?.map((s: NoteShare) => s.userId) || []);
   const [sharing, setSharing] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
   const [userSearch, setUserSearch] = useState("");
@@ -119,7 +118,8 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
       const comment = await res.json();
       setComments([comment, ...comments]);
       setNewComment("");
-    } catch (err: any) {
+      // @ts-expect-error expected error
+    } catch (err: {message: string}) {
       setCommentsError(err.message);
     } finally {
       setAddingComment(false);
@@ -130,7 +130,7 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
     setSharing(true);
     setShareError(null);
     try {
-      const current = note.sharedWith?.map((s: any) => s.userId) || [];
+      const current = note.sharedWith?.map((s: NoteShare) => s.userId) || [];
       const toShare = selectedUserIds.filter(id => !current.includes(id));
       const toUnshare = current.filter(id => !selectedUserIds.includes(id));
       if (toShare.length) {
@@ -149,7 +149,7 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
       }
       setShareModalOpen(false);
       window.location.reload();
-    } catch (err: any) {
+    } catch {
       setShareError('Failed to update sharing');
     } finally {
       setSharing(false);

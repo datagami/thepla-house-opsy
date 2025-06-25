@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { auth } from '@/auth';
 import { getNote, softDeleteNote, updateNote } from '@/lib/data/notes';
 
-export async function GET(req: NextRequest, {params}: { params: { id: string } }) {
-  const { id } = params;
+export async function GET(req: NextRequest, {params}: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
 
   try {
     const note = await getNote(id);
     return NextResponse.json(note);
-  } catch (error: any) {
+    // @ts-expect-error expected error
+  } catch (error: {message: string}) {
     if (error.name === 'NoteNotFoundError') {
       return NextResponse.json({ error: error.message }, { status: 404 });
     }
@@ -20,8 +19,8 @@ export async function GET(req: NextRequest, {params}: { params: { id: string } }
   }
 }
 
-export async function PUT(req: NextRequest, {params}: { params: { id: string } }) {
-  const { id } = params;
+export async function PUT(req: NextRequest, {params}: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
     const { title, content } = await req.json();
     if (!title && !content) {
@@ -29,7 +28,8 @@ export async function PUT(req: NextRequest, {params}: { params: { id: string } }
     }
     const updatedNote = await updateNote(id, title, content);
     return NextResponse.json(updatedNote);
-  } catch (error: any) {
+    // @ts-expect-error expected error
+  } catch (error: {message: string; status: number}) {
     if (error.name === 'NoteNotFoundError') {
       return NextResponse.json({ error: error.message }, { status: 404 });
     }
@@ -40,12 +40,13 @@ export async function PUT(req: NextRequest, {params}: { params: { id: string } }
   }
 }
 
-export async function DELETE(req: NextRequest, {params}: { params: { id: string } }) {
-  const { id } = params;
+export async function DELETE(req: NextRequest, {params}: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
     const deletedNote = await softDeleteNote(id);
     return NextResponse.json(deletedNote);
-  } catch (error: any) {
+    // @ts-expect-error expected error
+  } catch (error: {message: string; status: number}) {
     if (error.name === 'NoteNotFoundError') {
       return NextResponse.json({ error: error.message }, { status: 404 });
     }

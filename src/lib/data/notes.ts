@@ -62,7 +62,7 @@ export async function updateNote(id: string, title: string, content: string) {
   await prisma.noteEditHistory.create({
     data: {
       noteId: note.id,
-      editorId: userId,
+      editorId: userId as string,
       content: note.content,
     },
   });
