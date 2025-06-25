@@ -15,8 +15,7 @@ function parseDate(dateValue: string | number): Date {
     return resultDate;
   }
 
-  console.log('parse date');
-  
+
   // If it's a string in DD/MM/YYYY format
   const [day, month, year] = dateValue.split('/').map(num => parseInt(num, 10));
   return new Date(year, month - 1, day);
@@ -69,8 +68,6 @@ export async function POST(request: Request) {
             contactNo: userData['Reference 2 Contact']
           });
         }
-
-        console.log(userData.numId);
 
         // Try to find existing user by id or numId
         const existingUser = await tx.user.findFirst({

@@ -38,7 +38,6 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
   const [sharing, setSharing] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
   const [userSearch, setUserSearch] = useState("");
-  console.log(user, note)
   const isOwner = note.ownerId === user.id;
 
   const handleSave = async () => {

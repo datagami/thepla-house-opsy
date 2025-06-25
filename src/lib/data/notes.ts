@@ -54,9 +54,6 @@ export async function updateNote(id: string, title: string, content: string) {
   if (!note || note.isDeleted) {
     throw new NoteNotFoundError();
   }
-
-  console.log(note);
-
   if (note.ownerId !== userId && !note.sharedWith.some(s => s.userId === userId)) {
     throw new NotAuthorizedError();
   }

@@ -35,7 +35,6 @@ interface SalaryDetailsProps {
 }
 
 export function SalaryDetails({ salary, month, year, canEdit = false }: SalaryDetailsProps) {
-  console.log(canEdit)
   const router = useRouter()
   const [isUpdating, setIsUpdating] = useState(false)
   const [, setAdvanceDeductions] = useState<Array<{

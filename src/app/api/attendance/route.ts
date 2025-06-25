@@ -89,7 +89,6 @@ export async function POST(req: Request) {
       ? "APPROVED" 
       : "PENDING_VERIFICATION";
 
-    console.log(user);
     // Create attendance with the user's current branch
     const attendance = await prisma.attendance.create({
       data: {
