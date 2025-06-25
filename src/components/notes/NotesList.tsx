@@ -15,6 +15,7 @@ interface Note {
   title: string;
   content: string;
   ownerId: string;
+  owner: { id: string; name?: string | null };
   isArchived: boolean;
   isDeleted: boolean;
   createdAt: string;
@@ -80,12 +81,29 @@ export default function NotesList() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {notes.map((note) => (
             <Link key={note.id} href={`/notes/${note.id}`} className="block">
-              <div className="bg-card rounded shadow p-4 hover:shadow-lg transition border border-muted h-full flex flex-col justify-between">
-                <div>
-                  <div className="font-bold text-lg mb-1 truncate">{note.title}</div>
-                  <div className="text-xs text-muted-foreground mb-2">Last updated: {new Date(note.updatedAt).toLocaleString()}</div>
+              <div className="bg-white rounded-xl shadow hover:shadow-xl transition border border-gray-200 h-full flex flex-col justify-between min-h-[180px] p-4 relative group">
+                <div className="flex-1 flex flex-col">
+                  <div className="font-semibold text-lg mb-1 truncate" title={note.title}>{note.title}</div>
+                  <div className="text-sm text-gray-700 mb-2 line-clamp-3 prose prose-sm max-w-full overflow-hidden" title={note.content.replace(/\n/g, ' ')}>
+                    {note.content.match(/<[^>]+>/) ? (
+                      <div
+                        className="prose prose-sm max-w-full overflow-hidden"
+                        style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                        dangerouslySetInnerHTML={{ __html: note.content.length > 500 ? note.content.slice(0, 500) + '…' : note.content }}
+                      />
+                    ) : (
+                      note.content.length > 120 ? note.content.slice(0, 120) + '…' : note.content
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+                  <span>By {note.owner?.name || 'Unknown'}</span>
+                  <span>Created: {new Date(note.createdAt).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-center justify-between mt-1 text-xs text-gray-400">
+                  <span>Updated: {new Date(note.updatedAt).toLocaleDateString()}</span>
                   {note.isArchived && (
-                    <span className="text-xs text-yellow-600">Archived</span>
+                    <span className="text-yellow-600">Archived</span>
                   )}
                 </div>
               </div>

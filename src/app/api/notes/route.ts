@@ -37,6 +37,11 @@ export async function GET(req: NextRequest) {
   const notes = await prisma.note.findMany({
     where,
     orderBy: { updatedAt: 'desc' },
+    include: {
+      owner: {
+        select: { id: true, name: true }
+      }
+    }
   });
 
   return NextResponse.json(notes);

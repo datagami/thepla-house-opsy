@@ -46,13 +46,18 @@ export async function updateNote(id: string, title: string, content: string) {
   }
   const userId = session.user.id;
 
-  const note = await prisma.note.findUnique({ where: { id: id } });
+  const note = await prisma.note.findUnique({ 
+    where: { id: id },
+    include: { sharedWith: true }
+  });
 
   if (!note || note.isDeleted) {
     throw new NoteNotFoundError();
   }
 
-  if (note.ownerId !== userId) {
+  console.log(note);
+
+  if (note.ownerId !== userId && !note.sharedWith.some(s => s.userId === userId)) {
     throw new NotAuthorizedError();
   }
 
