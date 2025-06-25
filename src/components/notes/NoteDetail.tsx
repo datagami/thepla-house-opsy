@@ -179,7 +179,8 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
       router.push('/(auth)/notes');
       // Option 2: show a message (uncomment if you want to stay on page)
       // setMessage('Note deleted');
-    } catch (err: any) {
+      // @ts-expect-error expected error
+    } catch (err: {message: string}) {
       setDeleteError(err.message || 'Failed to delete note');
     } finally {
       setDeleting(false);
@@ -196,7 +197,8 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
       if (!res.ok) throw new Error('Failed to archive note');
       setArchiveMessage('Note archived!');
       // Optionally, you can redirect or update UI
-    } catch (err: any) {
+      // @ts-expect-error expected error
+    } catch (err: {message: string}) {
       setArchiveError(err.message || 'Failed to archive note');
     } finally {
       setArchiving(false);
@@ -213,7 +215,8 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
       if (!res.ok) throw new Error('Failed to unarchive note');
       setUnarchiveMessage('Note unarchived!');
       // Optionally, you can redirect or update UI
-    } catch (err: any) {
+      // @ts-expect-error expected error
+    } catch (err: {message: string}) {
       setUnarchiveError(err.message || 'Failed to unarchive note');
     } finally {
       setUnarchiving(false);
