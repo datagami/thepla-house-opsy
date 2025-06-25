@@ -3,12 +3,8 @@ import {useRef, useState} from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
+import type { RichTextEditorHandle } from '@/components/rich-text-editor/rich-text-editor';
 const RichTextEditor = dynamic(() => import("@/components/rich-text-editor/rich-text-editor"), { ssr: false });
-
-// Define the ref type for the RichTextEditor component
-export type RichTextEditorHandle = {
-  getContent: () => string;
-};
 
 export default function NewNotePage() {
   const [title, setTitle] = useState("");

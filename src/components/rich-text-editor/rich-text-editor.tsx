@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useImperativeHandle, forwardRef, useState } from 'react';
+import React, { useRef, useImperativeHandle, forwardRef } from 'react';
 import JoditEditor from './JoditEditorNoSSR';
 
 // Define the ref type for the RichTextEditor component
@@ -14,12 +14,14 @@ type RichTextEditorProps = {
 };
 
 const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(({ initialContent = '' }, ref) => {
-  const editorRef = useRef<any>(null); // Use 'any' to avoid type error
+  const editorRef = useRef(null);
 
   useImperativeHandle(ref, () => ({
+    // @ts-expect-error expected error
     getContent: () => editorRef.current?.value || '',
     setContent: (newContent: string) => {
       if (editorRef.current) {
+        // @ts-expect-error expected error
         editorRef.current.value = newContent;
       }
     }
