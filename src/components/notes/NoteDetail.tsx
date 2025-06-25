@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {Note} from "@/models/models";
 import RichTextEditor, { RichTextEditorHandle } from "../rich-text-editor/rich-text-editor";
+import {Textarea} from "@/components/ui/textarea";
 
 export default function NoteDetail({ note }: { note: Note }) {
   const [title, setTitle] = useState(note.title);
@@ -128,7 +129,7 @@ export default function NoteDetail({ note }: { note: Note }) {
               ) : (
                 <>
                   <div className="mb-2">
-                    <textarea
+                    <Textarea
                       className="w-full border rounded p-2 mb-2"
                       rows={2}
                       placeholder="Add a comment..."
