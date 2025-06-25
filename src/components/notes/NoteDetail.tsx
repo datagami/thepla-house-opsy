@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {Note} from "@/models/models";
 import RichTextEditor, { RichTextEditorHandle } from "../rich-text-editor/rich-text-editor";
@@ -10,6 +10,9 @@ export default function NoteDetail({ note }: { note: Note }) {
   const [tab, setTab] = useState<'comments' | 'history'>('comments');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [history, setHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
 
   const handleSave = async () => {
     setSaving(true);
@@ -28,6 +31,21 @@ export default function NoteDetail({ note }: { note: Note }) {
     }
     setSaving(false);
   };
+
+  useEffect(() => {
+    if (tab === 'history') {
+      setHistoryLoading(true);
+      setHistoryError(null);
+      fetch(`/api/notes/${note.id}/history`)
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to fetch history');
+          return res.json();
+        })
+        .then(data => setHistory(data))
+        .catch(err => setHistoryError(err.message))
+        .finally(() => setHistoryLoading(false));
+    }
+  }, [tab, note.id]);
 
   return (
     <div className="max-w-2xl mx-auto p-4">
@@ -64,7 +82,31 @@ export default function NoteDetail({ note }: { note: Note }) {
           {tab === 'comments' ? (
             <div>Comments section (to be implemented)</div>
           ) : (
-            <div>Edit history section (to be implemented)</div>
+            <div>
+              {historyLoading ? (
+                <div>Loading history...</div>
+              ) : historyError ? (
+                <div className="text-red-500">{historyError}</div>
+              ) : (
+                <div className="space-y-4">
+                
+                  {/* Edit entries */}
+                  {[...history].sort((a, b) => new Date(b.editedAt).getTime() - new Date(a.editedAt).getTime()).map((h, idx) => (
+                    <div key={h.id || idx} className="border rounded p-2 bg-muted/30">
+                      <div className="flex flex-col gap-2">
+                        <div>
+                          <div className="text-xs text-muted-foreground mb-1">
+                            Edited by: {h.editor?.name || 'User'} • {h.editedAt ? new Date(h.editedAt).toLocaleString() : ''}
+                          </div>
+                          <div className="prose prose-sm min-h-[2rem]"
+                                dangerouslySetInnerHTML={{ __html: h.content || "<span class='italic text-muted-foreground'>(empty)</span>" }}/>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
