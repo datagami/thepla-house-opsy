@@ -21,7 +21,7 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
 
   const [title, setTitle] = useState(note.title);
   const editorRef = useRef<RichTextEditorHandle>(null);
-  const [tab, setTab] = useState<'comments' | 'history'>('comments');
+  const [tab, setTab] = useState<'comments' | 'history' | 'shared'>('comments');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [history, setHistory] = useState<any[]>([]);
@@ -97,6 +97,15 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
         .catch(() => setAllUsers([]));
     }
   }, [shareModalOpen]);
+
+  useEffect(() => {
+    if (tab === 'shared' && allUsers.length === 0) {
+      fetch('/api/users')
+        .then(res => res.json())
+        .then(data => setAllUsers(data))
+        .catch(() => setAllUsers([]));
+    }
+  }, [tab, allUsers.length]);
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
@@ -203,7 +212,7 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
                           {user.name}
                             {" ("}
                             {user.branch?.name || "No Branch"}
-                            {user.title ? `, ${user.title}` : ""}
+                            {user.role ? `, ${user.role}` : ""}
                             {user.id === note.ownerId ? ", Owner" : ""}
                             {")"}
                         </span>
@@ -238,6 +247,12 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
             onClick={() => setTab('history')}
           >
             History
+          </button>
+          <button
+            className={tab === 'shared' ? 'font-bold underline' : ''}
+            onClick={() => setTab('shared')}
+          >
+            Shared With
           </button>
         </div>
         <div>
@@ -277,7 +292,7 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
                 </>
               )}
             </div>
-          ) : (
+          ) : tab === 'history' ? (
             <div>
               {historyLoading ? (
                 <div>Loading history...</div>
@@ -302,6 +317,31 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
                   ))}
                 </div>
               )}
+            </div>
+          ) : (
+            <div>
+              <div className="space-y-2">
+                {note.sharedWith && note.sharedWith.length > 0 ? (
+                  allUsers.length === 0 ? (
+                    <div>Loading users...</div>
+                  ) : (
+                    allUsers
+                      .filter(u => note.sharedWith.some(s => s.userId === u.id))
+                      .map((user, idx) => (
+                        <div key={user.id || idx} className="border rounded p-2 flex items-center gap-2">
+                          <span className="font-medium">{user.name || 'User'}</span>
+                          <span className="text-xs text-muted-foreground">
+                            ({user.branch?.name || 'No Branch'}
+                            {user.role ? `, ${user.role}` : ''}
+                            {user.id === note.ownerId ? ', Owner' : ''})
+                          </span>
+                        </div>
+                      ))
+                  )
+                ) : (
+                  <div className="text-muted-foreground">Not shared with anyone.</div>
+                )}
+              </div>
             </div>
           )}
         </div>
