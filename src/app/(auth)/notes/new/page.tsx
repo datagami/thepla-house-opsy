@@ -1,9 +1,8 @@
 "use client";
-import {useRef, useState} from "react";
+import {useState} from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
-import type { RichTextEditorHandle } from '@/components/rich-text-editor/rich-text-editor';
 const RichTextEditor = dynamic(() => import("@/components/rich-text-editor/rich-text-editor"), { ssr: false });
 
 export default function NewNotePage() {
@@ -12,22 +11,12 @@ export default function NewNotePage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const editorRef = useRef<RichTextEditorHandle>(null); // Ref for RichTextEditor
-  const [editorContent, setEditorContent] = useState<string>(''); // State to store the editor content
-
-  const handleGetContent = () => {
-    if (editorRef.current) {
-      const content = editorRef.current.getContent(); // Get the editor content
-      setEditorContent(content); // Update the state with the content
-    }
-  };
+  const [content, setContent] = useState<string>(''); // State to store the editor content
 
   const handleSubmit = async (e: React.FormEvent) => {
-    handleGetContent();
     e.preventDefault();
     setSaving(true);
     setError(null);
-    const content = editorContent || '';
     const res = await fetch("/api/notes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -55,7 +44,7 @@ export default function NewNotePage() {
           required
         />
         <div>
-          <RichTextEditor ref={editorRef} />
+          <RichTextEditor value={content} onChange={setContent} />
         </div>
         <div className="flex gap-2 items-center">
           <Button type="submit" disabled={saving}>

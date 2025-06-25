@@ -1,8 +1,7 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {Note, NoteComment, NoteEditHistory, NoteShare, User} from "@/models/models";
-import RichTextEditor, { RichTextEditorHandle } from "../rich-text-editor/rich-text-editor";
 import {Textarea} from "@/components/ui/textarea";
 import {
   Dialog,
@@ -15,11 +14,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import RichTextEditor from "@/components/rich-text-editor/rich-text-editor";
 
 export default function NoteDetail({ note, user }: { note: Note, user: User }) {
 
   const [title, setTitle] = useState(note.title);
-  const editorRef = useRef<RichTextEditorHandle>(null);
   const [tab, setTab] = useState<'comments' | 'history' | 'shared'>('comments');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -38,11 +37,11 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
   const [shareError, setShareError] = useState<string | null>(null);
   const [userSearch, setUserSearch] = useState("");
   const isOwner = note.ownerId === user.id;
+  const [content, setContent] = useState(note.content);
 
   const handleSave = async () => {
     setSaving(true);
     setMessage(null);
-    const content = editorRef.current?.getContent();
 
     const res = await fetch(`/api/notes/${note.id}`, {
       method: 'PUT',
@@ -164,7 +163,7 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
           value={title}
           onChange={e => setTitle(e.target.value)}
         />
-        <RichTextEditor ref={editorRef} initialContent={note.content} />
+        <RichTextEditor value={content} onChange={setContent} />
         <div className="flex gap-2 mt-2">
           <Button onClick={handleSave} disabled={saving}>
             {saving ? 'Saving...' : 'Save'}

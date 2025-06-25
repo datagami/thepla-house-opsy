@@ -1,60 +1,48 @@
 'use client';
 
-import React, { useRef, useImperativeHandle, forwardRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import JoditEditor from './JoditEditorNoSSR';
 
-// Define the ref type for the RichTextEditor component
-export type RichTextEditorHandle = {
-  getContent: () => string;
-  setContent: (content: string) => void;
+export type RichTextEditorProps = {
+  value: string;
+  onChange: (value: string) => void;
+  config?: object;
+  className?: string;
 };
 
-type RichTextEditorProps = {
-  initialContent?: string;
-};
-
-const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(({ initialContent = '' }, ref) => {
+const RichTextEditor = ({ value, onChange, config, className }: RichTextEditorProps) => {
   const editorRef = useRef(null);
-
-  useImperativeHandle(ref, () => ({
-    // @ts-expect-error expected error
-    getContent: () => editorRef.current?.value || '',
-    setContent: (newContent: string) => {
-      if (editorRef.current) {
-        // @ts-expect-error expected error
-        editorRef.current.value = newContent;
-      }
-    }
-  }));
+  const memoizedConfig = useMemo(() => config || {
+    readonly: false,
+    height: 300,
+    toolbarSticky: false,
+    toolbarAdaptive: false,
+    showCharsCounter: false,
+    showWordsCounter: false,
+    showXPathInStatusbar: false,
+    askBeforePasteHTML: false,
+    askBeforePasteFromWord: false,
+    buttons: [
+      'bold', 'italic', 'underline', 'strikethrough', '|',
+      'ul', 'ol', '|',
+      'outdent', 'indent', '|',
+      'font', 'fontsize', 'brush', 'paragraph', '|',
+      'image', 'table', 'link', '|',
+      'align', 'undo', 'redo', '|',
+      'hr', 'eraser', 'copyformat', '|',
+      'fullsize'
+    ]
+  }, [config]);
 
   return (
     <JoditEditor
       ref={editorRef}
-      value={initialContent} // Only set initial value
-      config={{
-        readonly: false,
-        height: 300,
-        toolbarSticky: false,
-        toolbarAdaptive: false,
-        showCharsCounter: false,
-        showWordsCounter: false,
-        showXPathInStatusbar: false,
-        askBeforePasteHTML: false,
-        askBeforePasteFromWord: false,
-        buttons: [
-          'bold', 'italic', 'underline', 'strikethrough', '|',
-          'ul', 'ol', '|',
-          'outdent', 'indent', '|',
-          'font', 'fontsize', 'brush', 'paragraph', '|',
-          'image', 'table', 'link', '|',
-          'align', 'undo', 'redo', '|',
-          'hr', 'eraser', 'copyformat', '|',
-          'fullsize'
-        ]
-      }}
+      value={value}
+      config={memoizedConfig}
+      onChange={onChange}
+      className={className}
     />
   );
-});
+};
 
-RichTextEditor.displayName = 'RichTextEditor';
 export default RichTextEditor;
