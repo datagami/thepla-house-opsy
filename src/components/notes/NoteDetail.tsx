@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import RichTextEditor from "@/components/rich-text-editor/rich-text-editor";
+import { useRouter } from "next/navigation";
 
 export default function NoteDetail({ note, user }: { note: Note, user: User }) {
 
@@ -38,6 +39,16 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
   const [userSearch, setUserSearch] = useState("");
   const isOwner = note.ownerId === user.id;
   const [content, setContent] = useState(note.content);
+  const router = useRouter();
+  const [deleting, setDeleting] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [archiveMessage, setArchiveMessage] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
+  const [unarchiving, setUnarchiving] = useState(false);
+  const [unarchiveError, setUnarchiveError] = useState<string | null>(null);
+  const [unarchiveMessage, setUnarchiveMessage] = useState<string | null>(null);
 
   const handleSave = async () => {
     setSaving(true);
@@ -155,6 +166,60 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
     }
   };
 
+  const handleDelete = async () => {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/notes/${note.id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('Failed to delete note');
+      setDeleteDialogOpen(false);
+      // Option 1: redirect to notes list
+      router.push('/(auth)/notes');
+      // Option 2: show a message (uncomment if you want to stay on page)
+      // setMessage('Note deleted');
+    } catch (err: any) {
+      setDeleteError(err.message || 'Failed to delete note');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleArchive = async () => {
+    setArchiving(true);
+    setArchiveError(null);
+    try {
+      const res = await fetch(`/api/notes/${note.id}/archive`, {
+        method: 'POST',
+      });
+      if (!res.ok) throw new Error('Failed to archive note');
+      setArchiveMessage('Note archived!');
+      // Optionally, you can redirect or update UI
+    } catch (err: any) {
+      setArchiveError(err.message || 'Failed to archive note');
+    } finally {
+      setArchiving(false);
+    }
+  };
+
+  const handleUnarchive = async () => {
+    setUnarchiving(true);
+    setUnarchiveError(null);
+    try {
+      const res = await fetch(`/api/notes/${note.id}/unarchive`, {
+        method: 'POST',
+      });
+      if (!res.ok) throw new Error('Failed to unarchive note');
+      setUnarchiveMessage('Note unarchived!');
+      // Optionally, you can redirect or update UI
+    } catch (err: any) {
+      setUnarchiveError(err.message || 'Failed to unarchive note');
+    } finally {
+      setUnarchiving(false);
+    }
+  };
+
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="mb-4">
@@ -168,7 +233,28 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
           <Button onClick={handleSave} disabled={saving}>
             {saving ? 'Saving...' : 'Save'}
           </Button>
+          {isOwner && (
+            <>
+              <Button variant="outline" onClick={() => setDeleteDialogOpen(true)} disabled={deleting}>
+                {deleting ? 'Deleting...' : 'Delete'}
+              </Button>
+              {note.isArchived ? (
+                <Button variant="outline" onClick={handleUnarchive} disabled={unarchiving}>
+                  {unarchiving ? 'Unarchiving...' : 'Unarchive'}
+                </Button>
+              ) : (
+                <Button variant="outline" onClick={handleArchive} disabled={archiving}>
+                  {archiving ? 'Archiving...' : 'Archive'}
+                </Button>
+              )}
+            </>
+          )}
           {message && <span className="text-xs text-muted-foreground ml-2">{message}</span>}
+          {archiveMessage && <span className="text-xs text-green-600 ml-2">{archiveMessage}</span>}
+          {archiveError && <span className="text-xs text-red-500 ml-2">{archiveError}</span>}
+          {deleteError && <span className="text-xs text-red-500 ml-2">{deleteError}</span>}
+          {unarchiveMessage && <span className="text-xs text-green-600 ml-2">{unarchiveMessage}</span>}
+          {unarchiveError && <span className="text-xs text-red-500 ml-2">{unarchiveError}</span>}
           {isOwner && (
             <Dialog open={shareModalOpen} onOpenChange={setShareModalOpen}>
               <DialogTrigger asChild>
@@ -230,6 +316,24 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
               </DialogContent>
             </Dialog>
           )}
+          {/* Delete confirmation dialog */}
+          <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete Note</DialogTitle>
+              </DialogHeader>
+              <div>Are you sure you want to delete this note? This action cannot be undone.</div>
+              {deleteError && <div className="text-red-500 mt-2">{deleteError}</div>}
+              <DialogFooter>
+                <Button onClick={handleDelete} disabled={deleting} variant="destructive">
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </Button>
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
       <div className="border-t pt-4 mt-6">

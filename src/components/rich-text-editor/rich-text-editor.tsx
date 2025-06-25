@@ -14,7 +14,7 @@ const RichTextEditor = ({ value, onChange, config, className }: RichTextEditorPr
   const editorRef = useRef(null);
   const memoizedConfig = useMemo(() => config || {
     readonly: false,
-    height: 300,
+    height: 570,
     toolbarSticky: false,
     toolbarAdaptive: false,
     showCharsCounter: false,
