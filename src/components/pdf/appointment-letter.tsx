@@ -321,7 +321,9 @@ export async function generateAppointmentLetter(
     'VI. You habitually neglect your duties;',
     'VII. You are guilty of conduct which brings or is likely to bring you or the Company or any associated company into disrepute;',
     'VIII. On any other grounds on which the Company would be entitled to terminate your employment forthwith under applicable law.',
-    'IX. For avoidance of any ambiguities, the Company reserves the right to terminate your employment on the basis of the above-mentioned points and shall be unconstrained to such other rights and remedies as may be available to the Company under agreement or as per Law.'
+    'IX. For avoidance of any ambiguities, the Company reserves the right to terminate your employment on the basis of the above-mentioned points and shall be unconstrained to such other rights and remedies as may be available to the Company under agreement or as per Law.',
+    'The company also reserves the right to order you not to attend work and/or not to undertake some or all of your duties of employment during any period. During such time, the company shall continue to pay your salary and any contractual benefits while you remain employed, except in cases of suspension without pay as described under the ‘Terminations’ section of this Agreement.',
+    'In the event of termination, the date specified in the official termination communication shall be considered your last working day, and salary will be processed accordingly up to and including that date.'
   ];
 
   await addListItems(terminationReasons);
@@ -441,7 +443,8 @@ export async function generateAppointmentLetter(
     'D. Salary:',
     '- All new joiners must work for 30 days to receive salary. If any joiner leaves before 30 days, he/she is not eligible to receive salary.',
     '- Salary payments will not be made in cash.',
-    '- Bank account should be in your name and not that of relatives or friends.',
+    '- The Bank account should be in your name and not that of relatives or friends.',
+    '- An employee who works for 15 days or more in a month will be eligible for 1 paid leave. If an employee works for 25 days or more, they will be eligible for 2 paid leaves for that month. You will be eligible for 4 half days in the month.',
     '',
     'E. Month Off Reporting:',
     '- Employees must report their monthly off before 8 PM the previous day. Failure to inform will result in absence not being considered, and salary may be deducted.',
@@ -472,6 +475,7 @@ export async function generateAppointmentLetter(
     '',
     'N. Uniform Requirements:',
     '- Employees must wear the provided uniform, including safety shoes, caps, and aprons.',
+    '- First pair will be given by the organization, if the uniform is torn, lost, second pair will be chargeable.',
     '',
     'O. No Phone During Orders:',
     '- Personal mobile phones are not allowed to be used during order processing.',
