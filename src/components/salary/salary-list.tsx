@@ -1,14 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import {Branch, Salary} from "@/models/models"
-import { Button } from '@/components/ui/button'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { Checkbox } from "@/components/ui/checkbox"
-import { toast } from "sonner"
+import {useEffect, useState} from 'react'
+import {Branch, Salary, User} from "@/models/models"
+import {Button} from '@/components/ui/button'
+import {useRouter, useSearchParams} from 'next/navigation'
+import {Checkbox} from "@/components/ui/checkbox"
+import {toast} from "sonner"
 
-import { SearchIcon } from 'lucide-react'
-import { Input } from "@/components/ui/input"
+import {SearchIcon} from 'lucide-react'
+import {Input} from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -16,17 +16,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { CalendarDays, Clock, CalendarOff, CalendarCheck } from 'lucide-react'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { calculateNetSalaryFromObject } from '@/lib/services/salary-calculator'
+import {CalendarDays, Clock, CalendarOff, CalendarCheck} from 'lucide-react'
+import {Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter} from "@/components/ui/card"
+import {Badge} from "@/components/ui/badge"
+import {calculateNetSalaryFromObject} from '@/lib/services/salary-calculator'
 
 interface SalaryListProps {
   month: number
   year: number
 }
 
-export function SalaryList({ month, year }: SalaryListProps) {
+export function SalaryList({month, year}: SalaryListProps) {
   const [salaries, setSalaries] = useState<Salary[]>([])
   const [loading, setLoading] = useState(false)
   const [branches, setBranches] = useState([])
@@ -43,6 +43,8 @@ export function SalaryList({ month, year }: SalaryListProps) {
     branch: 'all',
     role: 'all'
   })
+  // Add state for users without salary
+  const [usersWithoutSalary, setUsersWithoutSalary] = useState<User[]>([]);
 
   // Get current year and month from URL
   const currentYear = searchParams.get('year')
@@ -55,6 +57,16 @@ export function SalaryList({ month, year }: SalaryListProps) {
       fetchRoles()
     }
   }, [month, year])
+
+  // Fetch users without salary for selected month/year if filter is selected
+  useEffect(() => {
+    if (selectedFilters.status === 'no-salary' && month && year) {
+      fetchUsersWithoutSalary();
+    } else {
+      setUsersWithoutSalary([]); // Clear when not in 'no-salary' mode
+    }
+    // eslint-disable-next-line
+  }, [selectedFilters.status, month, year]);
 
   const fetchSalaries = async () => {
     try {
@@ -100,35 +112,53 @@ export function SalaryList({ month, year }: SalaryListProps) {
     }
   }
 
+  const fetchUsersWithoutSalary = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/users/without-salary?month=${month}&year=${year}`);
+      if (response.ok) {
+        const data = await response.json();
+        setUsersWithoutSalary(data);
+      } else {
+        setUsersWithoutSalary([]);
+      }
+    } catch (error) {
+      console.error('Error fetching users without salary:', error);
+      setUsersWithoutSalary([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getFilteredSalaries = () => {
     return salaries.filter(salary => {
       // Search filter
-      const matchesSearch = !selectedFilters.search || 
+      const matchesSearch = !selectedFilters.search ||
         salary.user.name?.toLowerCase().includes(selectedFilters.search.toLowerCase()) ||
         salary.user.email?.toLowerCase().includes(selectedFilters.search.toLowerCase()) ||
         salary.user.numId?.toString().includes(selectedFilters.search)
 
       // Branch filter
-      const matchesBranch = selectedFilters.branch === 'all' || 
+      const matchesBranch = selectedFilters.branch === 'all' ||
         salary.user.branchId === selectedFilters.branch
 
       // Role filter
-      const matchesRole = selectedFilters.role === 'all' || 
+      const matchesRole = selectedFilters.role === 'all' ||
         salary.user.role === selectedFilters.role
 
       // Deductions filter
-      const matchesDeductions = 
+      const matchesDeductions =
         selectedFilters.deductions === 'all' ? true :
-        selectedFilters.deductions === 'with-deductions' ? salary.installments.length > 0 :
-        selectedFilters.deductions === 'without-deductions' ? salary.installments.length === 0 :
-        true
+          selectedFilters.deductions === 'with-deductions' ? salary.installments.length > 0 :
+            selectedFilters.deductions === 'without-deductions' ? salary.installments.length === 0 :
+              true
 
       // Status filter
       const matchesStatus = selectedFilters.status === 'all' ? true :
         salary.status === selectedFilters.status
 
-      return matchesSearch && matchesBranch && matchesRole && 
-             matchesDeductions && matchesStatus
+      return matchesSearch && matchesBranch && matchesRole &&
+        matchesDeductions && matchesStatus
     })
   }
 
@@ -179,10 +209,10 @@ export function SalaryList({ month, year }: SalaryListProps) {
       }
 
       // Update local state
-      setSalaries(prevSalaries => 
-        prevSalaries.map(salary => 
-          salary.id === salaryId 
-            ? { ...salary, status: newStatus }
+      setSalaries(prevSalaries =>
+        prevSalaries.map(salary =>
+          salary.id === salaryId
+            ? {...salary, status: newStatus}
             : salary
         )
       )
@@ -223,10 +253,10 @@ export function SalaryList({ month, year }: SalaryListProps) {
       }
 
       // Update local state
-      setSalaries(prevSalaries => 
-        prevSalaries.map(salary => 
+      setSalaries(prevSalaries =>
+        prevSalaries.map(salary =>
           selectedSalaries.includes(salary.id)
-            ? { ...salary, status: newStatus }
+            ? {...salary, status: newStatus}
             : salary
         )
       )
@@ -246,7 +276,7 @@ export function SalaryList({ month, year }: SalaryListProps) {
     const params = new URLSearchParams()
     if (currentYear) params.set('year', currentYear)
     if (currentMonth) params.set('month', currentMonth)
-    
+
     router.push(`/salary/${salaryId}?${params.toString()}`)
   }
 
@@ -267,7 +297,7 @@ export function SalaryList({ month, year }: SalaryListProps) {
     const selectedSalariesData = filteredSalaries.filter(salary => selectedSalaries.includes(salary.id));
     const allProcessing = selectedSalariesData.every(salary => salary.status === 'PROCESSING');
     const allPending = selectedSalariesData.every(salary => salary.status === 'PENDING');
-    
+
     return {
       allProcessing,
       allPending,
@@ -289,7 +319,7 @@ export function SalaryList({ month, year }: SalaryListProps) {
         <div className="flex-1 min-w-[200px]">
           <label className="text-sm font-medium mb-2 block">Search</label>
           <div className="relative">
-            <SearchIcon className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <SearchIcon className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground"/>
             <Input
               placeholder="Search by name, email, or employee ID"
               value={selectedFilters.search}
@@ -303,7 +333,7 @@ export function SalaryList({ month, year }: SalaryListProps) {
         </div>
         <div className="w-[200px]">
           <label className="text-sm font-medium mb-2 block">Branch</label>
-          <Select 
+          <Select
             value={selectedFilters.branch}
             onValueChange={(value) => setSelectedFilters(prev => ({
               ...prev,
@@ -311,7 +341,7 @@ export function SalaryList({ month, year }: SalaryListProps) {
             }))}
           >
             <SelectTrigger>
-              <SelectValue placeholder="All Branches" />
+              <SelectValue placeholder="All Branches"/>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Branches</SelectItem>
@@ -325,7 +355,7 @@ export function SalaryList({ month, year }: SalaryListProps) {
         </div>
         <div className="w-[200px]">
           <label className="text-sm font-medium mb-2 block">Role</label>
-          <Select 
+          <Select
             value={selectedFilters.role}
             onValueChange={(value) => setSelectedFilters(prev => ({
               ...prev,
@@ -333,7 +363,7 @@ export function SalaryList({ month, year }: SalaryListProps) {
             }))}
           >
             <SelectTrigger>
-              <SelectValue placeholder="All Roles" />
+              <SelectValue placeholder="All Roles"/>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Roles</SelectItem>
@@ -347,7 +377,7 @@ export function SalaryList({ month, year }: SalaryListProps) {
         </div>
         <div className="w-[200px]">
           <label className="text-sm font-medium mb-2 block">Deductions</label>
-          <Select 
+          <Select
             value={selectedFilters.deductions}
             onValueChange={(value) => setSelectedFilters(prev => ({
               ...prev,
@@ -355,7 +385,7 @@ export function SalaryList({ month, year }: SalaryListProps) {
             }))}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Filter by Deductions" />
+              <SelectValue placeholder="Filter by Deductions"/>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Salaries</SelectItem>
@@ -366,7 +396,7 @@ export function SalaryList({ month, year }: SalaryListProps) {
         </div>
         <div className="w-[200px]">
           <label className="text-sm font-medium mb-2 block">Status</label>
-          <Select 
+          <Select
             value={selectedFilters.status}
             onValueChange={(value) => setSelectedFilters(prev => ({
               ...prev,
@@ -374,7 +404,7 @@ export function SalaryList({ month, year }: SalaryListProps) {
             }))}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Filter by Status" />
+              <SelectValue placeholder="Filter by Status"/>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
@@ -382,13 +412,14 @@ export function SalaryList({ month, year }: SalaryListProps) {
               <SelectItem value="PROCESSING">Processing</SelectItem>
               <SelectItem value="PAID">Paid</SelectItem>
               <SelectItem value="FAILED">Failed</SelectItem>
+              <SelectItem value="no-salary">No Salary Generated</SelectItem> {/* New filter */}
             </SelectContent>
           </Select>
         </div>
-        {(selectedFilters.deductions !== 'all' || 
-          selectedFilters.status !== 'all' || 
-          selectedFilters.search || 
-          selectedFilters.branch || 
+        {(selectedFilters.deductions !== 'all' ||
+          selectedFilters.status !== 'all' ||
+          selectedFilters.search ||
+          selectedFilters.branch ||
           selectedFilters.role) && (
           <Button
             variant="outline"
@@ -418,8 +449,8 @@ export function SalaryList({ month, year }: SalaryListProps) {
         {selectedSalaries.length > 0 && (
           <div className="flex gap-2">
             {(() => {
-              const { allProcessing, allPending, mixed } = getSelectedSalariesStatus();
-              
+              const {allProcessing, allPending, mixed} = getSelectedSalariesStatus();
+
               if (mixed) {
                 return (
                   <Button
@@ -474,145 +505,169 @@ export function SalaryList({ month, year }: SalaryListProps) {
         )}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredSalaries.map((salary) => (
-          <Card key={salary.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-2">
-                  {['PENDING', 'PROCESSING'].includes(salary.status) && (
-                    <Checkbox
-                      checked={selectedSalaries.includes(salary.id)}
-                      onCheckedChange={(checked) => handleSelectSalary(salary.id, checked as boolean)}
-                    />
-                  )}
-                  <div>
-                    <CardTitle>{salary.user.name}</CardTitle>
-                    <CardDescription>
-                      {new Date(salary.year, salary.month - 1).toLocaleString('default', { 
-                        month: 'long', 
-                        year: 'numeric' 
-                      })}
-                    </CardDescription>
-                  </div>
-                </div>
-                <Badge className={getStatusColor(salary.status)}>
-                  {salary.status}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Base Salary</span>
-                  <span className="font-semibold">
-                    {new Intl.NumberFormat('en-IN', {
-                      style: 'currency',
-                      currency: 'INR'
-                    }).format(salary.baseSalary)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center pt-1 border-t">
-                  <span className="text-sm font-medium">Net Salary</span>
-                  <span className="font-semibold text-green-600">
-                    {new Intl.NumberFormat('en-IN', {
-                      style: 'currency',
-                      currency: 'INR'
-                    }).format(calculateNetSalaryFromObject(salary))}
-                  </span>
-                </div>
-              </div>
+      {selectedFilters.status === 'no-salary' ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {usersWithoutSalary.length > 0 ? usersWithoutSalary.map((user) => (
+            <Card key={user.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-3">
+                <CardTitle>{user.name}</CardTitle>
+                <CardDescription>{user.email}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-2">
+                  <span><b>Role:</b> {user.role}</span>
+                  <span><b>Branch:</b> {user.branch?.name || 'N/A'}</span>
+                  <span className="text-destructive font-medium">Salary not generated for this month</span>
 
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-green-50 rounded-lg">
-                    <CalendarCheck className="h-4 w-4 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Present</p>
-                    <p className="text-sm font-medium">{formatDays(salary.presentDays)} days</p>
-                  </div>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-orange-50 rounded-lg">
-                    <CalendarDays className="h-4 w-4 text-orange-600" />
+              </CardContent>
+            </Card>
+          )) : (
+            <div className="text-center py-4 w-full col-span-3">All active users have salary generated for this
+              month</div>
+          )}
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filteredSalaries.map((salary) => (
+            <Card key={salary.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center space-x-2">
+                    {['PENDING', 'PROCESSING'].includes(salary.status) && (
+                      <Checkbox
+                        checked={selectedSalaries.includes(salary.id)}
+                        onCheckedChange={(checked) => handleSelectSalary(salary.id, checked as boolean)}
+                      />
+                    )}
+                    <div>
+                      <CardTitle>{salary.user.name}</CardTitle>
+                      <CardDescription>
+                        {new Date(salary.year, salary.month - 1).toLocaleString('default', {
+                          month: 'long',
+                          year: 'numeric'
+                        })}
+                      </CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Half Days</p>
-                    <p className="text-sm font-medium">{salary.halfDays} days</p>
-                  </div>
+                  <Badge className={getStatusColor(salary.status)}>
+                    {salary.status}
+                  </Badge>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <Clock className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Overtime</p>
-                    <p className="text-sm font-medium">{salary.overtimeDays} days</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-purple-50 rounded-lg">
-                    <CalendarOff className="h-4 w-4 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Leaves</p>
-                    <p className="text-sm font-medium">{salary.leavesEarned} days</p>
-                  </div>
-                </div>
-              </div>
-
-              {salary.advanceDeduction > 0 && (
-                <div className="pt-2">
-                  <p className="text-sm text-muted-foreground flex items-center justify-between">
-                    <span>Advance Deduction</span>
-                    <span className="text-destructive font-medium">
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Base Salary</span>
+                    <span className="font-semibold">
                       {new Intl.NumberFormat('en-IN', {
                         style: 'currency',
                         currency: 'INR'
-                      }).format(salary.advanceDeduction)}
+                      }).format(salary.baseSalary)}
                     </span>
-                  </p>
+                  </div>
+                  <div className="flex justify-between items-center pt-1 border-t">
+                    <span className="text-sm font-medium">Net Salary</span>
+                    <span className="font-semibold text-green-600">
+                      {new Intl.NumberFormat('en-IN', {
+                        style: 'currency',
+                        currency: 'INR'
+                      }).format(calculateNetSalaryFromObject(salary))}
+                    </span>
+                  </div>
                 </div>
-              )}
-            </CardContent>
-            <CardFooter className="flex gap-2">
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={() => handleViewDetails(salary.id)}
-              >
-                View Details
-              </Button>
-              {(salary.status) === 'PROCESSING' && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800"
-                    onClick={() => handleUpdateStatus(salary.id, 'PAID')}
-                    disabled={isProcessing}
-                  >
-                    Paid
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800"
-                    onClick={() => handleUpdateStatus(salary.id, 'FAILED')}
-                    disabled={isProcessing}
-                  >
-                    Failed
-                  </Button>
-                </>
-              )}
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-green-50 rounded-lg">
+                      <CalendarCheck className="h-4 w-4 text-green-600"/>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Present</p>
+                      <p className="text-sm font-medium">{formatDays(salary.presentDays)} days</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-orange-50 rounded-lg">
+                      <CalendarDays className="h-4 w-4 text-orange-600"/>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Half Days</p>
+                      <p className="text-sm font-medium">{salary.halfDays} days</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-blue-50 rounded-lg">
+                      <Clock className="h-4 w-4 text-blue-600"/>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Overtime</p>
+                      <p className="text-sm font-medium">{salary.overtimeDays} days</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-purple-50 rounded-lg">
+                      <CalendarOff className="h-4 w-4 text-purple-600"/>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Leaves</p>
+                      <p className="text-sm font-medium">{salary.leavesEarned} days</p>
+                    </div>
+                  </div>
+                </div>
+
+                {salary.advanceDeduction > 0 && (
+                  <div className="pt-2">
+                    <p className="text-sm text-muted-foreground flex items-center justify-between">
+                      <span>Advance Deduction</span>
+                      <span className="text-destructive font-medium">
+                        {new Intl.NumberFormat('en-IN', {
+                          style: 'currency',
+                          currency: 'INR'
+                        }).format(salary.advanceDeduction)}
+                      </span>
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+              <CardFooter className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => handleViewDetails(salary.id)}
+                >
+                  View Details
+                </Button>
+                {(salary.status) === 'PROCESSING' && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800"
+                      onClick={() => handleUpdateStatus(salary.id, 'PAID')}
+                      disabled={isProcessing}
+                    >
+                      Paid
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800"
+                      onClick={() => handleUpdateStatus(salary.id, 'FAILED')}
+                      disabled={isProcessing}
+                    >
+                      Failed
+                    </Button>
+                  </>
+                )}
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {filteredSalaries.length === 0 && (
         <div className="text-center py-4">
