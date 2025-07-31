@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
-import { Salary } from "@/models/models";
 
 interface DownloadReportButtonProps {
   year?: number;
