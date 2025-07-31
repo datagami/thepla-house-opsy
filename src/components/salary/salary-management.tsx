@@ -20,6 +20,7 @@ import { SalaryList } from './salary-list'
 import {toast} from "sonner";
 import { useRouter } from 'next/navigation'
 import { DownloadENETButton } from './download-enet-button'
+import { DownloadReportButton } from './download-report-button'
 
 interface SalaryManagementProps {
   initialYear?: number
@@ -159,6 +160,10 @@ export function SalaryManagement({ initialYear, initialMonth }: SalaryManagement
               </Button>
 
               <DownloadENETButton 
+                year={selectedYear}
+                month={selectedMonth}
+              />
+              <DownloadReportButton 
                 year={selectedYear}
                 month={selectedMonth}
               />
