@@ -5,7 +5,8 @@ import {prisma} from "@/lib/prisma";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Clock, CalendarCheck, Users, AlertCircle, UserCheck, AlertTriangle, FileClock} from "lucide-react";
 import Link from "next/link";
-import {Attendance} from "@/models/models";
+import {Attendance, User} from "@/models/models";
+import { PendingSignaturesWidget } from "@/components/dashboard/pending-signatures-widget";
 
 export const metadata: Metadata = {
   title: "Dashboard - HRMS",
@@ -44,6 +45,26 @@ export default async function DashboardPage() {
   // @ts-expect-error - role is not in the User type
   const role = session.user.role
   const canManageSelfAttendance = ["HR", "MANAGEMENT", "SELF_ATTENDANCE"].includes(role);
+
+  // Get pending joining form signatures for HR and Management
+  let pendingSignatures: User[] = [];
+  if (["HR", "MANAGEMENT"].includes(role)) {
+    pendingSignatures = await prisma.user.findMany({
+      where: {
+        joiningFormSignedAt: null,
+        status: "ACTIVE",
+      },
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        department: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    }) as User[];
+  }
 
   if (role === "BRANCH_MANAGER") {
     const today = new Date();
@@ -358,6 +379,14 @@ export default async function DashboardPage() {
             </Link>
           </>
         )}
+      </div>
+      
+      {/* Pending Signatures Widget */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <PendingSignaturesWidget 
+          pendingUsers={pendingSignatures}
+          currentUserRole={role}
+        />
       </div>
     </div>
   );

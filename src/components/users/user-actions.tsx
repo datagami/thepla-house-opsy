@@ -228,6 +228,14 @@ export function UserActions({ user, currentUserRole, branches, onUpdate }: UserA
             <Printer className="mr-2 h-4 w-4" />
             Print Joining Form
           </DropdownMenuItem>
+          {!user.joiningFormSignedAt && (
+            <DropdownMenuItem
+              onClick={() => window.open(`/users/${user.id}/joining-form-signature`, '_blank')}
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              Sign Joining Form
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
 
           {/* Status Management */}

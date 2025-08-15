@@ -7,6 +7,7 @@ import { hasAccess } from "@/lib/access-control";
 import {Branch, User} from "@/models/models";
 import { AdvancePaymentForm } from "@/components/users/advance-payment-form";
 import { AdvancePaymentsList } from "@/components/users/advance-payments-list";
+import { SignatureStatus } from "@/components/users/signature-status";
 
 export const metadata: Metadata = {
   title: "User Profile - HRMS",
@@ -92,6 +93,12 @@ export default async function UserProfilePage({ params }: Props) {
           user={user} 
           branches={branches}
           canEdit={canManageUsers || isOwnProfile}
+        />
+        
+        <SignatureStatus 
+          user={user}
+          currentUserId={session.user.id}
+          canManageUsers={canManageUsers}
         />
       </div>
 

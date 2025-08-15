@@ -178,6 +178,7 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
                   <ArrowUpDown className="h-4 w-4" />
                 </Button>
               </TableHead>
+              <TableHead>Joining Form</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -198,6 +199,17 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
                   </Badge>
                 </TableCell>
                 <TableCell>{user.branch?.name || "-"}</TableCell>
+                <TableCell>
+                  {user.joiningFormSignedAt ? (
+                    <Badge variant="secondary" className="text-green-600 bg-green-100">
+                      ✓ Signed {new Date(user.joiningFormSignedAt).toLocaleDateString()}
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-red-600 bg-red-100">
+                      ⚠ Pending
+                    </Badge>
+                  )}
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end">
                     <UserActions 

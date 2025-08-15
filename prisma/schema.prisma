@@ -118,6 +118,12 @@ model User {
   references      Reference[]
   bankAccountNo   String?
   bankIfscCode    String?
+  
+  // E-Signature fields
+  joiningFormSignedAt DateTime? @map("joining_form_signed_at")
+  joiningFormSignedBy String?   @map("joining_form_signed_by")
+  joiningFormSignature String?  @map("joining_form_signature")
+  joiningFormAgreement Boolean  @default(false) @map("joining_form_agreement")
 
   // Relations
   accounts      Account[]

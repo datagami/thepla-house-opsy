@@ -540,9 +540,30 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
         </div>
 
         {canEdit && (
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Saving..." : user ? "Update User" : "Create User"}
-          </Button>
+          <div className="flex gap-4">
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Saving..." : user ? "Update User" : "Create User"}
+            </Button>
+            
+            {user && !user.joiningFormSignedAt && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  window.open(`/users/${user.id}/joining-form-signature`, '_blank');
+                }}
+              >
+                Sign Joining Form
+              </Button>
+            )}
+            
+            {user && user.joiningFormSignedAt && (
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <span>✓</span>
+                <span>Joining form signed on {new Date(user.joiningFormSignedAt).toLocaleDateString()}</span>
+              </div>
+            )}
+          </div>
         )}
       </form>
     </Form>
