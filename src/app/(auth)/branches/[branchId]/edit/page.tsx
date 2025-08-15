@@ -3,6 +3,8 @@ import { auth } from "@/auth";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { BranchEditForm } from "@/components/branches/branch-edit-form";
+import { BranchDocumentUpload } from "@/components/branches/branch-document-upload";
+import { BranchDocumentsList } from "@/components/branches/branch-documents-list";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const metadata: Metadata = {
@@ -43,7 +45,7 @@ export default async function EditBranchPage({ params }: Props) {
   }
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
+    <div className="flex-1 space-y-6 p-8 pt-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Edit Branch</h2>
@@ -58,6 +60,14 @@ export default async function EditBranchPage({ params }: Props) {
           <BranchEditForm branch={branch} />
         </CardContent>
       </Card>
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-2xl font-bold">Branch Documents</h3>
+          <BranchDocumentUpload branchId={branch.id} branchName={branch.name} />
+        </div>
+        <BranchDocumentsList branchId={branch.id} canUpload={true} />
+      </div>
     </div>
   );
 } 

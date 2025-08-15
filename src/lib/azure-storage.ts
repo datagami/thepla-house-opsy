@@ -18,10 +18,10 @@ export class AzureStorageService {
     return containerClient.getBlockBlobClient(blobName);
   }
 
-  async uploadImage(file: Buffer, fileName: string, folder: string): Promise<string> {
+  async uploadImage(file: Buffer, fileName: string, folder: string, contentType?: string): Promise<string> {
     const blobClient = await this.getBlobClient(fileName, folder);
     await blobClient.uploadData(file, {
-      blobHTTPHeaders: { blobContentType: 'image/jpeg' }
+      blobHTTPHeaders: { blobContentType: contentType || 'image/jpeg' }
     });
     return blobClient.url;
   }
@@ -32,15 +32,15 @@ export class AzureStorageService {
   }
 
   // Generate a SAS URL for temporary access
-  async generateSasUrl(fileName: string, folder: string, expiresInHours: number = 1): Promise<string> {
+  async generateSasUrl(fileName: string, folder: string, expiresInHours: number = 1, contentType?: string): Promise<string> {
     const blobClient = await this.getBlobClient(fileName, folder);
     const sasOptions = {
       permissions: BlobSASPermissions.parse('r'), // Read only
       expiresOn: new Date(Date.now() + expiresInHours * 60 * 60 * 1000),
       protocol: SASProtocol.Https,
       cacheControl: 'no-cache',
-      contentDisposition: 'inline',
-      contentType: 'image/jpeg'
+      contentDisposition: 'attachment',
+      contentType: contentType || 'application/octet-stream'
     };
     
     return await blobClient.generateSasUrl(sasOptions);

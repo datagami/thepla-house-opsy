@@ -83,6 +83,7 @@ export interface User {
   advances: AdvancePayment[];
   approvedAdvances: AdvancePayment[];
   approvedInstallments: AdvancePaymentInstallment[];
+  uploadedBranchDocuments: BranchDocument[];
 }
 
 export interface VerificationToken {
@@ -105,6 +106,39 @@ export interface Branch {
   managers: User[];
   selectedByUsers: User[];
   attendances: Attendance[];
+  documents: BranchDocument[];
+}
+
+export interface DocumentType {
+  id: string;
+  numId: number;
+  name: string;
+  description?: string | null;
+  mandatory: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  documents: BranchDocument[];
+}
+
+export interface BranchDocument {
+  id: string;
+  numId: number;
+  name: string;
+  description?: string | null;
+  fileName: string;
+  fileUrl: string;
+  fileSize: number;
+  fileType: string;
+  renewalDate: Date;
+  reminderDate: Date;
+  uploadedById: string;
+  branchId: string;
+  documentTypeId?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  uploadedBy: User;
+  branch: Branch;
+  documentType?: DocumentType | null;
 }
 
 export interface Attendance {

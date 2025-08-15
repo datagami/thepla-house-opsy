@@ -144,6 +144,9 @@ model User {
   noteComments        NoteComment[]             @relation("NoteCommentAuthor")
   noteEditHistories   NoteEditHistory[]         @relation("NoteEditHistoryEditor")
 
+  // --- Branch Document Relations ---
+  uploadedBranchDocuments BranchDocument[] @relation("BranchDocumentUploads")
+
   @@map("users1")
   @@index([branchId])
   @@index([managedBranchId])
@@ -176,8 +179,54 @@ model Branch {
   managers       User[] @relation("BranchManagers")
   selectedByUsers User[] @relation("SelectedBranch")
   attendances    Attendance[]
+  documents      BranchDocument[]
 
   @@map("branches")
+}
+
+model DocumentType {
+  id          String    @id @default(cuid())
+  numId       Int       @default(autoincrement()) @map("num_id")
+  name        String    @unique
+  description String?
+  mandatory   Boolean   @default(false)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  documents   BranchDocument[]
+
+  @@map("document_types")
+}
+
+model BranchDocument {
+  id            String    @id @default(cuid())
+  numId         Int       @default(autoincrement()) @map("num_id")
+  name          String
+  description   String?
+  fileName      String    @map("file_name")
+  fileUrl       String    @map("file_url")
+  fileSize      Int       @map("file_size")
+  fileType      String    @map("file_type")
+  renewalDate   DateTime  @map("renewal_date")
+  reminderDate  DateTime  @map("reminder_date")
+  uploadedById  String    @map("uploaded_by_id")
+  branchId      String    @map("branch_id")
+  documentTypeId String?  @map("document_type_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  uploadedBy    User      @relation("BranchDocumentUploads", fields: [uploadedById], references: [id])
+  branch        Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  documentType  DocumentType? @relation(fields: [documentTypeId], references: [id])
+
+  @@map("branch_documents")
+  @@index([branchId])
+  @@index([uploadedById])
+  @@index([renewalDate])
+  @@index([reminderDate])
+  @@index([documentTypeId])
 }
 
 model Attendance {

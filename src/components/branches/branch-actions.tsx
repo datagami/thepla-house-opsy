@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Edit, Trash } from "lucide-react";
+import { MoreHorizontal, Edit, Trash, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 interface Branch {
@@ -76,6 +76,13 @@ export function BranchActions({ branch }: BranchActionsProps) {
         >
           <Edit className="mr-2 h-4 w-4" />
           Edit
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => router.push(`/branches/${branch.id}/documents`)}
+          disabled={isLoading}
+        >
+          <FileText className="mr-2 h-4 w-4" />
+          Documents
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={deleteBranch}
