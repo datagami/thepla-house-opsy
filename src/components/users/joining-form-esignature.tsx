@@ -144,12 +144,12 @@ export function JoiningFormESignature({ user, onComplete }: JoiningFormESignatur
                 <div className="space-y-3">
                   <div>
                     <h4 className="font-semibold text-orange-800">1. Employment Terms</h4>
-                    <p>I will be employed on a probationary basis for an initial period of 6 months and based on the Company's view of my performance, I will be deemed confirmed. My employment will be for a period of five years effective from the date of joining and may be renewed on a review of performance.</p>
+                    <p>I will be employed on a probationary basis for an initial period of 6 months and based on the Company&#39;s view of my performance, I will be deemed confirmed. My employment will be for a period of five years effective from the date of joining and may be renewed on a review of performance.</p>
                   </div>
 
                   <div>
                     <h4 className="font-semibold text-orange-800">2. Compensation</h4>
-                    <p>I will be eligible for a gross salary of Rs. {user.salary?.toLocaleString() || 'N/A'} per month from the company. Such compensation received by me will be subject to tax deduction at source, as applicable under the provisions of the Income-Tax Act, 1961 ('IT Act") and the Rules made thereunder and such other statutory deductions, as applicable.</p>
+                    <p>I will be eligible for a gross salary of Rs. {user.salary?.toLocaleString() || 'N/A'} per month from the company. Such compensation received by me will be subject to tax deduction at source, as applicable under the provisions of the Income-Tax Act, 1961 (&ldquo;IT Act&rdquo;) and the Rules made thereunder and such other statutory deductions, as applicable.</p>
                   </div>
 
                   <div>
@@ -164,7 +164,7 @@ export function JoiningFormESignature({ user, onComplete }: JoiningFormESignatur
 
                   <div>
                     <h4 className="font-semibold text-orange-800">5. Termination</h4>
-                    <p>During my probationary period, my employment may be terminated by the Company upon 5 days prior written notice (or payment of five day's salary in lieu thereof). At all other times, my employment may be terminated by the company upon 30 days' notice or payment of 30 days salary in lieu thereof. I may terminate my employment upon 30 days' notice in writing; failing which my 30 days salary will be deducted as notice period.</p>
+                    <p>During my probationary period, my employment may be terminated by the Company upon 5 days prior written notice (or payment of five day&apos;s salary in lieu thereof). At all other times, my employment may be terminated by the company upon 30 days&#39; notice or payment of 30 days salary in lieu thereof. I may terminate my employment upon 30 days&#39; notice in writing; failing which my 30 days salary will be deducted as notice period.</p>
                   </div>
 
                   <div>
@@ -174,7 +174,7 @@ export function JoiningFormESignature({ user, onComplete }: JoiningFormESignatur
 
                   <div>
                     <h4 className="font-semibold text-orange-800">7. Company Policies</h4>
-                    <p>I have read and understood the requirements of the Company's Business Conduct Policy and agree to act in compliance with such policy (including any modifications or amendments thereto) at all times. Any willful default of the policy will result in disciplinary action, which may include actions up to and including summary dismissal.</p>
+                    <p>I have read and understood the requirements of the Company&#39;s Business Conduct Policy and agree to act in compliance with such policy (including any modifications or amendments thereto) at all times. Any willful default of the policy will result in disciplinary action, which may include actions up to and including summary dismissal.</p>
                   </div>
 
                   <div>
@@ -196,7 +196,7 @@ export function JoiningFormESignature({ user, onComplete }: JoiningFormESignatur
                       <li>No jewelry is allowed during working hours.</li>
                       <li>I must wear the provided uniform, including safety shoes, caps, and aprons.</li>
                       <li>Personal mobile phones are not allowed during order processing.</li>
-                      <li>The company's phone should not be used for personal calls or activities.</li>
+                      <li>The company&#39;s phone should not be used for personal calls or activities.</li>
                     </ul>
                   </div>
 

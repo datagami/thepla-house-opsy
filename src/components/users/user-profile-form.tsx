@@ -31,7 +31,7 @@ const userFormSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
-  role: z.enum(["EMPLOYEE", "BRANCH_MANAGER", "HR", "MANAGEMENT"]),
+  role: z.enum(["EMPLOYEE", "BRANCH_MANAGER", "HR", "MANAGEMENT", "SELF_ATTENDANCE"]),
   branch: z.string().optional(),
   department: z.string().min(2, "Department is required"),
   mobileNo: z.string().min(10, "Mobile number must be at least 10 digits"),

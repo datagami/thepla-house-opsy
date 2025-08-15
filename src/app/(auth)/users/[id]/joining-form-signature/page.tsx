@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { JoiningFormESignature } from "@/components/users/joining-form-esignature";
 import { hasAccess } from "@/lib/access-control";
 import { notFound } from "next/navigation";
+import {User} from "@/models/models";
 
 export const metadata: Metadata = {
   title: "Joining Form E-Signature - HRMS",
@@ -59,7 +60,7 @@ export default async function JoiningFormSignaturePage({ params }: JoiningFormSi
         </h2>
       </div>
 
-      <JoiningFormESignature user={user} />
+      <JoiningFormESignature user={user as unknown as User} />
     </div>
   );
 } 

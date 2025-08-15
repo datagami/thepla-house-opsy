@@ -6,7 +6,7 @@ import { uploadJoiningFormFiles } from '@/lib/upload-utils';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -15,7 +15,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id: userId } = params;
+    const { id } = await params;
     const { signature, agreement, photo } = await request.json();
 
     // Validate required fields
@@ -28,7 +28,7 @@ export async function POST(
 
     // Get the user to be signed
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: id },
     });
 
     if (!user) {
@@ -44,7 +44,7 @@ export async function POST(
     }
 
     // Check permissions - user can sign their own form or HR/Management can sign for others
-    const isOwnForm = session.user.id === userId;
+    const isOwnForm = session.user.id === id;
     // @ts-expect-error - role is not defined in the session type
     const canManageUsers = hasAccess(session.user.role, "users.manage");
 
@@ -57,7 +57,7 @@ export async function POST(
     let photoUrl = '';
     
     try {
-      const uploadResult = await uploadJoiningFormFiles(signature, photo, params.id);
+      const uploadResult = await uploadJoiningFormFiles(signature, photo, id);
       signatureUrl = uploadResult.signatureUrl;
       photoUrl = uploadResult.photoUrl;
     } catch (error) {
@@ -70,7 +70,7 @@ export async function POST(
 
     // Update user with signature information and Azure URLs
     const updatedUser = await prisma.user.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         joiningFormSignedAt: new Date(),
         joiningFormSignedBy: session.user.id,
@@ -99,7 +99,7 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -108,11 +108,11 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id: userId } = params;
+    const { id } = await params;
 
     // Get the user
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: id },
       select: {
         id: true,
         name: true,
@@ -127,7 +127,7 @@ export async function GET(
     }
 
     // Check permissions
-    const isOwnForm = session.user.id === userId;
+    const isOwnForm = session.user.id === id;
     // @ts-expect-error - role is not defined in the session type
     const canManageUsers = hasAccess(session.user.role, "users.manage");
 

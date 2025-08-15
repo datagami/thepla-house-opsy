@@ -33,6 +33,8 @@ export default async function UserProfilePage({ params }: Props) {
   const canManageUsers = hasAccess(session.user.role, "users.manage");
   const isOwnProfile = session.user.id === id;
 
+  const currentUserId = session.user.id || '';
+
   if (!canManageUsers && !isOwnProfile) {
     redirect("/dashboard");
   }
@@ -97,7 +99,7 @@ export default async function UserProfilePage({ params }: Props) {
         
         <SignatureStatus 
           user={user}
-          currentUserId={session.user.id}
+          currentUserId={currentUserId}
           canManageUsers={canManageUsers}
         />
       </div>

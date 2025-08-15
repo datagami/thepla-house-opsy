@@ -1,4 +1,4 @@
-type UserRole = "EMPLOYEE" | "BRANCH_MANAGER" | "HR" | "MANAGEMENT";
+export type UserRole = "EMPLOYEE" | "BRANCH_MANAGER" | "HR" | "MANAGEMENT" | "SELF_ATTENDANCE";
 
 type UserStatus = "PENDING" | "ACTIVE" | "INACTIVE";
 
@@ -69,6 +69,11 @@ export interface User {
   references: Reference[];
   bankAccountNo?: string | null;
   bankIfscCode?: string | null;
+  joiningFormSignedAt?: Date | null;
+  joiningFormSignedBy?: string | null;
+  joiningFormSignature?: string | null;
+  joiningFormAgreement: boolean;
+  joiningFormPhoto?: string | null;
   accounts: Account[];
   sessions: Session[];
   branch?: Branch | null;
@@ -83,6 +88,10 @@ export interface User {
   advances: AdvancePayment[];
   approvedAdvances: AdvancePayment[];
   approvedInstallments: AdvancePaymentInstallment[];
+  ownedNotes: Note[];
+  sharedNotes: NoteShare[];
+  noteComments: NoteComment[];
+  noteEditHistories: NoteEditHistory[];
   uploadedBranchDocuments: BranchDocument[];
 }
 
