@@ -28,7 +28,6 @@ export function DownloadENETButton({ year, month }: DownloadENETButtonProps) {
         }
         const data = await response.json();
         const hasProcessing = data.some((salary: Salary) => salary.status === 'PROCESSING');
-        console.log('Processing salaries found:', hasProcessing, data);
         setHasProcessingSalaries(hasProcessing);
       } catch (error) {
         console.error('Error checking processing salaries:', error);

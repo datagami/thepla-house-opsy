@@ -28,17 +28,24 @@ export default async function EditBranchPage({ params }: Props) {
 
   const { branchId } = await params;
 
-  const branch = await prisma.branch.findUnique({
-    where: { id: branchId },
-    include: {
-      _count: {
-        select: {
-          users: true,
-          managers: true,
+  const [branch, documentTypes] = await Promise.all([
+    prisma.branch.findUnique({
+      where: { id: branchId },
+      include: {
+        _count: {
+          select: {
+            users: true,
+            managers: true,
+          },
         },
       },
-    },
-  });
+    }),
+    prisma.documentType.findMany({
+      orderBy: {
+        name: "asc",
+      },
+    }),
+  ]);
 
   if (!branch) {
     notFound();
@@ -63,10 +70,10 @@ export default async function EditBranchPage({ params }: Props) {
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-2xl font-bold">Branch Documents</h3>
-          <BranchDocumentUpload branchId={branch.id} branchName={branch.name} />
+          <h3 className="text-2xl font-bold">Upload Documents</h3>
+          <BranchDocumentUpload branchId={branch.id} branchName={branch.name} documentTypes={documentTypes} />
         </div>
-        <BranchDocumentsList branchId={branch.id} canUpload={true} />
+        <BranchDocumentsList branchId={branch.id} canUpload={true} branchName={branch.name} />
       </div>
     </div>
   );

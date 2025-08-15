@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { AzureStorageService } from "@/lib/azure-storage";
-
-const BRANCH_DOCUMENTS_FOLDER = 'branch-documents';
 
 export async function GET(
   req: Request,
@@ -24,13 +21,12 @@ export async function GET(
     const { branchId, documentId } = await params;
 
     // Check if document exists and belongs to the branch
-    const documents = await prisma.$queryRaw`
-      SELECT * FROM branch_documents 
-      WHERE id = ${documentId} AND branch_id = ${branchId}
-      LIMIT 1
-    `;
-    
-    const document = (documents as any[])[0];
+    const document = await prisma.branchDocument.findFirst({
+      where: {
+        id: documentId,
+        branchId: branchId,
+      },
+    });
 
     if (!document) {
       return NextResponse.json(
@@ -54,21 +50,8 @@ export async function GET(
       }
     }
 
-    // Generate a SAS URL for temporary access
-    const azureStorage = new AzureStorageService();
-    const filename = document.file_url.split('/').pop();
-    
-    if (!filename) {
-      return NextResponse.json(
-        { error: "Invalid file URL" },
-        { status: 400 }
-      );
-    }
-
-    const sasUrl = await azureStorage.generateSasUrl(filename, BRANCH_DOCUMENTS_FOLDER, 1, document.file_type); // 1 hour expiry
-
-    // Redirect to the SAS URL
-    return NextResponse.redirect(sasUrl);
+    // Redirect to the stored file URL
+    return NextResponse.redirect(document.fileUrl);
   } catch (error) {
     console.error("Error downloading document:", error);
     return NextResponse.json(

@@ -27,7 +27,6 @@ export function DownloadReportButton({ year, month }: DownloadReportButtonProps)
         }
         const data = await response.json();
         const hasAnySalaries = data.length > 0;
-        console.log('Salaries found:', hasAnySalaries, data.length);
         setHasSalaries(hasAnySalaries);
       } catch (error) {
         console.error('Error checking salaries:', error);

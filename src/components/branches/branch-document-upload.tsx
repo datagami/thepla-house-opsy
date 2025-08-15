@@ -196,17 +196,22 @@ export function BranchDocumentUpload({ branchId, branchName, documentTypes = [] 
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
-                      {documentTypes.map((docType) => (
-                        <SelectItem key={docType.id} value={docType.id}>
-                          <div className="flex items-center gap-2">
-                            <span>{docType.name}</span>
-                            {docType.mandatory && (
-                              <span className="text-xs text-red-500">*</span>
-                            )}
-                          </div>
+                      {documentTypes.length > 0 ? (
+                        documentTypes.map((docType) => (
+                          <SelectItem key={docType.id} value={docType.id}>
+                            <div className="flex items-center gap-2">
+                              <span>{docType.name}</span>
+                              {docType.mandatory && (
+                                <span className="text-xs text-red-500">*</span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="" disabled>
+                          No document types available
                         </SelectItem>
-                      ))}
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />

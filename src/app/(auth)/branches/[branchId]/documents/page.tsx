@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { BranchDocumentsList } from "@/components/branches/branch-documents-list";
+import { BranchDocumentUpload } from "@/components/branches/branch-document-upload";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText } from "lucide-react";
 
@@ -27,17 +28,24 @@ export default async function BranchDocumentsPage({ params }: Props) {
 
   const { branchId } = await params;
 
-  const branch = await prisma.branch.findUnique({
-    where: { id: branchId },
-    include: {
-      _count: {
-        select: {
-          users: true,
-          managers: true,
+  const [branch, documentTypes] = await Promise.all([
+    prisma.branch.findUnique({
+      where: { id: branchId },
+      include: {
+        _count: {
+          select: {
+            users: true,
+            managers: true,
+          },
         },
       },
-    },
-  });
+    }),
+    prisma.documentType.findMany({
+      orderBy: {
+        name: "asc",
+      },
+    }),
+  ]);
 
   if (!branch) {
     notFound();
@@ -70,17 +78,16 @@ export default async function BranchDocumentsPage({ params }: Props) {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            {branch.name} - Documents
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <BranchDocumentsList branchId={branch.id} canUpload={canUpload} />
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        {canUpload && (
+          <div className="flex items-center justify-between">
+            <h3 className="text-2xl font-bold">Upload Documents</h3>
+            <BranchDocumentUpload branchId={branch.id} branchName={branch.name} documentTypes={documentTypes} />
+          </div>
+        )}
+        
+        <BranchDocumentsList branchId={branch.id} canUpload={canUpload} branchName={branch.name} />
+      </div>
     </div>
   );
 } 

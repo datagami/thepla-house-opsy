@@ -44,9 +44,11 @@ import { BranchDocument } from "@/models/models";
 interface BranchDocumentsListProps {
   branchId: string;
   canUpload?: boolean;
+  showHeading?: boolean;
+  branchName?: string;
 }
 
-export function BranchDocumentsList({ branchId, canUpload = false }: BranchDocumentsListProps) {
+export function BranchDocumentsList({ branchId, canUpload = false, showHeading = true, branchName }: BranchDocumentsListProps) {
   const router = useRouter();
   const [documents, setDocuments] = useState<BranchDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -122,13 +124,7 @@ export function BranchDocumentsList({ branchId, canUpload = false }: BranchDocum
     return <FileText className="h-4 w-4" />;
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+
 
   const getReminderStatus = (reminderDate: Date) => {
     const now = new Date();
@@ -167,7 +163,9 @@ export function BranchDocumentsList({ branchId, canUpload = false }: BranchDocum
       <>
         <Card>
           <CardHeader>
-            <CardTitle>Branch Documents</CardTitle>
+            <CardTitle>
+              {showHeading ? (branchName ? `${branchName} - Documents` : 'Branch Documents') : 'Documents'}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-center py-8">Loading documents...</div>
@@ -183,7 +181,7 @@ export function BranchDocumentsList({ branchId, canUpload = false }: BranchDocum
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Branch Documents
+            {showHeading ? (branchName ? `${branchName} - Documents` : 'Branch Documents') : 'Documents'}
             {documents.length > 0 && (
               <Badge variant="secondary">{documents.length}</Badge>
             )}
@@ -199,8 +197,7 @@ export function BranchDocumentsList({ branchId, canUpload = false }: BranchDocum
               <TableHeader>
                 <TableRow>
                   <TableHead>Document</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Size</TableHead>
+                  <TableHead>Document Type</TableHead>
                   <TableHead>Renewal Date</TableHead>
                   <TableHead>Reminder Date</TableHead>
                   <TableHead>Uploaded By</TableHead>
@@ -222,15 +219,26 @@ export function BranchDocumentsList({ branchId, canUpload = false }: BranchDocum
                             <div className="text-sm text-muted-foreground">
                               {document.fileName}
                             </div>
+                            {document.description && (
+                              <div className="text-sm text-muted-foreground mt-1">
+                                {document.description}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        {document.description || (
-                          <span className="text-muted-foreground">No description</span>
+                        {document.documentType ? (
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{document.documentType.name}</span>
+                            {document.documentType.mandatory && (
+                              <Badge variant="destructive" className="text-xs">Mandatory</Badge>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">No type assigned</span>
                         )}
                       </TableCell>
-                      <TableCell>{formatFileSize(document.fileSize)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4" />
