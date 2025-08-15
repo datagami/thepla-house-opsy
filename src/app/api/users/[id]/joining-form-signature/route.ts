@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { hasAccess } from '@/lib/access-control';
+import { uploadJoiningFormFiles } from '@/lib/upload-utils';
 
 export async function POST(
   request: NextRequest,
@@ -15,12 +16,12 @@ export async function POST(
     }
 
     const { id: userId } = params;
-    const { signature, agreement } = await request.json();
+    const { signature, agreement, photo } = await request.json();
 
     // Validate required fields
-    if (!signature || !agreement) {
+    if (!signature || !agreement || !photo) {
       return NextResponse.json(
-        { error: 'Signature and agreement are required' },
+        { error: 'Signature, agreement, and photo are required' },
         { status: 400 }
       );
     }
@@ -51,14 +52,31 @@ export async function POST(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Update user with signature information
+    // Upload signature and photo to Azure
+    let signatureUrl = '';
+    let photoUrl = '';
+    
+    try {
+      const uploadResult = await uploadJoiningFormFiles(signature, photo, params.id);
+      signatureUrl = uploadResult.signatureUrl;
+      photoUrl = uploadResult.photoUrl;
+    } catch (error) {
+      console.error('Error uploading to Azure:', error);
+      return NextResponse.json(
+        { error: 'Failed to upload files to storage' },
+        { status: 500 }
+      );
+    }
+
+    // Update user with signature information and Azure URLs
     const updatedUser = await prisma.user.update({
-      where: { id: userId },
+      where: { id: params.id },
       data: {
         joiningFormSignedAt: new Date(),
         joiningFormSignedBy: session.user.id,
-        joiningFormSignature: signature,
+        joiningFormSignature: signatureUrl, // Store Azure URL instead of base64
         joiningFormAgreement: true,
+        joiningFormPhoto: photoUrl, // Store Azure URL instead of base64
       },
     });
 

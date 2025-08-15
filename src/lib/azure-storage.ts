@@ -26,6 +26,17 @@ export class AzureStorageService {
     return blobClient.url;
   }
 
+  async uploadBase64Image(base64Data: string, fileName: string, folder: string, contentType?: string): Promise<string> {
+    // Remove data URL prefix if present
+    const base64String = base64Data.replace(/^data:image\/[a-z]+;base64,/, '');
+    
+    // Convert base64 to buffer
+    const buffer = Buffer.from(base64String, 'base64');
+    
+    // Upload to Azure
+    return await this.uploadImage(buffer, fileName, folder, contentType || 'image/jpeg');
+  }
+
   async deleteImage(fileName: string, folder: string): Promise<void> {
     const blobClient = await this.getBlobClient(fileName, folder);
     await blobClient.deleteIfExists();

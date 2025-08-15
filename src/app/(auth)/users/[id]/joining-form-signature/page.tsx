@@ -12,13 +12,14 @@ export const metadata: Metadata = {
 };
 
 interface JoiningFormSignaturePageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function JoiningFormSignaturePage({ params }: JoiningFormSignaturePageProps) {
   const session = await auth();
+  const { id } = await params;
   
   if (!session?.user) {
     redirect("/login");
@@ -26,7 +27,7 @@ export default async function JoiningFormSignaturePage({ params }: JoiningFormSi
 
   // Get the user to be signed
   const user = await prisma.user.findUnique({
-    where: { id: params.id },
+    where: { id: id },
     include: {
       branch: true,
     },

@@ -124,6 +124,7 @@ model User {
   joiningFormSignedBy String?   @map("joining_form_signed_by")
   joiningFormSignature String?  @map("joining_form_signature")
   joiningFormAgreement Boolean  @default(false) @map("joining_form_agreement")
+  joiningFormPhoto String?      @map("joining_form_photo")
 
   // Relations
   accounts      Account[]

@@ -7,8 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { SignaturePad } from './signature-pad';
+import { WebcamCapture } from './webcam-capture';
 import { toast } from 'sonner';
 import { User } from '@/models/models';
+import { Camera } from 'lucide-react';
 
 interface JoiningFormESignatureProps {
   user: User;
@@ -20,6 +22,20 @@ export function JoiningFormESignature({ user, onComplete }: JoiningFormESignatur
   const [signature, setSignature] = useState<string | null>(null);
   const [agreement, setAgreement] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [photoTaken, setPhotoTaken] = useState<string | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
+
+  const handlePhotoCapture = (photoData: string) => {
+    setPhotoTaken(photoData);
+    setShowCamera(false);
+  };
+
+  const handleAgreementChange = (checked: boolean) => {
+    setAgreement(checked);
+    if (checked && !photoTaken) {
+      setShowCamera(true);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!signature) {
@@ -29,6 +45,11 @@ export function JoiningFormESignature({ user, onComplete }: JoiningFormESignatur
 
     if (!agreement) {
       toast.error('Please agree to the terms and conditions');
+      return;
+    }
+
+    if (!photoTaken) {
+      toast.error('Please take a photo to confirm your identity');
       return;
     }
 
@@ -42,6 +63,7 @@ export function JoiningFormESignature({ user, onComplete }: JoiningFormESignatur
         body: JSON.stringify({
           signature,
           agreement: true,
+          photo: photoTaken,
         }),
       });
 
@@ -64,7 +86,7 @@ export function JoiningFormESignature({ user, onComplete }: JoiningFormESignatur
     }
   };
 
-  const canSubmit = signature && agreement && !isSubmitting;
+  const canSubmit = signature && agreement && photoTaken && !isSubmitting;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-8">
@@ -127,7 +149,7 @@ export function JoiningFormESignature({ user, onComplete }: JoiningFormESignatur
 
                   <div>
                     <h4 className="font-semibold text-orange-800">2. Compensation</h4>
-                    <p>I will be eligible for the gross salary as specified in my appointment letter. Such compensation will be subject to tax deduction at source and other statutory deductions as applicable.</p>
+                    <p>I will be eligible for a gross salary of Rs. {user.salary?.toLocaleString() || 'N/A'} per month from the company. Such compensation received by me will be subject to tax deduction at source, as applicable under the provisions of the Income-Tax Act, 1961 ('IT Act") and the Rules made thereunder and such other statutory deductions, as applicable.</p>
                   </div>
 
                   <div>
@@ -212,12 +234,82 @@ export function JoiningFormESignature({ user, onComplete }: JoiningFormESignatur
             <Checkbox
               id="agreement"
               checked={agreement}
-              onCheckedChange={(checked) => setAgreement(checked as boolean)}
+              onCheckedChange={handleAgreementChange}
             />
             <Label htmlFor="agreement" className="text-sm">
               I have read, understood, and agree to all the terms and conditions stated above
             </Label>
           </div>
+
+          {/* Photo Capture Section */}
+          {agreement && !showCamera && !photoTaken && (
+            <Card className="border-blue-200 bg-blue-50">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold mb-4 text-blue-800 flex items-center gap-2">
+                  <Camera className="h-5 w-5" />
+                  Identity Verification Photo
+                </h3>
+                <div className="text-center space-y-4">
+                  <p className="text-sm text-gray-700">
+                    Please take a photo to confirm your identity and complete the signing process.
+                  </p>
+                  <Button onClick={() => setShowCamera(true)} className="bg-blue-600 hover:bg-blue-700">
+                    <Camera className="h-4 w-4 mr-2" />
+                    Take Photo
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Webcam Component */}
+          {showCamera && (
+            <WebcamCapture
+              onPhotoCapture={handlePhotoCapture}
+              onClose={() => setShowCamera(false)}
+            />
+          )}
+
+          {/* Photo Display */}
+          {photoTaken && !showCamera && (
+            <Card className="border-green-200 bg-green-50">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold mb-4 text-green-800 flex items-center gap-2">
+                  <Camera className="h-5 w-5" />
+                  Photo Captured
+                </h3>
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <div className="relative inline-block">
+                      <img
+                        src={photoTaken}
+                        alt="Captured photo"
+                        className="w-full max-w-md mx-auto border-2 border-green-300 rounded-lg shadow-lg"
+                      />
+                      <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full p-1">
+                        <span className="text-xs">✓</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-green-600 mt-2 font-medium">
+                      ✓ Identity verification photo captured successfully
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <Button 
+                      onClick={() => {
+                        setPhotoTaken(null);
+                        setShowCamera(true);
+                      }} 
+                      variant="outline"
+                    >
+                      <Camera className="h-4 w-4 mr-2" />
+                      Retake Photo
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Signature Pad */}
           <SignaturePad
@@ -246,6 +338,11 @@ export function JoiningFormESignature({ user, onComplete }: JoiningFormESignatur
           {!signature && agreement && (
             <div className="text-center text-sm text-red-600">
               Please provide your signature to proceed
+            </div>
+          )}
+          {!photoTaken && agreement && signature && (
+            <div className="text-center text-sm text-red-600">
+              Please take a photo to confirm your identity
             </div>
           )}
         </CardContent>

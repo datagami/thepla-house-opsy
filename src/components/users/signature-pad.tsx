@@ -46,11 +46,24 @@ export function SignaturePad({ onSignatureChange, disabled = false }: SignatureP
     if (!ctx) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = (e as any).clientX - rect.left;
-    const y = (e as any).clientY - rect.top;
+    let x: number, y: number;
 
+    if ('touches' in e) {
+      // Touch event
+      x = e.touches[0].clientX - rect.left;
+      y = e.touches[0].clientY - rect.top;
+    } else {
+      // Mouse event
+      x = e.clientX - rect.left;
+      y = e.clientY - rect.top;
+    }
+
+    // Scale coordinates to match canvas resolution
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
     ctx.beginPath();
-    ctx.moveTo(x, y);
+    ctx.moveTo(x * scaleX, y * scaleY);
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
@@ -63,10 +76,23 @@ export function SignaturePad({ onSignatureChange, disabled = false }: SignatureP
     if (!ctx) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = (e as any).clientX - rect.left;
-    const y = (e as any).clientY - rect.top;
+    let x: number, y: number;
 
-    ctx.lineTo(x, y);
+    if ('touches' in e) {
+      // Touch event
+      x = e.touches[0].clientX - rect.left;
+      y = e.touches[0].clientY - rect.top;
+    } else {
+      // Mouse event
+      x = e.clientX - rect.left;
+      y = e.clientY - rect.top;
+    }
+
+    // Scale coordinates to match canvas resolution
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    ctx.lineTo(x * scaleX, y * scaleY);
     ctx.stroke();
   };
 
@@ -120,7 +146,10 @@ export function SignaturePad({ onSignatureChange, disabled = false }: SignatureP
               onTouchStart={startDrawing}
               onTouchMove={draw}
               onTouchEnd={stopDrawing}
-              style={{ touchAction: 'none' }}
+              style={{ 
+                touchAction: 'none',
+                imageRendering: 'crisp-edges'
+              }}
             />
           </div>
           
