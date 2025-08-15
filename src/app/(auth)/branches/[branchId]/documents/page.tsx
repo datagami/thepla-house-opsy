@@ -4,8 +4,6 @@ import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { BranchDocumentsList } from "@/components/branches/branch-documents-list";
 import { BranchDocumentUpload } from "@/components/branches/branch-document-upload";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Branch Documents - HRMS",
@@ -55,7 +53,7 @@ export default async function BranchDocumentsPage({ params }: Props) {
   // @ts-expect-error - role is not in the User type
   if (session.user.role === "BRANCH_MANAGER") {
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: session.user!.id },
       select: { managedBranchId: true },
     });
 

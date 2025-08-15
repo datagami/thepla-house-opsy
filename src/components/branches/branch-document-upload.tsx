@@ -53,7 +53,7 @@ interface BranchDocumentUploadProps {
   documentTypes?: DocumentType[];
 }
 
-export function BranchDocumentUpload({ branchId, branchName, documentTypes = [] }: BranchDocumentUploadProps) {
+export function BranchDocumentUpload({ branchId, documentTypes = [] }: BranchDocumentUploadProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

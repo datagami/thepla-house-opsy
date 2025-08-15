@@ -82,14 +82,7 @@ export async function POST(
     const filename = `${branchId}-${Date.now()}-${file.name}`;
     const fileUrl = await azureStorage.uploadImage(buffer, filename, BRANCH_DOCUMENTS_FOLDER, file.type);
 
-    console.log("Session user ID:", session.user?.id);
-    console.log("Branch ID:", branchId);
-    console.log("File name:", file.name);
-    console.log("File size:", file.size);
-    console.log("File type:", file.type);
-    console.log("Renewal date:", renewalDate);
-    console.log("Reminder date:", reminderDate);
-    console.log("Description:", description);
+    const userId = session.user!.id as string;
 
     // Create document record
     const document = await prisma.branchDocument.create({
@@ -102,7 +95,7 @@ export async function POST(
         fileType: file.type,
         renewalDate: new Date(renewalDate),
         reminderDate: new Date(reminderDate),
-        uploadedById: session.user.id,
+        uploadedById: userId,
         branchId,
         documentTypeId: documentTypeId || null,
       },
@@ -163,10 +156,12 @@ export async function GET(
       );
     }
 
+    const userId = session.user!.id;
+
     // For BRANCH_MANAGER, check if they manage this branch
     if (role === "BRANCH_MANAGER") {
       const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
+        where: { id: userId },
         select: { managedBranchId: true },
       });
 

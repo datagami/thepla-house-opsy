@@ -6,6 +6,7 @@ import { BranchEditForm } from "@/components/branches/branch-edit-form";
 import { BranchDocumentUpload } from "@/components/branches/branch-document-upload";
 import { BranchDocumentsList } from "@/components/branches/branch-documents-list";
 import { Card, CardContent } from "@/components/ui/card";
+import {Branch} from "@/models/models";
 
 export const metadata: Metadata = {
   title: "Edit Branch - HRMS",
@@ -64,7 +65,7 @@ export default async function EditBranchPage({ params }: Props) {
 
       <Card>
         <CardContent className="pt-6">
-          <BranchEditForm branch={branch} />
+          <BranchEditForm branch={branch as unknown as Branch} />
         </CardContent>
       </Card>
 

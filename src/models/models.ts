@@ -117,7 +117,7 @@ export interface DocumentType {
   mandatory: boolean;
   createdAt: Date;
   updatedAt: Date;
-  documents: BranchDocument[];
+  documents?: BranchDocument[];
 }
 
 export interface BranchDocument {

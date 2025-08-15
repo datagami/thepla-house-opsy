@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -49,7 +48,6 @@ interface BranchDocumentsListProps {
 }
 
 export function BranchDocumentsList({ branchId, canUpload = false, showHeading = true, branchName }: BranchDocumentsListProps) {
-  const router = useRouter();
   const [documents, setDocuments] = useState<BranchDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
@@ -317,7 +315,7 @@ export function BranchDocumentsList({ branchId, canUpload = false, showHeading =
           <DialogHeader>
             <DialogTitle>Delete Document</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{documentToDelete?.name}"? This action cannot be undone.
+              Are you sure you want to delete &ldquo;{documentToDelete?.name}&rdquo;? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
