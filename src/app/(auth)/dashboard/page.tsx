@@ -47,9 +47,11 @@ export default async function DashboardPage() {
   const role = session.user.role
   const canManageSelfAttendance = ["HR", "MANAGEMENT", "SELF_ATTENDANCE"].includes(role);
 
+  const userId = session.user!.id;
+
   // Get current user's complete data for joining form status
   const currentUser = await prisma.user.findUnique({
-    where: { id: session.user.id },
+    where: { id: userId },
     select: {
       id: true,
       name: true,
