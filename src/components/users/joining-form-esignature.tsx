@@ -180,7 +180,7 @@ export function JoiningFormESignature({ user, onComplete }: JoiningFormESignatur
                     </div>
                     <div>
                       <h4 className="font-semibold text-orange-800">5. Termination</h4>
-                      <p>During my probationary period, my employment may be terminated by the Company upon 5 days prior written notice (or payment of five day&apos;s salary in lieu thereof). At all other times, my employment may be terminated by the company upon 30 days&#39; notice or payment of 30 days salary in lieu thereof. I may terminate my employment upon 30 days&#39; notice in writing; failing which my 30 days salary will be deducted as notice period.</p>
+                      <p>During my probationary period, my employment may be terminated by the Company with immediate effect, without any notice or salary in lieu thereof. After completion of probation, my employment may be terminated by the Company upon 30 days’ prior written notice or payment of 30 days’ salary in lieu thereof. I may terminate my employment at any time by giving 30 days’ written notice; failing which, an amount equal to 30 days’ salary will be deducted as notice period recovery.</p>
                     </div>
                     <div>
                       <h4 className="font-semibold text-orange-800">6. Confidentiality</h4>
@@ -251,9 +251,9 @@ export function JoiningFormESignature({ user, onComplete }: JoiningFormESignatur
                       <p>रोज़गार की अवधि के दौरान, मैं अपना संपूर्ण समय, ध्यान और क्षमता कंपनी के कार्यों को समर्पित करूँगा/गी और किसी अन्य रोजगार/व्यवसाय में संलग्न नहीं रहूँगा/गी।</p>
                     </div>
                     <div>
-                      <h4 className="font-semibold text-orange-800">5. त्यागपत्र/समाप्ति</h4>
-                      <p>परिवीक्षा अवधि के दौरान 5 दिन के लिखित नोटिस (या वेतन के बदले भुगतान) पर रोजगार समाप्त किया जा सकता है। अन्य समय में दोनों पक्ष 30 दिन के नोटिस या वेतन के बदले भुगतान पर रोजगार समाप्त कर सकते हैं।</p>
-                    </div>
+                       <h4 className="font-semibold text-orange-800">5. त्यागपत्र/समाप्ति</h4>
+                       <p>परिवीक्षा अवधि के दौरान कंपनी मेरा रोजगार तत्काल प्रभाव से, बिना किसी नोटिस या वेतन के बदले भुगतान के समाप्त कर सकती है। परिवीक्षा पूर्ण होने के बाद, कंपनी 30 दिन के पूर्व लिखित नोटिस या 30 दिन के वेतन के बदले भुगतान पर मेरा रोजगार समाप्त कर सकती है। मैं किसी भी समय 30 दिन का लिखित नोटिस देकर अपना रोजगार समाप्त कर सकता/सकती हूँ; अन्यथा, नोटिस अवधि वसूली के रूप में 30 दिन के वेतन के बराबर राशि काट ली जाएगी।</p>
+                     </div>
                     <div>
                       <h4 className="font-semibold text-orange-800">6. गोपनीयता</h4>
                       <p>रोज़गार के दौरान प्राप्त किसी भी प्रकार की गोपनीय जानकारी का मैं कड़ाई से पालन करूँगा/गी और बिना अनुमति किसी तीसरे पक्ष के साथ साझा नहीं करूँगा/गी।</p>
