@@ -213,6 +213,14 @@ export function UserActions({ user, currentUserRole, branches, onUpdate }: UserA
               Sign Joining Form
             </DropdownMenuItem>
           )}
+          {user.joiningFormSignedAt && (
+            <DropdownMenuItem
+              onClick={() => window.open(`/api/users/${user.id}/appointment-letter`, '_blank')}
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              Download Appointment Letter (PDF)
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
 
           {/* Status Management */}
