@@ -14,7 +14,7 @@ import {
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, UserCog, Calendar, Printer, Edit, Eye, Building2 } from "lucide-react";
+import { MoreHorizontal, UserCog, Calendar, Edit, Eye, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { hasAccess } from "@/lib/access-control";
 import { User, Branch } from "@/models/models";
@@ -165,25 +165,7 @@ export function UserActions({ user, currentUserRole, branches, onUpdate }: UserA
     router.push(`/attendance/${user.id}?month=${year}-${month.toString().padStart(2, '0')}`);
   };
 
-  const handlePrintJoiningForm = async () => {
-    try {
-      const response = await fetch(`/api/users/joining-form?userId=${user.id}`);
-      if (!response.ok) throw new Error('Failed to generate joining form');
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `joining-form-${user.numId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error) {
-      console.error('Failed to print joining form:', error);
-      toast.error('Failed to generate joining form');
-    }
-  };
+  
 
   const handleEdit = () => {
     router.push(`/users/${user.id}`);
@@ -222,12 +204,7 @@ export function UserActions({ user, currentUserRole, branches, onUpdate }: UserA
             <Building2 className="mr-2 h-4 w-4" />
             Assign Branch
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={handlePrintJoiningForm}
-          >
-            <Printer className="mr-2 h-4 w-4" />
-            Print Joining Form
-          </DropdownMenuItem>
+          
           {!user.joiningFormSignedAt && (
             <DropdownMenuItem
               onClick={() => window.open(`/users/${user.id}/joining-form-signature`, '_blank')}
