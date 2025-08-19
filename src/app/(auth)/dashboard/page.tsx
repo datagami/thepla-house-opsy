@@ -7,6 +7,7 @@ import {Clock, CalendarCheck, Users, AlertCircle, UserCheck, AlertTriangle, File
 import Link from "next/link";
 import {Attendance, User} from "@/models/models";
 import { PendingSignaturesWidget } from "@/components/dashboard/pending-signatures-widget";
+import { JoiningFormCard } from "@/components/dashboard/joining-form-card";
 
 export const metadata: Metadata = {
   title: "Dashboard - HRMS",
@@ -45,6 +46,20 @@ export default async function DashboardPage() {
   // @ts-expect-error - role is not in the User type
   const role = session.user.role
   const canManageSelfAttendance = ["HR", "MANAGEMENT", "SELF_ATTENDANCE"].includes(role);
+
+  // Get current user's complete data for joining form status
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      id: true,
+      name: true,
+      role: true,
+      department: true,
+      joiningFormSignedAt: true,
+      joiningFormSignedBy: true,
+      joiningFormAgreement: true,
+    },
+  }) as User;
 
   // Get pending joining form signatures for HR and Management
   let pendingSignatures: User[] = [];
@@ -219,6 +234,8 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
       </div>
+      
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {role === "BRANCH_MANAGER" && (
           <>
@@ -308,6 +325,15 @@ export default async function DashboardPage() {
             </Card>
           </Link>
         )}
+        
+        {/* Joining Form Status for Employees */}
+        {role === "EMPLOYEE" && (
+          <JoiningFormCard 
+            userId={currentUser.id}
+            isSigned={!!currentUser.joiningFormSignedAt}
+            signedAt={currentUser.joiningFormSignedAt || undefined}
+          />
+        )}
         {role === "HR" && (
           <>
             <Link href="/hr/pending-attendance" className="block">
@@ -381,8 +407,9 @@ export default async function DashboardPage() {
         )}
       </div>
       
-      {/* Pending Signatures Widget */}
+      {/* Dashboard Widgets */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {/* Pending Signatures Widget - Show for HR/Management */}
         <PendingSignaturesWidget 
           pendingUsers={pendingSignatures}
           currentUserRole={role}

@@ -24,7 +24,7 @@ export function PendingSignaturesWidget({ pendingUsers, currentUserRole }: Pendi
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium flex items-center gap-2">
           <FileSignature className="h-4 w-4" />
-          Pending Joining Form Signatures
+          Pending Appointment Letter Signatures
         </CardTitle>
         <Badge variant="destructive" className="text-xs">
           {pendingUsers.length}
@@ -53,7 +53,7 @@ export function PendingSignaturesWidget({ pendingUsers, currentUserRole }: Pendi
                 variant="outline"
                 onClick={() => window.open(`/users/${user.id}/joining-form-signature`, '_blank')}
               >
-                Sign Form
+                Sign Letter
                 <ArrowRight className="h-3 w-3 ml-1" />
               </Button>
             </div>
@@ -63,7 +63,7 @@ export function PendingSignaturesWidget({ pendingUsers, currentUserRole }: Pendi
             <div className="text-center pt-2">
               <Link href="/users">
                 <Button variant="ghost" size="sm">
-                  View all {pendingUsers.length} pending signatures
+                  View all {pendingUsers.length} pending letters
                 </Button>
               </Link>
             </div>

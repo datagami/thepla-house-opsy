@@ -93,7 +93,7 @@ export function JoiningFormESignature({ user, onComplete }: JoiningFormESignatur
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">
-            Employee Joining Form - E-Signature
+            Employee Appointment Letter - E-Signature
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -138,7 +138,7 @@ export function JoiningFormESignature({ user, onComplete }: JoiningFormESignatur
               </h3>
               <div className="space-y-4 text-sm text-gray-700">
                 <p className="font-medium">
-                  By signing this joining form, I hereby confirm and agree to the following terms and conditions of employment:
+                  By signing this appointment letter, I hereby confirm and agree to the following terms and conditions of employment:
                 </p>
                 
                 <div className="space-y-3">
@@ -202,7 +202,7 @@ export function JoiningFormESignature({ user, onComplete }: JoiningFormESignatur
 
                   <div>
                     <h4 className="font-semibold text-orange-800">10. Information Accuracy</h4>
-                    <p>I confirm that all the information provided in this joining form is true, accurate, and complete to the best of my knowledge. I understand that any false or misleading information may result in immediate termination of my employment.</p>
+                    <p>I confirm that all the information provided in this appointment letter is true, accurate, and complete to the best of my knowledge. I understand that any false or misleading information may result in immediate termination of my employment.</p>
                   </div>
 
                   <div>
@@ -325,7 +325,7 @@ export function JoiningFormESignature({ user, onComplete }: JoiningFormESignatur
               size="lg"
               className="px-8"
             >
-              {isSubmitting ? 'Submitting...' : 'Sign and Submit Joining Form'}
+              {isSubmitting ? 'Submitting...' : 'Sign and Submit Appointment Letter'}
             </Button>
           </div>
 

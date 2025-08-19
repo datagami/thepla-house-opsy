@@ -8,8 +8,8 @@ import { notFound } from "next/navigation";
 import {User} from "@/models/models";
 
 export const metadata: Metadata = {
-  title: "Joining Form E-Signature - HRMS",
-  description: "Sign your joining form digitally",
+  title: "Appointment Letter E-Signature - HRMS",
+  description: "Sign your appointment letter digitally",
 };
 
 interface JoiningFormSignaturePageProps {
@@ -56,7 +56,7 @@ export default async function JoiningFormSignaturePage({ params }: JoiningFormSi
     <div className="flex-1 space-y-8 p-8 pt-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">
-          {isOwnForm ? "Sign Your Joining Form" : `Sign Joining Form - ${user.name}`}
+          {isOwnForm ? "Sign Your Appointment Letter" : `Sign Appointment Letter - ${user.name}`}
         </h2>
       </div>
 

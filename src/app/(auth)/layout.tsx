@@ -35,8 +35,12 @@ export default async function AuthLayout({
     <div className="min-h-screen">
       <Header />
       <div className="flex">
-        <SideNav userRole={role} />
-        <main className="flex-1">{children}</main>
+        {/* Desktop Sidebar - Only visible on desktop */}
+        <aside className="hidden lg:flex lg:w-64 lg:border-r lg:bg-muted/10 lg:p-6">
+          <SideNav userRole={role} />
+        </aside>
+        {/* Mobile: Full width main content */}
+        <main className="flex-1 w-full lg:ml-0">{children}</main>
       </div>
     </div>
   );

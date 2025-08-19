@@ -202,11 +202,11 @@ const roleNavItems: Record<string, NavItem[]> = {
   ],
 };
 
-interface SideNavProps {
+interface MobileNavProps {
   userRole: string;
 }
 
-export function SideNav({ userRole }: SideNavProps) {
+export function MobileNav({ userRole }: MobileNavProps) {
   const pathname = usePathname();
   const navItems = roleNavItems[userRole] || [];
   const { data: session } = useSession();
