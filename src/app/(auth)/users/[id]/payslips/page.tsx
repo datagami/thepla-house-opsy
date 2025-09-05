@@ -29,7 +29,10 @@ export default async function PayslipsPage({ params }: Props) {
   // Fetch salaries for this user
   
   const salaries = await prisma.salary.findMany({
-    where: { userId },
+    where: {
+      userId,
+      status: "PAID"
+    },
     orderBy: [
       { year: "desc" },
       { month: "desc" },
