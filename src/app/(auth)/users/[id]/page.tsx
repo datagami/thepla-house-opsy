@@ -8,6 +8,8 @@ import {Branch, User} from "@/models/models";
 import { AdvancePaymentForm } from "@/components/users/advance-payment-form";
 import { AdvancePaymentsList } from "@/components/users/advance-payments-list";
 import { SignatureStatus } from "@/components/users/signature-status";
+import { UniformForm } from "@/components/users/uniform-form";
+import { UniformsList } from "@/components/users/uniforms-list";
 
 export const metadata: Metadata = {
   title: "User Profile - HRMS",
@@ -110,6 +112,16 @@ export default async function UserProfilePage({ params }: Props) {
           <AdvancePaymentForm userId={id} userName={user.name} />
         </div>
         <AdvancePaymentsList userId={id} />
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Uniform Tracking</h2>
+          {canManageUsers && (
+            <UniformForm userId={id} userName={user.name} />
+          )}
+        </div>
+        <UniformsList userId={id} />
       </div>
     </div>
   );

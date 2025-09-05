@@ -302,3 +302,24 @@ export interface NoteEditHistory {
   note: Note;
   editor: User;
 }
+
+export interface Uniform {
+  id?: string;
+  numId?: number;
+  userId?: string | undefined;
+  itemName?: string; // fixed to "Shirt"
+  itemType?: string; // fixed to "Shirt"
+  size?: string | null;
+  status: "ISSUED" | "RETURNED" | "LOST" | "DAMAGED";
+  issuedAt?: Date;
+  returnedAt?: Date | null;
+  notes?: string | null;
+  issuedById?: string | null;
+  returnedById?: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+  user?: User;
+  issuedBy?: User | null;
+  returnedBy?: User | null;
+  uniformNumber?: string;
+}

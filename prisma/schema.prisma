@@ -56,6 +56,13 @@ enum InstallmentStatus {
   PAID
 }
 
+enum UniformStatus {
+  ISSUED
+  RETURNED
+  LOST
+  DAMAGED
+}
+
 model Account {
   id                 String  @id @default(cuid())
   numId              Int     @default(autoincrement()) @map("num_id")
@@ -153,6 +160,11 @@ model User {
 
   // --- Branch Document Relations ---
   uploadedBranchDocuments BranchDocument[] @relation("BranchDocumentUploads")
+
+  // --- Uniform Relations ---
+  uniforms              Uniform[]               @relation("UserUniforms")
+  issuedUniforms        Uniform[]               @relation("UniformIssuedBy")
+  returnedUniforms      Uniform[]               @relation("UniformReturnedBy")
 
   @@map("users1")
   @@index([branchId])
@@ -374,6 +386,40 @@ model AdvancePaymentInstallment {
   @@index([advanceId])
   @@index([salaryId])
   @@index([approvedById])
+}
+
+// --- Uniform Tracking Feature ---
+
+model Uniform {
+  id            String        @id @default(cuid())
+  numId         Int           @default(autoincrement()) @map("num_id")
+  userId        String        @map("user_id")
+  itemName      String        @map("item_name")
+  itemType      String        @map("item_type") // e.g., "Shirt", "Pants", "Shoes", "Jacket"
+  size          String?  
+  uniform_number String?
+  color         String?       
+  quantity      Int           @default(1)
+  status        UniformStatus @default(ISSUED)
+  issuedAt      DateTime      @map("issued_at")
+  returnedAt    DateTime?     @map("returned_at")
+  notes         String?       
+  issuedById    String?       @map("issued_by_id")
+  returnedById  String?       @map("returned_by_id")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  user          User          @relation("UserUniforms", fields: [userId], references: [id], onDelete: Cascade)
+  issuedBy      User?         @relation("UniformIssuedBy", fields: [issuedById], references: [id], onDelete: SetNull)
+  returnedBy    User?         @relation("UniformReturnedBy", fields: [returnedById], references: [id], onDelete: SetNull)
+
+  @@map("uniforms")
+  @@index([userId])
+  @@index([issuedById])
+  @@index([returnedById])
+  @@index([status])
+  @@index([issuedAt])
 }
 
 // --- Notes Feature ---
