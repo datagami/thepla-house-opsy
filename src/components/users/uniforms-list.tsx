@@ -36,9 +36,10 @@ interface Uniform {
 interface UniformsListProps {
   userId: string;
   refreshKey?: number;
+  canModify?: boolean;
 }
 
-export function UniformsList({ userId, refreshKey = 0 }: UniformsListProps) {
+export function UniformsList({ userId, refreshKey = 0, canModify = true }: UniformsListProps) {
   const [uniforms, setUniforms] = useState<Uniform[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +75,7 @@ export function UniformsList({ userId, refreshKey = 0 }: UniformsListProps) {
   }, [userId, refreshKey]);
 
   const handleUpdateClick = (uniform: Uniform) => {
+    if (!canModify) return;
     setSelectedUniform(uniform);
     setUpdateStatus(uniform.status);
     setUpdateNotes(uniform.notes || "");
@@ -82,6 +84,7 @@ export function UniformsList({ userId, refreshKey = 0 }: UniformsListProps) {
 
   const handleUpdateSubmit = async () => {
     if (!selectedUniform) return;
+    if (!canModify) return;
 
     try {
       setIsUpdating(true);
@@ -116,12 +119,14 @@ export function UniformsList({ userId, refreshKey = 0 }: UniformsListProps) {
   };
 
   const handleDeleteClick = (uniform: Uniform) => {
+    if (!canModify) return;
     setUniformToDelete(uniform);
     setDeleteDialogOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
     if (!uniformToDelete) return;
+    if (!canModify) return;
 
     try {
       setIsDeleting(true);
@@ -208,25 +213,27 @@ export function UniformsList({ userId, refreshKey = 0 }: UniformsListProps) {
                   <Badge className={getStatusColor(uniform.status)}>
                     {uniform.status}
                   </Badge>
-                  <div className="flex space-x-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleUpdateClick(uniform)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    {uniform.status === "ISSUED" && (
+                  {canModify && (
+                    <div className="flex space-x-1">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDeleteClick(uniform)}
-                        className="text-red-600 hover:text-red-700"
+                        onClick={() => handleUpdateClick(uniform)}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Edit className="h-4 w-4" />
                       </Button>
-                    )}
-                  </div>
+                      {uniform.status === "ISSUED" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteClick(uniform)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -235,6 +242,7 @@ export function UniformsList({ userId, refreshKey = 0 }: UniformsListProps) {
       )}
 
       {/* Update Dialog */}
+      {canModify && (
       <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -278,8 +286,10 @@ export function UniformsList({ userId, refreshKey = 0 }: UniformsListProps) {
           </div>
         </DialogContent>
       </Dialog>
+      )}
 
       {/* Delete Dialog */}
+      {canModify && (
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -307,6 +317,7 @@ export function UniformsList({ userId, refreshKey = 0 }: UniformsListProps) {
           </div>
         </DialogContent>
       </Dialog>
+      )}
     </div>
   );
 } 

@@ -76,6 +76,15 @@ export default async function UserProfilePage({ params }: Props) {
     redirect("/404");
   }
 
+  // Allow Branch Managers to access/act for users in their branch
+  // @ts-expect-error - role/branchId/managedBranchId are in session
+  const isBranchManagerForUser = session.user.role === "BRANCH_MANAGER" && (
+    // @ts-expect-error - managedBranchId not typed on session
+    session.user.managedBranchId === user.branch?.id ||
+    // @ts-expect-error - branchId not typed on session
+    session.user.branchId === user.branch?.id
+  );
+
   const branches = await prisma.branch.findMany({
     select: {
       id: true,
@@ -117,11 +126,14 @@ export default async function UserProfilePage({ params }: Props) {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">Uniform Tracking</h2>
-          {canManageUsers && (
+          {(canManageUsers || isBranchManagerForUser) && (
             <UniformForm userId={id} userName={user.name} />
           )}
         </div>
-        <UniformsList userId={id} />
+        <UniformsList 
+          userId={id} 
+          canModify={canManageUsers}
+        />
       </div>
     </div>
   );

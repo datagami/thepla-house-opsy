@@ -10,6 +10,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CalendarDays, Building2, Shirt } from "lucide-react";
+import { UniformForm } from "@/components/users/uniform-form";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import AssignBranchModal from "../users/assign-branch-modal";
@@ -101,24 +104,60 @@ export function EmployeeTable({ employees, branches, onEmployeeUpdate }: Employe
                   {employee.status.toLowerCase()}
                 </Badge>
               </TableCell>
-              <TableCell className="text-right space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => router.push(`/attendance/${employee.id}`)}
-                >
-                  View Attendance
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedEmployee(employee);
-                    setIsAssignBranchModalOpen(true);
-                  }}
-                >
-                  Assign Branch
-                </Button>
+              <TableCell className="text-right">
+                <div className="inline-flex items-center gap-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => router.push(`/attendance/${employee.id}`)}
+                        >
+                          <CalendarDays className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>View Attendance</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        {/* Assign Branch */}
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedEmployee(employee);
+                            setIsAssignBranchModalOpen(true);
+                          }}
+                        >
+                          <Building2 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Assign Branch</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        {/* Issue Uniform (Shirt only) */}
+                        <div>
+                          <UniformForm
+                            userId={employee.id}
+                            userName={employee.name}
+                            trigger={
+                              <Button variant="outline" size="icon">
+                                <Shirt className="h-4 w-4" />
+                              </Button>
+                            }
+                          />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>Issue Uniform</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
               </TableCell>
             </TableRow>
           ))}

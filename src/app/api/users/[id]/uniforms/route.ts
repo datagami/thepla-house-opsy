@@ -7,6 +7,7 @@ const uniformSchema = z.object({
   uniformNumber: z.string().min(1),
   size: z.string().optional(),
   notes: z.string().optional(),
+  issuedAt: z.string().optional(),
 });
 
 export async function POST(
@@ -17,8 +18,7 @@ export async function POST(
     const session = await auth();
     const { id } = await params;
 
-    // @ts-expect-error role expected
-    if (!session?.user || !["HR", "MANAGEMENT"].includes(session.user.role)) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -28,11 +28,27 @@ export async function POST(
     // Check if user exists
     const user = await prisma.user.findUnique({
       where: { id: id },
-      select: { id: true, name: true }
+      select: { id: true, name: true, branchId: true }
     });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Authorization: HR/MANAGEMENT always allowed; BRANCH_MANAGER allowed if same/managed branch
+    // @ts-expect-error expected
+    const role = (session.user).role as string;
+    if (
+      role !== "HR" &&
+      role !== "MANAGEMENT" &&
+      !(role === "BRANCH_MANAGER" && (
+        // @ts-expect-error expected
+        (session.user).managedBranchId === user.branchId ||
+        // @ts-expect-error expected
+        (session.user).branchId === user.branchId
+      ))
+    ) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Create uniform record - fixed to Shirt with internal uniform number
@@ -46,19 +62,18 @@ export async function POST(
         // internal uniform number -> prisma model uses snake_case
         uniform_number: body.uniformNumber,
         notes: body.notes,
-        issuedAt: new Date(),
+        issuedAt: body.issuedAt ? new Date(body.issuedAt) : new Date(),
         issuedById: session.user.id,
         status: "ISSUED",
       },
     });
 
     // Map to camelCase for client consistency
+    const { uniform_number: createdUniformNumber, ...restCreated } = uniform;
     const mapped = {
-      ...uniform,
-      uniformNumber: (uniform).uniform_number,
+      ...restCreated,
+      uniformNumber: createdUniformNumber,
     };
-    // @ts-expect-error expected
-    delete mapped?.uniform_number;
 
     return NextResponse.json(mapped);
   } catch (error) {
@@ -82,7 +97,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const uniforms = await prisma.uniform.findMany({
+    const uniforms = await (prisma).uniform.findMany({
       where: {
         userId: id
       },
@@ -105,10 +120,8 @@ export async function GET(
 
     // Map snake_case from prisma model to camelCase for client
     const mapped = uniforms.map((u) => {
-      const m = { ...u, uniformNumber: u.uniform_number };
-      // @ts-expect-error - expected
-      delete m.uniform_number;
-      return m;
+      const { uniform_number, ...rest } = u;
+      return { ...rest, uniformNumber: uniform_number };
     });
 
     return NextResponse.json(mapped);

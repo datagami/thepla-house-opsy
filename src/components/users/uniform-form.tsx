@@ -18,13 +18,14 @@ interface UniformFormProps {
   userId: string | null | undefined;
   userName: string | null | undefined;
   onSuccess?: () => void;
+  trigger?: React.ReactNode;
 }
 
 const SIZES = [
   "34", "36", "38", "40", "42", "44", "46"
 ];
 
-export function UniformForm({ userId, userName, onSuccess }: UniformFormProps) {
+export function UniformForm({ userId, userName, onSuccess, trigger }: UniformFormProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -48,6 +49,7 @@ export function UniformForm({ userId, userName, onSuccess }: UniformFormProps) {
           size: size || undefined,
           notes: notes || undefined,
           uniformNumber,
+          issuedAt: formData.get("issuedAt") as string,
         }),
       });
 
@@ -67,7 +69,7 @@ export function UniformForm({ userId, userName, onSuccess }: UniformFormProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Issue Uniform</Button>
+        {trigger ?? (<Button>Issue Uniform</Button>)}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
@@ -85,6 +87,16 @@ export function UniformForm({ userId, userName, onSuccess }: UniformFormProps) {
               name="uniformNumber"
               required
               placeholder="Enter internal shirt number"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="issuedAt">Issue Date</Label>
+            <Input
+              id="issuedAt"
+              name="issuedAt"
+              type="date"
+              required
+              defaultValue={new Date().toISOString().slice(0, 10)}
             />
           </div>
           <div className="space-y-2">
