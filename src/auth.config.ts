@@ -44,11 +44,14 @@ export default {
         if (user.status !== "ACTIVE") {
           throw new Error("Account is not active");
         }
+        console.log(user.password)
+        console.log(credentials.password)
 
         const isPasswordValid = await compare(
           credentials.password as string,
           user.password
         );
+        console.log(isPasswordValid);
 
         if (!isPasswordValid) {
           return null;
