@@ -45,7 +45,7 @@ export default {
           throw new Error("Account is not active");
         }
 
-        const isPasswordValid = compare(
+        const isPasswordValid = await compare(
           credentials.password as string,
           user.password
         );
