@@ -8,7 +8,8 @@
     "start": "next start -p 8080",
     "lint": "next lint",
     "seed:employees": "tsx scripts/seed-employees.ts",
-    "seed:attendance": "tsx scripts/seed-attendance.ts"
+    "seed:attendance": "tsx scripts/seed-attendance.ts",
+    "reset:passwords": "tsx scripts/reset-passwords.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.8.0",
