@@ -73,7 +73,7 @@ export async function PUT(
 
     // Only update password if provided
     if (password) {
-      updateData.password = await hash(password, 10);
+      updateData.password = await hash(password, 12);
     }
 
     // if branchId is null, remove the existing branch from database
