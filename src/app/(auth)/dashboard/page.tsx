@@ -329,7 +329,7 @@ export default async function DashboardPage() {
         )}
         
         {/* Joining Form Status for Employees */}
-        {role === "EMPLOYEE" && (
+        {(role === "EMPLOYEE" || role === "BRANCH_MANAGER") && (
           <JoiningFormCard 
             userId={currentUser.id}
             isSigned={!!currentUser.joiningFormSignedAt}

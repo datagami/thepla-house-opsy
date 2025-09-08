@@ -10,9 +10,11 @@ interface SignatureStatusProps {
   user: User;
   currentUserId: string;
   canManageUsers: boolean;
+  // Optional prop to allow branch managers to sign for users in their branch
+  isBranchManagerForUser?: boolean;
 }
 
-export function SignatureStatus({ user, currentUserId, canManageUsers }: SignatureStatusProps) {
+export function SignatureStatus({ user, currentUserId, canManageUsers, isBranchManagerForUser = false }: SignatureStatusProps) {
   const isSigned = !!user.joiningFormSignedAt;
   const isOwnForm = currentUserId === user.id;
 
@@ -80,13 +82,13 @@ export function SignatureStatus({ user, currentUserId, canManageUsers }: Signatu
               The joining form needs to be signed to complete the onboarding process.
             </p>
             
-            {(isOwnForm || canManageUsers) && (
+            {(isOwnForm || canManageUsers || isBranchManagerForUser) && (
               <Button onClick={handleSignForm} className="w-full">
                 Sign Joining Form
               </Button>
             )}
             
-            {!isOwnForm && !canManageUsers && (
+            {!isOwnForm && !canManageUsers && !isBranchManagerForUser && (
               <p className="text-sm text-orange-600">
                 Please contact HR to sign your joining form.
               </p>
