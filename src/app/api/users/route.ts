@@ -34,7 +34,8 @@ export async function POST(request: Request) {
       aadharNo,
       bankAccountNo,
       salary,
-      references 
+      references,
+      referredById 
     } = body;
 
     if (!email || !name || !password) {
@@ -103,6 +104,34 @@ export async function POST(request: Request) {
         references: true,
       },
     });
+
+    // If referredById provided, record a referral with eligibility at 3 months from DOJ
+    if (referredById) {
+      const referrer = await prisma.user.findUnique({ where: { id: referredById } });
+      if (referrer) {
+        const dojDate = doj ? new Date(doj) : new Date();
+        const eligibleAt = new Date(dojDate);
+        eligibleAt.setMonth(eligibleAt.getMonth() + 3);
+
+        // Create referral; ignore if duplicate due to unique constraint
+        await prisma.referral.upsert({
+          where: {
+            referrerId_referredUserId: {
+              referrerId: referredById,
+              referredUserId: user.id,
+            },
+          },
+          update: {
+            eligibleAt,
+          },
+          create: {
+            referrerId: referredById,
+            referredUserId: user.id,
+            eligibleAt,
+          },
+        });
+      }
+    }
 
     return NextResponse.json(user);
   } catch (error) {

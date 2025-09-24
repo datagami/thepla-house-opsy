@@ -248,6 +248,18 @@ export interface Salary {
   updatedAt: Date;
   user: User;
   installments: AdvancePaymentInstallment[];
+  referrals?: Referral[];
+}
+
+export interface Referral {
+  id: string;
+  numId: number;
+  referrerId: string;
+  referredUserId: string;
+  bonusAmount: number;
+  eligibleAt: Date;
+  paidAt?: Date | null;
+  salaryId?: string | null;
 }
 
 export interface AdvancePayment {

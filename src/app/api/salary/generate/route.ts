@@ -95,7 +95,7 @@ export async function POST(request: Request) {
         }
       })
 
-      // Create salary record with suggested advance deductions
+      // Create salary record with suggested advance deductions and apply eligible referral bonuses
       return await prisma.$transaction(async (tx) => {
         // Create the salary record
         const salary = await tx.salary.create({
@@ -117,6 +117,32 @@ export async function POST(request: Request) {
             status: 'PENDING'
           }
         })
+
+        // Apply eligible referral bonuses for this referrer (user)
+        const monthEnd = new Date(year, month, 0)
+        const eligibleReferrals = await tx.referral.findMany({
+          where: {
+            referrerId: user.id,
+            paidAt: null,
+            eligibleAt: { lte: monthEnd },
+          }
+        })
+
+        if (eligibleReferrals.length > 0) {
+          const totalReferralBonus = eligibleReferrals.reduce((sum, r) => sum + (r.bonusAmount || 0), 0)
+          await tx.salary.update({
+            where: { id: salary.id },
+            data: {
+              otherBonuses: { increment: totalReferralBonus },
+              netSalary: { increment: totalReferralBonus },
+            }
+          })
+
+          await tx.referral.updateMany({
+            where: { id: { in: eligibleReferrals.map(r => r.id) } },
+            data: { paidAt: new Date(), salaryId: salary.id }
+          })
+        }
 
         // Create pending installments for each suggested deduction
         for (const advance of pendingAdvances) {

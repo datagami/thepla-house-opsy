@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {useRouter} from "next/navigation";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {useForm} from "react-hook-form";
@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {toast} from "sonner";
 import {Branch, User} from "@/models/models";
 import {UserImageUpload} from './user-image-upload';
@@ -60,6 +61,7 @@ const userFormSchema = z.object({
     })
   ).min(1, "At least one reference is required"),
   password: z.string().min(6, "Password must be at least 6 characters").optional().or(z.literal('')),
+  referredById: z.string().optional(),
 });
 
 interface UserProfileFormProps {
@@ -71,6 +73,9 @@ interface UserProfileFormProps {
 export function UserProfileForm({user, branches, canEdit = true}: UserProfileFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [employees, setEmployees] = useState<Array<{ id: string; name: string; email?: string | null }>>([]);
+  const [referrerOpen, setReferrerOpen] = useState(false);
+  const [referrerQuery, setReferrerQuery] = useState("");
 
   const form = useForm<z.infer<typeof userFormSchema>>({
     resolver: zodResolver(userFormSchema),
@@ -97,8 +102,26 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
         }))
         : [{name: "", contactNo: ""}],
       password: "",
+      referredById: undefined,
     },
   });
+
+  // Load active employees for referrer selection (lightweight list)
+  useEffect(() => {
+    const loadEmployees = async () => {
+      try {
+          const res = await fetch('/api/users?active=true');
+        if (res.ok) {
+          const data: Array<{ id: string; name: string; email?: string | null }> = await res.json();
+          setEmployees(data.map((u) => ({ id: u.id, name: u.name, email: u.email })));
+        }
+      } catch {
+        // ignore
+      }
+    };
+    // only when creating a user
+    if (!user) loadEmployees();
+  }, [user]);
 
   const onSubmit = async (values: z.infer<typeof userFormSchema>) => {
     setIsLoading(true);
@@ -106,12 +129,13 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
       const endpoint = user ? `/api/users/${user.id}` : "/api/users";
       const method = user ? "PUT" : "POST";
 
-      const submitData = {
+      const submitData: Record<string, unknown> = {
         ...values,
         ...(values.password ? {password: values.password} : {}),
         branchId: values.branch === "null" ? null : values.branch,
       };
       delete submitData.branch;
+      if (!('referredById' in submitData) || submitData.referredById === "null") delete (submitData as { referredById?: unknown }).referredById;
 
       const response = await fetch(endpoint, {
         method,
@@ -350,6 +374,70 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
                 </FormItem>
               )}
             />
+
+            {!user && (
+            <FormField
+              control={form.control}
+              name="referredById"
+              render={({ field }) => {
+                const selected = employees.find(e => e.id === field.value);
+                const filtered = referrerQuery
+                  ? employees.filter(e =>
+                      (e.name + " " + (e.email || "")).toLowerCase().includes(referrerQuery.toLowerCase())
+                    )
+                  : employees;
+                return (
+                  <FormItem>
+                    <FormLabel>Referrer (Existing Employee)</FormLabel>
+                    <Popover open={referrerOpen} onOpenChange={setReferrerOpen}>
+                      <PopoverTrigger asChild>
+                        <Button type="button" variant="outline" role="combobox" aria-expanded={referrerOpen} disabled={!canEdit} className="w-full justify-between">
+                          {selected ? `${selected.name}${selected.email ? ` (${selected.email})` : ''}` : "Select a referrer (optional)"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-2">
+                        <div className="space-y-2">
+                          <Input
+                            placeholder="Search employees..."
+                            value={referrerQuery}
+                            onChange={(e) => setReferrerQuery(e.target.value)}
+                          />
+                          <div className="max-h-60 overflow-auto rounded-md border">
+                            <button
+                              type="button"
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-accent"
+                              onClick={() => {
+                                field.onChange(undefined);
+                                setReferrerOpen(false);
+                              }}
+                            >
+                              None
+                            </button>
+                            {filtered.map(emp => (
+                              <button
+                                key={emp.id}
+                                type="button"
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-accent"
+                                onClick={() => {
+                                  field.onChange(emp.id);
+                                  setReferrerOpen(false);
+                                }}
+                              >
+                                {emp.name}{emp.email ? ` (${emp.email})` : ''}
+                              </button>
+                            ))}
+                            {filtered.length === 0 && (
+                              <div className="px-3 py-2 text-sm text-muted-foreground">No results</div>
+                            )}
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />)}
           </div>
         </div>
 

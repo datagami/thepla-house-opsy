@@ -22,6 +22,11 @@ async function getSalaryDetails(id: string) {
         include: {
           advance: true
         }
+      },
+      referrals: {
+        include: {
+          referredUser: true,
+        }
       }
     }
   }) as unknown as Salary;

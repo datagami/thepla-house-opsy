@@ -33,6 +33,7 @@ export function SalaryManagement({ initialYear, initialMonth }: SalaryManagement
   const [selectedMonth, setSelectedMonth] = useState(initialMonth || new Date().getMonth() + 1)
   const [isGenerating, setIsGenerating] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [isProcessingReferrals, setIsProcessingReferrals] = useState(false)
 
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i)
@@ -157,6 +158,32 @@ export function SalaryManagement({ initialYear, initialMonth }: SalaryManagement
                 onClick={handleGenerateSalaries}
                 disabled={isGenerating || !selectedMonth || !selectedYear}>
                 {isGenerating ? 'Generating...' : 'Generate Salaries'}
+              </Button>
+
+              <Button
+                onClick={async () => {
+                  try {
+                    setIsProcessingReferrals(true)
+                    const res = await fetch('/api/salary/process-referrals', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ month: selectedMonth, year: selectedYear })
+                    })
+                    const data = await res.json()
+                    if (!res.ok) throw new Error(data.error || 'Failed to process referrals')
+                    toast.success('Referral bonuses processed')
+                    setRefreshKey(prev => prev + 1)
+                  } catch (e) {
+                    console.error(e)
+                    toast.error('Failed to process referrals')
+                  } finally {
+                    setIsProcessingReferrals(false)
+                  }
+                }}
+                disabled={isProcessingReferrals}
+                variant="outline"
+              >
+                {isProcessingReferrals ? 'Processing...' : 'Process Referral Bonuses'}
               </Button>
 
               <DownloadENETButton 

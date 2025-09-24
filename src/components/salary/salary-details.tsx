@@ -26,6 +26,7 @@ import { toast } from 'sonner';
 import { SalaryStatsTable } from '@/components/salary/salary-stats-table'
 import { Input } from "@/components/ui/input"
 import { AddBonusForm } from './add-bonus-form'
+import { formatDate } from '@/lib/utils'
 
 interface SalaryDetailsProps {
   salary: Salary;
@@ -71,6 +72,23 @@ export function SalaryDetails({ salary, month, year, canEdit = false }: SalaryDe
       currency: 'INR',
     }).format(amount)
   }
+
+  const totalReferralBonus = Array.isArray((salary as unknown as { referrals?: Array<{ bonusAmount?: number }> }).referrals)
+    ? (salary as unknown as { referrals: Array<{ bonusAmount?: number }> }).referrals.reduce((sum: number, r: { bonusAmount?: number }) => sum + (r.bonusAmount || 0), 0)
+    : 0
+
+  type ReferralItem = {
+    id: string;
+    bonusAmount?: number;
+    referredUserId?: string;
+    referredUser?: {
+      name?: string | null;
+      status: string;
+      doj?: Date | string | null;
+    } | null;
+  }
+
+  const referrals: ReferralItem[] = (salary as unknown as { referrals?: ReferralItem[] }).referrals || []
 
   const handleUpdateStatus = async () => {
     try {
@@ -447,6 +465,44 @@ export function SalaryDetails({ salary, month, year, canEdit = false }: SalaryDe
                 {salary.installments?.some(i => i.status === 'PENDING') && 
                   ' (Pending installments need approval)'}
               </Button>
+            )}
+
+            {referrals.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Referral Bonuses</h4>
+                <div className="space-y-1">
+                  {referrals.map((r) => (
+                    <div key={r.id} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span>Referred: {r.referredUser?.name || r.referredUserId}</span>
+                        {r.referredUser && (
+                          <>
+                            <Badge
+                              variant={
+                                r.referredUser.status === 'ACTIVE'
+                                  ? 'default'
+                                  : r.referredUser.status === 'PENDING'
+                                  ? 'secondary'
+                                  : 'outline'
+                              }
+                            >
+                              {r.referredUser.status}
+                            </Badge>
+                            {r.referredUser.doj ? (
+                              <span className="text-muted-foreground">Joined {formatDate(new Date(r.referredUser.doj))}</span>
+                            ) : null}
+                          </>
+                        )}
+                      </div>
+                      <span className="font-medium text-green-700">{formatCurrency(r.bonusAmount || 0)}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between text-sm pt-1 border-t">
+                  <span>Total Referral Bonus</span>
+                  <span className="font-semibold text-green-700">{formatCurrency(totalReferralBonus)}</span>
+                </div>
+              </div>
             )}
           </div>
         </CardContent>

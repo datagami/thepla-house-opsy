@@ -41,7 +41,8 @@ export function SalaryList({month, year}: SalaryListProps) {
     status: 'all',
     search: '',
     branch: 'all',
-    role: 'all'
+    role: 'all',
+    referralOnly: false,
   })
   // Add state for users without salary
   const [usersWithoutSalary, setUsersWithoutSalary] = useState<User[]>([]);
@@ -71,7 +72,7 @@ export function SalaryList({month, year}: SalaryListProps) {
   const fetchSalaries = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/salary?month=${month}&year=${year}`)
+      const response = await fetch(`/api/salary?month=${month}&year=${year}${selectedFilters.referralOnly ? '&referralOnly=true' : ''}`)
       if (response.ok) {
         const data = await response.json()
         setSalaries(data)
@@ -420,7 +421,8 @@ export function SalaryList({month, year}: SalaryListProps) {
           selectedFilters.status !== 'all' ||
           selectedFilters.search ||
           selectedFilters.branch ||
-          selectedFilters.role) && (
+          selectedFilters.role ||
+          selectedFilters.referralOnly) && (
           <Button
             variant="outline"
             onClick={() => setSelectedFilters({
@@ -428,12 +430,25 @@ export function SalaryList({month, year}: SalaryListProps) {
               status: 'all',
               search: '',
               branch: 'all',
-              role: 'all'
+              role: 'all',
+              referralOnly: false,
             })}
           >
             Clear Filters
           </Button>
         )}
+      </div>
+
+      <div className="flex items-center gap-2 -mt-2">
+        <Checkbox
+          checked={selectedFilters.referralOnly}
+          onCheckedChange={(checked) => {
+            setSelectedFilters(prev => ({ ...prev, referralOnly: !!checked }))
+            // refetch on toggle
+            setTimeout(() => fetchSalaries(), 0)
+          }}
+        />
+        <span className="text-sm">Show only salaries with referral bonuses</span>
       </div>
 
       <div className="flex items-center justify-between">
@@ -566,6 +581,17 @@ export function SalaryList({month, year}: SalaryListProps) {
                       }).format(salary.baseSalary)}
                     </span>
                   </div>
+              {Array.isArray((salary as unknown as { referrals?: Array<{ bonusAmount?: number }> }).referrals) && (salary as unknown as { referrals: Array<{ bonusAmount?: number }> }).referrals.length > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Referral Bonus</span>
+                  <span className="font-semibold text-green-700">
+                    {new Intl.NumberFormat('en-IN', {
+                      style: 'currency',
+                      currency: 'INR'
+                    }).format((salary as unknown as { referrals: Array<{ bonusAmount?: number }> }).referrals.reduce((sum: number, r) => sum + (r.bonusAmount || 0), 0))}
+                  </span>
+                </div>
+              )}
                   <div className="flex justify-between items-center pt-1 border-t">
                     <span className="text-sm font-medium">Net Salary</span>
                     <span className="font-semibold text-green-600">

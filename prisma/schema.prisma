@@ -170,6 +170,10 @@ model User {
   issuedUniforms        Uniform[]               @relation("UniformIssuedBy")
   returnedUniforms      Uniform[]               @relation("UniformReturnedBy")
 
+  // --- Referral Relations ---
+  referralsMade        Referral[]              @relation("UserReferralsMade")
+  referralsReceived    Referral[]              @relation("UserReferralsReceived")
+
   @@map("users1")
   @@index([branchId])
   @@index([managedBranchId])
@@ -373,10 +377,37 @@ model Salary {
   updatedAt         DateTime  @updatedAt
   user              User      @relation(fields: [userId], references: [id])
   installments      AdvancePaymentInstallment[]
+  referrals         Referral[]
 
   @@index([userId])
   @@index([month, year])
   @@unique([userId, month, year])
+}
+
+// --- Employee Referral Bonus ---
+
+model Referral {
+  id               String   @id @default(cuid())
+  numId            Int      @default(autoincrement()) @map("num_id")
+  referrerId       String   @map("referrer_id")
+  referredUserId   String   @map("referred_user_id")
+  bonusAmount      Float    @default(2000)
+  eligibleAt       DateTime @map("eligible_at")
+  paidAt           DateTime? @map("paid_at")
+  salaryId         String?   @map("salary_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  referrer         User     @relation("UserReferralsMade", fields: [referrerId], references: [id], onDelete: Cascade)
+  referredUser     User     @relation("UserReferralsReceived", fields: [referredUserId], references: [id], onDelete: Cascade)
+  salary           Salary?  @relation(fields: [salaryId], references: [id], onDelete: SetNull)
+
+  @@unique([referrerId, referredUserId])
+  @@index([referrerId])
+  @@index([referredUserId])
+  @@index([eligibleAt])
+  @@index([salaryId])
 }
 
 model AdvancePayment {

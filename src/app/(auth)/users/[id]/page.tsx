@@ -69,9 +69,31 @@ export default async function UserProfilePage({ params }: Props) {
       salaries: true,
       advances: true,
       approvedAdvances: true,
-      approvedInstallments: true
+      approvedInstallments: true,
+      referralsMade: {
+        include: {
+          referredUser: true,
+        }
+      },
+      referralsReceived: {
+        include: {
+          referrer: true,
+        }
+      }
     },
-  }) as unknown as User;
+  }) as unknown as User & {
+    referralsMade?: Array<{
+      id: string;
+      eligibleAt: Date;
+      paidAt?: Date | null;
+      referredUser?: { id: string; name?: string | null } | null;
+    }>;
+    referralsReceived?: Array<{
+      id: string;
+      referrerId: string;
+      referrer?: { id: string; name?: string | null } | null;
+    }>;
+  };
 
 
   if (!user) {
@@ -120,6 +142,34 @@ export default async function UserProfilePage({ params }: Props) {
           currentUserId={currentUserId}
           canManageUsers={canManageUsers}
         />
+      </div>
+
+      {/* Referrals Panel */}
+      <div className="grid gap-6">
+        {user.referralsReceived?.length ? (
+          <div className="p-4 border rounded-md">
+            <h3 className="text-lg font-medium mb-2">Referred By</h3>
+            {(user.referralsReceived || []).map((r) => (
+              <div key={r.id} className="text-sm">{r.referrer?.name || r.referrerId}</div>
+            ))}
+          </div>
+        ) : null}
+
+        {user.referralsMade?.length ? (
+          <div className="p-4 border rounded-md">
+            <h3 className="text-lg font-medium mb-2">Referrals Made</h3>
+            <div className="space-y-2">
+              {(user.referralsMade || []).map((r) => (
+                <div key={r.id} className="flex items-center justify-between text-sm">
+                  <span>{r.referredUser?.name || ''}</span>
+                  <span>
+                    Eligible: {new Date(r.eligibleAt).toLocaleDateString()} {r.paidAt ? `· Paid: ${new Date(r.paidAt).toLocaleDateString()}` : ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="space-y-4">

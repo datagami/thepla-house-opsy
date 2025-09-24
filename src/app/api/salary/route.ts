@@ -13,6 +13,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
     const month = parseInt(searchParams.get('month') || '')
     const year = parseInt(searchParams.get('year') || '')
+    const referralOnly = searchParams.get('referralOnly') === 'true'
 
     if (!month || !year) {
       return new NextResponse('Month and year are required', { status: 400 })
@@ -22,10 +23,22 @@ export async function GET(req: Request) {
       where: {
         month,
         year,
+        ...(referralOnly ? {
+          referrals: {
+            some: {
+              salaryId: { not: null }
+            }
+          }
+        } : {})
       },
       include: {
         user: true,
-        installments: true
+        installments: true,
+        referrals: {
+          include: {
+            referredUser: true,
+          }
+        },
       },
       orderBy: {
         createdAt: 'desc',
