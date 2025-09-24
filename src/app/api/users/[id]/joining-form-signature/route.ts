@@ -77,6 +77,8 @@ export async function POST(
         joiningFormSignature: signatureUrl, // Store Azure URL instead of base64
         joiningFormAgreement: true,
         joiningFormPhoto: photoUrl, // Store Azure URL instead of base64
+        // If profile image is missing, set it from the verification photo
+        image: user.image ?? photoUrl,
       },
     });
 
