@@ -10,6 +10,8 @@ import { AdvancePaymentsList } from "@/components/users/advance-payments-list";
 import { SignatureStatus } from "@/components/users/signature-status";
 import { UniformForm } from "@/components/users/uniform-form";
 import { UniformsList } from "@/components/users/uniforms-list";
+import { UserDocumentUpload } from "@/components/users/user-document-upload";
+import { UserDocumentsList } from "@/components/users/user-documents-list";
 
 export const metadata: Metadata = {
   title: "User Profile - HRMS",
@@ -95,6 +97,11 @@ export default async function UserProfilePage({ params }: Props) {
     },
   }) as Branch[];
 
+  const userDocumentTypes = await prisma.documentType.findMany({
+    where: { scope: 'USER' },
+    orderBy: { name: 'asc' },
+  });
+
   return (
     <div className="flex-1 space-y-8 p-8 pt-6">
       <div className="flex items-center justify-between">
@@ -134,6 +141,16 @@ export default async function UserProfilePage({ params }: Props) {
           userId={id} 
           canModify={canManageUsers}
         />
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">User Documents</h2>
+          {(canManageUsers || isBranchManagerForUser || isOwnProfile) && (
+            <UserDocumentUpload userId={id} documentTypes={userDocumentTypes} />
+          )}
+        </div>
+        <UserDocumentsList userId={id} canModify={canManageUsers || isBranchManagerForUser} />
       </div>
     </div>
   );

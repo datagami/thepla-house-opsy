@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { DateInput } from "@/components/ui/date-input";
 import {
   Select,
   SelectContent,
@@ -39,21 +38,14 @@ const documentFormSchema = z.object({
   name: z.string().min(2, "Document name must be at least 2 characters"),
   description: z.string().optional(),
   documentTypeId: z.string().optional(),
-  renewalDate: z.date({
-    required_error: "Renewal date is required",
-  }),
-  reminderDate: z.date({
-    required_error: "Reminder date is required",
-  }),
 });
 
-interface BranchDocumentUploadProps {
-  branchId: string;
-  branchName: string;
+interface UserDocumentUploadProps {
+  userId: string;
   documentTypes?: DocumentType[];
 }
 
-export function BranchDocumentUpload({ branchId, documentTypes = [] }: BranchDocumentUploadProps) {
+export function UserDocumentUpload({ userId, documentTypes = [] }: UserDocumentUploadProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -72,7 +64,6 @@ export function BranchDocumentUpload({ branchId, documentTypes = [] }: BranchDoc
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     const allowedTypes = [
       'application/pdf',
       'image/jpeg',
@@ -88,7 +79,6 @@ export function BranchDocumentUpload({ branchId, documentTypes = [] }: BranchDoc
       return;
     }
 
-    // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       toast.error('File size must be less than 10MB');
       return;
@@ -111,10 +101,8 @@ export function BranchDocumentUpload({ branchId, documentTypes = [] }: BranchDoc
       formData.append("name", values.name);
       formData.append("description", values.description || "");
       formData.append("documentTypeId", values.documentTypeId || "");
-      formData.append("renewalDate", values.renewalDate.toISOString());
-      formData.append("reminderDate", values.reminderDate.toISOString());
 
-      const response = await fetch(`/api/branches/${branchId}/documents`, {
+      const response = await fetch(`/api/users/${userId}/documents`, {
         method: "POST",
         body: formData,
       });
@@ -151,7 +139,7 @@ export function BranchDocumentUpload({ branchId, documentTypes = [] }: BranchDoc
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Upload Branch Document</DialogTitle>
+          <DialogTitle>Upload User Document</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -162,7 +150,7 @@ export function BranchDocumentUpload({ branchId, documentTypes = [] }: BranchDoc
                 <FormItem>
                   <FormLabel>Document Name</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="License Certificate" />
+                    <Input {...field} placeholder="Aadhar Card" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -199,12 +187,7 @@ export function BranchDocumentUpload({ branchId, documentTypes = [] }: BranchDoc
                       {documentTypes.length > 0 ? (
                         documentTypes.map((docType) => (
                           <SelectItem key={docType.id} value={docType.id}>
-                            <div className="flex items-center gap-2">
-                              <span>{docType.name}</span>
-                              {docType.mandatory && (
-                                <span className="text-xs text-red-500">*</span>
-                              )}
-                            </div>
+                            {docType.name}
                           </SelectItem>
                         ))
                       ) : (
@@ -253,34 +236,6 @@ export function BranchDocumentUpload({ branchId, documentTypes = [] }: BranchDoc
               </p>
             </div>
 
-            <FormField
-              control={form.control}
-              name="renewalDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Renewal Date</FormLabel>
-                  <FormControl>
-                    <DateInput {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="reminderDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Reminder Date</FormLabel>
-                  <FormControl>
-                    <DateInput {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             <div className="flex gap-2 pt-4">
               <Button type="submit" className="flex-1" disabled={isLoading}>
                 {isLoading ? (
@@ -306,4 +261,5 @@ export function BranchDocumentUpload({ branchId, documentTypes = [] }: BranchDoc
       </DialogContent>
     </Dialog>
   );
-} 
+}
+

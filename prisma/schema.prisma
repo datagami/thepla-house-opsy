@@ -161,6 +161,10 @@ model User {
   // --- Branch Document Relations ---
   uploadedBranchDocuments BranchDocument[] @relation("BranchDocumentUploads")
 
+  // --- User Document Relations ---
+  userDocuments          UserDocument[]
+  uploadedUserDocuments  UserDocument[] @relation("UserDocumentUploads")
+
   // --- Uniform Relations ---
   uniforms              Uniform[]               @relation("UserUniforms")
   issuedUniforms        Uniform[]               @relation("UniformIssuedBy")
@@ -209,11 +213,13 @@ model DocumentType {
   name        String    @unique
   description String?
   mandatory   Boolean   @default(false)
+  scope       DocumentScope @default(BRANCH)
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
   // Relations
   documents   BranchDocument[]
+  userDocuments UserDocument[]
 
   @@map("document_types")
 }
@@ -245,6 +251,39 @@ model BranchDocument {
   @@index([uploadedById])
   @@index([renewalDate])
   @@index([reminderDate])
+  @@index([documentTypeId])
+}
+
+// --- User Documents ---
+
+enum DocumentScope {
+  BRANCH
+  USER
+}
+
+model UserDocument {
+  id             String    @id @default(cuid())
+  numId          Int       @default(autoincrement()) @map("num_id")
+  name           String
+  description    String?
+  fileName       String    @map("file_name")
+  fileUrl        String    @map("file_url")
+  fileSize       Int       @map("file_size")
+  fileType       String    @map("file_type")
+  uploadedById   String    @map("uploaded_by_id")
+  userId         String    @map("user_id")
+  documentTypeId String?   @map("document_type_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  uploadedBy     User       @relation("UserDocumentUploads", fields: [uploadedById], references: [id])
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentType   DocumentType? @relation(fields: [documentTypeId], references: [id])
+
+  @@map("user_documents")
+  @@index([userId])
+  @@index([uploadedById])
   @@index([documentTypeId])
 }
 

@@ -93,6 +93,8 @@ export interface User {
   noteComments: NoteComment[];
   noteEditHistories: NoteEditHistory[];
   uploadedBranchDocuments: BranchDocument[];
+  userDocuments: UserDocument[];
+  uploadedUserDocuments: UserDocument[];
 }
 
 export interface VerificationToken {
@@ -124,9 +126,11 @@ export interface DocumentType {
   name: string;
   description?: string | null;
   mandatory: boolean;
+  scope?: DocumentScope;
   createdAt: Date;
   updatedAt: Date;
   documents?: BranchDocument[];
+  userDocuments?: UserDocument[];
 }
 
 export interface BranchDocument {
@@ -147,6 +151,27 @@ export interface BranchDocument {
   updatedAt: Date;
   uploadedBy: User;
   branch: Branch;
+  documentType?: DocumentType | null;
+}
+
+export type DocumentScope = "BRANCH" | "USER";
+
+export interface UserDocument {
+  id: string;
+  numId: number;
+  name: string;
+  description?: string | null;
+  fileName: string;
+  fileUrl: string;
+  fileSize: number;
+  fileType: string;
+  uploadedById: string;
+  userId: string;
+  documentTypeId?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  uploadedBy: User;
+  user: User;
   documentType?: DocumentType | null;
 }
 

@@ -39,6 +39,7 @@ export default async function BranchDocumentsPage({ params }: Props) {
       },
     }),
     prisma.documentType.findMany({
+      where: { scope: 'BRANCH' },
       orderBy: {
         name: "asc",
       },

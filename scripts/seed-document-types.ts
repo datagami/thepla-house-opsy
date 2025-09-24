@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-const documentTypes = [
+const branchDocumentTypes = [
   {
     name: 'Food License',
     description: 'License required for food service operations',
@@ -80,21 +80,66 @@ const documentTypes = [
   },
 ];
 
+const userDocumentTypes = [
+  {
+    name: 'Aadhar Card',
+    description: 'Government-issued identity number (UIDAI)',
+    mandatory: false,
+  },
+  {
+    name: 'PAN Card',
+    description: 'Permanent Account Number card',
+    mandatory: false,
+  },
+  {
+    name: 'Medical Report',
+    description: 'User medical report or health certificate',
+    mandatory: false,
+  },
+  {
+    name: 'Others',
+    description: 'Other document types',
+    mandatory: false,
+  },
+];
+
 async function seedDocumentTypes() {
   console.log('🌱 Seeding document types...');
 
   try {
-    for (const docType of documentTypes) {
+    // Seed BRANCH scoped types
+    for (const docType of branchDocumentTypes) {
       await prisma.documentType.upsert({
         where: { name: docType.name },
         update: {
           description: docType.description,
           mandatory: docType.mandatory,
+          scope: 'BRANCH',
         },
         create: {
           name: docType.name,
           description: docType.description,
           mandatory: docType.mandatory,
+          scope: 'BRANCH',
+        },
+      });
+      console.log(`✅ Created/Updated: ${docType.name}`);
+    }
+
+    // Seed USER scoped types
+    for (const docType of userDocumentTypes) {
+      await prisma.documentType.upsert({
+        where: { name: docType.name },
+        update: {
+          description: docType.description,
+          mandatory: docType.mandatory,
+          scope: 'USER',
+        },
+        create: {
+          name: docType.name,
+          description: docType.description,
+          mandatory: docType.mandatory,
+          scope: 'USER',
         },
       });
       console.log(`✅ Created/Updated: ${docType.name}`);
