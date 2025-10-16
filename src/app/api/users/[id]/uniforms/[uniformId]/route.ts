@@ -28,8 +28,39 @@ export async function PATCH(
     }
 
     // @ts-expect-error role expected
-    if (!session?.user || !["HR", "MANAGEMENT"].includes(session.user.role)) {
+    if (!session?.user || !["HR", "MANAGEMENT", "BRANCH_MANAGER"].includes(session.user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // For BRANCH_MANAGER, check if they can access this user's uniforms
+    // @ts-expect-error role expected
+    if (session.user.role === "BRANCH_MANAGER") {
+      // Get the target user's branch information
+      const targetUser = await prisma.user.findUnique({
+        where: { id: id as string },
+        select: { branchId: true }
+      });
+
+      if (!targetUser) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
+
+      // Get the manager's branch information
+      const manager = await prisma.user.findUnique({
+        where: { id: session.user.id as string },
+        select: { managedBranchId: true, branchId: true }
+      });
+
+      if (!manager) {
+        return NextResponse.json({ error: "Manager not found" }, { status: 404 });
+      }
+
+      const managerBranchId = manager.managedBranchId ?? manager.branchId;
+      
+      // Check if manager can access this user (same branch or managed branch)
+      if (!managerBranchId || managerBranchId !== targetUser.branchId) {
+        return NextResponse.json({ error: "Forbidden - Cannot edit uniforms for users outside your branch" }, { status: 403 });
+      }
     }
 
     const json = await req.json();
@@ -104,6 +135,7 @@ export async function DELETE(
     const session = await auth();
     const { id, uniformId } = await params;
 
+    // Only HR and MANAGEMENT can delete uniforms - BRANCH_MANAGER access revoked
     // @ts-expect-error role expected
     if (!session?.user || !["HR", "MANAGEMENT"].includes(session.user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

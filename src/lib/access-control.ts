@@ -23,7 +23,11 @@ export type Feature =
   | "dashboard.view"
   | "dashboard.stats"
   | "employees.view"
-  | "salary.edit";
+  | "salary.edit"
+  | "uniform.view"
+  | "uniform.create"
+  | "uniform.edit"
+  | "uniform.delete";
 
 type RolePermissions = {
   [key in Feature]: string[];
@@ -68,6 +72,12 @@ const permissions: RolePermissions = {
 
   // Salary
   "salary.edit": ["HR", "MANAGEMENT"],
+
+  // Uniform Management
+  "uniform.view": ["HR", "MANAGEMENT", "BRANCH_MANAGER"],
+  "uniform.create": ["HR", "MANAGEMENT", "BRANCH_MANAGER"],
+  "uniform.edit": ["HR", "MANAGEMENT", "BRANCH_MANAGER"],
+  "uniform.delete": ["HR", "MANAGEMENT"],
 };
 
 export function hasAccess(userRole: string, feature: Feature): boolean {

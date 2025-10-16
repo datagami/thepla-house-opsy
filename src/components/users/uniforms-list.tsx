@@ -37,9 +37,10 @@ interface UniformsListProps {
   userId: string;
   refreshKey?: number;
   canModify?: boolean;
+  canDelete?: boolean;
 }
 
-export function UniformsList({ userId, refreshKey = 0, canModify = true }: UniformsListProps) {
+export function UniformsList({ userId, refreshKey = 0, canModify = true, canDelete = false }: UniformsListProps) {
   const [uniforms, setUniforms] = useState<Uniform[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -222,7 +223,7 @@ export function UniformsList({ userId, refreshKey = 0, canModify = true }: Unifo
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      {uniform.status === "ISSUED" && (
+                      {uniform.status === "ISSUED" && canDelete && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -289,7 +290,7 @@ export function UniformsList({ userId, refreshKey = 0, canModify = true }: Unifo
       )}
 
       {/* Delete Dialog */}
-      {canModify && (
+      {canDelete && (
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>

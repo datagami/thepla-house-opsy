@@ -35,6 +35,8 @@ export default async function UserProfilePage({ params }: Props) {
   // Check if user has permission to view/edit other users
   // @ts-expect-error - role is not defined in the session type
   const canManageUsers = hasAccess(session.user.role, "users.manage");
+  // @ts-expect-error - role is not defined in the session type
+  const canDeleteUniforms = hasAccess(session.user.role, "uniform.delete");
   const isOwnProfile = session.user.id === id;
 
   const currentUserId = session.user.id || '';
@@ -189,7 +191,8 @@ export default async function UserProfilePage({ params }: Props) {
         </div>
         <UniformsList 
           userId={id} 
-          canModify={canManageUsers}
+          canModify={canManageUsers || isBranchManagerForUser}
+          canDelete={canDeleteUniforms}
         />
       </div>
 
