@@ -17,14 +17,27 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { SalaryList } from './salary-list'
-import {toast} from "sonner";
+import { toast } from "sonner";
 import { useRouter } from 'next/navigation'
 import { DownloadENETButton } from './download-enet-button'
 import { DownloadReportButton } from './download-report-button'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import Link from 'next/link'
 
 interface SalaryManagementProps {
   initialYear?: number
   initialMonth?: number
+}
+
+type ConflictWarning = {
+  message: string
+  conflictsCount: number
+  sampleConflicts?: {
+    userId?: string
+    userName: string | null
+    date: string
+    entries: number
+  }[]
 }
 
 export function SalaryManagement({ initialYear, initialMonth }: SalaryManagementProps) {
@@ -34,6 +47,7 @@ export function SalaryManagement({ initialYear, initialMonth }: SalaryManagement
   const [isGenerating, setIsGenerating] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [isProcessingReferrals, setIsProcessingReferrals] = useState(false)
+  const [conflictWarning, setConflictWarning] = useState<ConflictWarning | null>(null)
 
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i)
@@ -92,15 +106,28 @@ export function SalaryManagement({ initialYear, initialMonth }: SalaryManagement
         }),
       })
 
+      const payload = await response.json().catch(() => null)
+
       if (!response.ok) {
-        throw new Error('Failed to generate salaries')
+        if (payload?.conflictsCount) {
+          setConflictWarning({
+            message: payload.error ?? 'Duplicate attendance entries detected',
+            conflictsCount: payload.conflictsCount,
+            sampleConflicts: payload.sampleConflicts,
+          })
+          toast.error(payload?.error ?? 'Cannot generate salaries until attendance conflicts are resolved')
+        } else {
+          toast.error(payload?.error ?? 'Failed to generate salaries')
+        }
+        return
       }
 
+      setConflictWarning(null)
       toast.success('Salaries generated successfully');
       setRefreshKey(prev => prev + 1) // Trigger list refresh
     } catch (error) {
-      toast.error('Failed to generate salaries')
       console.log(error)
+      toast.error('Failed to generate salaries')
     } finally {
       setIsGenerating(false)
     }
@@ -108,6 +135,34 @@ export function SalaryManagement({ initialYear, initialMonth }: SalaryManagement
 
   return (
     <div className="space-y-6 p-8">
+      {conflictWarning && (
+        <Alert variant="destructive">
+          <AlertTitle>Attendance duplicates detected</AlertTitle>
+          <AlertDescription className="space-y-2">
+            <p>
+              {conflictWarning.message} ({conflictWarning.conflictsCount}{' '}
+              {conflictWarning.conflictsCount === 1 ? 'day' : 'days'} impacted)
+            </p>
+            {conflictWarning.sampleConflicts && conflictWarning.sampleConflicts.length > 0 && (
+              <ul className="list-disc list-inside text-sm text-muted-foreground">
+                {conflictWarning.sampleConflicts.map((conflict, index) => (
+                  <li key={`${conflict.userId ?? index}-${conflict.date}`}>
+                    {conflict.userName ?? 'Unknown user'} — {new Date(conflict.date).toLocaleDateString()} ({conflict.entries} entries)
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p>
+              <Link
+                href={`/hr/attendance-conflicts?month=${selectedMonth}&year=${selectedYear}`}
+                className="underline font-medium"
+              >
+                Review attendance conflicts
+              </Link>
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>Generate Monthly Salaries</CardTitle>

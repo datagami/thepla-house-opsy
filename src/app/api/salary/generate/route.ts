@@ -1,12 +1,37 @@
-import {NextResponse} from 'next/server'
-import {prisma} from '@/lib/prisma'
-import {calculateSalary} from '@/lib/services/salary-calculator'
-import {auth} from "@/auth"
-import {AdvancePaymentInstallment} from "@/models/models";
+import { NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { calculateSalary } from '@/lib/services/salary-calculator'
+import { auth } from "@/auth"
+import { AdvancePaymentInstallment } from "@/models/models";
+import { hasAttendanceConflicts } from "@/lib/services/attendance-conflicts";
 
 export async function POST(request: Request) {
   try {
     const {month, year} = await request.json()
+
+    if (!month || !year) {
+      return NextResponse.json(
+        { error: 'Month and year are required' },
+        { status: 400 }
+      )
+    }
+
+    const { hasConflicts, conflicts } = await hasAttendanceConflicts(month, year)
+    if (hasConflicts) {
+      return NextResponse.json(
+        {
+          error: 'Resolve duplicate attendance entries before generating payroll',
+          conflictsCount: conflicts.length,
+          sampleConflicts: conflicts.slice(0, 5).map(conflict => ({
+            userId: conflict.userId,
+            userName: conflict.userName,
+            date: conflict.date,
+            entries: conflict.entries.length
+          }))
+        },
+        { status: 409 }
+      )
+    }
 
     // Check for existing salaries for this month
     const existingSalaries = await prisma.salary.findMany({
@@ -224,6 +249,14 @@ export async function PATCH(req: Request) {
 
     // Handle status change to PROCESSING
     if (status === 'PROCESSING') {
+      const { hasConflicts, conflicts } = await hasAttendanceConflicts(existingSalary.month, existingSalary.year)
+      if (hasConflicts) {
+        return NextResponse.json({
+          error: 'Resolve duplicate attendance entries before moving salaries to processing',
+          conflictsCount: conflicts.length
+        }, { status: 409 })
+      }
+
       // Check for pending installments
       const hasPendingInstallments = existingSalary.installments.some(
         inst => inst.status === 'PENDING'

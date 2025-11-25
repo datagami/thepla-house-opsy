@@ -132,11 +132,55 @@ export async function PUT(
 
     // Get current attendance to check status
     const currentAttendance = await prisma.attendance.findUnique({
-      where: { id }
+      where: { id },
+      select: {
+        id: true,
+        userId: true,
+        date: true,
+        status: true,
+        verifiedById: true,
+        verifiedAt: true,
+        verificationNote: true
+      }
     });
 
     if (!currentAttendance) {
       return new NextResponse("Attendance not found", { status: 404 });
+    }
+
+    if (body.date) {
+      const updatedDate = new Date(body.date);
+      updatedDate.setHours(0, 0, 0, 0);
+      const nextDay = new Date(updatedDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+
+      const conflictingAttendance = await prisma.attendance.findFirst({
+        where: {
+          userId: currentAttendance.userId,
+          date: {
+            gte: updatedDate,
+            lt: nextDay
+          },
+          NOT: {
+            id: currentAttendance.id
+          }
+        },
+        select: {
+          id: true
+        }
+      });
+
+      if (conflictingAttendance) {
+        return NextResponse.json(
+          {
+            error: "Another attendance record already exists for this user on that date",
+            attendanceId: conflictingAttendance.id
+          },
+          { status: 409 }
+        );
+      }
+
+      body.date = updatedDate;
     }
 
     // Handle status changes based on user role and current status
@@ -185,4 +229,83 @@ export async function PUT(
     console.error("[ATTENDANCE_UPDATE]", error);
     return new NextResponse("Internal error", { status: 500 });
   }
-} 
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+    // @ts-expect-error - role is not provided on the session type
+    if (!session || !["HR", "MANAGEMENT"].includes(session.user.role)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const attendance = await prisma.attendance.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        userId: true,
+        date: true
+      }
+    });
+
+    if (!attendance) {
+      return NextResponse.json({ error: "Attendance not found" }, { status: 404 });
+    }
+
+    const attendanceDate = new Date(attendance.date);
+    const existingSalary = await prisma.salary.findFirst({
+      where: {
+        userId: attendance.userId,
+        month: attendanceDate.getMonth() + 1,
+        year: attendanceDate.getFullYear(),
+        status: {
+          in: ["PENDING", "PROCESSING"]
+        }
+      }
+    });
+
+    if (existingSalary?.status === "PROCESSING") {
+      return NextResponse.json(
+        { error: "Cannot delete attendance while salary is processing" },
+        { status: 400 }
+      );
+    }
+
+    await prisma.attendance.delete({
+      where: { id }
+    });
+
+    if (existingSalary?.status === "PENDING") {
+      const { calculateSalary } = await import("@/lib/services/salary-calculator");
+      const salaryDetails = await calculateSalary(
+        attendance.userId,
+        attendanceDate.getMonth() + 1,
+        attendanceDate.getFullYear()
+      );
+
+      await prisma.salary.update({
+        where: { id: existingSalary.id },
+        data: {
+          presentDays: salaryDetails.presentDays,
+          overtimeDays: salaryDetails.overtimeDays,
+          halfDays: salaryDetails.halfDays,
+          leavesEarned: salaryDetails.leavesEarned,
+          leaveSalary: salaryDetails.leaveSalary,
+          netSalary: salaryDetails.netSalary
+        }
+      });
+    }
+
+    return NextResponse.json({
+      message: "Attendance entry deleted",
+      attendanceId: id
+    });
+  } catch (error) {
+    console.error("[ATTENDANCE_DELETE]", error);
+    return NextResponse.json({ error: "Failed to delete attendance" }, { status: 500 });
+  }
+}

@@ -26,9 +26,12 @@ export async function POST(req: Request) {
 
     // Check if the attendance date is in the past
     const attendanceDate = new Date(data.date);
+    attendanceDate.setHours(0, 0, 0, 0);
+    const nextDay = new Date(attendanceDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    attendanceDate.setHours(0, 0, 0, 0);
 
     // @ts-expect-error - role is not in the session type
     const creatorRole = session.user.role;
@@ -89,10 +92,34 @@ export async function POST(req: Request) {
       ? "APPROVED" 
       : "PENDING_VERIFICATION";
 
+    // Prevent duplicate attendance for the same user and day
+    const duplicateAttendance = await prisma.attendance.findFirst({
+      where: {
+        userId: data.userId,
+        date: {
+          gte: attendanceDate,
+          lt: nextDay,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (duplicateAttendance) {
+      return NextResponse.json(
+        {
+          error: "Attendance already exists for this user on the selected date",
+          attendanceId: duplicateAttendance.id,
+        },
+        { status: 409 }
+      );
+    }
+
     // Create attendance with the user's current branch
     const attendance = await prisma.attendance.create({
       data: {
-        date: new Date(data.date),
+        date: attendanceDate,
         isPresent: data.isPresent,
         isHalfDay: data.isHalfDay,
         overtime: data.overtime,

@@ -13,6 +13,7 @@ import {
   CalendarCheck,
   Plus,
   DollarSign,
+  AlertTriangle,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 
@@ -48,6 +49,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       href: "/hr/attendance", 
       icon: <ClipboardCheck className="h-5 w-5" />,
       feature: "attendance.verify" 
+    },
+    {
+      title: "Attendance Conflicts",
+      href: "/hr/attendance-conflicts",
+      icon: <AlertTriangle className="h-5 w-5" />,
+      feature: "attendance.resolve_conflicts"
     },
     { 
       title: "Leave Requests", 
@@ -142,6 +149,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       href: "/reports", 
       icon: <FileText className="h-5 w-5" />,
       feature: "attendance.report" 
+    },
+    {
+      title: "Attendance Conflicts",
+      href: "/hr/attendance-conflicts",
+      icon: <AlertTriangle className="h-5 w-5" />,
+      feature: "attendance.resolve_conflicts"
     },
     {
       title: "Salary",
