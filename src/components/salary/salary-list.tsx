@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {CalendarDays, Clock, CalendarOff, CalendarCheck} from 'lucide-react'
+import {CalendarDays, Clock, CalendarOff, CalendarCheck, Download} from 'lucide-react'
 import {Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter} from "@/components/ui/card"
 import {Badge} from "@/components/ui/badge"
 import {calculateNetSalaryFromObject} from '@/lib/services/salary-calculator'
@@ -279,6 +279,46 @@ export function SalaryList({month, year}: SalaryListProps) {
     if (currentMonth) params.set('month', currentMonth)
 
     router.push(`/salary/${salaryId}?${params.toString()}`)
+  }
+
+  const handleDownloadPayslip = async (salaryId: string, employeeName: string | null, employeeNumId: number, month: number, year: number) => {
+    try {
+      const response = await fetch(`/api/salary/${salaryId}/payslip`)
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null)
+        throw new Error(errorData?.error || 'Failed to download payslip')
+      }
+
+      // Create blob from response
+      const blob = await response.blob()
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      
+      // Get filename from Content-Disposition header or use default
+      const contentDisposition = response.headers.get('Content-Disposition')
+      let filename = `payslip-${employeeName || `employee-${employeeNumId}`}-${month}-${year}.pdf`
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/)
+        if (filenameMatch) {
+          filename = filenameMatch[1]
+        }
+      }
+      
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      a.remove()
+
+      toast.success('Payslip downloaded successfully')
+    } catch (error) {
+      console.error('Error downloading payslip:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to download payslip')
+    }
   }
 
   const getStatusColor = (status: string) => {
@@ -666,6 +706,14 @@ export function SalaryList({month, year}: SalaryListProps) {
                   onClick={() => handleViewDetails(salary.id)}
                 >
                   View Details
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownloadPayslip(salary.id, salary.user.name ?? null, salary.user.numId, salary.month, salary.year)}
+                  title="Download Payslip"
+                >
+                  <Download className="h-4 w-4" />
                 </Button>
                 {(salary.status) === 'PROCESSING' && (
                   <>

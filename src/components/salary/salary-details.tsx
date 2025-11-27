@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog"
 import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
-import { AlertCircle, CheckCircle, DollarSign, ArrowLeft } from 'lucide-react'
+import { AlertCircle, CheckCircle, DollarSign, ArrowLeft, Download } from 'lucide-react'
 import { AdvancePaymentInstallment, Salary } from "@/models/models"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { toast } from 'sonner';
@@ -202,6 +202,46 @@ export function SalaryDetails({ salary, month, year, canEdit = false }: SalaryDe
     // Update the salary in the parent component
     // This will trigger a re-render with the new salary data
     router.refresh()
+  }
+
+  const handleDownloadPayslip = async () => {
+    try {
+      const response = await fetch(`/api/salary/${salary.id}/payslip`)
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null)
+        throw new Error(errorData?.error || 'Failed to download payslip')
+      }
+
+      // Create blob from response
+      const blob = await response.blob()
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      
+      // Get filename from Content-Disposition header or use default
+      const contentDisposition = response.headers.get('Content-Disposition')
+      let filename = `payslip-${salary.user.name || `employee-${salary.user.numId}`}-${salary.month}-${salary.year}.pdf`
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/)
+        if (filenameMatch) {
+          filename = filenameMatch[1]
+        }
+      }
+      
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      a.remove()
+
+      toast.success('Payslip downloaded successfully')
+    } catch (error) {
+      console.error('Error downloading payslip:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to download payslip')
+    }
   }
 
   const renderAdvanceInstallments = () => {
@@ -422,16 +462,28 @@ export function SalaryDetails({ salary, month, year, canEdit = false }: SalaryDe
           <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
-        <Button
-          variant="outline"
-          onClick={() => {
-            if (salary.year && salary.month) {
-              router.push(`/attendance/${salary.userId}?month=${salary.year.toString()}-${salary.month.toString().padStart(2, '0')}`)
-            }
-          }}
-        >
-          View Attendance
-        </Button>
+        <div className="flex gap-2">
+          {canEdit && (
+            <Button
+              variant="outline"
+              onClick={handleDownloadPayslip}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Download Payslip
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (salary.year && salary.month) {
+                router.push(`/attendance/${salary.userId}?month=${salary.year.toString()}-${salary.month.toString().padStart(2, '0')}`)
+              }
+            }}
+          >
+            View Attendance
+          </Button>
+        </div>
       </div>
 
       {renderConfirmationDialog()}
