@@ -9,18 +9,36 @@ import {
   Clock,
   ClipboardCheck,
   Building,
+  Building2,
   FileText,
   CalendarCheck,
   Plus,
   DollarSign,
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useState } from "react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+
+interface NavSubItem {
+  title: string;
+  href: string;
+  icon?: React.ReactNode;
+  feature: string;
+}
 
 interface NavItem {
   title: string;
-  href: string;
+  href?: string;
   icon: React.ReactNode;
   feature: string;
+  subItems?: NavSubItem[];
 }
 
 const roleNavItems: Record<string, NavItem[]> = {
@@ -49,23 +67,56 @@ const roleNavItems: Record<string, NavItem[]> = {
       icon: <ClipboardCheck className="h-5 w-5" />,
       feature: "attendance.verify" 
     },
+    {
+      title: "Branch Submissions",
+      href: "/hr/branch-attendance",
+      icon: <Building2 className="h-5 w-5" />,
+      feature: "attendance.view_branch_submissions",
+      subItems: [
+        {
+          title: "Attendance Verification",
+          href: "/hr/attendance-verification",
+          icon: <ClipboardCheck className="h-4 w-4" />,
+          feature: "attendance.verify"
+        },
+      ]
+    },
     { 
       title: "Leave Requests", 
       href: "/leave-requests", 
       icon: <CalendarCheck className="h-5 w-5" />,
       feature: "leave.view" 
     },
-    {
-      title: "Salary",
-      href: "/salary",
-      icon: <DollarSign className="h-5 w-5" />,
-      feature: "salary.edit"
+    { 
+      title: "Reports", 
+      href: "/reports", 
+      icon: <FileText className="h-5 w-5" />,
+      feature: "attendance.report" 
     },
     {
-      title: "My Payslips",
-      href: "/users/<user_id>/payslips",
-      icon: <FileText className="h-5 w-5" />,
-      feature: "salary.view"
+      title: "Salary & Finance",
+      icon: <DollarSign className="h-5 w-5" />,
+      feature: "salary.edit",
+      subItems: [
+        {
+          title: "Salary",
+          href: "/salary",
+          icon: <DollarSign className="h-4 w-4" />,
+          feature: "salary.edit"
+        },
+        {
+          title: "My Payslips",
+          href: "/users/<user_id>/payslips",
+          icon: <FileText className="h-4 w-4" />,
+          feature: "salary.view"
+        },
+        {
+          title: "Attendance Conflicts",
+          href: "/hr/attendance-conflicts",
+          icon: <AlertTriangle className="h-4 w-4" />,
+          feature: "attendance.resolve_conflicts"
+        },
+      ]
     },
     {
       title: "Notes",
@@ -104,6 +155,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       href: "/leave-requests/new", 
       icon: <Plus className="h-5 w-5" />,
       feature: "leave.request" 
+    },
+    { 
+      title: "Reports", 
+      href: "/reports", 
+      icon: <FileText className="h-5 w-5" />,
+      feature: "attendance.report" 
     },
     {
       title: "My Payslips",
@@ -206,42 +263,130 @@ interface MobileNavProps {
   userRole: string;
 }
 
+function NavItemComponent({ 
+  item, 
+  pathname, 
+  userId 
+}: { 
+  item: NavItem; 
+  pathname: string;
+  userId?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(() => {
+    // Auto-expand if any submenu item is active
+    if (item.subItems) {
+      return item.subItems.some(subItem => {
+        const href = subItem.href?.replace("<user_id>", userId || "");
+        return href && pathname.startsWith(href);
+      });
+    }
+    return false;
+  });
+
+  // Process href with user ID replacement
+  const processHref = (href: string) => {
+    if (userId && href.includes("<user_id>")) {
+      return href.replace("<user_id>", userId);
+    }
+    return href;
+  };
+
+  // Check if item or any subitem is active
+  const isActive = item.href 
+    ? pathname === processHref(item.href) || pathname.startsWith(processHref(item.href) + "/")
+    : false;
+
+  const hasActiveSubItem = item.subItems?.some(subItem => {
+    const href = subItem.href ? processHref(subItem.href) : "";
+    return href && (pathname === href || pathname.startsWith(href + "/"));
+  });
+
+  const isItemActive = isActive || hasActiveSubItem;
+
+  if (item.subItems && item.subItems.length > 0) {
+    return (
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <CollapsibleTrigger
+          className={cn(
+            "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-primary",
+            isItemActive
+              ? "bg-accent text-primary"
+              : "text-muted-foreground"
+          )}
+        >
+          <div className="flex items-center gap-3">
+            {item.icon}
+            <span>{item.title}</span>
+          </div>
+          {isOpen ? (
+            <ChevronDown className="h-4 w-4" />
+          ) : (
+            <ChevronRight className="h-4 w-4" />
+          )}
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-1 pl-4 pt-1">
+          {item.subItems.map((subItem) => {
+            const subHref = subItem.href ? processHref(subItem.href) : "#";
+            const isSubActive = pathname === subHref || pathname.startsWith(subHref + "/");
+            
+            return (
+              <Link
+                key={subItem.href || subItem.title}
+                href={subHref}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-primary",
+                  isSubActive
+                    ? "bg-accent text-primary"
+                    : "text-muted-foreground"
+                )}
+              >
+                {subItem.icon || <div className="h-4 w-4" />}
+                <span>{subItem.title}</span>
+              </Link>
+            );
+          })}
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  }
+
+  // Regular nav item without submenu
+  const href = item.href ? processHref(item.href) : "#";
+  
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-primary",
+        isActive
+          ? "bg-accent text-primary"
+          : "text-muted-foreground"
+      )}
+    >
+      {item.icon}
+      {item.title}
+    </Link>
+  );
+}
+
 export function MobileNav({ userRole }: MobileNavProps) {
   const pathname = usePathname();
   const navItems = roleNavItems[userRole] || [];
   const { data: session } = useSession();
 
-  // Replace <user_id> with actual user id for all roles
-  let processedNavItems = navItems;
-  if (
-    session &&
-    session.user &&
-    typeof session.user.id === "string"
-  ) {
-    const userId = session.user.id;
-    processedNavItems = navItems.map((item) =>
-      item.href.includes("<user_id>")
-        ? { ...item, href: item.href.replace("<user_id>", userId) }
-        : item
-    );
-  }
+  const userId = session?.user?.id && typeof session.user.id === "string" 
+    ? session.user.id 
+    : undefined;
 
   return (
     <nav className="space-y-2">
-      {processedNavItems.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-primary",
-            pathname === item.href 
-              ? "bg-accent text-primary" 
-              : "text-muted-foreground"
-          )}
-        >
-          {item.icon}
-          {item.title}
-        </Link>
+      {navItems.map((item) => (
+        <NavItemComponent
+          key={item.title}
+          item={item}
+          pathname={pathname}
+          userId={userId}
+        />
       ))}
     </nav>
   );

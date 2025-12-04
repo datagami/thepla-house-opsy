@@ -36,7 +36,7 @@ export default async function AuthLayout({
       <Header />
       <div className="flex">
         {/* Desktop Sidebar - Only visible on desktop */}
-        <aside className="hidden lg:flex lg:w-64 lg:border-r lg:bg-muted/10 lg:p-6">
+        <aside className="hidden lg:flex lg:w-72 lg:border-r lg:bg-muted/10 lg:p-6">
           <SideNav userRole={role} />
         </aside>
         {/* Mobile: Full width main content */}

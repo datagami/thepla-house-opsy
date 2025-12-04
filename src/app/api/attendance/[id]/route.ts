@@ -98,6 +98,7 @@ async function handleBranchManagerResubmission(
       shift1: data.isPresent && data.shift1,
       shift2: data.isPresent && data.shift2,
       shift3: data.isPresent && data.shift3,
+      notes: data.notes || null,
       // Only reset verification if status is changing
       ...(data.status !== attendance.status ? {
         status: "PENDING_VERIFICATION",
@@ -219,7 +220,16 @@ export async function PUT(
     const attendance = await prisma.attendance.update({
       where: { id },
       data: {
-        ...body,
+        isPresent: body.isPresent,
+        date: body.date,
+        checkIn: body.checkIn || null,
+        checkOut: body.checkOut || null,
+        isHalfDay: body.isHalfDay || false,
+        overtime: body.overtime || false,
+        shift1: body.shift1 || false,
+        shift2: body.shift2 || false,
+        shift3: body.shift3 || false,
+        notes: body.notes || null,
         ...verificationData
       }
     });

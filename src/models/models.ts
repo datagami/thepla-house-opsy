@@ -188,6 +188,7 @@ export interface Attendance {
   shift1: boolean;
   shift2: boolean;
   shift3: boolean;
+  notes?: string | null;
   status: AttendanceStatus;
   verifiedById?: string | null;
   verifiedAt?: Date | null;

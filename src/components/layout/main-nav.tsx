@@ -25,7 +25,7 @@ export function MainNav({ userRole }: MainNavProps) {
             <span className="sr-only">Toggle navigation menu</span>
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-[240px] sm:w-[300px] p-0 z-50">
+        <SheetContent side="left" className="w-[280px] sm:w-[320px] p-0 z-50">
           <aside className="w-full h-full border-r bg-muted/10 p-6">
             <MobileNav userRole={userRole} />
           </aside>

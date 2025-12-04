@@ -59,6 +59,7 @@ export default async function AttendancePage({ searchParams }: Props) {
           shift1: true,
           shift2: true,
           shift3: true,
+          notes: true,
           status: true,
           verifiedAt: true,
           verifiedBy: {

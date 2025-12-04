@@ -1,0 +1,173 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
+import { calculateNetSalaryFromObject } from "@/lib/services/salary-calculator";
+
+export async function GET(req: Request) {
+  try {
+    const session = await auth();
+    // @ts-expect-error - role is not in the User type
+    if (!session || !["HR", "MANAGEMENT"].includes(session.user.role)) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const month = parseInt(searchParams.get("month") || new Date().getMonth().toString());
+    const year = parseInt(searchParams.get("year") || new Date().getFullYear().toString());
+    const branchFilter = searchParams.get("branch") || "ALL";
+
+    // Get all salaries for the month
+    const salaries = await prisma.salary.findMany({
+      where: {
+        month,
+        year,
+        ...(branchFilter !== "ALL" && {
+          user: {
+            branch: {
+              name: branchFilter,
+            },
+          },
+        }),
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            branch: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+        installments: true,
+        referrals: true,
+      },
+    });
+
+    // Calculate total salary
+    const totalSalary = salaries.reduce((sum, salary) => {
+      return sum + calculateNetSalaryFromObject(salary);
+    }, 0);
+
+    // Get advance payments
+    const advancePayments = await prisma.advancePayment.findMany({
+      where: {
+        createdAt: {
+          gte: new Date(year, month - 1, 1),
+          lte: new Date(year, month, 0),
+        },
+        ...(branchFilter !== "ALL" && {
+          user: {
+            branch: {
+              name: branchFilter,
+            },
+          },
+        }),
+      },
+    });
+
+    const totalAdvance = advancePayments.reduce((sum, advance) => sum + advance.amount, 0);
+
+    // Calculate referral bonuses
+    const totalReferralBonus = salaries.reduce((sum, salary) => {
+      const referralBonus = salary.referrals
+        ?.filter((r) => r.paidAt !== null)
+        .reduce((refSum, ref) => refSum + ref.bonusAmount, 0) || 0;
+      return sum + referralBonus;
+    }, 0);
+
+    // Group by branch
+    const branchMap = new Map<
+      string,
+      { amount: number; employeeCount: number; employees: Set<string> }
+    >();
+
+    salaries.forEach((salary) => {
+      const branchName = salary.user.branch?.name || "Unknown";
+      if (!branchMap.has(branchName)) {
+        branchMap.set(branchName, { amount: 0, employeeCount: 0, employees: new Set() });
+      }
+      const branchStats = branchMap.get(branchName)!;
+      branchStats.amount += calculateNetSalaryFromObject(salary);
+      branchStats.employees.add(salary.userId);
+      branchStats.employeeCount = branchStats.employees.size;
+    });
+
+    const salaryByBranch = Array.from(branchMap.entries()).map(([branch, stats]) => ({
+      branch,
+      amount: stats.amount,
+      employeeCount: stats.employeeCount,
+    }));
+
+    // Advance summary
+    const advanceStatusMap = new Map<string, { count: number; amount: number }>();
+    advancePayments.forEach((advance) => {
+      const status = advance.status;
+      if (!advanceStatusMap.has(status)) {
+        advanceStatusMap.set(status, { count: 0, amount: 0 });
+      }
+      const stats = advanceStatusMap.get(status)!;
+      stats.count += 1;
+      stats.amount += advance.amount;
+    });
+
+    const advanceSummary = Array.from(advanceStatusMap.entries()).map(([status, stats]) => ({
+      status,
+      count: stats.count,
+      amount: stats.amount,
+    }));
+
+    // Salary trend (last 6 months)
+    const trendData = [];
+    for (let i = 5; i >= 0; i--) {
+      const trendMonth = month - i;
+      const trendYear = trendMonth <= 0 ? year - 1 : year;
+      const adjustedMonth = trendMonth <= 0 ? trendMonth + 12 : trendMonth;
+
+      const trendSalaries = await prisma.salary.findMany({
+        where: {
+          month: adjustedMonth,
+          year: trendYear,
+          ...(branchFilter !== "ALL" && {
+            user: {
+              branch: {
+                name: branchFilter,
+              },
+            },
+          }),
+        },
+        include: {
+          installments: true,
+          referrals: true,
+        },
+      });
+
+      const trendAmount = trendSalaries.reduce((sum, salary) => {
+        return sum + calculateNetSalaryFromObject(salary);
+      }, 0);
+
+      trendData.push({
+        month: `${adjustedMonth}/${trendYear}`,
+        amount: trendAmount,
+      });
+    }
+
+    return NextResponse.json({
+      totalSalary,
+      totalAdvance,
+      totalReferralBonus,
+      salaryByBranch,
+      advanceSummary,
+      salaryTrend: trendData,
+    });
+  } catch (error) {
+    console.error("Error generating financial report:", error);
+    return NextResponse.json(
+      { error: "Failed to generate financial report" },
+      { status: 500 }
+    );
+  }
+}
+

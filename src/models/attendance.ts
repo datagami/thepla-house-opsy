@@ -27,6 +27,7 @@ export interface AttendanceFormData {
   shift1: boolean;
   shift2: boolean;
   shift3: boolean;
+  notes?: string | null;
   status: string;
   verificationNote?: string | null;
   verifiedById?: string | null;

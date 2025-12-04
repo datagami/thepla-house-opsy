@@ -63,6 +63,7 @@ export default async function PendingAttendancePage({
           shift1: true,
           shift2: true,
           shift3: true,
+          notes: true,
           status: true,
         },
       },

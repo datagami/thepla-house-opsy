@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -35,6 +36,22 @@ export function AttendanceForm({
   const [shift3, setShift3] = useState(currentAttendance?.shift3 ?? false);
   const [checkIn, setCheckIn] = useState(currentAttendance?.checkIn || "");
   const [checkOut, setCheckOut] = useState(currentAttendance?.checkOut || "");
+  const [notes, setNotes] = useState(currentAttendance?.notes || "");
+
+  // Update form fields when currentAttendance changes
+  useEffect(() => {
+    if (currentAttendance) {
+      setIsPresent(currentAttendance.isPresent ?? true);
+      setIsHalfDay(currentAttendance.isHalfDay ?? false);
+      setIsOvertime(currentAttendance.overtime ?? false);
+      setShift1(currentAttendance.shift1 ?? false);
+      setShift2(currentAttendance.shift2 ?? false);
+      setShift3(currentAttendance.shift3 ?? false);
+      setCheckIn(currentAttendance.checkIn || "");
+      setCheckOut(currentAttendance.checkOut || "");
+      setNotes(currentAttendance.notes || "");
+    }
+  }, [currentAttendance]);
 
   const handleSubmit = async () => {
     setIsLoading(true);
@@ -53,6 +70,7 @@ export function AttendanceForm({
         shift1: isPresent && shift1,
         shift2: isPresent && shift2,
         shift3: isPresent && shift3,
+        notes: notes || null,
         status: userRole === "HR" || "MANAGEMENT" ? "APPROVED" : "PENDING_VERIFICATION",
         ...(currentAttendance?.id && userRole !== "HR" && {
           verificationNote: currentAttendance.verificationNote,
@@ -194,6 +212,18 @@ export function AttendanceForm({
                 disabled={!isPresent || isHalfDay}
               />
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="notes">Notes (Optional)</Label>
+            <Textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add any additional notes..."
+              className="mt-1"
+              rows={3}
+            />
           </div>
 
           <Button 
