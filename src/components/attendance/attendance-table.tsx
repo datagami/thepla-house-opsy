@@ -72,7 +72,7 @@ export function AttendanceTable({ users, date, viewOnly = false }: AttendanceTab
               >
                 <TableCell>{user.name}</TableCell>
                 <TableCell>
-                  {user.department}
+                  {user.department?.name || 'N/A'}
                 </TableCell>
                 <TableCell>
                   <Badge className={statusColors[status as keyof typeof statusColors]}>
@@ -127,7 +127,7 @@ export function AttendanceTable({ users, date, viewOnly = false }: AttendanceTab
           userId={selectedUser.id}
           userName={selectedUser.name}
           userRole={selectedUser.role}
-          department={selectedUser.department || ''}
+          department={selectedUser.department?.name || ''}
           date={date}
           currentAttendance={selectedUser.attendance[0]}
           isOpen={!!selectedUser && !viewOnly}

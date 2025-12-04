@@ -28,7 +28,7 @@ import { toast } from "sonner";
 interface EmployeeAttendance {
   id: string;
   name: string | null;
-  department: string | null;
+  department: { id: string; name: string } | null;
   attendance: Array<{
     id: string;
     status: string;
@@ -344,7 +344,7 @@ export function BranchAttendanceSubmissions({
                             {employee.name?.toUpperCase() || "N/A"}
                           </TableCell>
                           <TableCell>
-                            {employee.department?.toUpperCase() || "N/A"}
+                            {employee.department ? employee.department.toUpperCase() : "N/A"}
                           </TableCell>
                           <TableCell>
                             <span className="text-foreground">

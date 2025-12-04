@@ -54,6 +54,12 @@ export default async function UserProfilePage({ params }: Props) {
           name: true,
         },
       },
+      department: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
       references: {
         select: {
           id: true,

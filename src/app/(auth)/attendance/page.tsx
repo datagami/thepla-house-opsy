@@ -44,7 +44,12 @@ export default async function AttendancePage({ searchParams }: Props) {
     select: {
       id: true,
       name: true,
-      department: true,
+      department: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
       attendance: {
         where: {
           date: selectedDate,

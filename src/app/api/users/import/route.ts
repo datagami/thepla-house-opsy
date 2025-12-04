@@ -80,13 +80,35 @@ export async function POST(request: Request) {
           include: { references: true }
         });
 
+        // Map department name to departmentId
+        let departmentId = null;
+        if (userData['Department*']) {
+          const department = await tx.department.findFirst({
+            where: {
+              name: userData['Department*'] as string
+            }
+          });
+          if (department) {
+            departmentId = department.id;
+          } else {
+            // If department doesn't exist, create it
+            const newDepartment = await tx.department.create({
+              data: {
+                name: userData['Department*'] as string,
+                isActive: true,
+              }
+            });
+            departmentId = newDepartment.id;
+          }
+        }
+
         // Common user data
         const userCommonData = {
           name: userData['Name*'],
           email: userData['Email*'],
           mobileNo: userData['Mobile No*'].toString(),
           gender: userData['Gender*'],
-          department: userData['Department*'],
+          departmentId: departmentId,
           title: userData['Title*'],
           role: userData['Role*'],
           // Parse dates from DD-MM-YYYY format

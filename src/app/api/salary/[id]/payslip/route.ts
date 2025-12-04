@@ -84,6 +84,12 @@ export async function GET(
 				user: {
 					include: {
 						branch: true,
+						department: {
+							select: {
+								id: true,
+								name: true,
+							},
+						},
 					},
 				},
 				referrals: {
@@ -214,7 +220,7 @@ export async function GET(
 		const employeeInfo = [
 			{ label: 'Name', value: salary.user.name || 'N/A' },
 			{ label: 'Employee ID', value: salary.user.numId.toString() },
-			{ label: 'Department', value: salary.user.department || 'N/A' },
+			{ label: 'Department', value: salary.user.department?.name || 'N/A' },
 			{ label: 'Designation', value: salary.user.title || salary.user.role || 'N/A' },
 			{ label: 'Branch', value: salary.user.branch?.name || 'N/A' },
 			{ label: 'Date of Joining', value: salary.user.doj ? formatDate(new Date(salary.user.doj)) : 'N/A' },

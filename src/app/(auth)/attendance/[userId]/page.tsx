@@ -58,7 +58,12 @@ export default async function EmployeeAttendancePage({
       id: true,
       name: true,
       email: true,
-      department: true,
+      department: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
       salary: true,
       branch: {
         select: {
@@ -237,7 +242,7 @@ export default async function EmployeeAttendancePage({
               userId={employee.id}
               userName={employee.name || ""}
               userRole={role}
-              department={employee.department || ''}
+              department={employee.department?.name || ''}
             />
           </div>
         </div>

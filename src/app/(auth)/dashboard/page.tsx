@@ -52,12 +52,17 @@ export default async function DashboardPage() {
   // Get current user's complete data for joining form status
   const currentUser = await prisma.user.findUnique({
     where: { id: userId },
-    select: {
-      id: true,
-      name: true,
-      role: true,
-      department: true,
-      joiningFormSignedAt: true,
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        department: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        joiningFormSignedAt: true,
       joiningFormSignedBy: true,
       joiningFormAgreement: true,
     },
@@ -75,7 +80,12 @@ export default async function DashboardPage() {
         id: true,
         name: true,
         role: true,
-        department: true,
+        department: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',

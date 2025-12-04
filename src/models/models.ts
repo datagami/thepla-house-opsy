@@ -57,7 +57,8 @@ export interface User {
   updatedAt: Date;
   title?: string | null;
   doj?: Date | null;
-  department?: string | null;
+  departmentId?: string | null;
+  department?: Department | null;
   mobileNo?: string | null;
   dob?: Date | null;
   gender?: string | null;
@@ -79,6 +80,7 @@ export interface User {
   branch?: Branch | null;
   managedBranch?: Branch | null;
   selectedBranch?: Branch | null;
+  department?: Department | null;
   attendance: Attendance[];
   leaveRequests: LeaveRequest[];
   approvedBy?: User | null;
@@ -102,6 +104,17 @@ export interface VerificationToken {
   token: string;
   expires: Date;
   numId: number;
+}
+
+export interface Department {
+  id: string;
+  numId: number;
+  name: string;
+  description?: string | null;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  users?: User[];
 }
 
 export interface Branch {

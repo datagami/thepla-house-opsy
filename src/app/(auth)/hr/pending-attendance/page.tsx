@@ -43,7 +43,12 @@ export default async function PendingAttendancePage({
     select: {
       id: true,
       name: true,
-      department: true,
+      department: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
       branch: {
         select: {
           name: true,

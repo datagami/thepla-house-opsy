@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       role, 
       branchId,
       title,
-      department,
+      departmentId,
       mobileNo,
       doj,
       dob,
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
         role,
         branchId,
         title,
-        department,
+        departmentId,
         mobileNo,
         doj: doj ? new Date(doj) : undefined,
         dob: dob ? new Date(dob) : undefined,
@@ -96,6 +96,12 @@ export async function POST(request: Request) {
       },
       include: {
         branch: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        department: {
           select: {
             id: true,
             name: true,

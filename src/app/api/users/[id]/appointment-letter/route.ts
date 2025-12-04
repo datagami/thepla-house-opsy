@@ -132,7 +132,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 		const user = await prisma.user.findUnique({
 			where: { id },
-			include: { branch: true },
+			include: { 
+				branch: true,
+				department: {
+					select: {
+						id: true,
+						name: true,
+					},
+				},
+			},
 		});
 		if (!user) {
 			return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -185,7 +193,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 		const details = [
 			`Name: ${user.name || 'N/A'}`,
 			`Employee ID: ${user.numId}`,
-			`Department: ${user.department || 'N/A'}`,
+			`Department: ${user.department?.name || 'N/A'}`,
 			`Title: ${user.title || 'N/A'}`,
 			`Role: ${user.role}`,
 			`Branch: ${user.branch?.name || 'N/A'}`,
@@ -199,7 +207,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 		// Sections reintroduced (condensed from detailed template)
 		await addSection('1. Joining Date', `As per our records, your date of joining will be ${user.doj ? new Date(user.doj).toLocaleDateString() : 'N/A'}.`);
 
-		const jobTitleText = user.department ? `${user.title || user.role} (${user.department})` : (user.title || user.role);
+		const jobTitleText = user.department?.name ? `${user.title || user.role} (${user.department.name})` : (user.title || user.role);
 		await addSection('2. Job Title', `You will be employed as ${jobTitleText}. Your duties may include those usually associated with the position and such other duties as may be required by the Company. Your services may be transferred to any site/location in India.`);
 
 		await addSection('3. Duration Of Employment', 'You will be employed on a probationary basis for an initial period of 6 months and, based on performance, you may be confirmed. Your employment will be for a period of five years effective from your joining date and may be renewed upon review of performance.');

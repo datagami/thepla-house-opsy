@@ -31,6 +31,12 @@ export default async function JoiningFormSignaturePage({ params }: JoiningFormSi
     where: { id: id },
     include: {
       branch: true,
+      department: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
     },
   });
 

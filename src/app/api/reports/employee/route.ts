@@ -37,6 +37,11 @@ export async function GET(req: Request) {
             name: true,
           },
         },
+        department: {
+          select: {
+            name: true,
+          },
+        },
       },
     });
 
@@ -61,7 +66,7 @@ export async function GET(req: Request) {
     // Group by department
     const deptMap = new Map<string, number>();
     employees.forEach((emp) => {
-      const dept = emp.department || "Not Assigned";
+      const dept = emp.department?.name || "Not Assigned";
       deptMap.set(dept, (deptMap.get(dept) || 0) + 1);
     });
 

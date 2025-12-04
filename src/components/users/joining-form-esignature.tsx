@@ -116,7 +116,7 @@ export function JoiningFormESignature({ user, onComplete }: JoiningFormESignatur
               </div>
               <div>
                 <Label className="font-medium">Department:</Label>
-                <p className="text-gray-700">{user.department}</p>
+                <p className="text-gray-700">{user.department?.name || 'N/A'}</p>
               </div>
               <div>
                 <Label className="font-medium">Date of Joining:</Label>

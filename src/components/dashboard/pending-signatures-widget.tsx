@@ -44,7 +44,7 @@ export function PendingSignaturesWidget({ pendingUsers, currentUserRole }: Pendi
                 <div>
                   <p className="font-medium text-sm">{user.name}</p>
                   <p className="text-xs text-gray-500">
-                    {user.role} • {user.department}
+                    {user.role} • {user.department?.name || 'N/A'}
                   </p>
                 </div>
               </div>

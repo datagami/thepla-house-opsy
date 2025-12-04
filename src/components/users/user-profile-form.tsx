@@ -34,7 +34,7 @@ const userFormSchema = z.object({
   email: z.string().email("Invalid email address"),
   role: z.enum(["EMPLOYEE", "BRANCH_MANAGER", "HR", "MANAGEMENT", "SELF_ATTENDANCE"]),
   branch: z.string().optional(),
-  department: z.string().min(2, "Department is required"),
+  departmentId: z.string().min(1, "Department is required"),
   mobileNo: z.string().min(10, "Mobile number must be at least 10 digits"),
   doj: z.date({
     required_error: "Date of joining is required",
@@ -70,10 +70,17 @@ interface UserProfileFormProps {
   canEdit?: boolean;
 }
 
+interface Department {
+  id: string;
+  name: string;
+  description?: string | null;
+}
+
 export function UserProfileForm({user, branches, canEdit = true}: UserProfileFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [employees, setEmployees] = useState<Array<{ id: string; name: string; email?: string | null }>>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [referrerOpen, setReferrerOpen] = useState(false);
   const [referrerQuery, setReferrerQuery] = useState("");
 
@@ -85,7 +92,7 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
       email: user?.email || "",
       role: user?.role || "EMPLOYEE",
       branch: user?.branch?.id || "",
-      department: user?.department || "",
+      departmentId: user?.department?.id || "",
       mobileNo: user?.mobileNo || "",
       doj: user?.doj ? new Date(user.doj) : undefined,
       dob: user?.dob ? new Date(user.dob) : undefined,
@@ -105,6 +112,22 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
       referredById: undefined,
     },
   });
+
+  // Load departments for dropdown
+  useEffect(() => {
+    const loadDepartments = async () => {
+      try {
+        const res = await fetch('/api/departments');
+        if (res.ok) {
+          const data: Department[] = await res.json();
+          setDepartments(data);
+        }
+      } catch {
+        // ignore
+      }
+    };
+    loadDepartments();
+  }, []);
 
   // Load active employees for referrer selection (lightweight list)
   useEffect(() => {
@@ -136,6 +159,7 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
       };
       delete submitData.branch;
       if (!('referredById' in submitData) || submitData.referredById === "null") delete (submitData as { referredById?: unknown }).referredById;
+      if (submitData.departmentId === "null" || submitData.departmentId === "") delete submitData.departmentId;
 
       const response = await fetch(endpoint, {
         method,
@@ -308,13 +332,28 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
 
             <FormField
               control={form.control}
-              name="department"
+              name="departmentId"
               render={({field}) => (
                 <FormItem>
                   <FormLabel>Department</FormLabel>
-                  <FormControl>
-                    <Input {...field} disabled={!canEdit}/>
-                  </FormControl>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    disabled={!canEdit}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a department"/>
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage/>
                 </FormItem>
               )}

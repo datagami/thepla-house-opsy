@@ -34,7 +34,7 @@ export async function PUT(
       branchId, 
       password,
       title,
-      department,
+      departmentId,
       mobileNo,
       doj,
       dob,
@@ -52,7 +52,7 @@ export async function PUT(
       name,
       email,
       title,
-      department,
+      departmentId,
       mobileNo,
       doj: doj ? new Date(doj) : null,
       dob: dob ? new Date(dob) : null,
@@ -94,6 +94,12 @@ export async function PUT(
         data: updateData,
         include: {
           branch: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          department: {
             select: {
               id: true,
               name: true,

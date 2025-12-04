@@ -63,6 +63,21 @@ enum UniformStatus {
   DAMAGED
 }
 
+model Department {
+  id          String   @id @default(cuid())
+  numId       Int      @default(autoincrement()) @map("num_id")
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  users       User[]
+
+  @@map("departments")
+}
+
 model Account {
   id                 String  @id @default(cuid())
   numId              Int     @default(autoincrement()) @map("num_id")
@@ -113,7 +128,7 @@ model User {
   updatedAt       DateTime    @updatedAt @map("updated_at")
   title           String?
   doj             DateTime?
-  department      String?
+  departmentId   String?   @map("department_id")
   mobileNo        String?
   dob             DateTime?
   gender          String?
@@ -139,6 +154,7 @@ model User {
   branch        Branch?     @relation("BranchUsers", fields: [branchId], references: [id])
   managedBranch Branch?    @relation("BranchManagers", fields: [managedBranchId], references: [id])
   selectedBranch Branch?    @relation("SelectedBranch", fields: [selectedBranchId], references: [id])
+  department    Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   attendance    Attendance[]  @relation("UserAttendance")
   leaveRequests LeaveRequest[]
   approvedBy    User?       @relation("UserApproval", fields: [approvedById], references: [id], onDelete: SetNull)
@@ -179,6 +195,7 @@ model User {
   @@index([managedBranchId])
   @@index([selectedBranchId])
   @@index([approvedById])
+  @@index([departmentId])
 }
 
 model VerificationToken {

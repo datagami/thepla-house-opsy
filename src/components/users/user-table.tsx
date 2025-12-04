@@ -190,7 +190,7 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
                 <TableCell>{user.salary}</TableCell>
                 <TableCell>
                   <Badge variant="secondary" className={roleColors[user.role as keyof typeof roleColors]}>
-                    {user.role} {user.department ? `(${user.department})` : ''}
+                    {user.role} {user.department?.name ? `(${user.department.name})` : ''}
                   </Badge>
                 </TableCell>
                 <TableCell>

@@ -38,6 +38,12 @@ export default async function UsersPage() {
           name: true,
         },
       },
+      department: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
     },
     orderBy: {
       createdAt: 'desc',

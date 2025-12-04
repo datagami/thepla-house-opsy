@@ -86,7 +86,12 @@ export default async function BranchAttendancePage({
         select: {
           id: true,
           name: true,
-          department: true,
+          department: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
           attendance: {
             where: {
               date: {

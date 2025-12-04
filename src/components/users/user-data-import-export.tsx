@@ -65,7 +65,7 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
         'Email*': user.email,
         'Mobile No*': user.mobileNo,
         'Gender*': user.gender,
-        'Department*': user.department,
+        'Department*': user.department?.name || '',
         'Title*': user.title,
         'Role*': user.role,
         'Branch*': user.branch?.name || '',

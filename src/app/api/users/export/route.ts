@@ -21,7 +21,12 @@ export async function GET() {
         email: true,
         mobileNo: true,
         gender: true,
-        department: true,
+        department: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         title: true,
         role: true,
         branch: true,

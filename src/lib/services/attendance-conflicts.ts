@@ -68,7 +68,12 @@ export async function getAttendanceConflicts(month: number, year: number) {
         select: {
           id: true,
           name: true,
-          department: true,
+          department: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
           branch: {
             select: {
               name: true,
@@ -99,7 +104,7 @@ export async function getAttendanceConflicts(month: number, year: number) {
       grouped.set(mapKey, {
         userId: record.userId,
         userName: record.user?.name ?? null,
-        department: record.user?.department ?? null,
+        department: record.user?.department?.name ?? null,
         branchName: record.user?.branch?.name ?? null,
         date: dayKey,
         entries: [],
