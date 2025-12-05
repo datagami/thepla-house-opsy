@@ -18,8 +18,8 @@ export default async function ReportsPage() {
   // @ts-expect-error - role is not in the User type
   const role = session.user.role;
 
-  // Check if user has access to reports
-  if (!["HR", "MANAGEMENT", "BRANCH_MANAGER"].includes(role)) {
+  // Check if user has access to reports - only HR and MANAGEMENT
+  if (!["HR", "MANAGEMENT"].includes(role)) {
     redirect("/dashboard");
   }
 

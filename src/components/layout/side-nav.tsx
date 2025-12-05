@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
+  Briefcase,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
@@ -54,6 +55,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       href: "/users",
       icon: <Users className="h-5 w-5" />,
       feature: "users.view" 
+    },
+    { 
+      title: "Departments", 
+      href: "/departments", 
+      icon: <Briefcase className="h-5 w-5" />,
+      feature: "users.manage" 
     },
     { 
       title: "Branch Attendance", 
@@ -156,12 +163,6 @@ const roleNavItems: Record<string, NavItem[]> = {
       icon: <Plus className="h-5 w-5" />,
       feature: "leave.request" 
     },
-    { 
-      title: "Reports", 
-      href: "/reports", 
-      icon: <FileText className="h-5 w-5" />,
-      feature: "attendance.report" 
-    },
     {
       title: "My Payslips",
       href: "/users/<user_id>/payslips",
@@ -193,6 +194,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       href: "/branches", 
       icon: <Building className="h-5 w-5" />,
       feature: "branch.view" 
+    },
+    { 
+      title: "Departments", 
+      href: "/departments", 
+      icon: <Briefcase className="h-5 w-5" />,
+      feature: "users.manage" 
     },
     { 
       title: "Reports", 

@@ -209,13 +209,12 @@ export async function DELETE(req: Request) {
       );
     }
 
-    // Soft delete by setting isActive to false
-    const department = await prisma.department.update({
+    // Hard delete - actually remove from database
+    await prisma.department.delete({
       where: { id },
-      data: { isActive: false },
     });
 
-    return NextResponse.json(department);
+    return NextResponse.json({ success: true, message: "Department deleted successfully" });
   } catch (error) {
     console.error("Error deleting department:", error);
     return NextResponse.json(

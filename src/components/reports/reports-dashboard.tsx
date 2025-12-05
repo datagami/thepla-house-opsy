@@ -34,7 +34,7 @@ export function ReportsDashboard({ userRole }: ReportsDashboardProps) {
       </div>
 
       <Tabs value={selectedReport} onValueChange={setSelectedReport} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className={`grid w-full ${userRole !== "BRANCH_MANAGER" ? "grid-cols-5" : "grid-cols-4"}`}>
           <TabsTrigger value="attendance" className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
             Attendance
@@ -47,10 +47,12 @@ export function ReportsDashboard({ userRole }: ReportsDashboardProps) {
             <Users className="h-4 w-4" />
             Employee
           </TabsTrigger>
-          <TabsTrigger value="financial" className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            Financial
-          </TabsTrigger>
+          {userRole !== "BRANCH_MANAGER" && (
+            <TabsTrigger value="financial" className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Financial
+            </TabsTrigger>
+          )}
           <TabsTrigger value="uniform" className="flex items-center gap-2">
             <Shirt className="h-4 w-4" />
             Uniform
@@ -69,9 +71,11 @@ export function ReportsDashboard({ userRole }: ReportsDashboardProps) {
           <EmployeeReports userRole={userRole} />
         </TabsContent>
 
-        <TabsContent value="financial" className="space-y-4">
-          <FinancialReports userRole={userRole} />
-        </TabsContent>
+        {userRole !== "BRANCH_MANAGER" && (
+          <TabsContent value="financial" className="space-y-4">
+            <FinancialReports userRole={userRole} />
+          </TabsContent>
+        )}
 
         <TabsContent value="uniform" className="space-y-4">
           <UniformReports userRole={userRole} />

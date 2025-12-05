@@ -49,7 +49,7 @@ const permissions: RolePermissions = {
   "attendance.mark": ["BRANCH_MANAGER", "HR"],
   "attendance.edit": ["BRANCH_MANAGER", "HR"],
   "attendance.verify": ["HR", "MANAGEMENT"],
-  "attendance.report": ["HR", "MANAGEMENT", "BRANCH_MANAGER"],
+  "attendance.report": ["HR", "MANAGEMENT"],
 
   // Branch Management
   "branch.view": ["HR", "MANAGEMENT"],

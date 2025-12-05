@@ -6,23 +6,8 @@ export async function GET() {
   try {
     const session = await auth();
     // @ts-expect-error - role is not in the User type
-    if (!session?.user || !["HR", "MANAGEMENT", "BRANCH_MANAGER"].includes(session.user.role)) {
+    if (!session?.user || !["HR", "MANAGEMENT"].includes(session.user.role)) {
       return new NextResponse("Unauthorized", { status: 401 });
-    }
-
-    // @ts-expect-error - branchId is not in the User type
-    const userBranchId = session.user.branchId;
-    // @ts-expect-error - role is not in the User type
-    const isBranchManager = session.user.role === "BRANCH_MANAGER";
-
-    if (isBranchManager) {
-      // Return only the branch manager's branch
-      const branch = await prisma.branch.findUnique({
-        where: { id: userBranchId || "" },
-        select: { name: true },
-      });
-
-      return NextResponse.json(branch ? [branch.name] : []);
     }
 
     // For HR and MANAGEMENT, return all branches

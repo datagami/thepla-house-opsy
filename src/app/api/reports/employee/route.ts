@@ -7,7 +7,7 @@ export async function GET(req: Request) {
   try {
     const session = await auth();
     // @ts-expect-error - role is not in the User type
-    if (!session?.user || !["HR", "MANAGEMENT", "BRANCH_MANAGER"].includes(session.user.role)) {
+    if (!session?.user || !["HR", "MANAGEMENT"].includes(session.user.role)) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
