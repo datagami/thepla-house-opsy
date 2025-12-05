@@ -8,7 +8,6 @@ import { Download, Shirt, CheckCircle, XCircle, AlertCircle } from "lucide-react
 
 interface UniformReportsProps {
   userRole: string;
-  userId: string;
 }
 
 interface UniformStats {
@@ -33,7 +32,7 @@ interface UniformStats {
   }>;
 }
 
-export function UniformReports({ userRole, userId }: UniformReportsProps) {
+export function UniformReports({ userRole }: UniformReportsProps) {
   const [year, setYear] = useState(new Date().getFullYear());
   const [branch, setBranch] = useState<string>("ALL");
   const [loading, setLoading] = useState(false);

@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { Prisma } from "@prisma/client";
 
 export async function GET(req: Request) {
   try {
     const session = await auth();
     // @ts-expect-error - role is not in the User type
-    if (!session || !["HR", "MANAGEMENT", "BRANCH_MANAGER"].includes(session.user.role)) {
+    if (!session?.user || !["HR", "MANAGEMENT", "BRANCH_MANAGER"].includes(session.user.role)) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
@@ -16,6 +17,7 @@ export async function GET(req: Request) {
 
     // @ts-expect-error - branchId is not in the User type
     const userBranchId = session.user.branchId;
+    // @ts-expect-error - role is not in the User type
     const isBranchManager = session.user.role === "BRANCH_MANAGER";
 
     // Calculate date range for the year
@@ -23,7 +25,7 @@ export async function GET(req: Request) {
     const yearEnd = new Date(year, 11, 31, 23, 59, 59);
 
     // Build where clause
-    const whereClause: any = {
+    const whereClause: Prisma.UniformWhereInput = {
       issuedAt: {
         gte: yearStart,
         lte: yearEnd,

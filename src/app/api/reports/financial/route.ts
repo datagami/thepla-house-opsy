@@ -7,7 +7,7 @@ export async function GET(req: Request) {
   try {
     const session = await auth();
     // @ts-expect-error - role is not in the User type
-    if (!session || !["HR", "MANAGEMENT"].includes(session.user.role)) {
+    if (!session?.user || !["HR", "MANAGEMENT"].includes(session.user.role)) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
@@ -48,7 +48,7 @@ export async function GET(req: Request) {
 
     // Calculate total salary
     const totalSalary = salaries.reduce((sum, salary) => {
-      return sum + calculateNetSalaryFromObject(salary);
+      return sum + calculateNetSalaryFromObject(salary as unknown as import('@/models/models').Salary);
     }, 0);
 
     // Get advance payments
@@ -90,7 +90,7 @@ export async function GET(req: Request) {
         branchMap.set(branchName, { amount: 0, employeeCount: 0, employees: new Set() });
       }
       const branchStats = branchMap.get(branchName)!;
-      branchStats.amount += calculateNetSalaryFromObject(salary);
+      branchStats.amount += calculateNetSalaryFromObject(salary as unknown as import('@/models/models').Salary);
       branchStats.employees.add(salary.userId);
       branchStats.employeeCount = branchStats.employees.size;
     });
@@ -145,7 +145,7 @@ export async function GET(req: Request) {
       });
 
       const trendAmount = trendSalaries.reduce((sum, salary) => {
-        return sum + calculateNetSalaryFromObject(salary);
+        return sum + calculateNetSalaryFromObject(salary as unknown as import('@/models/models').Salary);
       }, 0);
 
       trendData.push({

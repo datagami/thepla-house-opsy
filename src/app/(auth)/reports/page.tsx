@@ -23,6 +23,6 @@ export default async function ReportsPage() {
     redirect("/dashboard");
   }
 
-  return <ReportsDashboard userRole={role} userId={session.user.id} />;
+  return <ReportsDashboard userRole={role} />;
 }
 

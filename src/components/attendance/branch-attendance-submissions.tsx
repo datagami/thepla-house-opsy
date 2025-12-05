@@ -140,10 +140,10 @@ export function BranchAttendanceSubmissions({
     (sum, stat) => sum + stat.approved,
     0
   );
-  const totalRejected = branchStats.reduce(
-    (sum, stat) => sum + stat.rejected,
-    0
-  );
+  // const totalRejected = branchStats.reduce(
+  //   (sum, stat) => sum + stat.rejected,
+  //   0
+  // );
   const overallCompletion =
     totalEmployees > 0
       ? Math.round((totalSubmitted / totalEmployees) * 100)
@@ -344,7 +344,7 @@ export function BranchAttendanceSubmissions({
                             {employee.name?.toUpperCase() || "N/A"}
                           </TableCell>
                           <TableCell>
-                            {employee.department ? employee.department.toUpperCase() : "N/A"}
+                            {employee.department?.name ? employee.department.name.toUpperCase() : "N/A"}
                           </TableCell>
                           <TableCell>
                             <span className="text-foreground">

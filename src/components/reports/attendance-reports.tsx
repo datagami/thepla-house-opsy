@@ -9,7 +9,6 @@ import { format } from "date-fns";
 
 interface AttendanceReportsProps {
   userRole: string;
-  userId: string;
 }
 
 interface AttendanceStats {
@@ -33,7 +32,7 @@ interface AttendanceStats {
   }>;
 }
 
-export function AttendanceReports({ userRole, userId }: AttendanceReportsProps) {
+export function AttendanceReports({ userRole }: AttendanceReportsProps) {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
   const [branch, setBranch] = useState<string>("ALL");

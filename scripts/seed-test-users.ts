@@ -35,6 +35,21 @@ async function main() {
     create(args: { data: { referrerId: string; referredUserId: string; eligibleAt: Date } }): Promise<unknown>;
   }
   const referralClient = (prisma as unknown as { referral: ReferralClient }).referral;
+  
+  // Ensure all departments exist
+  const departmentMap = new Map<string, string>();
+  for (const deptName of DEPARTMENTS) {
+    const department = await prisma.department.upsert({
+      where: { name: deptName },
+      update: {},
+      create: {
+        name: deptName,
+        isActive: true,
+      },
+    });
+    departmentMap.set(deptName, department.id);
+  }
+  
   // Ensure there is at least one branch to attach users to
   let branch = await prisma.branch.findFirst();
   if (!branch) {
@@ -74,7 +89,7 @@ async function main() {
         status: UserStatus.ACTIVE,
         branchId: branch.id,
         title: randomOf(TITLES),
-        department: randomOf(DEPARTMENTS),
+        departmentId: departmentMap.get(randomOf(DEPARTMENTS)) || undefined,
         dob,
         doj,
         gender: i % 2 === 0 ? 'MALE' : 'FEMALE',

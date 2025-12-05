@@ -67,8 +67,44 @@ const LAST_NAMES = [
 ];
 
 async function main() {
+  // Ensure all departments exist
+  const departmentMap = new Map<string, string>();
+  for (const deptName of DEPARTMENTS) {
+    const department = await prisma.department.upsert({
+      where: { name: deptName },
+      update: {},
+      create: {
+        name: deptName,
+        isActive: true,
+      },
+    });
+    departmentMap.set(deptName, department.id);
+  }
+  
+  // Also ensure Management and HR departments exist
+  const managementDept = await prisma.department.upsert({
+    where: { name: 'Management' },
+    update: {},
+    create: {
+      name: 'Management',
+      isActive: true,
+    },
+  });
+  departmentMap.set('Management', managementDept.id);
+  
+  const hrDept = await prisma.department.upsert({
+    where: { name: 'HR' },
+    update: {},
+    create: {
+      name: 'HR',
+      isActive: true,
+    },
+  });
+  departmentMap.set('HR', hrDept.id);
+
   await prisma.branch.createMany({
     data: BRANCHES_DATA,
+    skipDuplicates: true,
   });
 
   const BRANCHES = await prisma.branch.findMany({});
@@ -96,7 +132,7 @@ async function main() {
         managedBranchId: branchData.id,
         // Additional fields for managers
         title: TITLES[Math.floor(Math.random() * TITLES.length)],
-        department: 'Management',
+        departmentId: departmentMap.get('Management'),
         dob: randomDate(new Date(1970, 0, 1), new Date(1995, 11, 31)),
         doj: randomDate(new Date(2020, 0, 1), new Date(2024, 11, 31)),
         gender: Math.random() > 0.5 ? 'MALE' : 'FEMALE',
@@ -132,7 +168,7 @@ async function main() {
           branchId: branchData.id,
           // Additional employee data
           title: TITLES[Math.floor(Math.random() * TITLES.length)],
-          department,
+          departmentId: departmentMap.get(department),
           dob: randomDate(new Date(1980, 0, 1), new Date(2000, 11, 31)),
           doj: randomDate(new Date(2022, 0, 1), new Date(2024, 11, 31)),
           gender: Math.random() > 0.5 ? 'MALE' : 'FEMALE',
@@ -167,7 +203,7 @@ async function main() {
         status: UserStatus.ACTIVE,
         // Additional fields for management
         title: TITLES[Math.floor(Math.random() * TITLES.length)],
-        department: 'Management',
+        departmentId: departmentMap.get('Management'),
         dob: randomDate(new Date(1970, 0, 1), new Date(1990, 11, 31)),
         doj: randomDate(new Date(2020, 0, 1), new Date(2024, 11, 31)),
         gender: Math.random() > 0.5 ? 'MALE' : 'FEMALE',
@@ -200,7 +236,7 @@ async function main() {
         status: UserStatus.ACTIVE,
         // Additional fields for HR
         title: TITLES[Math.floor(Math.random() * TITLES.length)],
-        department: 'HR',
+        departmentId: departmentMap.get('HR'),
         dob: randomDate(new Date(1980, 0, 1), new Date(1995, 11, 31)),
         doj: randomDate(new Date(2020, 0, 1), new Date(2024, 11, 31)),
         gender: Math.random() > 0.5 ? 'MALE' : 'FEMALE',

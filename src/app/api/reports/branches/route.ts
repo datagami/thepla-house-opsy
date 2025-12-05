@@ -2,16 +2,17 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const session = await auth();
     // @ts-expect-error - role is not in the User type
-    if (!session || !["HR", "MANAGEMENT", "BRANCH_MANAGER"].includes(session.user.role)) {
+    if (!session?.user || !["HR", "MANAGEMENT", "BRANCH_MANAGER"].includes(session.user.role)) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
     // @ts-expect-error - branchId is not in the User type
     const userBranchId = session.user.branchId;
+    // @ts-expect-error - role is not in the User type
     const isBranchManager = session.user.role === "BRANCH_MANAGER";
 
     if (isBranchManager) {

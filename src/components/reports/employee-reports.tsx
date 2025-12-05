@@ -4,11 +4,10 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Users, UserPlus, UserMinus, TrendingUp } from "lucide-react";
+import { Download, Users, UserPlus, UserMinus } from "lucide-react";
 
 interface EmployeeReportsProps {
   userRole: string;
-  userId: string;
 }
 
 interface EmployeeStats {
@@ -35,7 +34,7 @@ interface EmployeeStats {
   }>;
 }
 
-export function EmployeeReports({ userRole, userId }: EmployeeReportsProps) {
+export function EmployeeReports({ userRole }: EmployeeReportsProps) {
   const [year, setYear] = useState(new Date().getFullYear());
   const [branch, setBranch] = useState<string>("ALL");
   const [loading, setLoading] = useState(false);

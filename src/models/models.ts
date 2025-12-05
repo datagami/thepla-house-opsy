@@ -58,7 +58,6 @@ export interface User {
   title?: string | null;
   doj?: Date | null;
   departmentId?: string | null;
-  department?: Department | null;
   mobileNo?: string | null;
   dob?: Date | null;
   gender?: string | null;

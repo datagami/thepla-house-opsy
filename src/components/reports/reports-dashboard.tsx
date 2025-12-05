@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Clock, 
@@ -18,10 +17,9 @@ import { UniformReports } from "./uniform-reports";
 
 interface ReportsDashboardProps {
   userRole: string;
-  userId: string;
 }
 
-export function ReportsDashboard({ userRole, userId }: ReportsDashboardProps) {
+export function ReportsDashboard({ userRole }: ReportsDashboardProps) {
   const [selectedReport, setSelectedReport] = useState<string>("attendance");
 
   return (
@@ -30,7 +28,7 @@ export function ReportsDashboard({ userRole, userId }: ReportsDashboardProps) {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Reports & Analytics</h2>
           <p className="text-muted-foreground">
-            Comprehensive insights into your organization's data
+            Comprehensive insights into your organization&apos;s data
           </p>
         </div>
       </div>
@@ -60,23 +58,23 @@ export function ReportsDashboard({ userRole, userId }: ReportsDashboardProps) {
         </TabsList>
 
         <TabsContent value="attendance" className="space-y-4">
-          <AttendanceReports userRole={userRole} userId={userId} />
+          <AttendanceReports userRole={userRole} />
         </TabsContent>
 
         <TabsContent value="leave" className="space-y-4">
-          <LeaveReports userRole={userRole} userId={userId} />
+          <LeaveReports userRole={userRole} />
         </TabsContent>
 
         <TabsContent value="employee" className="space-y-4">
-          <EmployeeReports userRole={userRole} userId={userId} />
+          <EmployeeReports userRole={userRole} />
         </TabsContent>
 
         <TabsContent value="financial" className="space-y-4">
-          <FinancialReports userRole={userRole} userId={userId} />
+          <FinancialReports userRole={userRole} />
         </TabsContent>
 
         <TabsContent value="uniform" className="space-y-4">
-          <UniformReports userRole={userRole} userId={userId} />
+          <UniformReports userRole={userRole} />
         </TabsContent>
       </Tabs>
     </div>

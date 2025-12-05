@@ -4,12 +4,11 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, CalendarCheck, TrendingUp } from "lucide-react";
+import { Download, CalendarCheck } from "lucide-react";
 import { format } from "date-fns";
 
 interface LeaveReportsProps {
   userRole: string;
-  userId: string;
 }
 
 interface LeaveStats {
@@ -34,7 +33,7 @@ interface LeaveStats {
   }>;
 }
 
-export function LeaveReports({ userRole, userId }: LeaveReportsProps) {
+export function LeaveReports({ userRole }: LeaveReportsProps) {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
   const [branch, setBranch] = useState<string>("ALL");

@@ -4,7 +4,6 @@ import { auth } from "@/auth";
 import { hash } from "bcrypt";
 import { hasAccess } from "@/lib/access-control";
 import {Prisma} from "@prisma/client";
-import UserUpdateInput = Prisma.UserUpdateInput;
 
 export async function PUT(
   request: Request,
@@ -48,11 +47,11 @@ export async function PUT(
     } = body;
 
     // Base update data
-    const updateData: UserUpdateInput = {
+    const updateData: Prisma.UserUpdateInput = {
       name,
       email,
       title,
-      departmentId,
+      ...(departmentId && { departmentId }),
       mobileNo,
       doj: doj ? new Date(doj) : null,
       dob: dob ? new Date(dob) : null,
@@ -62,7 +61,6 @@ export async function PUT(
       salary: salary ? parseFloat(salary) : null,
       bankAccountNo: bankAccountNo || null,
       bankIfscCode: bankIfscCode || null,
-      // @ts-expect-error - branchId can be null
       branchId: branchId || null,
     };
 
