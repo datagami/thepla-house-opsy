@@ -4,8 +4,10 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Clock, CheckCircle, XCircle, Users } from "lucide-react";
+import { Download, Clock, CheckCircle, XCircle, Users, TrendingUp, AlertTriangle, Award } from "lucide-react";
 import { format } from "date-fns";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 interface AttendanceReportsProps {
   userRole: string;
@@ -13,22 +15,44 @@ interface AttendanceReportsProps {
 
 interface AttendanceStats {
   totalEmployees: number;
-  presentCount: number;
-  absentCount: number;
-  halfDayCount: number;
-  overtimeCount: number;
-  averageAttendance: number;
+  totalDaysInMonth: number;
+  daysToCount: number;
+  isCurrentMonth: boolean;
+  totalPresentDays: number;
+  totalAbsentDays: number;
+  totalHalfDays: number;
+  totalOvertimeDays: number;
+  averageAttendanceRate: number;
+  avgPresentDaysPerEmployee: number;
   attendanceByBranch: Array<{
     branch: string;
-    present: number;
-    absent: number;
-    total: number;
-    percentage: number;
+    employees: number;
+    presentDays: number;
+    absentDays: number;
+    halfDays: number;
+    overtimeDays: number;
+    attendanceRate: number;
+    avgPresentDays: number;
   }>;
   attendanceTrend: Array<{
     date: string;
     present: number;
     absent: number;
+    total: number;
+    rate: number;
+  }>;
+  topPerformers: Array<{
+    name: string;
+    presentDays: number;
+    absentDays: number;
+    attendanceRate: number;
+  }>;
+  lowAttendanceEmployees: Array<{
+    name: string;
+    branch: string;
+    presentDays: number;
+    absentDays: number;
+    attendanceRate: number;
   }>;
 }
 
@@ -175,6 +199,7 @@ export function AttendanceReports({ userRole }: AttendanceReportsProps) {
 
           {stats && (
             <div className="space-y-6">
+              {/* Key Metrics */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -183,31 +208,39 @@ export function AttendanceReports({ userRole }: AttendanceReportsProps) {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{stats.totalEmployees}</div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Present</CardTitle>
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-green-600">{stats.presentCount}</div>
                     <p className="text-xs text-muted-foreground">
-                      {stats.totalEmployees > 0
-                        ? ((stats.presentCount / stats.totalEmployees) * 100).toFixed(1)
-                        : 0}% attendance rate
+                      Active employees
                     </p>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Absent</CardTitle>
-                    <XCircle className="h-4 w-4 text-red-600" />
+                    <CardTitle className="text-sm font-medium">Average Attendance Rate</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-blue-600" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-red-600">{stats.absentCount}</div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {stats.averageAttendanceRate.toFixed(1)}%
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {stats.avgPresentDaysPerEmployee.toFixed(1)} days avg per employee
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Present Days</CardTitle>
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">
+                      {stats.totalPresentDays.toFixed(0)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {stats.totalAbsentDays} absent days
+                    </p>
                   </CardContent>
                 </Card>
 
@@ -217,38 +250,152 @@ export function AttendanceReports({ userRole }: AttendanceReportsProps) {
                     <Clock className="h-4 w-4 text-purple-600" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-purple-600">{stats.overtimeCount}</div>
+                    <div className="text-2xl font-bold text-purple-600">
+                      {stats.totalOvertimeDays}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {stats.totalHalfDays} half days
+                    </p>
                   </CardContent>
                 </Card>
               </div>
 
+              {/* Attendance by Branch */}
               {stats.attendanceByBranch.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Attendance by Branch</CardTitle>
+                    <CardDescription>
+                      Branch-wise attendance breakdown for {format(new Date(year, month - 1, 1), "MMMM yyyy")}
+                      {stats.isCurrentMonth && (
+                        <span className="text-muted-foreground ml-1">
+                          (Based on {stats.daysToCount} days so far)
+                        </span>
+                      )}
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       {stats.attendanceByBranch.map((branchStat) => (
                         <div key={branchStat.branch} className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="font-medium">{branchStat.branch}</span>
-                            <span>{branchStat.percentage.toFixed(1)}%</span>
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span className="font-medium">{branchStat.branch}</span>
+                              <span className="text-sm text-muted-foreground ml-2">
+                                ({branchStat.employees} employees)
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge 
+                                variant={branchStat.attendanceRate >= 90 ? "default" : branchStat.attendanceRate >= 80 ? "secondary" : "destructive"}
+                              >
+                                {branchStat.attendanceRate.toFixed(1)}%
+                              </Badge>
+                            </div>
                           </div>
                           <div className="w-full bg-secondary rounded-full h-2">
                             <div
-                              className="bg-primary h-2 rounded-full"
-                              style={{ width: `${branchStat.percentage}%` }}
+                              className={`h-2 rounded-full ${
+                                branchStat.attendanceRate >= 90 
+                                  ? "bg-green-600" 
+                                  : branchStat.attendanceRate >= 80 
+                                  ? "bg-yellow-600" 
+                                  : "bg-red-600"
+                              }`}
+                              style={{ width: `${Math.min(branchStat.attendanceRate, 100)}%` }}
                             />
                           </div>
                           <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>Present: {branchStat.present}</span>
-                            <span>Absent: {branchStat.absent}</span>
-                            <span>Total: {branchStat.total}</span>
+                            <span>Present: {branchStat.presentDays.toFixed(1)} days</span>
+                            <span>Absent: {branchStat.absentDays} days</span>
+                            <span>Avg: {branchStat.avgPresentDays.toFixed(1)} days/employee</span>
+                            {branchStat.overtimeDays > 0 && (
+                              <span>OT: {branchStat.overtimeDays} days</span>
+                            )}
                           </div>
                         </div>
                       ))}
                     </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Top Performers */}
+              {stats.topPerformers.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Award className="h-5 w-5 text-yellow-600" />
+                      Top Performers
+                    </CardTitle>
+                    <CardDescription>
+                      Employees with highest attendance rates
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Employee</TableHead>
+                          <TableHead>Present Days</TableHead>
+                          <TableHead>Absent Days</TableHead>
+                          <TableHead className="text-right">Attendance Rate</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {stats.topPerformers.map((emp, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="font-medium">{emp.name}</TableCell>
+                            <TableCell>{emp.presentDays.toFixed(1)}</TableCell>
+                            <TableCell>{emp.absentDays}</TableCell>
+                            <TableCell className="text-right">
+                              <Badge variant="default">{emp.attendanceRate.toFixed(1)}%</Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Low Attendance Alert */}
+              {stats.lowAttendanceEmployees.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-orange-600" />
+                      Low Attendance Alert
+                    </CardTitle>
+                    <CardDescription>
+                      Employees with attendance below 80%
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Employee</TableHead>
+                          <TableHead>Branch</TableHead>
+                          <TableHead>Present Days</TableHead>
+                          <TableHead>Absent Days</TableHead>
+                          <TableHead className="text-right">Attendance Rate</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {stats.lowAttendanceEmployees.map((emp, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="font-medium">{emp.name}</TableCell>
+                            <TableCell>{emp.branch}</TableCell>
+                            <TableCell>{emp.presentDays.toFixed(1)}</TableCell>
+                            <TableCell>{emp.absentDays}</TableCell>
+                            <TableCell className="text-right">
+                              <Badge variant="destructive">{emp.attendanceRate.toFixed(1)}%</Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </CardContent>
                 </Card>
               )}
@@ -259,4 +406,3 @@ export function AttendanceReports({ userRole }: AttendanceReportsProps) {
     </div>
   );
 }
-

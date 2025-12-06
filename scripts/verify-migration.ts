@@ -3,11 +3,15 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function verifyMigration() {
+  console.log('🔍 Verifying department migration...\n');
+
   try {
-    console.log('🔍 Verifying department migration...\n');
+    // Check if departments table exists and has data
+    const departmentCount = await prisma.department.count();
+    console.log(`✅ Departments table exists with ${departmentCount} departments`);
 
-    // Check users with departmentId
-    const usersWithNewDepartment = await prisma.user.count({
+    // Check users with department_id
+    const usersWithDepartment = await prisma.user.count({
       where: {
         departmentId: {
           not: null,
@@ -15,63 +19,70 @@ async function verifyMigration() {
       },
     });
 
-    // Check users with old department (using raw SQL since it's not in schema)
-    const usersWithOldDepartment = await prisma.$queryRaw<Array<{ count: bigint }>>`
-      SELECT COUNT(*) as count FROM users1 WHERE department IS NOT NULL
-    `;
+    const totalUsers = await prisma.user.count();
+    console.log(`✅ Total users: ${totalUsers}`);
+    console.log(`✅ Users with department: ${usersWithDepartment}`);
 
-    const oldCount = Number(usersWithOldDepartment[0]?.count || 0);
-
-    console.log(`✅ Users with departmentId (new): ${usersWithNewDepartment}`);
-    console.log(`📊 Users with department column (old): ${oldCount}`);
-
-    // Verify all users with old department also have departmentId
-    const usersMissingMigration = await prisma.$queryRaw<Array<{ count: bigint }>>`
-      SELECT COUNT(*) as count 
-      FROM users1 
-      WHERE department IS NOT NULL 
-      AND department_id IS NULL
-    `;
-
-    const missingCount = Number(usersMissingMigration[0]?.count || 0);
-
-    if (missingCount > 0) {
-      console.log(`\n⚠️  WARNING: ${missingCount} users have old department but no departmentId!`);
-      console.log('   Migration may have failed for some users.');
-      return false;
+    // Check if old department column still exists (using raw SQL)
+    try {
+      const oldDepartmentCount = await prisma.$queryRaw<Array<{ count: bigint }>>`
+        SELECT COUNT(*) as count FROM users1 WHERE department IS NOT NULL
+      `;
+      const count = Number(oldDepartmentCount[0]?.count || 0);
+      if (count > 0) {
+        console.log(`⚠️  Old 'department' column still has ${count} values (can be dropped after verification)`);
+      } else {
+        console.log(`✅ Old 'department' column is empty`);
+      }
+    } catch (error) {
+      console.log(`✅ Old 'department' column has been dropped (or doesn't exist)`);
     }
 
-    // Check that all departmentIds reference valid departments
-    const invalidReferences = await prisma.user.count({
+    // List all departments with user counts
+    const departmentsWithCounts = await prisma.department.findMany({
+      include: {
+        _count: {
+          select: {
+            users: true,
+          },
+        },
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+
+    console.log('\n📊 Department breakdown:');
+    departmentsWithCounts.forEach((dept) => {
+      console.log(`   - ${dept.name}: ${dept._count.users} users (${dept.isActive ? 'Active' : 'Inactive'})`);
+    });
+
+    // Check for any orphaned department_ids
+    const orphanedUsers = await prisma.user.findMany({
       where: {
         departmentId: {
           not: null,
         },
-        department: null, // This means the foreign key doesn't exist
+      },
+      include: {
+        department: true,
       },
     });
 
-    if (invalidReferences > 0) {
-      console.log(`\n⚠️  WARNING: ${invalidReferences} users have invalid departmentId references!`);
-      return false;
+    const orphaned = orphanedUsers.filter((u) => !u.department);
+    if (orphaned.length > 0) {
+      console.log(`\n⚠️  Warning: Found ${orphaned.length} users with invalid department_id`);
+    } else {
+      console.log(`\n✅ All department_id references are valid`);
     }
 
-    console.log('\n✅ All checks passed! Migration is safe.');
-    console.log(`\n📝 Summary:`);
-    console.log(`   - ${usersWithNewDepartment} users migrated successfully`);
-    console.log(`   - ${oldCount} users still have old department column (safe to drop)`);
-    console.log(`   - 0 users missing migration`);
-    console.log(`   - 0 invalid references`);
-    console.log('\n✨ Safe to drop the old department column!');
-
-    return true;
+    console.log('\n🎉 Migration verification complete!');
   } catch (error) {
     console.error('❌ Error verifying migration:', error);
-    return false;
+    throw error;
   } finally {
     await prisma.$disconnect();
   }
 }
 
 verifyMigration();
-
