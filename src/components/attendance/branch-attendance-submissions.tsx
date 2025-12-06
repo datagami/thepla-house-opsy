@@ -62,13 +62,11 @@ interface BranchStat {
 interface BranchAttendanceSubmissionsProps {
   branchStats: BranchStat[];
   selectedDate: Date;
-  userRole: string;
 }
 
 export function BranchAttendanceSubmissions({
   branchStats,
   selectedDate,
-  userRole,
 }: BranchAttendanceSubmissionsProps) {
   const router = useRouter();
 

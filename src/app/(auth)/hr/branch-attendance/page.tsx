@@ -189,7 +189,6 @@ export default async function BranchAttendancePage({
         <BranchAttendanceSubmissions
           branchStats={branchStats}
           selectedDate={selectedDate}
-          userRole={role}
         />
       </Suspense>
     </div>
