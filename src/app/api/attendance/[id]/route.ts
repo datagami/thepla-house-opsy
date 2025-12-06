@@ -315,6 +315,24 @@ export async function DELETE(
       where: { id }
     });
 
+    // Log attendance deletion
+    const sessionUserId = (session.user as { id?: string }).id;
+    if (sessionUserId) {
+      await logEntityActivity(
+        ActivityType.ATTENDANCE_DELETED,
+        sessionUserId,
+        "Attendance",
+        id,
+        `Deleted attendance record for user ${attendance.userId} on ${attendanceDate.toISOString().split('T')[0]}`,
+        {
+          attendanceId: id,
+          userId: attendance.userId,
+          date: attendanceDate.toISOString(),
+        },
+        request
+      );
+    }
+
     if (existingSalary?.status === "PENDING") {
       const { calculateSalary } = await import("@/lib/services/salary-calculator");
       const salaryDetails = await calculateSalary(
