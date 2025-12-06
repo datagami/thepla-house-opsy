@@ -21,8 +21,8 @@ export async function PUT(
 
     // @ts-expect-error - role is not defined in the session type
     const canManageUsers = hasAccess(session.user.role, "users.manage");
-    // @ts-expect-error - id is not in the session type
-    const isOwnProfile = session.user.id === id;
+    const sessionUserId = (session.user as { id?: string }).id;
+    const isOwnProfile = sessionUserId === id;
 
     if (!canManageUsers && !isOwnProfile) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -159,8 +159,10 @@ export async function PUT(
     if (oldUser.status !== user.status) changes.push(`status: ${oldUser.status} → ${user.status}`);
     if (password) changes.push("password changed");
 
-    // @ts-expect-error - id is not in the session type
-    const logUserId = session.user.id;
+    const logUserId = (session.user as { id?: string }).id;
+    if (!logUserId) {
+      return NextResponse.json(user);
+    }
     const logActivityType = isOwnProfile ? ActivityType.USER_UPDATED : ActivityType.USER_UPDATED;
     
     if (isOwnProfile) {

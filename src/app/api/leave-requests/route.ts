@@ -68,10 +68,16 @@ export async function POST(req: Request) {
     });
 
     // Log leave request creation
-    // @ts-expect-error - id is not in the session type
+    const sessionUserId = (session.user as { id?: string }).id;
+    if (!sessionUserId) {
+      return NextResponse.json(
+        { error: "User ID not found in session" },
+        { status: 401 }
+      );
+    }
     await logEntityActivity(
       ActivityType.LEAVE_REQUEST_CREATED,
-      session.user.id,
+      sessionUserId,
       "LeaveRequest",
       leaveRequest.id,
       `Created leave request: ${leaveType} from ${startDate} to ${endDate}`,

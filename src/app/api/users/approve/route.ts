@@ -89,8 +89,10 @@ export async function POST(req: Request) {
     });
 
     // Log user approval/status change
-    // @ts-expect-error - id is not in the session type
-    const approverId = session.user.id;
+    const approverId = (session.user as { id?: string }).id;
+    if (!approverId) {
+      return NextResponse.json(updatedUser);
+    }
     const changes: string[] = [];
     if (role) changes.push(`role: ${role}`);
     if (status) changes.push(`status: ${status}`);

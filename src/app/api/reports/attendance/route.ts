@@ -162,7 +162,7 @@ export async function GET(req: Request) {
       overtimeDays: number;
     }>();
 
-    employeeStats.forEach((stats, employeeId) => {
+    employeeStats.forEach((stats) => {
       const branchName = stats.branch;
       if (!branchMap.has(branchName)) {
         branchMap.set(branchName, {

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { ActivityType } from "@prisma/client";
+import { ActivityType, Prisma } from "@prisma/client";
 
 export interface ActivityLogInput {
   activityType: ActivityType;
@@ -8,7 +8,7 @@ export interface ActivityLogInput {
   targetId?: string;
   entityType?: string;
   description: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   ipAddress?: string;
   userAgent?: string;
 }
@@ -45,7 +45,7 @@ export async function logUserActivity(
   activityType: ActivityType,
   userId: string,
   description: string,
-  metadata?: Record<string, any>,
+  metadata?: Record<string, unknown>,
   request?: Request
 ): Promise<void> {
   const ipAddress = request?.headers.get("x-forwarded-for") || 
@@ -73,7 +73,7 @@ export async function logTargetUserActivity(
   userId: string,
   targetUserId: string,
   description: string,
-  metadata?: Record<string, any>,
+  metadata?: Record<string, unknown>,
   request?: Request
 ): Promise<void> {
   const ipAddress = request?.headers.get("x-forwarded-for") || 
@@ -102,7 +102,7 @@ export async function logEntityActivity(
   entityType: string,
   targetId: string,
   description: string,
-  metadata?: Record<string, any>,
+  metadata?: Record<string, unknown>,
   request?: Request
 ): Promise<void> {
   const ipAddress = request?.headers.get("x-forwarded-for") || 
@@ -148,7 +148,7 @@ export async function getActivityLogs(options: {
     offset = 0,
   } = options;
 
-  const where: any = {};
+  const where: Prisma.ActivityLogWhereInput = {};
 
   if (userId) where.userId = userId;
   if (targetUserId) where.targetUserId = targetUserId;
@@ -212,7 +212,7 @@ export async function getActivityStats(options: {
 }) {
   const { startDate, endDate, userId } = options;
 
-  const where: any = {};
+  const where: Prisma.ActivityLogWhereInput = {};
   if (userId) where.userId = userId;
   if (startDate || endDate) {
     where.createdAt = {};

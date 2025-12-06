@@ -203,8 +203,16 @@ export async function POST(request: Request) {
     // Log salary generation
     const session = await auth();
     if (session?.user) {
-      // @ts-expect-error - id is not in the session type
-      const userId = session.user.id;
+      const userId = (session.user as { id?: string }).id;
+      if (!userId) {
+        // Skip logging if user ID is not available
+        return NextResponse.json({
+          message: `Generated salaries for ${salaries.length} employees`,
+          skipped: users.length - usersToProcess.length,
+          processed: salaries.length,
+          salaries
+        });
+      }
       for (const salary of salaries) {
         await logEntityActivity(
           ActivityType.SALARY_GENERATED,

@@ -37,8 +37,7 @@ export async function POST(req: Request) {
 
     // @ts-expect-error - role is not in the session type
     const creatorRole = session.user.role;
-    // @ts-expect-error - id is not in the session type
-    const creatorId = session.user.id;
+    const creatorId = (session.user as { id?: string }).id;
 
     if (!creatorId) {
       return new NextResponse("User ID not found in session", { status: 401 });
@@ -176,7 +175,6 @@ export async function POST(req: Request) {
     }
 
     // Log attendance creation
-    // @ts-expect-error - id is not in the session type
     await logEntityActivity(
       ActivityType.ATTENDANCE_CREATED,
       creatorId,
@@ -249,8 +247,7 @@ export async function PATCH(req: Request) {
       throw new Error('Cannot edit attendance as salary is already in processing state');
     }
 
-    // @ts-expect-error - id is not in the session type
-    const verifierId = session.user.id;
+    const verifierId = (session.user as { id?: string }).id;
     
     if (!verifierId) {
       return NextResponse.json(
@@ -303,10 +300,9 @@ export async function PATCH(req: Request) {
     }
 
     // Log attendance verification
-    // @ts-expect-error - id is not in the session type
     await logEntityActivity(
       status === "APPROVED" ? ActivityType.ATTENDANCE_VERIFIED : ActivityType.ATTENDANCE_REJECTED,
-      session.user.id,
+      verifierId,
       "Attendance",
       attendanceId,
       `${status === "APPROVED" ? "Approved" : "Rejected"} attendance for user ${attendance.userId}`,

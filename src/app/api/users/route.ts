@@ -142,10 +142,11 @@ export async function POST(request: Request) {
     }
 
     // Log user creation
-    // @ts-expect-error - id is not in the session type
-    await logTargetUserActivity(
-      ActivityType.USER_CREATED,
-      session.user.id,
+    const sessionUserId = (session.user as { id?: string }).id;
+    if (sessionUserId) {
+      await logTargetUserActivity(
+        ActivityType.USER_CREATED,
+        sessionUserId,
       user.id,
       `Created new user: ${user.name} (${user.email}) with role ${user.role}`,
       {
@@ -157,7 +158,8 @@ export async function POST(request: Request) {
         departmentId: user.departmentId,
       },
       request
-    );
+      );
+    }
 
     return NextResponse.json(user);
   } catch (error) {

@@ -47,8 +47,6 @@ export async function GET(request: Request) {
       const endDate = searchParams.get("endDate")
         ? new Date(searchParams.get("endDate")!)
         : undefined;
-      // @ts-expect-error - id is not in the session type
-      const userId = searchParams.get("userId") || session.user.id;
 
       const stats = await getActivityStats({
         startDate,
@@ -80,8 +78,8 @@ export async function GET(request: Request) {
     // Regular users can only see their own activities unless they're HR/MANAGEMENT
     // @ts-expect-error - role is not defined in the session type
     const isPrivileged = ["HR", "MANAGEMENT"].includes(session.user.role);
-    // @ts-expect-error - id is not in the session type
-    const effectiveUserId = isPrivileged ? userId : session.user.id;
+    const sessionUserId = (session.user as { id?: string }).id;
+    const effectiveUserId = isPrivileged ? userId : sessionUserId;
 
     const result = await getActivityLogs({
       userId: effectiveUserId,

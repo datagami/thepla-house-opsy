@@ -33,12 +33,18 @@ export async function PATCH(
     });
 
     // Log leave request status change
-    // @ts-expect-error - id is not in the session type
+    const sessionUserId = (session.user as { id?: string }).id;
+    if (!sessionUserId) {
+      return NextResponse.json(
+        { error: "User ID not found in session" },
+        { status: 401 }
+      );
+    }
     await logEntityActivity(
       status === "APPROVED" 
         ? ActivityType.LEAVE_REQUEST_APPROVED 
         : ActivityType.LEAVE_REQUEST_REJECTED,
-      session.user.id,
+      sessionUserId,
       "LeaveRequest",
       id,
       `${status === "APPROVED" ? "Approved" : "Rejected"} leave request`,

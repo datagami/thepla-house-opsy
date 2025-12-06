@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { CalendarIcon, Filter, X, RefreshCw } from "lucide-react";
+import { CalendarIcon, X, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ActivityLog {
@@ -22,7 +22,7 @@ interface ActivityLog {
   targetId: string | null;
   entityType: string | null;
   description: string;
-  metadata: any;
+  metadata: Record<string, unknown> | null;
   ipAddress: string | null;
   userAgent: string | null;
   createdAt: string;
