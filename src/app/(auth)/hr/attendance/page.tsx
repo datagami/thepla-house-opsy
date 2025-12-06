@@ -16,9 +16,9 @@ export default async function HRAttendancePage({
 }) {
   const session = await auth();
 
-  // @ts-expect-error - We check for HR role
-  const role = session.user.role;
-  if (!session || role !== "HR") {
+  // @ts-expect-error - We check for HR or MANAGEMENT role
+  const role = session?.user?.role;
+  if (!session || !["HR", "MANAGEMENT"].includes(role)) {
     redirect("/dashboard");
   }
 

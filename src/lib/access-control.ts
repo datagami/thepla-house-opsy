@@ -12,6 +12,8 @@ export type Feature =
   | "attendance.edit"
   | "attendance.verify"
   | "attendance.report"
+  | "attendance.view_branch_submissions"
+  | "attendance.resolve_conflicts"
   | "branch.view"
   | "branch.create"
   | "branch.edit"
@@ -24,11 +26,13 @@ export type Feature =
   | "dashboard.stats"
   | "employees.view"
   | "salary.edit"
+  | "salary.view"
   | "uniform.view"
   | "uniform.create"
   | "uniform.edit"
   | "uniform.delete"
-  | "activity-logs.view";
+  | "activity-logs.view"
+  | "notes.view";
 
 type RolePermissions = {
   [key in Feature]: string[];
@@ -47,10 +51,12 @@ const permissions: RolePermissions = {
 
   // Attendance Management
   "attendance.view": ["HR", "MANAGEMENT", "BRANCH_MANAGER", "EMPLOYEE"],
-  "attendance.mark": ["BRANCH_MANAGER", "HR"],
-  "attendance.edit": ["BRANCH_MANAGER", "HR"],
-  "attendance.verify": ["HR"],
+  "attendance.mark": ["BRANCH_MANAGER", "HR", "MANAGEMENT"],
+  "attendance.edit": ["BRANCH_MANAGER", "HR", "MANAGEMENT"],
+  "attendance.verify": ["HR", "MANAGEMENT"],
   "attendance.report": ["HR", "MANAGEMENT"],
+  "attendance.view_branch_submissions": ["HR", "MANAGEMENT"],
+  "attendance.resolve_conflicts": ["HR", "MANAGEMENT"],
 
   // Branch Management
   "branch.view": ["HR", "MANAGEMENT"],
@@ -62,7 +68,7 @@ const permissions: RolePermissions = {
   // Leave Management
   "leave.view": ["HR", "MANAGEMENT", "BRANCH_MANAGER", "EMPLOYEE"],
   "leave.request": ["EMPLOYEE"],
-  "leave.approve": ["BRANCH_MANAGER", "HR"],
+  "leave.approve": ["BRANCH_MANAGER", "HR", "MANAGEMENT"],
 
   // Dashboard
   "dashboard.view": ["HR", "MANAGEMENT", "BRANCH_MANAGER", "EMPLOYEE"],
@@ -73,6 +79,7 @@ const permissions: RolePermissions = {
 
   // Salary
   "salary.edit": ["HR", "MANAGEMENT"],
+  "salary.view": ["HR", "MANAGEMENT", "BRANCH_MANAGER", "EMPLOYEE"],
 
   // Uniform Management
   "uniform.view": ["HR", "MANAGEMENT", "BRANCH_MANAGER"],
@@ -82,6 +89,9 @@ const permissions: RolePermissions = {
 
   // Activity Logs
   "activity-logs.view": ["HR", "MANAGEMENT"],
+
+  // Notes
+  "notes.view": ["HR", "MANAGEMENT", "BRANCH_MANAGER", "EMPLOYEE"],
 };
 
 export function hasAccess(userRole: string, feature: Feature): boolean {

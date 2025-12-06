@@ -18,6 +18,7 @@ import {
   ChevronDown,
   ChevronRight,
   Briefcase,
+  History,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
@@ -202,28 +203,79 @@ const roleNavItems: Record<string, NavItem[]> = {
       feature: "users.manage" 
     },
     { 
+      title: "Branch Attendance", 
+      href: "/attendance", 
+      icon: <Clock className="h-5 w-5" />,
+      feature: "attendance.mark" 
+    },
+    { 
+      title: "Manager Attendance", 
+      href: "/hr/attendance", 
+      icon: <ClipboardCheck className="h-5 w-5" />,
+      feature: "attendance.verify" 
+    },
+    {
+      title: "Branch Submissions",
+      href: "/hr/branch-attendance",
+      icon: <Building2 className="h-5 w-5" />,
+      feature: "attendance.view_branch_submissions",
+      subItems: [
+        {
+          title: "Attendance Verification",
+          href: "/hr/attendance-verification",
+          icon: <ClipboardCheck className="h-4 w-4" />,
+          feature: "attendance.verify"
+        },
+      ]
+    },
+    { 
+      title: "Leave Requests", 
+      href: "/leave-requests", 
+      icon: <CalendarCheck className="h-5 w-5" />,
+      feature: "leave.view" 
+    },
+    { 
       title: "Reports", 
       href: "/reports", 
       icon: <FileText className="h-5 w-5" />,
       feature: "attendance.report" 
     },
     {
-      title: "Salary",
-      href: "/salary",
+      title: "Salary & Finance",
       icon: <DollarSign className="h-5 w-5" />,
-      feature: "salary.edit"
-    },
-    {
-      title: "My Payslips",
-      href: "/users/<user_id>/payslips",
-      icon: <FileText className="h-5 w-5" />,
-      feature: "salary.view"
+      feature: "salary.edit",
+      subItems: [
+        {
+          title: "Salary",
+          href: "/salary",
+          icon: <DollarSign className="h-4 w-4" />,
+          feature: "salary.edit"
+        },
+        {
+          title: "My Payslips",
+          href: "/users/<user_id>/payslips",
+          icon: <FileText className="h-4 w-4" />,
+          feature: "salary.view"
+        },
+        {
+          title: "Attendance Conflicts",
+          href: "/hr/attendance-conflicts",
+          icon: <AlertTriangle className="h-4 w-4" />,
+          feature: "attendance.resolve_conflicts"
+        },
+      ]
     },
     {
       title: "Notes",
       href: "/notes",
       icon: <FileText className="h-5 w-5" />,
       feature: "notes.view"
+    },
+    {
+      title: "Activity Logs",
+      href: "/activity-logs",
+      icon: <History className="h-5 w-5" />,
+      feature: "activity-logs.view"
     },
   ],
   EMPLOYEE: [
