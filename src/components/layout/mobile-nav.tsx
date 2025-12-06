@@ -311,48 +311,77 @@ function NavItemComponent({
   const isItemActive = isActive || hasActiveSubItem;
 
   if (item.subItems && item.subItems.length > 0) {
+    const parentHref = item.href ? processHref(item.href) : null;
+    const isParentActive = parentHref && (pathname === parentHref || pathname.startsWith(parentHref + "/"));
+    const shouldHighlight = isItemActive || isOpen || isParentActive;
+
     return (
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleTrigger
-          className={cn(
-            "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-primary",
-            isItemActive
-              ? "bg-accent text-primary"
-              : "text-muted-foreground"
-          )}
-        >
-          <div className="flex items-center gap-3">
-            {item.icon}
-            <span>{item.title}</span>
-          </div>
-          {isOpen ? (
-            <ChevronDown className="h-4 w-4" />
-          ) : (
-            <ChevronRight className="h-4 w-4" />
-          )}
-        </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-1 pl-4 pt-1">
-          {item.subItems.map((subItem) => {
-            const subHref = subItem.href ? processHref(subItem.href) : "#";
-            const isSubActive = pathname === subHref || pathname.startsWith(subHref + "/");
-            
-            return (
+        <div className="space-y-1">
+          <div
+            className={cn(
+              "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm transition-all",
+              shouldHighlight
+                ? "bg-accent text-primary"
+                : "text-muted-foreground hover:text-primary"
+            )}
+          >
+            {parentHref ? (
               <Link
-                key={subItem.href || subItem.title}
-                href={subHref}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-primary",
-                  isSubActive
-                    ? "bg-accent text-primary"
-                    : "text-muted-foreground"
-                )}
+                href={parentHref}
+                className="flex items-center gap-3 flex-1"
+                onClick={(e) => {
+                  // Allow navigation but don't toggle the menu on link click
+                  e.stopPropagation();
+                }}
               >
-                {subItem.icon || <div className="h-4 w-4" />}
-                <span>{subItem.title}</span>
+                {item.icon}
+                <span>{item.title}</span>
               </Link>
-            );
-          })}
-        </CollapsibleContent>
+            ) : (
+              <div className="flex items-center gap-3 flex-1">
+                {item.icon}
+                <span>{item.title}</span>
+              </div>
+            )}
+            <CollapsibleTrigger asChild>
+              <button
+                className="flex items-center"
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
+                {isOpen ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </button>
+            </CollapsibleTrigger>
+          </div>
+          <CollapsibleContent className="space-y-1 pl-4 pt-1">
+            {item.subItems.map((subItem) => {
+              const subHref = subItem.href ? processHref(subItem.href) : "#";
+              const isSubActive = pathname === subHref || pathname.startsWith(subHref + "/");
+              
+              return (
+                <Link
+                  key={subItem.href || subItem.title}
+                  href={subHref}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-primary",
+                    isSubActive
+                      ? "bg-accent text-primary"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {subItem.icon || <div className="h-4 w-4" />}
+                  <span>{subItem.title}</span>
+                </Link>
+              );
+            })}
+          </CollapsibleContent>
+        </div>
       </Collapsible>
     );
   }
