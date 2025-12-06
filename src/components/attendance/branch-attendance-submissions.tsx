@@ -170,12 +170,12 @@ export function BranchAttendanceSubmissions({
             <Button
               variant="outline"
               className={cn(
-                "w-[240px] justify-start text-left font-normal",
+                "w-full sm:w-[240px] justify-start text-left font-normal",
                 !selectedDate && "text-muted-foreground"
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {format(selectedDate, "PPP")}
+              <span className="truncate">{format(selectedDate, "PPP")}</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -242,31 +242,31 @@ export function BranchAttendanceSubmissions({
           return (
             <div key={stat.branchId} className="rounded-md border bg-card">
               {/* Branch Header */}
-              <div className="bg-blue-50 border-b px-6 py-4">
-                <div className="flex items-center justify-between">
+              <div className="bg-blue-50 border-b px-4 sm:px-6 py-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
                     <Link
                       href={`/hr/attendance-verification?date=${format(selectedDate, "yyyy-MM-dd")}&branch=${stat.branchName}`}
                       className="group flex items-center gap-2 hover:underline"
                     >
-                      <h3 className="text-lg font-bold text-blue-900 group-hover:text-blue-950">
+                      <h3 className="text-base sm:text-lg font-bold text-blue-900 group-hover:text-blue-950 break-words">
                         ATTENDANCE {stat.branchName.toUpperCase()} BRANCH
                       </h3>
-                      <ExternalLink className="h-4 w-4 text-blue-700 group-hover:text-blue-900" />
+                      <ExternalLink className="h-4 w-4 text-blue-700 group-hover:text-blue-900 flex-shrink-0" />
                     </Link>
                   </div>
-                  <div className="flex items-center gap-4 text-blue-700 font-semibold">
-                    <span>Total: {stat.totalEmployees}</span>
-                    <span>Present: {stat.present}</span>
-                    <span>Absent: {stat.absent}</span>
-                    <span>Pending: {stat.pending}</span>
-                    <span>Not Added: {stat.notAdded}</span>
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm sm:text-base text-blue-700 font-semibold">
+                    <span className="whitespace-nowrap">Total: {stat.totalEmployees}</span>
+                    <span className="whitespace-nowrap">Present: {stat.present}</span>
+                    <span className="whitespace-nowrap">Absent: {stat.absent}</span>
+                    <span className="whitespace-nowrap">Pending: {stat.pending}</span>
+                    <span className="whitespace-nowrap">Not Added: {stat.notAdded}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Employee Table */}
-              <div className="overflow-x-auto">
+              {/* Employee Table - Desktop */}
+              <div className="hidden md:block overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
@@ -275,7 +275,7 @@ export function BranchAttendanceSubmissions({
                       <TableHead>DESIGNATION</TableHead>
                       <TableHead>TIMING</TableHead>
                       <TableHead>ATTENDANCE</TableHead>
-                      <TableHead>OVERTIME/NOTES</TableHead>
+                      <TableHead className="min-w-[120px]">OVERTIME/NOTES</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -322,6 +322,65 @@ export function BranchAttendanceSubmissions({
                     })}
                   </TableBody>
                 </Table>
+              </div>
+
+              {/* Employee Cards - Mobile */}
+              <div className="md:hidden divide-y">
+                {stat.employees.map((employee, index) => {
+                  const timing = formatTiming(employee);
+                  const notes = getNotes(employee);
+                  const isAbsent = !employee.attendance[0] || !employee.attendance[0].isPresent;
+                  
+                  return (
+                    <div
+                      key={employee.id}
+                      className={cn(
+                        "p-4 space-y-3",
+                        isAbsent && "bg-red-50/50"
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-semibold text-muted-foreground">
+                              {index + 1}.
+                            </span>
+                            <h4 className="font-semibold text-base break-words">
+                              {employee.name?.toUpperCase() || "N/A"}
+                            </h4>
+                          </div>
+                          <p className="text-sm text-muted-foreground break-words">
+                            {employee.department?.name ? employee.department.name.toUpperCase() : "N/A"}
+                          </p>
+                        </div>
+                        <div className="flex-shrink-0">
+                          {getStatusDisplay(employee)}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-muted-foreground font-medium mb-1">Timing</p>
+                          <p className="text-foreground break-words">
+                            {timing}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground font-medium mb-1">Overtime/Notes</p>
+                          <div>
+                            {notes ? (
+                              <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200 text-xs">
+                                {notes}
+                              </Badge>
+                            ) : (
+                              <span className="text-foreground">-</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
             </div>
