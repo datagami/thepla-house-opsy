@@ -52,7 +52,7 @@ const SignUpForm = () => {
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="name" className="block text-sm font-medium text-foreground">
           Full Name
         </label>
         <Input
@@ -66,7 +66,7 @@ const SignUpForm = () => {
       </div>
 
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="email" className="block text-sm font-medium text-foreground">
           Email address
         </label>
         <Input
@@ -80,7 +80,7 @@ const SignUpForm = () => {
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="password" className="block text-sm font-medium text-foreground">
           Password
         </label>
         <Input
