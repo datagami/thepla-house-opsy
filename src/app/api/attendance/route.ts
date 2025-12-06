@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { logEntityActivity } from "@/lib/services/activity-log";
+import { ActivityType } from "@prisma/client";
 
 export async function POST(req: Request) {
   try {
@@ -37,6 +39,20 @@ export async function POST(req: Request) {
     const creatorRole = session.user.role;
     // @ts-expect-error - id is not in the session type
     const creatorId = session.user.id;
+
+    if (!creatorId) {
+      return new NextResponse("User ID not found in session", { status: 401 });
+    }
+
+    // Verify the creator user exists in the database
+    const creator = await prisma.user.findUnique({
+      where: { id: creatorId },
+      select: { id: true },
+    });
+
+    if (!creator) {
+      return new NextResponse("Creator user not found", { status: 401 });
+    }
 
     // Check if user is trying to submit attendance for themselves
     const isSelfAttendance = creatorId === data.userId;
@@ -133,10 +149,11 @@ export async function POST(req: Request) {
         branchId: user.branchId!,
         status,
         // If HR or MANAGEMENT is creating, set verification details
-        ...(status === "APPROVED" && {
+        // Only set verifiedById if creatorId is valid and user exists
+        ...(status === "APPROVED" && creatorId && creator ? {
           verifiedById: creatorId,
           verifiedAt: new Date()
-        })
+        } : {})
       },
     });
 
@@ -157,6 +174,25 @@ export async function POST(req: Request) {
         }
       });
     }
+
+    // Log attendance creation
+    // @ts-expect-error - id is not in the session type
+    await logEntityActivity(
+      ActivityType.ATTENDANCE_CREATED,
+      creatorId,
+      "Attendance",
+      attendance.id,
+      `Created attendance for ${data.userId} on ${data.date}: ${data.isPresent ? "Present" : "Absent"}${data.isHalfDay ? " (Half Day)" : ""}`,
+      {
+        attendanceId: attendance.id,
+        userId: data.userId,
+        date: data.date,
+        isPresent: data.isPresent,
+        isHalfDay: data.isHalfDay,
+        status: attendance.status,
+      },
+      req
+    );
 
     return new Response(JSON.stringify(attendance), { status: 201 });
   } catch (error) {
@@ -213,14 +249,36 @@ export async function PATCH(req: Request) {
       throw new Error('Cannot edit attendance as salary is already in processing state');
     }
 
+    // @ts-expect-error - id is not in the session type
+    const verifierId = session.user.id;
+    
+    if (!verifierId) {
+      return NextResponse.json(
+        { error: "User ID not found in session" },
+        { status: 401 }
+      );
+    }
+
+    // Verify the verifier user exists in the database
+    const verifier = await prisma.user.findUnique({
+      where: { id: verifierId },
+      select: { id: true },
+    });
+
+    if (!verifier) {
+      return NextResponse.json(
+        { error: "Verifier user not found" },
+        { status: 401 }
+      );
+    }
+
     const updatedAttendance = await prisma.attendance.update({
       where: {
         id: attendanceId,
       },
       data: {
         status,
-        // @ts-expect-error - branchId is not in the User
-        verifiedById: session.user.id,
+        verifiedById: verifierId,
         verifiedAt: new Date(),
         verificationNote,
       },
@@ -243,6 +301,23 @@ export async function PATCH(req: Request) {
         }
       });
     }
+
+    // Log attendance verification
+    // @ts-expect-error - id is not in the session type
+    await logEntityActivity(
+      status === "APPROVED" ? ActivityType.ATTENDANCE_VERIFIED : ActivityType.ATTENDANCE_REJECTED,
+      session.user.id,
+      "Attendance",
+      attendanceId,
+      `${status === "APPROVED" ? "Approved" : "Rejected"} attendance for user ${attendance.userId}`,
+      {
+        attendanceId,
+        userId: attendance.userId,
+        status,
+        verificationNote,
+      },
+      req
+    );
 
     return NextResponse.json(updatedAttendance);
   } catch (error) {

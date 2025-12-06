@@ -3,6 +3,8 @@ import {hash} from 'bcrypt';
 import {prisma} from '@/lib/prisma';
 import {auth} from "@/auth";
 import { hasAccess } from "@/lib/access-control";
+import { logTargetUserActivity } from "@/lib/services/activity-log";
+import { ActivityType } from "@prisma/client";
 
 export async function POST(request: Request) {
   try {
@@ -138,6 +140,24 @@ export async function POST(request: Request) {
         });
       }
     }
+
+    // Log user creation
+    // @ts-expect-error - id is not in the session type
+    await logTargetUserActivity(
+      ActivityType.USER_CREATED,
+      session.user.id,
+      user.id,
+      `Created new user: ${user.name} (${user.email}) with role ${user.role}`,
+      {
+        userId: user.id,
+        userName: user.name,
+        userEmail: user.email,
+        role: user.role,
+        branchId: user.branchId,
+        departmentId: user.departmentId,
+      },
+      request
+    );
 
     return NextResponse.json(user);
   } catch (error) {

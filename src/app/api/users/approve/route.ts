@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from "@/auth";
+import { logTargetUserActivity } from "@/lib/services/activity-log";
+import { ActivityType } from "@prisma/client";
 
 export async function POST(req: Request) {
   try {
@@ -85,6 +87,44 @@ export async function POST(req: Request) {
         createdAt: true,
       },
     });
+
+    // Log user approval/status change
+    // @ts-expect-error - id is not in the session type
+    const approverId = session.user.id;
+    const changes: string[] = [];
+    if (role) changes.push(`role: ${role}`);
+    if (status) changes.push(`status: ${status}`);
+    if (branchId) changes.push(`branchId: ${branchId}`);
+
+    if (status === 'ACTIVE') {
+      await logTargetUserActivity(
+        ActivityType.USER_APPROVED,
+        approverId,
+        userId,
+        `Approved user ${updatedUser.name} (${updatedUser.email})`,
+        {
+          userId,
+          changes,
+          approvedBy: approverId,
+        },
+        req
+      );
+    }
+
+    if (status && status !== 'ACTIVE') {
+      await logTargetUserActivity(
+        ActivityType.USER_STATUS_CHANGED,
+        approverId,
+        userId,
+        `Changed status of user ${updatedUser.name} to ${status}`,
+        {
+          userId,
+          newStatus: status,
+          changes,
+        },
+        req
+      );
+    }
 
     return NextResponse.json(updatedUser);
   } catch (error) {

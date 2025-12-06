@@ -27,7 +27,8 @@ export type Feature =
   | "uniform.view"
   | "uniform.create"
   | "uniform.edit"
-  | "uniform.delete";
+  | "uniform.delete"
+  | "activity-logs.view";
 
 type RolePermissions = {
   [key in Feature]: string[];
@@ -78,6 +79,9 @@ const permissions: RolePermissions = {
   "uniform.create": ["HR", "MANAGEMENT", "BRANCH_MANAGER"],
   "uniform.edit": ["HR", "MANAGEMENT", "BRANCH_MANAGER"],
   "uniform.delete": ["HR", "MANAGEMENT"],
+
+  // Activity Logs
+  "activity-logs.view": ["HR", "MANAGEMENT"],
 };
 
 export function hasAccess(userRole: string, feature: Feature): boolean {

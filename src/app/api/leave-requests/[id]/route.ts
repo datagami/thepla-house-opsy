@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { logEntityActivity } from "@/lib/services/activity-log";
+import { ActivityType } from "@prisma/client";
 
 export async function PATCH(
   req: Request,
@@ -29,6 +31,24 @@ export async function PATCH(
         updatedAt: new Date(),
       },
     });
+
+    // Log leave request status change
+    // @ts-expect-error - id is not in the session type
+    await logEntityActivity(
+      status === "APPROVED" 
+        ? ActivityType.LEAVE_REQUEST_APPROVED 
+        : ActivityType.LEAVE_REQUEST_REJECTED,
+      session.user.id,
+      "LeaveRequest",
+      id,
+      `${status === "APPROVED" ? "Approved" : "Rejected"} leave request`,
+      {
+        leaveRequestId: id,
+        userId: updatedRequest.userId,
+        status,
+      },
+      req
+    );
 
     return NextResponse.json(updatedRequest);
   } catch (error) {

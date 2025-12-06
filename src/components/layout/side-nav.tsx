@@ -18,6 +18,7 @@ import {
   ChevronDown,
   ChevronRight,
   Briefcase,
+  History,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
@@ -131,6 +132,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       icon: <FileText className="h-5 w-5" />,
       feature: "notes.view"
     },
+    {
+      title: "Activity Logs",
+      href: "/activity-logs",
+      icon: <History className="h-5 w-5" />,
+      feature: "activity-logs.view"
+    },
   ],
   BRANCH_MANAGER: [
     { 
@@ -230,6 +237,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       href: "/notes",
       icon: <FileText className="h-5 w-5" />,
       feature: "notes.view"
+    },
+    {
+      title: "Activity Logs",
+      href: "/activity-logs",
+      icon: <History className="h-5 w-5" />,
+      feature: "activity-logs.view"
     },
   ],
   EMPLOYEE: [

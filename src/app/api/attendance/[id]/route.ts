@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import {Attendance} from "@/models/models";
+import { logEntityActivity } from "@/lib/services/activity-log";
+import { ActivityType } from "@prisma/client";
 
 export async function PATCH(
   req: Request,
@@ -25,7 +27,7 @@ export async function PATCH(
     if (role === "HR") {
       const { status, verificationNote } = data;
       // @ts-expect-error - branchId is not in the User type
-      return await handleHRVerification(id, status, verificationNote, session.user.id);
+      return await handleHRVerification(id, status, verificationNote, session.user.id, req);
     }
 
     // If branch manager is resubmitting
@@ -46,8 +48,14 @@ async function handleHRVerification(
   attendanceId: string,
   status: 'PENDING_VERIFICATION' | 'APPROVED' | 'REJECTED',
   verificationNote: string,
-  verifierId: string
+  verifierId: string,
+  req?: Request
 ) {
+  const attendance = await prisma.attendance.findUnique({
+    where: { id: attendanceId },
+    select: { userId: true },
+  });
+
   const updatedAttendance = await prisma.attendance.update({
     where: { id: attendanceId },
     data: {
@@ -57,6 +65,24 @@ async function handleHRVerification(
       verificationNote,
     },
   });
+
+  // Log attendance verification
+  if (attendance) {
+    await logEntityActivity(
+      status === "APPROVED" ? ActivityType.ATTENDANCE_VERIFIED : ActivityType.ATTENDANCE_REJECTED,
+      verifierId,
+      "Attendance",
+      attendanceId,
+      `${status === "APPROVED" ? "Approved" : "Rejected"} attendance for user ${attendance.userId}`,
+      {
+        attendanceId,
+        userId: attendance.userId,
+        status,
+        verificationNote,
+      },
+      req
+    );
+  }
 
   return NextResponse.json(updatedAttendance);
 }

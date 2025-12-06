@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { logEntityActivity } from "@/lib/services/activity-log";
+import { ActivityType } from "@prisma/client";
 
 export async function POST(req: Request) {
   try {
@@ -64,6 +66,24 @@ export async function POST(req: Request) {
         status: "PENDING",
       },
     });
+
+    // Log leave request creation
+    // @ts-expect-error - id is not in the session type
+    await logEntityActivity(
+      ActivityType.LEAVE_REQUEST_CREATED,
+      session.user.id,
+      "LeaveRequest",
+      leaveRequest.id,
+      `Created leave request: ${leaveType} from ${startDate} to ${endDate}`,
+      {
+        leaveRequestId: leaveRequest.id,
+        userId: leaveRequest.userId,
+        leaveType,
+        startDate,
+        endDate,
+      },
+      req
+    );
 
     return NextResponse.json(leaveRequest);
   } catch (error) {

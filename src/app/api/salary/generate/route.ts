@@ -4,6 +4,8 @@ import { calculateSalary } from '@/lib/services/salary-calculator'
 import { auth } from "@/auth"
 import { AdvancePaymentInstallment } from "@/models/models";
 import { hasAttendanceConflicts } from "@/lib/services/attendance-conflicts";
+import { logEntityActivity } from "@/lib/services/activity-log";
+import { ActivityType } from "@prisma/client";
 
 export async function POST(request: Request) {
   try {
@@ -197,6 +199,30 @@ export async function POST(request: Request) {
         return salary
       })
     }))
+
+    // Log salary generation
+    const session = await auth();
+    if (session?.user) {
+      // @ts-expect-error - id is not in the session type
+      const userId = session.user.id;
+      for (const salary of salaries) {
+        await logEntityActivity(
+          ActivityType.SALARY_GENERATED,
+          userId,
+          "Salary",
+          salary.id,
+          `Generated salary for user ${salary.userId} for ${month}/${year}`,
+          {
+            salaryId: salary.id,
+            userId: salary.userId,
+            month,
+            year,
+            netSalary: salary.netSalary,
+          },
+          request
+        );
+      }
+    }
 
     return NextResponse.json({
       message: `Generated salaries for ${salaries.length} employees`,

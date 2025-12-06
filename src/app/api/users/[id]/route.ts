@@ -4,6 +4,8 @@ import { auth } from "@/auth";
 import { hash } from "bcrypt";
 import { hasAccess } from "@/lib/access-control";
 import {Prisma} from "@prisma/client";
+import { logTargetUserActivity, logUserActivity } from "@/lib/services/activity-log";
+import { ActivityType } from "@prisma/client";
 
 export async function PUT(
   request: Request,
@@ -19,10 +21,28 @@ export async function PUT(
 
     // @ts-expect-error - role is not defined in the session type
     const canManageUsers = hasAccess(session.user.role, "users.manage");
+    // @ts-expect-error - id is not in the session type
     const isOwnProfile = session.user.id === id;
 
     if (!canManageUsers && !isOwnProfile) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Get old user data for logging changes
+    const oldUser = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        name: true,
+        email: true,
+        role: true,
+        branchId: true,
+        departmentId: true,
+        status: true,
+      },
+    });
+
+    if (!oldUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const body = await request.json();
@@ -128,6 +148,77 @@ export async function PUT(
 
       return updatedUser;
     });
+
+    // Log user update
+    const changes: string[] = [];
+    if (oldUser.name !== user.name) changes.push(`name: ${oldUser.name} → ${user.name}`);
+    if (oldUser.email !== user.email) changes.push(`email: ${oldUser.email} → ${user.email}`);
+    if (oldUser.role !== user.role) changes.push(`role: ${oldUser.role} → ${user.role}`);
+    if (oldUser.branchId !== user.branchId) changes.push(`branchId: ${oldUser.branchId} → ${user.branchId}`);
+    if (oldUser.departmentId !== user.departmentId) changes.push(`departmentId: ${oldUser.departmentId} → ${user.departmentId}`);
+    if (oldUser.status !== user.status) changes.push(`status: ${oldUser.status} → ${user.status}`);
+    if (password) changes.push("password changed");
+
+    // @ts-expect-error - id is not in the session type
+    const logUserId = session.user.id;
+    const logActivityType = isOwnProfile ? ActivityType.USER_UPDATED : ActivityType.USER_UPDATED;
+    
+    if (isOwnProfile) {
+      await logUserActivity(
+        logActivityType,
+        logUserId,
+        `Updated own profile: ${changes.length > 0 ? changes.join(", ") : "no changes"}`,
+        {
+          userId: user.id,
+          changes,
+        },
+        request
+      );
+    } else {
+      await logTargetUserActivity(
+        logActivityType,
+        logUserId,
+        user.id,
+        `Updated user ${user.name}: ${changes.length > 0 ? changes.join(", ") : "no changes"}`,
+        {
+          userId: user.id,
+          changes,
+        },
+        request
+      );
+    }
+
+    // Log role change separately if it occurred
+    if (oldUser.role !== user.role) {
+      await logTargetUserActivity(
+        ActivityType.USER_ROLE_CHANGED,
+        logUserId,
+        user.id,
+        `Changed role from ${oldUser.role} to ${user.role}`,
+        {
+          userId: user.id,
+          oldRole: oldUser.role,
+          newRole: user.role,
+        },
+        request
+      );
+    }
+
+    // Log branch assignment change separately if it occurred
+    if (oldUser.branchId !== user.branchId) {
+      await logTargetUserActivity(
+        ActivityType.USER_BRANCH_ASSIGNED,
+        logUserId,
+        user.id,
+        `Changed branch assignment from ${oldUser.branchId || "none"} to ${user.branchId || "none"}`,
+        {
+          userId: user.id,
+          oldBranchId: oldUser.branchId,
+          newBranchId: user.branchId,
+        },
+        request
+      );
+    }
 
     return NextResponse.json(user);
   } catch (error) {
