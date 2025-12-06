@@ -1,7 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Check, X, ExternalLink } from "lucide-react";
+import { Calendar as CalendarIcon, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState } from "react";
-import { toast } from "sonner";
 
 interface EmployeeAttendance {
   id: string;
@@ -73,51 +71,12 @@ export function BranchAttendanceSubmissions({
   userRole,
 }: BranchAttendanceSubmissionsProps) {
   const router = useRouter();
-  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       router.push(
         `/hr/branch-attendance?date=${format(date, "yyyy-MM-dd")}`
       );
-    }
-  };
-
-  const handleVerifyAttendance = async (
-    attendanceId: string,
-    status: "APPROVED" | "REJECTED"
-  ) => {
-    setProcessingIds((prev) => new Set(prev).add(attendanceId));
-    
-    try {
-      const response = await fetch(`/api/attendance/${attendanceId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          status,
-          verificationNote: status === "APPROVED" ? "Approved from branch attendance view" : "Rejected from branch attendance view",
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to verify attendance");
-      }
-
-      toast.success(
-        `Attendance ${status === "APPROVED" ? "approved" : "rejected"} successfully`
-      );
-      router.refresh();
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to verify attendance");
-    } finally {
-      setProcessingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(attendanceId);
-        return next;
-      });
     }
   };
 
@@ -319,9 +278,6 @@ export function BranchAttendanceSubmissions({
                       <TableHead>TIMING</TableHead>
                       <TableHead>ATTENDANCE</TableHead>
                       <TableHead>OVERTIME/NOTES</TableHead>
-                      {userRole === "HR" && (
-                        <TableHead className="w-32">ACTIONS</TableHead>
-                      )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -363,42 +319,6 @@ export function BranchAttendanceSubmissions({
                               "-"
                             )}
                           </TableCell>
-                          {userRole === "HR" && (
-                            <TableCell>
-                              {employee.attendance[0]?.status === "PENDING_VERIFICATION" && (
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-8 px-2 text-green-600 hover:bg-green-50 hover:text-green-700"
-                                    onClick={() =>
-                                      handleVerifyAttendance(
-                                        employee.attendance[0].id,
-                                        "APPROVED"
-                                      )
-                                    }
-                                    disabled={processingIds.has(employee.attendance[0].id)}
-                                  >
-                                    <Check className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-8 px-2 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                    onClick={() =>
-                                      handleVerifyAttendance(
-                                        employee.attendance[0].id,
-                                        "REJECTED"
-                                      )
-                                    }
-                                    disabled={processingIds.has(employee.attendance[0].id)}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              )}
-                            </TableCell>
-                          )}
                         </TableRow>
                       );
                     })}

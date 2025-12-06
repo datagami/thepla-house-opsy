@@ -120,37 +120,33 @@ export default async function BranchAttendancePage({
         },
       });
 
-      // Get attendance records for statistics
-      const attendanceRecords = await prisma.attendance.findMany({
-        where: {
-          branchId: branch.id,
-          date: {
-            gte: selectedDate,
-            lt: nextDay,
-          },
-        },
-        select: {
-          status: true,
-          isPresent: true,
-          isHalfDay: true,
-        },
-      });
-
-      // Calculate statistics
-      const submitted = attendanceRecords.length;
-      const pending = attendanceRecords.filter(
-        (a) => a.status === "PENDING_VERIFICATION"
-      ).length;
-      const approved = attendanceRecords.filter(
-        (a) => a.status === "APPROVED"
-      ).length;
-      const rejected = attendanceRecords.filter(
-        (a) => a.status === "REJECTED"
-      ).length;
-      const present = attendanceRecords.filter((a) => a.isPresent).length;
-      const absent = attendanceRecords.filter((a) => !a.isPresent).length;
-      const halfDay = attendanceRecords.filter((a) => a.isHalfDay).length;
+      // Calculate statistics from employees array (what's actually displayed)
+      // This ensures we count unique employees, not duplicate attendance records
+      const employeesWithAttendance = employees.filter(emp => emp.attendance.length > 0);
+      const submitted = employeesWithAttendance.length;
       const notAdded = totalEmployees - submitted;
+      
+      // Calculate present/absent from employees with attendance
+      const present = employeesWithAttendance.filter(
+        (emp) => emp.attendance[0]?.isPresent === true
+      ).length;
+      const absent = employeesWithAttendance.filter(
+        (emp) => emp.attendance[0]?.isPresent === false
+      ).length;
+      
+      // Calculate status-based statistics from employees with attendance
+      const pending = employeesWithAttendance.filter(
+        (emp) => emp.attendance[0]?.status === "PENDING_VERIFICATION"
+      ).length;
+      const approved = employeesWithAttendance.filter(
+        (emp) => emp.attendance[0]?.status === "APPROVED"
+      ).length;
+      const rejected = employeesWithAttendance.filter(
+        (emp) => emp.attendance[0]?.status === "REJECTED"
+      ).length;
+      const halfDay = employeesWithAttendance.filter(
+        (emp) => emp.attendance[0]?.isHalfDay === true
+      ).length;
 
       const completionPercentage =
         totalEmployees > 0
