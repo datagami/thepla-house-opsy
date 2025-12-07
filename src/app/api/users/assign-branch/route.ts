@@ -12,7 +12,13 @@ export async function POST(request: Request) {
 
     // Get the current user's role
     const currentUser = await prisma.user.findUnique({
-      where: { email: session.user.email! }
+      where: { email: session.user.email! },
+      select: {
+        id: true,
+        role: true,
+        branchId: true,
+        managedBranchId: true,
+      }
     });
 
     if (!currentUser || (currentUser.role !== 'MANAGEMENT' && currentUser.role !== 'HR' && currentUser.role !== 'BRANCH_MANAGER')) {
@@ -51,6 +57,27 @@ export async function POST(request: Request) {
         { error: 'Branch not found' },
         { status: 404 }
       );
+    }
+
+    // For branch managers: validate they can only reassign employees from their own branch
+    if (currentUser.role === 'BRANCH_MANAGER') {
+      const managerBranchId = currentUser.managedBranchId || currentUser.branchId;
+      
+      if (!managerBranchId) {
+        return NextResponse.json(
+          { error: 'Branch manager must be assigned to a branch' },
+          { status: 403 }
+        );
+      }
+      
+      // Check if the employee being reassigned belongs to the manager's branch
+      // Allow reassigning employees from the manager's branch to any other branch
+      if (userToUpdate.branchId && userToUpdate.branchId !== managerBranchId) {
+        return NextResponse.json(
+          { error: 'You can only reassign employees from your own branch' },
+          { status: 403 }
+        );
+      }
     }
 
     // Update user's branch
