@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from "@/auth";
+import { ActivityType } from '@prisma/client';
+import { logTargetUserActivity } from '@/lib/services/activity-log';
 
 export async function POST(request: Request) {
   try {
@@ -35,9 +37,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if user exists
+    // Check if user exists and get old branch info
     const userToUpdate = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
+      include: {
+        branch: {
+          select: {
+            id: true,
+            name: true,
+          }
+        }
+      }
     });
 
     if (!userToUpdate) {
@@ -46,6 +56,10 @@ export async function POST(request: Request) {
         { status: 404 }
       );
     }
+
+    // Store old branch info for logging
+    const oldBranchId = userToUpdate.branchId;
+    const oldBranchName = userToUpdate.branch?.name || null;
 
     // Check if branch exists
     const branch = await prisma.branch.findUnique({
@@ -101,6 +115,24 @@ export async function POST(request: Request) {
         }
       }
     });
+
+    // Log the branch assignment change
+    if (oldBranchId !== branchId) {
+      await logTargetUserActivity(
+        ActivityType.USER_BRANCH_ASSIGNED,
+        currentUser.id,
+        userId,
+        `Assigned user ${userToUpdate.name || userToUpdate.email} from branch "${oldBranchName || 'none'}" to branch "${branch.name}"`,
+        {
+          userId: userId,
+          oldBranchId: oldBranchId,
+          newBranchId: branchId,
+          oldBranchName: oldBranchName,
+          newBranchName: branch.name,
+        },
+        request
+      );
+    }
 
     return NextResponse.json(updatedUser);
   } catch (error) {

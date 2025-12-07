@@ -35,10 +35,46 @@ export default async function EmployeeAttendancePage({
     redirect("/login");
   }
 
-  // If the user is not HR or MANAGEMENT, restrict them to only their own attendance page
+  // If the user is not HR or MANAGEMENT, check permissions
   if (role !== "HR" && role !== "MANAGEMENT") {
     const loggedInUserId = session?.user?.id;
-    if (userId !== loggedInUserId) {
+    
+    // If viewing own attendance, allow
+    if (userId === loggedInUserId) {
+      // Allow viewing own attendance
+    } 
+    // If branch manager, check if employee belongs to their branch
+    else if (role === "BRANCH_MANAGER") {
+      // Get the branch manager's branch info
+      const manager = await prisma.user.findUnique({
+        where: { id: loggedInUserId as string },
+        select: {
+          managedBranchId: true,
+          branchId: true,
+        },
+      });
+
+      const managerBranchId = manager?.managedBranchId || manager?.branchId;
+
+      if (!managerBranchId) {
+        redirect("/dashboard");
+      }
+
+      // Get the employee's branch info
+      const employee = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          branchId: true,
+        },
+      });
+
+      // Check if employee belongs to manager's branch
+      if (!employee || employee.branchId !== managerBranchId) {
+        redirect("/dashboard");
+      }
+    } 
+    // For other roles, only allow viewing own attendance
+    else {
       redirect("/dashboard");
     }
   }

@@ -33,7 +33,7 @@ export function UserActions({ user, currentUserRole, branches, onUpdate }: UserA
   const [isAssignBranchModalOpen, setIsAssignBranchModalOpen] = useState(false);
   const canApproveUser = hasAccess(currentUserRole, "users.approve");
   const canChangeRole = hasAccess(currentUserRole, "users.change_role");
-  const canViewAttendance = ['HR', 'MANAGEMENT'].includes(currentUserRole);
+  const canViewAttendance = ['HR', 'MANAGEMENT', 'BRANCH_MANAGER'].includes(currentUserRole);
   const canEdit = ['HR', 'MANAGEMENT'].includes(currentUserRole);
 
   const handleAssignBranch = async (branchId: string) => {
