@@ -6,6 +6,7 @@ import { SelfAttendanceFormWrapper } from "@/components/attendance/self-attendan
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, CalendarCheck } from "lucide-react";
 import {Attendance} from "@/models/models";
+import { getShiftDisplay } from "@/lib/utils/shift-display";
 
 export const metadata: Metadata = {
   title: "My Attendance - HRMS",
@@ -95,19 +96,9 @@ export default async function SelfAttendancePage({ searchParams }: Props) {
                     Verified At: {attendance.verifiedAt.toLocaleString()}
                   </p>
                 )}
-                {attendance.shift1 && (
+                {attendance.isPresent && (
                   <p className="text-sm text-muted-foreground">
-                    Shift1: {attendance.shift1 ? 'Yes' : 'No'}
-                  </p>
-                )}
-                {attendance.shift2 && (
-                  <p className="text-sm text-muted-foreground">
-                    Shift2: {attendance.shift2 ? 'Yes' : 'No'}
-                  </p>
-                )}
-                {attendance.shift3 && (
-                  <p className="text-sm text-muted-foreground">
-                    Shift3: {attendance.shift3 ? 'Yes' : 'No'}
+                    Shifts: {getShiftDisplay(attendance.shift1, attendance.shift2, attendance.shift3)}
                   </p>
                 )}
                 {attendance.isHalfDay && (

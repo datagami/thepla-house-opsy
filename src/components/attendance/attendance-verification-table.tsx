@@ -20,6 +20,7 @@ import { AttendanceDateFilter } from "./attendance-date-filter";
 import { AttendanceBranchFilter } from "./attendance-branch-filter";
 import { Attendance } from "@/models/models";
 import { useRouter } from "next/navigation";
+import { getShiftDisplay } from "@/lib/utils/shift-display";
 
 
 interface AttendanceVerificationTableProps {
@@ -167,11 +168,7 @@ export function AttendanceVerificationTable({
                   }
                 </TableCell>
                 <TableCell>
-                  {record.isPresent ? [
-                    record.shift1 && "Morning",
-                    record.shift2 && "Afternoon",
-                    record.shift3 && "Night",
-                  ].filter(Boolean).join(", ") : "-"}
+                  {record.isPresent ? getShiftDisplay(record.shift1, record.shift2, record.shift3) : "-"}
                 </TableCell>
                 <TableCell>{getVerificationStatus(record.status)}</TableCell>
                 <TableCell className="text-right space-x-2">

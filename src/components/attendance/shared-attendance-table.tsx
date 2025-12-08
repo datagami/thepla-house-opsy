@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { AttendanceForm } from "./attendance-form";
 import {User} from "@/models/models";
+import { getShiftDisplay } from "@/lib/utils/shift-display";
 
 
 interface SharedAttendanceTableProps {
@@ -93,11 +94,7 @@ export function SharedAttendanceTable({
                 <TableCell>{attendance?.checkOut || "-"}</TableCell>
                 <TableCell>
                   {attendance?.isPresent ? (
-                    <>
-                      {attendance.shift1 && "Morning "}
-                      {attendance.shift2 && "Afternoon "}
-                      {attendance.shift3 && "Night"}
-                    </>
+                    getShiftDisplay(attendance.shift1, attendance.shift2, attendance.shift3)
                   ) : "-"}
                 </TableCell>
                 <TableCell>

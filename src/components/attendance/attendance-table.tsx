@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { AttendanceForm } from "./attendance-form";
 import {User} from "@/models/models";
+import { getShiftDisplay } from "@/lib/utils/shift-display";
 
 
 interface AttendanceTableProps {
@@ -38,11 +39,7 @@ export function AttendanceTable({ users, date, viewOnly = false }: AttendanceTab
   };
 
   const getShifts = (attendance: User['attendance'][0]) => {
-    const shifts = [];
-    if (attendance.shift1) shifts.push("Morning");
-    if (attendance.shift2) shifts.push("Afternoon");
-    if (attendance.shift3) shifts.push("Night");
-    return shifts.join(", ") || "-";
+    return getShiftDisplay(attendance.shift1, attendance.shift2, attendance.shift3);
   };
 
   return (

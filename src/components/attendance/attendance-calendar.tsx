@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { getShiftDisplay } from "@/lib/utils/shift-display";
 
 interface Attendance {
   id: string;
@@ -80,11 +81,7 @@ export function AttendanceCalendar({ attendance, month }: AttendanceCalendarProp
                       Time: {attendance.checkIn} - {attendance.checkOut}
                     </p>
                     <p className="text-sm">
-                      Shifts: {[
-                        attendance.shift1 && "Morning",
-                        attendance.shift2 && "Afternoon",
-                        attendance.shift3 && "Night",
-                      ].filter(Boolean).join(", ")}
+                      Shifts: {getShiftDisplay(attendance.shift1, attendance.shift2, attendance.shift3)}
                     </p>
                   </>
                 )}

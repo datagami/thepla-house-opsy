@@ -157,18 +157,30 @@ export function DetailedAttendanceCalendar({
                       )}
                       <div className="flex flex-wrap gap-1">
                         {attendance.shift1 && (
-                          <Badge variant="outline" className="text-xs px-1 py-0">
-                            M
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs px-1 py-0"
+                            title="7 AM to 11 AM"
+                          >
+                            7-11AM
                           </Badge>
                         )}
                         {attendance.shift2 && (
-                          <Badge variant="outline" className="text-xs px-1 py-0">
-                            A
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs px-1 py-0"
+                            title="11 AM to 7 PM"
+                          >
+                            11AM-7PM
                           </Badge>
                         )}
                         {attendance.shift3 && (
-                          <Badge variant="outline" className="text-xs px-1 py-0">
-                            N
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs px-1 py-0"
+                            title="7 PM to 11 PM"
+                          >
+                            7-11PM
                           </Badge>
                         )}
                       </div>

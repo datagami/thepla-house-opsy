@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getShiftDisplay } from "@/lib/utils/shift-display";
 
 interface EmployeeAttendance {
   id: string;
@@ -199,16 +200,7 @@ export function BranchAttendanceSubmissions({
               return "-";
             }
             
-            const shifts = [];
-            if (attendance.shift1) shifts.push("1st Shift");
-            if (attendance.shift2) shifts.push("2nd Shift");
-            if (attendance.shift3) shifts.push("3rd Shift");
-            
-            if (shifts.length === 0) {
-              return "-";
-            }
-            
-            return shifts.join(", ");
+            return getShiftDisplay(attendance.shift1, attendance.shift2, attendance.shift3);
           };
 
           const getNotes = (employee: EmployeeAttendance) => {

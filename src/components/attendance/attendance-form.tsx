@@ -165,7 +165,7 @@ export function AttendanceForm({
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label htmlFor="shift1">Shift 1 (Morning)</Label>
+              <Label htmlFor="shift1">7 AM to 11 AM</Label>
               <Switch 
                 id="shift1"
                 checked={shift1}
@@ -174,7 +174,7 @@ export function AttendanceForm({
               />
             </div>
             <div className="flex items-center justify-between">
-              <Label htmlFor="shift2">Shift 2 (Afternoon)</Label>
+              <Label htmlFor="shift2">11 AM to 7 PM</Label>
               <Switch 
                 id="shift2"
                 checked={shift2}
@@ -183,7 +183,7 @@ export function AttendanceForm({
               />
             </div>
             <div className="flex items-center justify-between">
-              <Label htmlFor="shift3">Shift 3 (Night)</Label>
+              <Label htmlFor="shift3">7 PM to 11 PM</Label>
               <Switch 
                 id="shift3"
                 checked={shift3}
