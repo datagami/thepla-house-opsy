@@ -173,13 +173,13 @@ export default async function BranchAttendancePage({
   );
 
   return (
-    <div className="flex-1 space-y-4 p-4 sm:p-6 lg:p-8 pt-4 sm:pt-6">
+    <div className="flex-1 space-y-2 md:space-y-4 p-3 sm:p-6 lg:p-8 pt-3 sm:pt-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+          <h2 className="text-lg sm:text-2xl md:text-3xl font-bold tracking-tight">
             Branch Attendance Submissions
           </h2>
-          <p className="text-sm sm:text-base text-muted-foreground">
+          <p className="text-xs sm:text-sm md:text-base text-muted-foreground mt-0.5 md:mt-1">
             View attendance submission status across all branches
           </p>
         </div>

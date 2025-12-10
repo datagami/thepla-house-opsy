@@ -9,16 +9,26 @@ import { MobileNav } from "./mobile-nav";
 import { Logo } from "./logo";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
+import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 interface MainNavProps {
   userRole: string;
 }
 
 export function MainNav({ userRole }: MainNavProps) {
+  const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Close the sheet when pathname changes (navigation occurs)
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
   return (
     <div className="flex items-center gap-4">
       {/* Mobile Menu Button - Only visible on mobile */}
-      <Sheet>
+      <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
           <Button variant="ghost" size="icon" className="lg:hidden">
             <Menu className="h-6 w-6" />

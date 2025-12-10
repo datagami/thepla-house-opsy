@@ -108,74 +108,76 @@ export function BranchAttendanceSubmissions({
       : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2 md:space-y-6">
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-1.5 md:gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Branches</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalBranches}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalEmployees}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Submissions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalSubmitted}</div>
-            <p className="text-xs text-muted-foreground">
-              {overallCompletion}% completion
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
-              {totalPending}
+          <div className="p-2 md:p-6">
+            <div className="flex items-center justify-between md:flex-col md:items-start md:space-y-1.5">
+              <CardTitle className="text-[9px] md:text-sm font-medium leading-tight">Total Branches</CardTitle>
+              <div className="text-base md:text-2xl font-bold">{totalBranches}</div>
             </div>
-          </CardContent>
+          </div>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Approved</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {totalApproved}
+          <div className="p-2 md:p-6">
+            <div className="flex items-center justify-between md:flex-col md:items-start md:space-y-1.5">
+              <CardTitle className="text-[9px] md:text-sm font-medium leading-tight">Total Employees</CardTitle>
+              <div className="text-base md:text-2xl font-bold">{totalEmployees}</div>
             </div>
-          </CardContent>
+          </div>
+        </Card>
+
+        <Card>
+          <div className="p-2 md:p-6">
+            <div className="flex items-center justify-between md:flex-col md:items-start md:space-y-1.5">
+              <div className="flex flex-col min-w-0">
+                <CardTitle className="text-[9px] md:text-sm font-medium leading-tight">Submissions</CardTitle>
+                <p className="text-[8px] md:text-xs text-muted-foreground mt-0.5 md:mt-0">
+                  {overallCompletion}%
+                </p>
+              </div>
+              <div className="text-base md:text-2xl font-bold">{totalSubmitted}</div>
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <div className="p-2 md:p-6">
+            <div className="flex items-center justify-between md:flex-col md:items-start md:space-y-1.5">
+              <CardTitle className="text-[9px] md:text-sm font-medium leading-tight">Pending</CardTitle>
+              <div className="text-base md:text-2xl font-bold text-yellow-600">
+                {totalPending}
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="col-span-2 md:col-span-1">
+          <div className="p-2 md:p-6">
+            <div className="flex items-center justify-between md:flex-col md:items-start md:space-y-1.5">
+              <CardTitle className="text-[9px] md:text-sm font-medium leading-tight">Approved</CardTitle>
+              <div className="text-base md:text-2xl font-bold text-green-600">
+                {totalApproved}
+              </div>
+            </div>
+          </div>
         </Card>
       </div>
 
       {/* Date Picker */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 md:gap-4">
         <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               className={cn(
-                "w-full sm:w-[240px] justify-start text-left font-normal",
+                "w-full sm:w-[240px] justify-start text-left font-normal h-8 md:h-10 text-xs md:text-sm",
                 !selectedDate && "text-muted-foreground"
               )}
             >
-              <CalendarIcon className="mr-2 h-4 w-4" />
+              <CalendarIcon className="mr-2 h-3 w-3 md:h-4 md:w-4" />
               <span className="truncate">{format(selectedDate, "PPP")}</span>
             </Button>
           </PopoverTrigger>
@@ -192,7 +194,7 @@ export function BranchAttendanceSubmissions({
       </div>
 
       {/* Branch Detailed Views */}
-      <div className="space-y-6">
+      <div className="space-y-3 md:space-y-6">
         {branchStats.map((stat) => {
           const formatTiming = (employee: EmployeeAttendance) => {
             const attendance = employee.attendance[0];
@@ -218,36 +220,36 @@ export function BranchAttendanceSubmissions({
             const attendance = employee.attendance[0];
             if (!attendance) {
               return (
-                <span className="text-muted-foreground font-semibold">NOT ADDED</span>
+                <span className="text-muted-foreground font-semibold text-[10px] md:text-sm">NOT ADDED</span>
               );
             }
             if (!attendance.isPresent) {
               return (
-                <span className="text-red-600 font-semibold">ABSENT</span>
+                <span className="text-red-600 font-semibold text-[10px] md:text-sm">ABSENT</span>
               );
             }
             return (
-              <span className="text-green-600 font-semibold">PRESENT</span>
+              <span className="text-green-600 font-semibold text-[10px] md:text-sm">PRESENT</span>
             );
           };
 
           return (
             <div key={stat.branchId} className="rounded-md border bg-card">
-              {/* Branch Header */}
-              <div className="bg-blue-50 border-b px-4 sm:px-6 py-4">
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              {/* Branch Header - Sticky on mobile */}
+              <div className="sticky top-0 z-10 bg-blue-50 border-b px-4 sm:px-6 py-3 md:py-4">
+                <div className="flex flex-col gap-2 md:gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
                     <Link
                       href={`/hr/attendance-verification?date=${format(selectedDate, "yyyy-MM-dd")}&branch=${stat.branchName}`}
                       className="group flex items-center gap-2 hover:underline"
                     >
-                      <h3 className="text-base sm:text-lg font-bold text-blue-900 group-hover:text-blue-950 break-words">
+                      <h3 className="text-sm sm:text-base md:text-lg font-bold text-blue-900 group-hover:text-blue-950 break-words">
                         ATTENDANCE {stat.branchName.toUpperCase()} BRANCH
                       </h3>
-                      <ExternalLink className="h-4 w-4 text-blue-700 group-hover:text-blue-900 flex-shrink-0" />
+                      <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 text-blue-700 group-hover:text-blue-900 flex-shrink-0" />
                     </Link>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm sm:text-base text-blue-700 font-semibold">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 md:gap-4 text-xs sm:text-sm md:text-base text-blue-700 font-semibold">
                     <span className="whitespace-nowrap">Total: {stat.totalEmployees}</span>
                     <span className="whitespace-nowrap">Present: {stat.present}</span>
                     <span className="whitespace-nowrap">Absent: {stat.absent}</span>
@@ -327,47 +329,36 @@ export function BranchAttendanceSubmissions({
                     <div
                       key={employee.id}
                       className={cn(
-                        "p-4 space-y-3",
+                        "px-3 py-2",
                         isAbsent && "bg-red-50/50"
                       )}
                     >
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-semibold text-muted-foreground">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[10px] font-medium text-muted-foreground">
                               {index + 1}.
                             </span>
-                            <h4 className="font-semibold text-base break-words">
+                            <h4 className="font-semibold text-xs break-words">
                               {employee.name?.toUpperCase() || "N/A"}
                             </h4>
-                          </div>
-                          <p className="text-sm text-muted-foreground break-words">
-                            {employee.department?.name ? employee.department.name.toUpperCase() : "N/A"}
-                          </p>
-                        </div>
-                        <div className="flex-shrink-0">
-                          {getStatusDisplay(employee)}
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                          <p className="text-muted-foreground font-medium mb-1">Timing</p>
-                          <p className="text-foreground break-words">
-                            {timing}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground font-medium mb-1">Overtime/Notes</p>
-                          <div>
-                            {notes ? (
-                              <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200 text-xs">
-                                {notes}
-                              </Badge>
-                            ) : (
-                              <span className="text-foreground">-</span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {employee.department?.name ? employee.department.name.toUpperCase() : "N/A"}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">•</span>
+                            <span className="text-[10px] text-foreground">{timing}</span>
+                            {notes && (
+                              <>
+                                <span className="text-[10px] text-muted-foreground">•</span>
+                                <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200 text-[9px] px-1 py-0 h-3.5 leading-tight">
+                                  {notes}
+                                </Badge>
+                              </>
                             )}
                           </div>
+                        </div>
+                        <div className="flex-shrink-0 ml-2">
+                          {getStatusDisplay(employee)}
                         </div>
                       </div>
                     </div>
