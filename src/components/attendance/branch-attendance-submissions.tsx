@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, ExternalLink } from "lucide-react";
 import Link from "next/link";
@@ -209,34 +210,123 @@ export function BranchAttendanceSubmissions({
             const attendance = employee.attendance[0];
             if (!attendance) return null;
             
-            const notes = [];
-            if (attendance.overtime) notes.push("OT");
-            if (attendance.notes) notes.push(attendance.notes);
+            return attendance.notes || null;
+          };
+
+          const getBadges = (employee: EmployeeAttendance) => {
+            const attendance = employee.attendance[0];
+            if (!attendance) return [];
             
-            return notes.length > 0 ? notes.join(", ") : null;
+            const badges = [];
+            if (attendance.isHalfDay) badges.push({ label: "Half Day", className: "bg-orange-50 text-orange-800 border-orange-200" });
+            if (attendance.overtime) badges.push({ label: "OT", className: "bg-yellow-50 text-yellow-800 border-yellow-200" });
+            
+            return badges;
           };
 
           const getStatusDisplay = (employee: EmployeeAttendance) => {
             const attendance = employee.attendance[0];
             if (!attendance) {
               return (
-                <span className="text-muted-foreground font-semibold text-[10px] md:text-sm">NOT ADDED</span>
+                <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-300 font-semibold text-[10px] md:text-sm">
+                  NOT ADDED
+                </Badge>
               );
             }
             if (!attendance.isPresent) {
               return (
-                <span className="text-red-600 font-semibold text-[10px] md:text-sm">ABSENT</span>
+                <Badge variant="outline" className="bg-red-100 text-red-700 border-red-300 font-semibold text-[10px] md:text-sm">
+                  ABSENT
+                </Badge>
               );
             }
             return (
-              <span className="text-green-600 font-semibold text-[10px] md:text-sm">PRESENT</span>
+              <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300 font-semibold text-[10px] md:text-sm">
+                PRESENT
+              </Badge>
             );
           };
+
+          // Fixed color mapping for specific designations
+          const getDesignationColor = (designation: string) => {
+            const colorMap: Record<string, { headerBg: string; headerText: string; cardBg: string }> = {
+              'cook': { headerBg: 'bg-blue-200', headerText: 'text-blue-900', cardBg: 'bg-blue-50' },
+              'semi cook': { headerBg: 'bg-purple-200', headerText: 'text-purple-900', cardBg: 'bg-purple-50' },
+              'roti': { headerBg: 'bg-indigo-200', headerText: 'text-indigo-900', cardBg: 'bg-indigo-50' },
+              'kot': { headerBg: 'bg-pink-200', headerText: 'text-pink-900', cardBg: 'bg-pink-50' },
+              'helper': { headerBg: 'bg-cyan-200', headerText: 'text-cyan-900', cardBg: 'bg-cyan-50' },
+              'utility': { headerBg: 'bg-amber-200', headerText: 'text-amber-900', cardBg: 'bg-amber-50' },
+            };
+
+            // Default colors for other designations
+            const defaultColors = [
+              { headerBg: 'bg-emerald-200', headerText: 'text-emerald-900', cardBg: 'bg-emerald-50' },
+              { headerBg: 'bg-orange-200', headerText: 'text-orange-900', cardBg: 'bg-orange-50' },
+              { headerBg: 'bg-teal-200', headerText: 'text-teal-900', cardBg: 'bg-teal-50' },
+              { headerBg: 'bg-rose-200', headerText: 'text-rose-900', cardBg: 'bg-rose-50' },
+              { headerBg: 'bg-lime-200', headerText: 'text-lime-900', cardBg: 'bg-lime-50' },
+              { headerBg: 'bg-violet-200', headerText: 'text-violet-900', cardBg: 'bg-violet-50' },
+            ];
+
+            const normalizedDesignation = designation.toLowerCase().trim();
+            if (colorMap[normalizedDesignation]) {
+              return colorMap[normalizedDesignation];
+            }
+
+            // For other designations, use a hash-based approach for consistent colors
+            let hash = 0;
+            for (let i = 0; i < normalizedDesignation.length; i++) {
+              hash = normalizedDesignation.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return defaultColors[Math.abs(hash) % defaultColors.length];
+          };
+
+          // Priority order for important designations
+          const priorityOrder = ['cook', 'semi cook', 'roti', 'kot', 'helper', 'utility'];
+          
+          // Custom sort function
+          const sortDesignations = (a: { designation: string }, b: { designation: string }) => {
+            const aLower = a.designation.toLowerCase().trim();
+            const bLower = b.designation.toLowerCase().trim();
+            
+            const aIndex = priorityOrder.findIndex(p => p === aLower);
+            const bIndex = priorityOrder.findIndex(p => p === bLower);
+            
+            // If both are in priority list, sort by priority order
+            if (aIndex !== -1 && bIndex !== -1) {
+              return aIndex - bIndex;
+            }
+            
+            // If only one is in priority list, prioritize it
+            if (aIndex !== -1) return -1;
+            if (bIndex !== -1) return 1;
+            
+            // If neither is in priority list, sort alphabetically
+            return a.designation.localeCompare(b.designation);
+          };
+
+          // Group employees by designation
+          const groupedByDesignation = stat.employees.reduce((acc, employee) => {
+            const designation = employee.department?.name || "N/A";
+            if (!acc[designation]) {
+              acc[designation] = [];
+            }
+            acc[designation].push(employee);
+            return acc;
+          }, {} as Record<string, EmployeeAttendance[]>);
+
+          // Convert to array and sort by priority order, then alphabetically
+          const designationGroups = Object.entries(groupedByDesignation)
+            .map(([designation, employees]) => ({
+              designation,
+              employees,
+            }))
+            .sort(sortDesignations);
 
           return (
             <div key={stat.branchId} className="rounded-md border bg-card">
               {/* Branch Header - Sticky on mobile */}
-              <div className="sticky top-0 z-10 bg-blue-50 border-b px-4 sm:px-6 py-3 md:py-4">
+              <div className="sticky top-0 z-20 bg-blue-50 border-b px-4 sm:px-6 py-3 md:py-4">
                 <div className="flex flex-col gap-2 md:gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
                     <Link
@@ -264,106 +354,149 @@ export function BranchAttendanceSubmissions({
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
+                      <TableHead className="w-[150px]">DESIGNATION</TableHead>
                       <TableHead className="w-16">S.NO.</TableHead>
                       <TableHead>EMPLOYEE NAME</TableHead>
-                      <TableHead>DESIGNATION</TableHead>
                       <TableHead>TIMING</TableHead>
                       <TableHead>ATTENDANCE</TableHead>
                       <TableHead className="min-w-[120px]">OVERTIME/NOTES</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {stat.employees.map((employee, index) => {
-                      const timing = formatTiming(employee);
-                      const notes = getNotes(employee);
-                      const isAbsent = !employee.attendance[0] || !employee.attendance[0].isPresent;
-                      
-                      return (
-                        <TableRow 
-                          key={employee.id}
-                          className={cn(
-                            isAbsent && "bg-red-50/50"
-                          )}
-                        >
-                          <TableCell className="font-medium">
-                            {index + 1}
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {employee.name?.toUpperCase() || "N/A"}
-                          </TableCell>
-                          <TableCell>
-                            {employee.department?.name ? employee.department.name.toUpperCase() : "N/A"}
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-foreground">
-                              {timing}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            {getStatusDisplay(employee)}
-                          </TableCell>
-                          <TableCell>
-                            {notes ? (
-                              <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200">
-                                {notes}
-                              </Badge>
-                            ) : (
-                              "-"
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                    {(() => {
+                      let serialNumber = 0;
+                      return designationGroups.map((group) => {
+                        const designationColor = getDesignationColor(group.designation);
+                        return group.employees.map((employee, employeeIndex) => {
+                          const timing = formatTiming(employee);
+                          const notes = getNotes(employee);
+                          const badges = getBadges(employee);
+                          const isFirstInGroup = employeeIndex === 0;
+                          const rowSpan = group.employees.length;
+                          serialNumber++;
+                          
+                          return (
+                            <TableRow 
+                              key={employee.id}
+                            >
+                              {isFirstInGroup && (
+                                <TableCell 
+                                  rowSpan={rowSpan}
+                                  className={cn(
+                                    "font-semibold align-top border-r",
+                                    designationColor.headerBg,
+                                    designationColor.headerText
+                                  )}
+                                >
+                                  {group.designation.toUpperCase()}
+                                </TableCell>
+                              )}
+                              <TableCell className="font-medium">
+                                {serialNumber}
+                              </TableCell>
+                            <TableCell className="font-medium">
+                              {employee.name?.toUpperCase() || "N/A"}
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-foreground">
+                                {timing}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              {getStatusDisplay(employee)}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {badges.map((badge, idx) => (
+                                  <Badge key={idx} variant="outline" className={badge.className}>
+                                    {badge.label}
+                                  </Badge>
+                                ))}
+                                {notes && (
+                                  <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200">
+                                    {notes}
+                                  </Badge>
+                                )}
+                                {badges.length === 0 && !notes && "-"}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      });
+                    });
+                    })()}
                   </TableBody>
                 </Table>
               </div>
 
-              {/* Employee Cards - Mobile */}
-              <div className="md:hidden divide-y">
-                {stat.employees.map((employee, index) => {
-                  const timing = formatTiming(employee);
-                  const notes = getNotes(employee);
-                  const isAbsent = !employee.attendance[0] || !employee.attendance[0].isPresent;
-                  
-                  return (
-                    <div
-                      key={employee.id}
-                      className={cn(
-                        "px-3 py-2",
-                        isAbsent && "bg-red-50/50"
-                      )}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[10px] font-medium text-muted-foreground">
-                              {index + 1}.
-                            </span>
-                            <h4 className="font-semibold text-xs break-words">
-                              {employee.name?.toUpperCase() || "N/A"}
-                            </h4>
-                            <span className="text-[10px] text-muted-foreground">
-                              {employee.department?.name ? employee.department.name.toUpperCase() : "N/A"}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground">•</span>
-                            <span className="text-[10px] text-foreground">{timing}</span>
-                            {notes && (
-                              <>
-                                <span className="text-[10px] text-muted-foreground">•</span>
-                                <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200 text-[9px] px-1 py-0 h-3.5 leading-tight">
-                                  {notes}
-                                </Badge>
-                              </>
-                            )}
-                          </div>
+              {/* Employee Cards - Mobile/Tablet */}
+              <div className="md:hidden space-y-3">
+                {(() => {
+                  let serialNumber = 0;
+                  return designationGroups.map((group) => {
+                    const designationColor = getDesignationColor(group.designation);
+                    return (
+                      <Card key={group.designation} className={cn("overflow-hidden", designationColor.cardBg)}>
+                        {/* Designation Header */}
+                        <div className={cn("px-3 py-2.5 border-b", designationColor.headerBg)}>
+                          <h4 className={cn("font-semibold text-xs", designationColor.headerText)}>
+                            {group.designation.toUpperCase()}
+                          </h4>
                         </div>
-                        <div className="flex-shrink-0 ml-2">
-                          {getStatusDisplay(employee)}
+                        {/* Employees in this designation */}
+                        <div className="divide-y">
+                          {group.employees.map((employee) => {
+                            const timing = formatTiming(employee);
+                            const notes = getNotes(employee);
+                            const badges = getBadges(employee);
+                            serialNumber++;
+                            
+                            return (
+                              <div
+                                key={employee.id}
+                                className="px-3 py-2.5"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="text-[10px] font-medium text-muted-foreground">
+                                        {serialNumber}.
+                                      </span>
+                                      <h4 className="font-semibold text-xs break-words">
+                                        {employee.name?.toUpperCase() || "N/A"}
+                                      </h4>
+                                      <span className="text-[10px] text-muted-foreground">•</span>
+                                      <span className="text-[10px] text-foreground">{timing}</span>
+                                      {badges.map((badge, idx) => (
+                                        <span key={idx} className="flex items-center gap-1.5">
+                                          <span className="text-[10px] text-muted-foreground">•</span>
+                                          <Badge variant="outline" className={`${badge.className} text-[9px] px-1 py-0 h-3.5 leading-tight`}>
+                                            {badge.label}
+                                          </Badge>
+                                        </span>
+                                      ))}
+                                      {notes && (
+                                        <>
+                                          <span className="text-[10px] text-muted-foreground">•</span>
+                                          <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200 text-[9px] px-1 py-0 h-3.5 leading-tight">
+                                            {notes}
+                                          </Badge>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex-shrink-0 ml-2">
+                                    {getStatusDisplay(employee)}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                      </Card>
+                    );
+                  });
+                })()}
               </div>
 
             </div>
