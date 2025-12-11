@@ -65,14 +65,49 @@ export default async function BranchAttendancePage({
         },
       },
     },
-    orderBy: {
-      name: "asc",
-    },
   });
+
+  // Priority order for branches
+  const branchPriorityOrder = [
+    'chandivali',
+    'santacruz',
+    'parel',
+    'mulund',
+    'thane',
+    'kandivali',
+    'central kitchen'
+  ];
+
+  // Custom sort function for branches
+  const sortBranches = (a: { name: string }, b: { name: string }) => {
+    const aLower = a.name.toLowerCase().trim();
+    const bLower = b.name.toLowerCase().trim();
+    
+    const aIndex = branchPriorityOrder.findIndex(p => aLower.includes(p));
+    const bIndex = branchPriorityOrder.findIndex(p => bLower.includes(p));
+    
+    // If both are in priority list, sort by priority order
+    if (aIndex !== -1 && bIndex !== -1) {
+      return aIndex - bIndex;
+    }
+    
+    // If only one is in priority list, prioritize it
+    if (aIndex !== -1) return -1;
+    if (bIndex !== -1) return 1;
+    
+    // If neither is in priority list, put Central Kitchen last, others alphabetically
+    if (aLower.includes('central kitchen')) return 1;
+    if (bLower.includes('central kitchen')) return -1;
+    
+    return a.name.localeCompare(b.name);
+  };
+
+  // Sort branches according to priority order
+  const sortedBranches = [...branches].sort(sortBranches);
 
   // Get attendance statistics per branch for the selected date
   const branchStats = await Promise.all(
-    branches.map(async (branch) => {
+    sortedBranches.map(async (branch) => {
       // Get total employees in branch
       const totalEmployees = branch._count.users;
 
