@@ -32,7 +32,15 @@ export async function PATCH(
 
     // If branch manager is resubmitting
     if (role === "BRANCH_MANAGER") {
-      return await handleBranchManagerResubmission(id, data);
+      // @ts-expect-error - branchId is not in the User type
+      const sessionUserId = session.user.id;
+      if (!sessionUserId) {
+        return NextResponse.json(
+          { error: "User ID not found in session" },
+          { status: 401 }
+        );
+      }
+      return await handleBranchManagerResubmission(id, data, sessionUserId);
     }
 
   } catch (error) {
@@ -89,7 +97,8 @@ async function handleHRVerification(
 
 async function handleBranchManagerResubmission(
   attendanceId: string,
-  data: Attendance
+  data: Attendance,
+  sessionUserId: string
 ) {
   // Await the attendanceId if it's from params
   const id = await attendanceId;
@@ -97,6 +106,7 @@ async function handleBranchManagerResubmission(
   const attendance = await prisma.attendance.findUnique({
     where: { id },
     select: { 
+      userId: true,
       date: true,
       status: true,
       verificationNote: true,
@@ -112,6 +122,17 @@ async function handleBranchManagerResubmission(
     );
   }
 
+  // Branch managers can only resubmit their own attendance
+  if (attendance.userId !== sessionUserId) {
+    return NextResponse.json(
+      { error: "You can only resubmit your own attendance" },
+      { status: 403 }
+    );
+  }
+
+  // If attendance was approved or rejected, reset to pending verification when manager updates
+  const shouldResetVerification = attendance.status === "APPROVED" || attendance.status === "REJECTED";
+
   const updatedAttendance = await prisma.attendance.update({
     where: { id: attendanceId },
     data: {
@@ -125,8 +146,8 @@ async function handleBranchManagerResubmission(
       shift2: data.isPresent && data.shift2,
       shift3: data.isPresent && data.shift3,
       notes: data.notes || null,
-      // Only reset verification if status is changing
-      ...(data.status !== attendance.status ? {
+      // Reset verification if attendance was previously approved/rejected
+      ...(shouldResetVerification ? {
         status: "PENDING_VERIFICATION",
         verifiedById: null,
         verifiedAt: null,
@@ -215,6 +236,16 @@ export async function PUT(
 
     // @ts-expect-error - branchId is not in the User type
     const role = session.user.role;
+    const sessionUserId = (session.user as { id?: string }).id;
+    
+    // Branch managers can only update their own attendance
+    if (role === "BRANCH_MANAGER" && currentAttendance.userId !== sessionUserId) {
+      return NextResponse.json(
+        { error: "You can only update your own attendance" },
+        { status: 403 }
+      );
+    }
+    
     if (role === "HR") {
       // HR updates always set to approved
       verificationData = {

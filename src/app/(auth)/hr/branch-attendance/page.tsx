@@ -47,7 +47,7 @@ export default async function BranchAttendancePage({
   const nextDay = new Date(selectedDate);
   nextDay.setDate(nextDay.getDate() + 1);
 
-  // Get all branches with their employee counts
+  // Get all branches with their employee and manager counts
   const branches = await prisma.branch.findMany({
     select: {
       id: true,
@@ -58,7 +58,9 @@ export default async function BranchAttendancePage({
         select: {
           users: {
             where: {
-              role: "EMPLOYEE",
+              role: {
+                in: ["EMPLOYEE", "BRANCH_MANAGER"],
+              },
               status: "ACTIVE",
             },
           },
@@ -108,14 +110,22 @@ export default async function BranchAttendancePage({
   // Get attendance statistics per branch for the selected date
   const branchStats = await Promise.all(
     sortedBranches.map(async (branch) => {
-      // Get total employees in branch
-      const totalEmployees = branch._count.users;
-
-      // Get all employees in this branch
+      // Get all employees and managers in this branch
+      // Include employees assigned to the branch AND branch managers who manage this branch
       const employees = await prisma.user.findMany({
         where: {
-          branchId: branch.id,
-          role: "EMPLOYEE",
+          OR: [
+            {
+              branchId: branch.id,
+              role: {
+                in: ["EMPLOYEE", "BRANCH_MANAGER"],
+              },
+            },
+            {
+              managedBranchId: branch.id,
+              role: "BRANCH_MANAGER",
+            },
+          ],
           status: "ACTIVE",
         },
         select: {
@@ -154,6 +164,9 @@ export default async function BranchAttendancePage({
           name: "asc",
         },
       });
+
+      // Calculate total employees and managers (including branch managers)
+      const totalEmployees = employees.length;
 
       // Calculate statistics from employees array (what's actually displayed)
       // This ensures we count unique employees, not duplicate attendance records

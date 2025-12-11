@@ -36,8 +36,8 @@ export default async function SelfAttendancePage({ searchParams }: Props) {
     redirect("/login");
   }
 
-  // Only allow HR, MANAGEMENT, and SELF_ATTENDANCE roles
-  if (!["HR", "MANAGEMENT", "SELF_ATTENDANCE"].includes(user.role)) {
+  // Only allow HR, MANAGEMENT, SELF_ATTENDANCE, and BRANCH_MANAGER roles
+  if (!["HR", "MANAGEMENT", "SELF_ATTENDANCE", "BRANCH_MANAGER"].includes(user.role)) {
     redirect("/dashboard");
   }
 

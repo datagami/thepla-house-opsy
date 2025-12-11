@@ -45,7 +45,7 @@ export default async function DashboardPage() {
 
   // @ts-expect-error - role is not in the User type
   const role = session.user.role
-  const canManageSelfAttendance = ["HR", "MANAGEMENT", "SELF_ATTENDANCE"].includes(role);
+  const canManageSelfAttendance = ["HR", "MANAGEMENT", "SELF_ATTENDANCE", "BRANCH_MANAGER"].includes(role);
 
   const userId = session.user!.id;
 
@@ -251,6 +251,27 @@ export default async function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {role === "BRANCH_MANAGER" && (
           <>
+            {/* Priority 1: Personal Action - Mark Own Attendance */}
+            {canManageSelfAttendance && (
+              <Link href="/attendance/self" className="block">
+                <Card className="hover:bg-accent/5 transition-colors border-primary/20">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      My Attendance
+                    </CardTitle>
+                    <UserCheck className="h-4 w-4 text-muted-foreground"/>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">Mark Today</div>
+                    <p className="text-xs text-muted-foreground">
+                      submit your attendance for today
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            )}
+
+            {/* Priority 2: Team Management - Pending Attendance */}
             <Link href="/attendance" className="block">
               <Card className="hover:bg-accent/5 transition-colors">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -268,6 +289,7 @@ export default async function DashboardPage() {
               </Card>
             </Link>
 
+            {/* Priority 3: Team Management - Leave Requests */}
             <Link href="/leave-requests" className="block">
               <Card className="hover:bg-accent/5 transition-colors">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -285,21 +307,8 @@ export default async function DashboardPage() {
               </Card>
             </Link>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Employees
-                </CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground"/>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalEmployees}</div>
-                <p className="text-xs text-muted-foreground">
-                  active employees in branch
-                </p>
-              </CardContent>
-            </Card>
-            {stats.rejectedAttendance && stats.rejectedAttendance.length > 0 && (
+            {/* Priority 4: Actionable - Rejected Records (if any) */}
+            {stats.rejectedAttendance && stats.rejectedAttendance.length > 0 ? (
               <Link href="/attendance" className="block">
                 <Card className="hover:bg-accent/5 transition-colors">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -316,10 +325,27 @@ export default async function DashboardPage() {
                   </CardContent>
                 </Card>
               </Link>
+            ) : (
+              /* Priority 5: Informational - Total Employees */
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Total Employees
+                  </CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground"/>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.totalEmployees}</div>
+                  <p className="text-xs text-muted-foreground">
+                    active employees in branch
+                  </p>
+                </CardContent>
+              </Card>
             )}
           </>
         )}
-        {canManageSelfAttendance && (
+        {/* For HR and other roles with self-attendance */}
+        {canManageSelfAttendance && role !== "BRANCH_MANAGER" && (
           <Link href="/attendance/self" className="block">
             <Card className="hover:bg-accent/5 transition-colors">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -338,8 +364,15 @@ export default async function DashboardPage() {
           </Link>
         )}
         
-        {/* Joining Form Status for Employees */}
-        {(role === "EMPLOYEE" || role === "BRANCH_MANAGER") && (
+        {/* Joining Form Status for Employees - Only show if not signed for managers */}
+        {role === "EMPLOYEE" && (
+          <JoiningFormCard 
+            userId={currentUser.id}
+            isSigned={!!currentUser.joiningFormSignedAt}
+            signedAt={currentUser.joiningFormSignedAt || undefined}
+          />
+        )}
+        {role === "BRANCH_MANAGER" && !currentUser.joiningFormSignedAt && (
           <JoiningFormCard 
             userId={currentUser.id}
             isSigned={!!currentUser.joiningFormSignedAt}
