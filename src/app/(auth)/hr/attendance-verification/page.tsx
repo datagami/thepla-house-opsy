@@ -98,6 +98,11 @@ export default async function AttendanceVerificationPage({
               name: true,
             },
           },
+          department: {
+            select: {
+              name: true,
+            },
+          },
         },
       },
       verifiedBy: {

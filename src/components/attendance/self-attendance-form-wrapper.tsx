@@ -14,15 +14,22 @@ interface SelfAttendanceFormWrapperProps extends Omit<AttendanceFormProps, "isOp
 export function SelfAttendanceFormWrapper(props: SelfAttendanceFormWrapperProps) {
   const [isOpen, setIsOpen] = useState(false);
 
+  const getButtonText = () => {
+    if (props.currentAttendance?.status === "REJECTED") {
+      return "Resubmit Attendance";
+    }
+    return props.currentAttendance ? "Update Attendance" : "Mark Attendance";
+  };
+
   return (
     <>
       <Button
-        variant="outline"
+        variant={props.currentAttendance?.status === "REJECTED" ? "destructive" : "outline"}
         className="w-full"
         onClick={() => setIsOpen(true)}
       >
         <CalendarCheck className="mr-2 h-4 w-4" />
-        {props.currentAttendance ? "Update Attendance" : "Mark Attendance"}
+        {getButtonText()}
       </Button>
 
       <AttendanceForm

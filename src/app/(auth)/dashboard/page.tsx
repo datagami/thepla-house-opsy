@@ -31,6 +31,7 @@ export default async function DashboardPage() {
     pendingApprovals?: number;
     rejectedAttendance?: Attendance[];
     rejectedAttendanceCount?: number;
+    managerRejectedAttendance?: Attendance[];
   } = {
     totalEmployees: 0,
     markedAttendance: 0,
@@ -131,7 +132,7 @@ export default async function DashboardPage() {
       },
     });
 
-    // Get rejected attendance records for the branch
+    // Get rejected attendance records for the branch (employees only)
     const rejectedAttendance = await prisma.attendance.findMany({
       where: {
         status: "REJECTED",
@@ -139,6 +140,7 @@ export default async function DashboardPage() {
         user: {
           // @ts-expect-error - branchId is not in the User
           branchId: session.user.branchId,
+          role: "EMPLOYEE",
         },
       },
       include: {
@@ -153,12 +155,28 @@ export default async function DashboardPage() {
       },
     }) as Attendance[];
 
+    // Get manager's own rejected attendance (any date, recent ones)
+    const managerRejectedAttendance = await prisma.attendance.findMany({
+      where: {
+        status: "REJECTED",
+        userId: userId,
+        date: {
+          gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
+        },
+      },
+      orderBy: {
+        date: "desc",
+      },
+      take: 5, // Show up to 5 recent rejected records
+    }) as Attendance[];
+
     stats = {
       totalEmployees,
       markedAttendance,
       pendingAttendance: totalEmployees - markedAttendance,
       pendingLeaveRequests,
-      rejectedAttendance
+      rejectedAttendance,
+      managerRejectedAttendance: managerRejectedAttendance.length > 0 ? managerRejectedAttendance : undefined,
     };
   }
 
@@ -265,6 +283,26 @@ export default async function DashboardPage() {
                     <div className="text-2xl font-bold">Mark Today</div>
                     <p className="text-xs text-muted-foreground">
                       submit your attendance for today
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            )}
+
+            {/* Priority 1.5: Personal Action - My Rejected Attendance */}
+            {stats.managerRejectedAttendance && stats.managerRejectedAttendance.length > 0 && (
+              <Link href="/attendance/self" className="block">
+                <Card className="hover:bg-accent/5 transition-colors border-red-200">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      My Rejected Attendance
+                    </CardTitle>
+                    <AlertCircle className="h-4 w-4 text-red-500"/>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-red-500">{stats.managerRejectedAttendance.length}</div>
+                    <p className="text-xs text-muted-foreground">
+                      attendance records need resubmission
                     </p>
                   </CardContent>
                 </Card>

@@ -10,16 +10,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { toast } from "sonner";
 import { usePathname, useSearchParams } from "next/navigation";
 import { AttendanceStatusFilter } from "./attendance-status-filter";
 import { Loader2 } from "lucide-react";
 import { AttendanceDateFilter } from "./attendance-date-filter";
 import { AttendanceBranchFilter } from "./attendance-branch-filter";
 import { Attendance } from "@/models/models";
-import { useRouter } from "next/navigation";
+import { AttendanceForm } from "./attendance-form";
 import { getShiftDisplay } from "@/lib/utils/shift-display";
 
 
@@ -41,7 +39,7 @@ export function AttendanceVerificationTable({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState<string | null>(null);
-  const router = useRouter();
+  const [selectedRecord, setSelectedRecord] = useState<Attendance | null>(null);
 
   const handleStatusChange = (status: string) => {
     setIsLoading('filter');
@@ -68,33 +66,6 @@ export function AttendanceVerificationTable({
     window.location.href = `${pathname}?${params.toString()}`;
   };
 
-  const handleVerification = async (recordId: string, status: "APPROVED" | "REJECTED") => {
-    setIsLoading(recordId);
-    try {
-      const response = await fetch(`/api/attendance/${recordId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ 
-          status,
-          verificationNote: status === "APPROVED" ? "Approved by HR" : "Rejected by HR"
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to verify attendance");
-      }
-
-      router.refresh();
-      toast.success(`Attendance ${status.toLowerCase()} successfully`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to verify attendance");
-    } finally {
-      setIsLoading(null);
-    }
-  };
 
   const getAttendanceStatus = (record: Attendance) => {
     if (record.isHalfDay) return <Badge className="bg-blue-100 text-blue-800">Half Day</Badge>;
@@ -151,12 +122,15 @@ export function AttendanceVerificationTable({
               <TableHead>Time</TableHead>
               <TableHead>Shifts</TableHead>
               <TableHead>Verification Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {records.map((record) => (
-              <TableRow key={record.id}>
+              <TableRow 
+                key={record.id}
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => setSelectedRecord(record)}
+              >
                 <TableCell>{format(new Date(record.date), "PPP")}</TableCell>
                 <TableCell>{record.user.name}</TableCell>
                 <TableCell>{record.user.branch?.name || "-"}</TableCell>
@@ -171,34 +145,24 @@ export function AttendanceVerificationTable({
                   {record.isPresent ? getShiftDisplay(record.shift1, record.shift2, record.shift3) : "-"}
                 </TableCell>
                 <TableCell>{getVerificationStatus(record.status)}</TableCell>
-                <TableCell className="text-right space-x-2">
-                  {record.status === "PENDING_VERIFICATION" && (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleVerification(record.id, "APPROVED")}
-                        disabled={!!isLoading}
-                        className="bg-green-100 hover:bg-green-200 text-green-800"
-                      >
-                        {isLoading === record.id ? "Processing..." : "Approve"}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleVerification(record.id, "REJECTED")}
-                        disabled={!!isLoading}
-                        className="bg-red-100 hover:bg-red-200 text-red-800"
-                      >
-                        {isLoading === record.id ? "Processing..." : "Reject"}
-                      </Button>
-                    </>
-                  )}
-                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
+      )}
+
+      {selectedRecord && (
+        <AttendanceForm
+          userId={selectedRecord.userId}
+          userName={selectedRecord.user.name}
+          date={new Date(selectedRecord.date)}
+          currentAttendance={selectedRecord}
+          isOpen={!!selectedRecord}
+          department={selectedRecord.user.department?.name || ''}
+          onCloseAction={() => setSelectedRecord(null)}
+          isHR={true}
+          userRole="HR"
+        />
       )}
     </div>
   );

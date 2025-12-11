@@ -24,7 +24,8 @@ export function AttendanceForm({
   isOpen,
   onCloseAction,
   userRole,
-  department
+  department,
+  isHR = false
 }: AttendanceFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -37,6 +38,10 @@ export function AttendanceForm({
   const [checkIn, setCheckIn] = useState(currentAttendance?.checkIn || "");
   const [checkOut, setCheckOut] = useState(currentAttendance?.checkOut || "");
   const [notes, setNotes] = useState(currentAttendance?.notes || "");
+  const [verificationNote, setVerificationNote] = useState(currentAttendance?.verificationNote || "");
+  
+  const isPendingVerification = currentAttendance?.status === "PENDING_VERIFICATION";
+  const showApproveReject = isHR && isPendingVerification && currentAttendance?.id;
 
   // Update form fields when currentAttendance changes
   useEffect(() => {
@@ -50,6 +55,7 @@ export function AttendanceForm({
       setCheckIn(currentAttendance.checkIn || "");
       setCheckOut(currentAttendance.checkOut || "");
       setNotes(currentAttendance.notes || "");
+      setVerificationNote(currentAttendance.verificationNote || "");
     }
   }, [currentAttendance]);
 
@@ -111,6 +117,138 @@ export function AttendanceForm({
     }
   };
 
+  const handleApprove = async () => {
+    setIsLoading(true);
+    try {
+      const attendanceDate = new Date(date || new Date());
+      attendanceDate.setHours(0, 0, 0, 0);
+
+      if (!currentAttendance?.id) {
+        throw new Error("Attendance record not found");
+      }
+
+      // First, update the attendance data (PUT auto-approves for HR)
+      const attendanceData: AttendanceFormData = {
+        userId: userId || null,
+        date: attendanceDate,
+        isPresent,
+        checkIn: checkIn || null,
+        checkOut: checkOut || null,
+        isHalfDay: isPresent && isHalfDay,
+        overtime: isPresent && isOvertime,
+        shift1: isPresent && shift1,
+        shift2: isPresent && shift2,
+        shift3: isPresent && shift3,
+        notes: notes || null,
+        status: "APPROVED",
+      };
+
+      const updateResponse = await fetch(`/api/attendance/${currentAttendance.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(attendanceData),
+      });
+
+      if (!updateResponse.ok) {
+        throw new Error("Failed to update attendance");
+      }
+
+      // Then add verification note if provided (PUT already approved it)
+      if (verificationNote.trim()) {
+        const noteResponse = await fetch(`/api/attendance/${currentAttendance.id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: "APPROVED",
+            verificationNote: verificationNote.trim(),
+          }),
+        });
+
+        if (!noteResponse.ok) {
+          console.warn("Failed to add verification note, but attendance was approved");
+        }
+      }
+
+      toast.success("Attendance approved successfully");
+      onCloseAction();
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to approve attendance");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleReject = async () => {
+    setIsLoading(true);
+    try {
+      const attendanceDate = new Date(date || new Date());
+      attendanceDate.setHours(0, 0, 0, 0);
+
+      if (!currentAttendance?.id) {
+        throw new Error("Attendance record not found");
+      }
+
+      // First, update the attendance data (PUT will auto-approve, but we'll override with PATCH)
+      const attendanceData: AttendanceFormData = {
+        userId: userId || null,
+        date: attendanceDate,
+        isPresent,
+        checkIn: checkIn || null,
+        checkOut: checkOut || null,
+        isHalfDay: isPresent && isHalfDay,
+        overtime: isPresent && isOvertime,
+        shift1: isPresent && shift1,
+        shift2: isPresent && shift2,
+        shift3: isPresent && shift3,
+        notes: notes || null,
+        status: "REJECTED",
+      };
+
+      const updateResponse = await fetch(`/api/attendance/${currentAttendance.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(attendanceData),
+      });
+
+      if (!updateResponse.ok) {
+        throw new Error("Failed to update attendance");
+      }
+
+      // Then reject with verification note (override the auto-approval from PUT)
+      const rejectResponse = await fetch(`/api/attendance/${currentAttendance.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: "REJECTED",
+          verificationNote: verificationNote.trim() || "Rejected by HR",
+        }),
+      });
+
+      if (!rejectResponse.ok) {
+        throw new Error("Failed to reject attendance");
+      }
+
+      toast.success("Attendance rejected successfully");
+      onCloseAction();
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to reject attendance");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handlePresentChange = (checked: boolean) => {
     setIsPresent(checked);
     if (!checked) {
@@ -126,7 +264,9 @@ export function AttendanceForm({
     <Dialog open={isOpen} onOpenChange={onCloseAction}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Mark Attendance for {userName} ({department})</DialogTitle>
+          <DialogTitle>
+            {showApproveReject ? "Review Attendance" : "Mark Attendance"} for {userName} ({department})
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-6">
           <div className="flex items-center justify-between">
@@ -226,13 +366,46 @@ export function AttendanceForm({
             />
           </div>
 
-          <Button 
-            onClick={handleSubmit} 
-            className="w-full" 
-            disabled={isLoading}
-          >
-            {isLoading ? "Saving..." : "Save Attendance"}
-          </Button>
+          {showApproveReject && (
+            <div>
+              <Label htmlFor="verificationNote">Verification Note (Optional)</Label>
+              <Textarea
+                id="verificationNote"
+                value={verificationNote}
+                onChange={(e) => setVerificationNote(e.target.value)}
+                placeholder="Add a note about this verification..."
+                className="mt-1"
+                rows={2}
+              />
+            </div>
+          )}
+
+          {showApproveReject ? (
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleReject} 
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white" 
+                disabled={isLoading}
+              >
+                {isLoading ? "Processing..." : "Reject"}
+              </Button>
+              <Button 
+                onClick={handleApprove} 
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white" 
+                disabled={isLoading}
+              >
+                {isLoading ? "Processing..." : "Approve"}
+              </Button>
+            </div>
+          ) : (
+            <Button 
+              onClick={handleSubmit} 
+              className="w-full" 
+              disabled={isLoading}
+            >
+              {isLoading ? "Saving..." : "Save Attendance"}
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

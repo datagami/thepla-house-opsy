@@ -4,9 +4,12 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { SelfAttendanceFormWrapper } from "@/components/attendance/self-attendance-form-wrapper";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, CalendarCheck } from "lucide-react";
+import { Clock, CalendarCheck, AlertCircle } from "lucide-react";
 import {Attendance} from "@/models/models";
 import { getShiftDisplay } from "@/lib/utils/shift-display";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { SelfAttendanceDatePicker } from "@/components/attendance/self-attendance-date-picker";
 
 export const metadata: Metadata = {
   title: "My Attendance - HRMS",
@@ -53,33 +56,82 @@ export default async function SelfAttendancePage({ searchParams }: Props) {
     where: {
       userId: user.id,
       date: selectedDate,
-    }
-  }) as Attendance;
+    },
+    include: {
+      verifiedBy: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  }) as Attendance & { verifiedBy?: { name: string } | null };
 
   return (
     <div className="flex-1 space-y-8 p-8 pt-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">My Attendance</h2>
-        <div className="flex items-center gap-2">
-          <CalendarCheck className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">
-            {selectedDate.toLocaleDateString()}
-          </span>
-        </div>
+        <SelfAttendanceDatePicker date={selectedDate} />
       </div>
+
+      {attendance?.status === "REJECTED" && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Attendance Rejected</AlertTitle>
+          <AlertDescription>
+            Your attendance for {selectedDate.toLocaleDateString()} has been rejected.
+            {attendance.verificationNote && (
+              <div className="mt-2">
+                <strong>Reason:</strong> {attendance.verificationNote}
+              </div>
+            )}
+            {attendance.verifiedBy && (
+              <div className="mt-1 text-sm">
+                Rejected by: {attendance.verifiedBy.name}
+              </div>
+            )}
+            {attendance.verifiedAt && (
+              <div className="mt-1 text-sm">
+                Rejected on: {attendance.verifiedAt.toLocaleString()}
+              </div>
+            )}
+            <div className="mt-2 font-semibold">
+              You can update and resubmit your attendance below.
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today&#39;s Status</CardTitle>
+            <CardTitle className="text-sm font-medium">Attendance Status</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             {attendance ? (
               <div className="space-y-2">
-                <div className="text-2xl font-bold">
-                  {attendance.isPresent ? "Present" : "Absent"}
-                  {attendance.isHalfDay && " (Half Day)"}
+                <div className="flex items-center gap-2">
+                  <div className="text-2xl font-bold">
+                    {attendance.isPresent ? "Present" : "Absent"}
+                    {attendance.isHalfDay && " (Half Day)"}
+                  </div>
+                  {attendance.status && (
+                    <Badge 
+                      className={
+                        attendance.status === "APPROVED" 
+                          ? "bg-emerald-100 text-emerald-800"
+                          : attendance.status === "REJECTED"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }
+                    >
+                      {attendance.status === "APPROVED" 
+                        ? "Approved" 
+                        : attendance.status === "REJECTED"
+                        ? "Rejected"
+                        : "Pending Verification"}
+                    </Badge>
+                  )}
                 </div>
                 {attendance.checkIn && (
                   <p className="text-sm text-muted-foreground">
@@ -91,7 +143,7 @@ export default async function SelfAttendancePage({ searchParams }: Props) {
                     Check Out: {attendance.checkOut}
                   </p>
                 )}
-                {attendance.verifiedAt && (
+                {attendance.verifiedAt && attendance.status === "APPROVED" && (
                   <p className="text-sm text-muted-foreground">
                     Verified At: {attendance.verifiedAt.toLocaleString()}
                   </p>
@@ -111,7 +163,11 @@ export default async function SelfAttendancePage({ searchParams }: Props) {
                     Overtime: {attendance.overtime ? 'Yes' : 'No'}
                   </p>
                 )}
-
+                {attendance.notes && (
+                  <p className="text-sm text-muted-foreground">
+                    Notes: {attendance.notes}
+                  </p>
+                )}
               </div>
             ) : (
               <div className="text-2xl font-bold text-muted-foreground">
@@ -121,13 +177,29 @@ export default async function SelfAttendancePage({ searchParams }: Props) {
           </CardContent>
         </Card>
 
-        {isToday && (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Mark Attendance</CardTitle>
-              <CalendarCheck className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              {attendance?.status === "REJECTED" ? "Resubmit Attendance" : isToday ? "Mark Attendance" : "Update Attendance"}
+            </CardTitle>
+            <CalendarCheck className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {attendance?.status === "REJECTED" ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Your attendance was rejected. Please review and update the details, then resubmit for HR approval.
+                </p>
+                <SelfAttendanceFormWrapper
+                  userId={user.id}
+                  userName={user.name}
+                  userRole={user.role}
+                  date={selectedDate}
+                  department={user.role}
+                  currentAttendance={attendance}
+                />
+              </div>
+            ) : isToday ? (
               <SelfAttendanceFormWrapper
                 userId={user.id}
                 userName={user.name}
@@ -136,9 +208,27 @@ export default async function SelfAttendancePage({ searchParams }: Props) {
                 department={user.role}
                 currentAttendance={attendance}
               />
-            </CardContent>
-          </Card>
-        )}
+            ) : attendance ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  You can update your attendance for this date.
+                </p>
+                <SelfAttendanceFormWrapper
+                  userId={user.id}
+                  userName={user.name}
+                  userRole={user.role}
+                  date={selectedDate}
+                  department={user.role}
+                  currentAttendance={attendance}
+                />
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Attendance can only be marked for today.
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
