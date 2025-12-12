@@ -188,7 +188,8 @@ export async function PUT(
         status: true,
         verifiedById: true,
         verifiedAt: true,
-        verificationNote: true
+        verificationNote: true,
+        branchId: true
       }
     });
 
@@ -238,12 +239,40 @@ export async function PUT(
     const role = session.user.role;
     const sessionUserId = (session.user as { id?: string }).id;
     
-    // Branch managers can only update their own attendance
+    // Branch managers can update attendance for employees in their branch
     if (role === "BRANCH_MANAGER" && currentAttendance.userId !== sessionUserId) {
-      return NextResponse.json(
-        { error: "You can only update your own attendance" },
-        { status: 403 }
-      );
+      if (!sessionUserId) {
+        return NextResponse.json(
+          { error: "User ID not found in session" },
+          { status: 401 }
+        );
+      }
+      
+      // Get the manager's branch info
+      const manager = await prisma.user.findUnique({
+        where: { id: sessionUserId },
+        select: {
+          managedBranchId: true,
+          branchId: true,
+        },
+      });
+
+      const managerBranchId = manager?.managedBranchId || manager?.branchId;
+
+      if (!managerBranchId) {
+        return NextResponse.json(
+          { error: "Manager branch not found" },
+          { status: 403 }
+        );
+      }
+
+      // Check if the attendance belongs to an employee in the manager's branch
+      if (currentAttendance.branchId !== managerBranchId) {
+        return NextResponse.json(
+          { error: "You can only update attendance for employees in your branch" },
+          { status: 403 }
+        );
+      }
     }
     
     if (role === "HR") {
