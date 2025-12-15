@@ -28,7 +28,7 @@ export async function PUT(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Get old user data for logging changes
+    // Get old user data for logging changes and to preserve bank details
     const oldUser = await prisma.user.findUnique({
       where: { id },
       select: {
@@ -38,6 +38,8 @@ export async function PUT(
         branchId: true,
         departmentId: true,
         status: true,
+        bankAccountNo: true,
+        bankIfscCode: true,
       },
     });
 
@@ -79,8 +81,18 @@ export async function PUT(
       panNo,
       aadharNo,
       salary: salary ? parseFloat(salary) : null,
-      bankAccountNo: bankAccountNo || null,
-      bankIfscCode: bankIfscCode || null,
+      // Handle bank fields: preserve existing value if new value is empty and old value exists
+      // This prevents accidentally clearing bank details when form sends empty string
+      ...(bankAccountNo !== undefined && {
+        bankAccountNo: bankAccountNo && bankAccountNo.trim() !== "" 
+          ? bankAccountNo 
+          : (oldUser.bankAccountNo && oldUser.bankAccountNo.trim() !== "" ? oldUser.bankAccountNo : null)
+      }),
+      ...(bankIfscCode !== undefined && {
+        bankIfscCode: bankIfscCode && bankIfscCode.trim() !== "" 
+          ? bankIfscCode 
+          : (oldUser.bankIfscCode && oldUser.bankIfscCode.trim() !== "" ? oldUser.bankIfscCode : null)
+      }),
       branchId: branchId || null,
     };
 
