@@ -118,6 +118,7 @@ export function AttendanceVerificationTable({
               <TableHead>Date</TableHead>
               <TableHead>Employee</TableHead>
               <TableHead>Branch</TableHead>
+              <TableHead>Department</TableHead>
               <TableHead>Attendance Status</TableHead>
               <TableHead>Time</TableHead>
               <TableHead>Shifts</TableHead>
@@ -134,6 +135,7 @@ export function AttendanceVerificationTable({
                 <TableCell>{format(new Date(record.date), "PPP")}</TableCell>
                 <TableCell>{record.user.name}</TableCell>
                 <TableCell>{record.user.branch?.name || "-"}</TableCell>
+                <TableCell>{record.user.department?.name || "-"}</TableCell>
                 <TableCell>{getAttendanceStatus(record)}</TableCell>
                 <TableCell>
                   {record.isPresent && record.checkIn && record.checkOut ? 
