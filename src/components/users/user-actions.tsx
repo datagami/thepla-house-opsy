@@ -14,11 +14,12 @@ import {
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, UserCog, Calendar, Edit, Eye, Building2 } from "lucide-react";
+import { MoreHorizontal, UserCog, Calendar, Edit, Eye, Building2, Key } from "lucide-react";
 import { toast } from "sonner";
 import { hasAccess } from "@/lib/access-control";
 import { User, Branch } from "@/models/models";
 import AssignBranchModal from './assign-branch-modal';
+import { PasswordDisplayDialog } from './password-display-dialog';
 
 interface UserActionsProps {
   user: User;
