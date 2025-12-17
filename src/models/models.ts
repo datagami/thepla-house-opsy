@@ -1,6 +1,6 @@
 export type UserRole = "EMPLOYEE" | "BRANCH_MANAGER" | "HR" | "MANAGEMENT" | "SELF_ATTENDANCE";
 
-type UserStatus = "PENDING" | "ACTIVE" | "INACTIVE";
+type UserStatus = "PENDING" | "ACTIVE" | "INACTIVE" | "JOB_OFFER";
 
 type LeaveType = "CASUAL" | "SICK" | "ANNUAL" | "UNPAID" | "OTHER";
 
@@ -96,6 +96,7 @@ export interface User {
   uploadedBranchDocuments: BranchDocument[];
   userDocuments: UserDocument[];
   uploadedUserDocuments: UserDocument[];
+  jobOffer?: JobOffer | null;
 }
 
 export interface VerificationToken {
@@ -114,6 +115,7 @@ export interface Department {
   createdAt: Date;
   updatedAt: Date;
   users?: User[];
+  jobOffers?: JobOffer[];
 }
 
 export interface Branch {
@@ -372,4 +374,33 @@ export interface Uniform {
   issuedBy?: User | null;
   returnedBy?: User | null;
   uniformNumber?: string;
+}
+
+export type JobOfferStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "EXPIRED";
+
+export interface JobOffer {
+  id: string;
+  numId: number;
+  userId: string;
+  name: string;
+  designation: string;
+  departmentId?: string | null;
+  totalSalary: number;
+  basicPerAnnum: number;
+  basicPerMonth: number;
+  otherAllowancesPerAnnum: number;
+  otherAllowancesPerMonth: number;
+  subtotalPerAnnum: number;
+  subtotalPerMonth: number;
+  offerDate: Date;
+  joiningDate?: Date | null;
+  acceptedAt?: Date | null;
+  rejectedAt?: Date | null;
+  expiresAt?: Date | null;
+  status: JobOfferStatus;
+  notes?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  user: User;
+  department?: Department | null;
 }
