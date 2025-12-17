@@ -51,6 +51,7 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [branchFilter, setBranchFilter] = useState("ALL");
+  const [joiningFormFilter, setJoiningFormFilter] = useState("ALL");
   const [sortField, setSortField] = useState<SortField>('numId');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
@@ -89,8 +90,12 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
     const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
     const matchesStatus = statusFilter === "ALL" || user.status === statusFilter;
     const matchesBranch = branchFilter === "ALL" || user.branch?.id === branchFilter;
+    const matchesJoiningForm = 
+      joiningFormFilter === "ALL" || 
+      (joiningFormFilter === "PENDING" && !user.joiningFormSignedAt) ||
+      (joiningFormFilter === "SIGNED" && !!user.joiningFormSignedAt);
 
-    return matchesSearch && matchesRole && matchesStatus && matchesBranch;
+    return matchesSearch && matchesRole && matchesStatus && matchesBranch && matchesJoiningForm;
   });
 
   const sortedUsers = sortUsers(filteredUsers);
@@ -138,6 +143,16 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
                 {branch.name}
               </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+        <Select value={joiningFormFilter} onValueChange={setJoiningFormFilter}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Joining Form" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Forms</SelectItem>
+            <SelectItem value="PENDING">Pending</SelectItem>
+            <SelectItem value="SIGNED">Signed</SelectItem>
           </SelectContent>
         </Select>
       </div>
