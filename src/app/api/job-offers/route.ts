@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { hasAccess } from '@/lib/access-control';
+import { JobOfferStatus } from '@prisma/client';
+
+interface SalaryComponent {
+  name: string;
+  perAnnum: number | string;
+  perMonth: number | string;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,9 +25,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
 
-    const where: any = {};
-    if (status) {
-      where.status = status;
+    const where: { status?: JobOfferStatus } = {};
+    if (status && ['PENDING', 'ACCEPTED', 'REJECTED', 'EXPIRED'].includes(status)) {
+      where.status = status as JobOfferStatus;
     }
 
     const jobOffers = await prisma.jobOffer.findMany({
@@ -105,25 +111,25 @@ export async function POST(request: NextRequest) {
 
     // Calculate totals from components
     const calculatedTotal = salaryComponents.reduce(
-      (sum: number, comp: any) => sum + (parseFloat(comp.perAnnum) || 0),
+      (sum: number, comp: SalaryComponent) => sum + (parseFloat(String(comp.perAnnum)) || 0),
       0
     );
     
     // For backward compatibility, calculate legacy fields from first two components
-    const basicComponent = salaryComponents.find((c: any) => 
+    const basicComponent = salaryComponents.find((c: SalaryComponent) => 
       c.name?.toLowerCase().includes('basic')
     ) || salaryComponents[0];
-    const otherComponent = salaryComponents.find((c: any, idx: number) => 
+    const otherComponent = salaryComponents.find((c: SalaryComponent, idx: number) => 
       idx > 0 && !c.name?.toLowerCase().includes('basic')
-    ) || salaryComponents[1] || { perAnnum: 0, perMonth: 0 };
+    ) || salaryComponents[1] || { name: 'Other', perAnnum: 0, perMonth: 0 };
     
-    const basicPerAnnum = parseFloat(basicComponent?.perAnnum) || 0;
-    const basicPerMonth = parseFloat(basicComponent?.perMonth) || Math.round(basicPerAnnum / 12);
-    const otherAllowancesPerAnnum = parseFloat(otherComponent?.perAnnum) || 0;
-    const otherAllowancesPerMonth = parseFloat(otherComponent?.perMonth) || Math.round(otherAllowancesPerAnnum / 12);
+    const basicPerAnnum = parseFloat(String(basicComponent?.perAnnum)) || 0;
+    const basicPerMonth = parseFloat(String(basicComponent?.perMonth)) || Math.round(basicPerAnnum / 12);
+    const otherAllowancesPerAnnum = parseFloat(String(otherComponent?.perAnnum)) || 0;
+    const otherAllowancesPerMonth = parseFloat(String(otherComponent?.perMonth)) || Math.round(otherAllowancesPerAnnum / 12);
     const subtotalPerAnnum = calculatedTotal;
     const subtotalPerMonth = salaryComponents.reduce(
-      (sum: number, comp: any) => sum + (parseFloat(comp.perMonth) || 0),
+      (sum: number, comp: SalaryComponent) => sum + (parseFloat(String(comp.perMonth)) || 0),
       0
     );
 

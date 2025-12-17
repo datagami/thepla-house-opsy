@@ -74,7 +74,8 @@ interface Department {
 
 interface JobOfferFormProps {
   departments: Department[];
-  jobOffer?: any; // For editing
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  jobOffer?: any; // For editing - accepts full job offer object from database
 }
 
 export function JobOfferForm({
