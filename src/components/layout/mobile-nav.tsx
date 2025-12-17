@@ -19,6 +19,8 @@ import {
   ChevronRight,
   Briefcase,
   History,
+  UserPlus,
+  FileCheck,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
@@ -56,6 +58,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       href: "/users",
       icon: <Users className="h-5 w-5" />,
       feature: "users.view" 
+    },
+    { 
+      title: "Job Offers", 
+      href: "/job-offers",
+      icon: <FileCheck className="h-5 w-5" />,
+      feature: "users.manage" 
     },
     { 
       title: "Departments", 
@@ -124,6 +132,12 @@ const roleNavItems: Record<string, NavItem[]> = {
           icon: <AlertTriangle className="h-4 w-4" />,
           feature: "attendance.resolve_conflicts"
         },
+        {
+          title: "Referrals",
+          href: "/referrals",
+          icon: <UserPlus className="h-4 w-4" />,
+          feature: "salary.view"
+        },
       ]
     },
     {
@@ -189,6 +203,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       href: "/users",
       icon: <Users className="h-5 w-5" />,
       feature: "users.view" 
+    },
+    { 
+      title: "Job Offers", 
+      href: "/job-offers",
+      icon: <FileCheck className="h-5 w-5" />,
+      feature: "users.manage" 
     },
     { 
       title: "Branches", 
@@ -262,6 +282,12 @@ const roleNavItems: Record<string, NavItem[]> = {
           href: "/hr/attendance-conflicts",
           icon: <AlertTriangle className="h-4 w-4" />,
           feature: "attendance.resolve_conflicts"
+        },
+        {
+          title: "Referrals",
+          href: "/referrals",
+          icon: <UserPlus className="h-4 w-4" />,
+          feature: "salary.view"
         },
       ]
     },

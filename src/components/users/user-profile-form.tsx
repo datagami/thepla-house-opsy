@@ -27,6 +27,7 @@ import {toast} from "sonner";
 import {Branch, User} from "@/models/models";
 import {UserImageUpload} from './user-image-upload';
 import {DateInput} from "@/components/ui/date-input";
+import {PasswordDisplayDialog} from './password-display-dialog';
 
 const userFormSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
@@ -83,6 +84,13 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
   const [departments, setDepartments] = useState<Department[]>([]);
   const [referrerOpen, setReferrerOpen] = useState(false);
   const [referrerQuery, setReferrerQuery] = useState("");
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [createdPassword, setCreatedPassword] = useState<string>("");
+  const [createdUserName, setCreatedUserName] = useState<string>("");
+  const [createdUserEmail, setCreatedUserEmail] = useState<string>("");
+  const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
+  const [resetPassword, setResetPassword] = useState<string>("");
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   const form = useForm<z.infer<typeof userFormSchema>>({
     resolver: zodResolver(userFormSchema),
@@ -173,10 +181,20 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
         throw new Error("Failed to save user");
       }
 
-      toast.success(user ? "User updated successfully" : "User created successfully");
-      router.refresh();
-      if (!user) {
-        router.push("/users");
+      const responseData = await response.json();
+
+      if (!user && responseData.password) {
+        // User was created, show password dialog
+        setCreatedPassword(responseData.password);
+        setCreatedUserName(responseData.name || "");
+        setCreatedUserEmail(responseData.email || "");
+        setShowPasswordDialog(true);
+      } else {
+        toast.success(user ? "User updated successfully" : "User created successfully");
+        router.refresh();
+        if (!user) {
+          router.push("/users");
+        }
       }
     } catch (error) {
       console.error("Error saving user:", error);
@@ -186,7 +204,45 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!user?.id) {
+      toast.error("User ID is required");
+      return;
+    }
+
+    setIsResettingPassword(true);
+    try {
+      const response = await fetch(`/api/users/${user.id}/reset-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to reset password");
+      }
+
+      const responseData = await response.json();
+      
+      if (responseData.password) {
+        setResetPassword(responseData.password);
+        setShowResetPasswordDialog(true);
+        toast.success("Password reset successfully");
+      } else {
+        throw new Error("Password not returned from server");
+      }
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to reset password");
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
   return (
+    <>
     <Form {...form}>
       <div className="mb-8">
         <UserImageUpload
@@ -256,7 +312,7 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
                       <Input
                         {...field}
                         type="password"
-                        placeholder={user ? "Leave blank to keep current password" : ""}
+                        placeholder={user ? "Leave blank to keep current password" : "Leave blank to auto-generate (name@1234)"}
                         disabled={!canEdit}
                       />
                     </FormControl>
@@ -672,6 +728,17 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
               {isLoading ? "Saving..." : user ? "Update User" : "Create User"}
             </Button>
             
+            {user && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleResetPassword}
+                disabled={isResettingPassword || isLoading}
+              >
+                {isResettingPassword ? "Resetting..." : "Reset Password"}
+              </Button>
+            )}
+            
             {user && !user.joiningFormSignedAt && (
               <Button
                 type="button"
@@ -694,5 +761,32 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
         )}
       </form>
     </Form>
+    <PasswordDisplayDialog
+      isOpen={showPasswordDialog}
+      onClose={() => {
+        setShowPasswordDialog(false);
+        setCreatedPassword("");
+        toast.success("User created successfully");
+        router.refresh();
+        router.push("/users");
+      }}
+      password={createdPassword}
+      userName={createdUserName}
+      userEmail={createdUserEmail}
+      title="User Password"
+    />
+    <PasswordDisplayDialog
+      isOpen={showResetPasswordDialog}
+      onClose={() => {
+        setShowResetPasswordDialog(false);
+        setResetPassword("");
+        router.refresh();
+      }}
+      password={resetPassword}
+      userName={user?.name || ""}
+      userEmail={user?.email || ""}
+      title="Reset Password"
+    />
+    </>
   );
 } 

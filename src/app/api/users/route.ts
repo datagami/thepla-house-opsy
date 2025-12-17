@@ -5,6 +5,7 @@ import {auth} from "@/auth";
 import { hasAccess } from "@/lib/access-control";
 import { logTargetUserActivity } from "@/lib/services/activity-log";
 import { ActivityType } from "@prisma/client";
+import { generatePassword } from "@/lib/utils";
 
 export async function POST(request: Request) {
   try {
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
       referredById 
     } = body;
 
-    if (!email || !name || !password) {
+    if (!email || !name) {
       return NextResponse.json(
         {error: 'Missing required fields'},
         {status: 400}
@@ -68,8 +69,11 @@ export async function POST(request: Request) {
       );
     }
 
+    // Auto-generate password if not provided: first 3 letters of name + @ + 4 random digits
+    const finalPassword = password || generatePassword(name);
+    
     // Hash password
-    const hashedPassword = await hash(password, 12);
+    const hashedPassword = await hash(finalPassword, 12);
 
     // Create new user
     const user = await prisma.user.create({
@@ -161,7 +165,12 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json(user);
+    // Return user with password (one-time view for HR/Management)
+    // Password is only returned here, never stored in plain text
+    return NextResponse.json({
+      ...user,
+      password: finalPassword, // Return plain password for one-time viewing
+    });
   } catch (error) {
     console.error('Error creating user:', error);
     return NextResponse.json(

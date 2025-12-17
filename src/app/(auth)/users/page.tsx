@@ -9,6 +9,7 @@ import Link from "next/link";
 import { hasAccess } from "@/lib/access-control";
 import {Branch, User} from "@/models/models";
 import { UserDataActions } from "@/components/users/user-data-actions"
+import { UsersTabs } from "@/components/users/users-tabs";
 
 export const metadata: Metadata = {
   title: "Users - HRMS",
@@ -71,7 +72,12 @@ export default async function UsersPage() {
 
       <UserDataActions />
 
-      <UserTable users={users} branches={branches} currentUserRole={role} canEdit={canManageUsers} />
+      <UsersTabs 
+        users={users} 
+        branches={branches} 
+        currentUserRole={role} 
+        canEdit={canManageUsers} 
+      />
     </div>
   );
 } 
