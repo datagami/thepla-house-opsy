@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, FileText, Check, X, Edit, Trash2 } from 'lucide-react';
+import { MoreHorizontal, FileText, Check, Edit, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -41,7 +41,6 @@ interface JobOfferActionsProps {
 
 export function JobOfferActions({
   jobOffer,
-  departments,
 }: JobOfferActionsProps) {
   const router = useRouter();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);

@@ -39,7 +39,7 @@ export function PasswordDisplayDialog({
       setCopied(true);
       toast.success("Password copied to clipboard");
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
+    } catch {
       toast.error("Failed to copy password");
     }
   };
@@ -90,7 +90,7 @@ export function PasswordDisplayDialog({
         </div>
         <DialogFooter>
           <Button onClick={onClose} variant="default">
-            I've Saved the Password
+            I&apos;ve Saved the Password
           </Button>
         </DialogFooter>
       </DialogContent>

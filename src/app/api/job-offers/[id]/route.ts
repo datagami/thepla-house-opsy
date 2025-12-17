@@ -100,29 +100,36 @@ export async function PUT(
     let subtotalPerAnnum = undefined;
     let subtotalPerMonth = undefined;
 
+    interface SalaryComponent {
+      name: string;
+      perAnnum: number | string;
+      perMonth: number | string;
+    }
+
     if (salaryComponents && Array.isArray(salaryComponents) && salaryComponents.length > 0) {
-      const basicComponent = salaryComponents.find((c: any) => 
+      const basicComponent = salaryComponents.find((c: SalaryComponent) => 
         c.name?.toLowerCase().includes('basic')
       ) || salaryComponents[0];
-      const otherComponent = salaryComponents.find((c: any, idx: number) => 
+      const otherComponent = salaryComponents.find((c: SalaryComponent, idx: number) => 
         idx > 0 && !c.name?.toLowerCase().includes('basic')
-      ) || salaryComponents[1] || { perAnnum: 0, perMonth: 0 };
+      ) || salaryComponents[1] || { name: 'Other', perAnnum: 0, perMonth: 0 };
       
-      basicPerAnnum = parseFloat(basicComponent?.perAnnum) || 0;
-      basicPerMonth = parseFloat(basicComponent?.perMonth) || Math.round(basicPerAnnum / 12);
-      otherAllowancesPerAnnum = parseFloat(otherComponent?.perAnnum) || 0;
-      otherAllowancesPerMonth = parseFloat(otherComponent?.perMonth) || Math.round(otherAllowancesPerAnnum / 12);
+      basicPerAnnum = parseFloat(String(basicComponent?.perAnnum)) || 0;
+      basicPerMonth = parseFloat(String(basicComponent?.perMonth)) || Math.round(basicPerAnnum / 12);
+      otherAllowancesPerAnnum = parseFloat(String(otherComponent?.perAnnum)) || 0;
+      otherAllowancesPerMonth = parseFloat(String(otherComponent?.perMonth)) || Math.round(otherAllowancesPerAnnum / 12);
       subtotalPerAnnum = salaryComponents.reduce(
-        (sum: number, comp: any) => sum + (parseFloat(comp.perAnnum) || 0),
+        (sum: number, comp: SalaryComponent) => sum + (parseFloat(String(comp.perAnnum)) || 0),
         0
       );
       subtotalPerMonth = salaryComponents.reduce(
-        (sum: number, comp: any) => sum + (parseFloat(comp.perMonth) || 0),
+        (sum: number, comp: SalaryComponent) => sum + (parseFloat(String(comp.perMonth)) || 0),
         0
       );
     }
 
     // Build update data object
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {
       name,
       designation,

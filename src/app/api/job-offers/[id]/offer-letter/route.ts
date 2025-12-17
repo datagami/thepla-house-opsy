@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { PDFDocument, PDFPage, PDFImage, StandardFonts, rgb } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
 
@@ -49,32 +49,15 @@ async function loadLetterhead(pdfDoc: PDFDocument) {
 }
 
 // Draw letterhead as background
-async function drawLetterheadBackground(pdfDoc: PDFDocument, page: any, letterheadImage: any) {
+async function drawLetterheadBackground(
+  pdfDoc: PDFDocument, 
+  page: PDFPage, 
+  letterheadImage: PDFImage | null
+): Promise<number> {
   const { width, height } = page.getSize();
   
   if (letterheadImage) {
     try {
-      // Calculate scaling to fit the page while maintaining aspect ratio
-      const imageAspectRatio = letterheadImage.width / letterheadImage.height;
-      const pageAspectRatio = width / height;
-      
-      let drawWidth = width;
-      let drawHeight = height;
-      let x = 0;
-      let y = 0;
-      
-      // If image is wider than page aspect ratio, fit to height
-      if (imageAspectRatio > pageAspectRatio) {
-        drawHeight = height;
-        drawWidth = height * imageAspectRatio;
-        x = (width - drawWidth) / 2; // Center horizontally
-      } else {
-        // Otherwise, fit to width
-        drawWidth = width;
-        drawHeight = width / imageAspectRatio;
-        y = (height - drawHeight) / 2; // Center vertically
-      }
-      
       // Draw letterhead to fill the entire page (stretch to fit)
       page.drawImage(letterheadImage, {
         x: 0,
