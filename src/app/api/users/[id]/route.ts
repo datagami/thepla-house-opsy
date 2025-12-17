@@ -40,6 +40,7 @@ export async function PUT(
         status: true,
         bankAccountNo: true,
         bankIfscCode: true,
+        doj: true,
       },
     });
 
@@ -65,7 +66,8 @@ export async function PUT(
       salary,
       references,
       bankAccountNo,
-      bankIfscCode
+      bankIfscCode,
+      referredById
     } = body;
 
     // Base update data
@@ -104,6 +106,31 @@ export async function PUT(
     // Only update password if provided
     if (password) {
       updateData.password = await hash(password, 12);
+    }
+
+    // Validate referral time restriction if referredById is provided
+    if (referredById && referredById !== "null" && referredById !== "") {
+      // Get the DOJ that will be used (either from update or existing)
+      const dojToUse = doj ? new Date(doj) : oldUser?.doj;
+      
+      if (!dojToUse) {
+        return NextResponse.json(
+          { error: "Date of Joining must be set before adding a referral" },
+          { status: 400 }
+        );
+      }
+
+      // Check if more than 30 days have passed since DOJ
+      const today = new Date();
+      const dojDate = new Date(dojToUse);
+      const daysSinceDoj = Math.floor((today.getTime() - dojDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysSinceDoj > 30) {
+        return NextResponse.json(
+          { error: "Referrals can only be added within one month of joining date" },
+          { status: 400 }
+        );
+      }
     }
 
     // if branchId is null, remove the existing branch from database
@@ -154,6 +181,49 @@ export async function PUT(
               contactNo: ref.contactNo,
               userId: id,
             })),
+          });
+        }
+      }
+
+      // Handle referral if referredById is provided
+      if (referredById && referredById !== "null" && referredById !== "") {
+        const referrer = await tx.user.findUnique({ where: { id: referredById } });
+        if (referrer) {
+          // Get the DOJ that will be used (either from update or existing)
+          const dojToUse = updatedUser.doj || oldUser?.doj;
+          
+          if (!dojToUse) {
+            throw new Error("Date of Joining must be set before adding a referral");
+          }
+
+          // Double-check time restriction with updated DOJ
+          const today = new Date();
+          const dojDate = new Date(dojToUse);
+          const daysSinceDoj = Math.floor((today.getTime() - dojDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysSinceDoj > 30) {
+            throw new Error("Referrals can only be added within one month of joining date");
+          }
+
+          const eligibleAt = new Date(dojDate);
+          eligibleAt.setMonth(eligibleAt.getMonth() + 3);
+
+          // Create or update referral
+          await tx.referral.upsert({
+            where: {
+              referrerId_referredUserId: {
+                referrerId: referredById,
+                referredUserId: updatedUser.id,
+              },
+            },
+            update: {
+              eligibleAt,
+            },
+            create: {
+              referrerId: referredById,
+              referredUserId: updatedUser.id,
+              eligibleAt,
+            },
           });
         }
       }

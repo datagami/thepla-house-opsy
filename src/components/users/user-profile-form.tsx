@@ -117,9 +117,36 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
         }))
         : [{name: "", contactNo: ""}],
       password: "",
-      referredById: undefined,
+      referredById: (
+        user as User & {
+          referralsReceived?: Array<{ referrerId: string }>
+        }
+      )?.referralsReceived?.[0]?.referrerId || undefined,
     },
   });
+
+  // Helper function to check if user is within referral window (30 days from DOJ)
+  const isWithinReferralWindow = (doj: Date | null | undefined): boolean => {
+    if (!doj) return false;
+    const today = new Date();
+    const dojDate = new Date(doj);
+    const daysSinceDoj = Math.floor((today.getTime() - dojDate.getTime()) / (1000 * 60 * 60 * 24));
+    return daysSinceDoj <= 30;
+  };
+
+  // Watch DOJ field to update referral disabled state dynamically
+  const currentDoj = form.watch("doj");
+  const dojToCheck = currentDoj || user?.doj;
+
+  // Check if referral field should be disabled
+  const isReferralDisabled = user ? !isWithinReferralWindow(dojToCheck) : false;
+  const referralHelperText = user 
+    ? (!dojToCheck 
+        ? "Date of Joining must be set before adding a referral"
+        : !isWithinReferralWindow(dojToCheck)
+        ? "Referrals can only be added within one month of joining date"
+        : undefined)
+    : undefined;
 
   // Load departments for dropdown
   useEffect(() => {
@@ -150,8 +177,8 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
         // ignore
       }
     };
-    // only when creating a user
-    if (!user) loadEmployees();
+    // Load employees for both creating and editing users
+    loadEmployees();
   }, [user]);
 
   const onSubmit = async (values: z.infer<typeof userFormSchema>) => {
@@ -166,7 +193,10 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
         branchId: values.branch === "null" ? null : values.branch,
       };
       delete submitData.branch;
-      if (!('referredById' in submitData) || submitData.referredById === "null") delete (submitData as { referredById?: unknown }).referredById;
+      // Don't send referredById if referral is disabled (past 1-month window or no DOJ)
+      if (isReferralDisabled || !('referredById' in submitData) || submitData.referredById === "null" || submitData.referredById === "") {
+        delete (submitData as { referredById?: unknown }).referredById;
+      }
       if (submitData.departmentId === "null" || submitData.departmentId === "") delete submitData.departmentId;
 
       const response = await fetch(endpoint, {
@@ -178,7 +208,8 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
       });
 
       if (!response.ok) {
-        throw new Error("Failed to save user");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to save user");
       }
 
       const responseData = await response.json();
@@ -198,7 +229,7 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
       }
     } catch (error) {
       console.error("Error saving user:", error);
-      toast.error("Error saving user");
+      toast.error(error instanceof Error ? error.message : "Error saving user");
     } finally {
       setIsLoading(false);
     }
@@ -470,7 +501,6 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
               )}
             />
 
-            {!user && (
             <FormField
               control={form.control}
               name="referredById"
@@ -486,7 +516,14 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
                     <FormLabel>Referrer (Existing Employee)</FormLabel>
                     <Popover open={referrerOpen} onOpenChange={setReferrerOpen}>
                       <PopoverTrigger asChild>
-                        <Button type="button" variant="outline" role="combobox" aria-expanded={referrerOpen} disabled={!canEdit} className="w-full justify-between">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          role="combobox" 
+                          aria-expanded={referrerOpen} 
+                          disabled={!canEdit || isReferralDisabled} 
+                          className="w-full justify-between"
+                        >
                           {selected ? `${selected.name}${selected.email ? ` (${selected.email})` : ''}` : "Select a referrer (optional)"}
                         </Button>
                       </PopoverTrigger>
@@ -496,6 +533,7 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
                             placeholder="Search employees..."
                             value={referrerQuery}
                             onChange={(e) => setReferrerQuery(e.target.value)}
+                            disabled={isReferralDisabled}
                           />
                           <div className="max-h-60 overflow-auto rounded-md border">
                             <button
@@ -505,6 +543,7 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
                                 field.onChange(undefined);
                                 setReferrerOpen(false);
                               }}
+                              disabled={isReferralDisabled}
                             >
                               None
                             </button>
@@ -517,6 +556,7 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
                                   field.onChange(emp.id);
                                   setReferrerOpen(false);
                                 }}
+                                disabled={isReferralDisabled}
                               >
                                 {emp.name}{emp.email ? ` (${emp.email})` : ''}
                               </button>
@@ -528,11 +568,14 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
                         </div>
                       </PopoverContent>
                     </Popover>
+                    {referralHelperText && (
+                      <p className="text-sm text-muted-foreground">{referralHelperText}</p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 );
               }}
-            />)}
+            />
           </div>
         </div>
 
