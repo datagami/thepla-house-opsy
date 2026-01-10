@@ -15,13 +15,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Month and year are required' }, { status: 400 })
     }
 
-    const monthEnd = new Date(year, month, 0)
+    // Referrals become eligible one month before they are processed
+    // e.g., if eligible in January, bonus is paid in February salary
+    const previousMonthEnd = new Date(year, month - 1, 0)
 
     // Find eligible unpaid referrals
     const referrals = await prisma.referral.findMany({
       where: {
         paidAt: null,
-        eligibleAt: { lte: monthEnd }
+        eligibleAt: { lte: previousMonthEnd }
       }
     })
 

@@ -146,12 +146,14 @@ export async function POST(request: Request) {
         })
 
         // Apply eligible referral bonuses for this referrer (user)
-        const monthEnd = new Date(year, month, 0)
+        // Referrals become eligible one month before they are processed
+        // e.g., if eligible in January, bonus is paid in February salary
+        const previousMonthEnd = new Date(year, month - 1, 0)
         const eligibleReferrals = await tx.referral.findMany({
           where: {
             referrerId: user.id,
             paidAt: null,
-            eligibleAt: { lte: monthEnd },
+            eligibleAt: { lte: previousMonthEnd },
           }
         })
 
