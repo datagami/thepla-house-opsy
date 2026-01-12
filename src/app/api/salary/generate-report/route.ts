@@ -120,6 +120,8 @@ export async function POST(req: Request) {
       "OT salary": 0,
       "salary": 0,
       "total salary": 0,
+      "Paid Salary": 0,
+      "Unpaid Salary": 0,
       "Status": "",
       "Remark": ""
     };
@@ -141,6 +143,8 @@ export async function POST(req: Request) {
         "OT salary": 0,
         "salary": 0,
         "total salary": 0,
+        "Paid Salary": 0,
+        "Unpaid Salary": 0,
         "Status": "",
         "Remark": ""
       };
@@ -158,6 +162,9 @@ export async function POST(req: Request) {
           ?.filter(i => i.status === 'APPROVED')
           .reduce((sum, i) => sum + i.amountPaid, 0) || 0;
 
+        // Check if salary is paid
+        const isPaid = salary.paidAt !== null || salary.status?.toUpperCase() === "PAID";
+
         branchTotals["Basic Salary"] += salary.baseSalary;
         branchTotals["no of present"] += salary.presentDays;
         branchTotals["leaves earned"] += salary.leavesEarned;
@@ -167,6 +174,13 @@ export async function POST(req: Request) {
         branchTotals["OT salary"] += overtimeSalary;
         branchTotals["salary"] += presentDaysSalary + overtimeSalary + leaveSalary;
         branchTotals["total salary"] += netSalary;
+
+        // Add to paid/unpaid totals for branch
+        if (isPaid) {
+          branchTotals["Paid Salary"] += netSalary;
+        } else {
+          branchTotals["Unpaid Salary"] += netSalary;
+        }
 
         // Add to grand totals
         grandTotals["Basic Salary"] += salary.baseSalary;
@@ -178,6 +192,13 @@ export async function POST(req: Request) {
         grandTotals["OT salary"] += overtimeSalary;
         grandTotals["salary"] += presentDaysSalary + overtimeSalary + leaveSalary;
         grandTotals["total salary"] += netSalary;
+
+        // Add to paid/unpaid totals for grand totals
+        if (isPaid) {
+          grandTotals["Paid Salary"] += netSalary;
+        } else {
+          grandTotals["Unpaid Salary"] += netSalary;
+        }
       });
 
       totalsData.push(branchTotals);
