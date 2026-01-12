@@ -93,6 +93,7 @@ export async function POST(req: Request) {
           "leave salary": leaveSalary,
           "OT salary": overtimeSalary,
           "Net salary": netSalary,
+          "Status": salary.paidAt ? "Paid" : "Unpaid",
           "Remark": salary.status
         };
       });
@@ -119,6 +120,7 @@ export async function POST(req: Request) {
       "OT salary": 0,
       "salary": 0,
       "total salary": 0,
+      "Status": "",
       "Remark": ""
     };
 
@@ -139,6 +141,7 @@ export async function POST(req: Request) {
         "OT salary": 0,
         "salary": 0,
         "total salary": 0,
+        "Status": "",
         "Remark": ""
       };
 

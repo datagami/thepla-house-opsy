@@ -13,6 +13,10 @@ interface FinancialReportsProps {
 
 interface FinancialStats {
   totalSalary: number;
+  totalPaidSalary: number;
+  totalUnpaidSalary: number;
+  paidCount: number;
+  unpaidCount: number;
   totalAdvance: number;
   totalReferralBonus: number;
   salaryByBranch: Array<{
@@ -214,6 +218,38 @@ export function FinancialReports({ userRole }: FinancialReportsProps) {
                     <div className="text-2xl font-bold text-green-600">
                       {formatCurrency(stats.totalReferralBonus)}
                     </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Paid Salary</CardTitle>
+                    <ArrowUp className="h-4 w-4 text-green-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">
+                      {formatCurrency(stats.totalPaidSalary)}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {stats.paidCount} employee{stats.paidCount !== 1 ? 's' : ''} paid
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Unpaid Salary</CardTitle>
+                    <ArrowDown className="h-4 w-4 text-red-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-red-600">
+                      {formatCurrency(stats.totalUnpaidSalary)}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {stats.unpaidCount} employee{stats.unpaidCount !== 1 ? 's' : ''} unpaid
+                    </p>
                   </CardContent>
                 </Card>
               </div>

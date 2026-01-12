@@ -46,8 +46,19 @@ export async function GET(req: Request) {
       },
     });
 
-    // Calculate total salary
+    // Calculate total salary and paid/unpaid breakdown
     const totalSalary = salaries.reduce((sum, salary) => {
+      return sum + calculateNetSalaryFromObject(salary as unknown as import('@/models/models').Salary);
+    }, 0);
+
+    const paidSalaries = salaries.filter(s => s.paidAt !== null);
+    const unpaidSalaries = salaries.filter(s => s.paidAt === null);
+
+    const totalPaidSalary = paidSalaries.reduce((sum, salary) => {
+      return sum + calculateNetSalaryFromObject(salary as unknown as import('@/models/models').Salary);
+    }, 0);
+
+    const totalUnpaidSalary = unpaidSalaries.reduce((sum, salary) => {
       return sum + calculateNetSalaryFromObject(salary as unknown as import('@/models/models').Salary);
     }, 0);
 
@@ -156,6 +167,10 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       totalSalary,
+      totalPaidSalary,
+      totalUnpaidSalary,
+      paidCount: paidSalaries.length,
+      unpaidCount: unpaidSalaries.length,
       totalAdvance,
       totalReferralBonus,
       salaryByBranch,
