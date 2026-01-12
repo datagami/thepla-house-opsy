@@ -93,7 +93,7 @@ export async function POST(req: Request) {
           "leave salary": leaveSalary,
           "OT salary": overtimeSalary,
           "Net salary": netSalary,
-          "Status": salary.paidAt ? "Paid" : "Unpaid",
+          "Status": (salary.paidAt || salary.status?.toUpperCase() === "PAID") ? "Paid" : "Unpaid",
           "Remark": salary.status
         };
       });

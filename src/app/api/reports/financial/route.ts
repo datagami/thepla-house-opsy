@@ -51,8 +51,8 @@ export async function GET(req: Request) {
       return sum + calculateNetSalaryFromObject(salary as unknown as import('@/models/models').Salary);
     }, 0);
 
-    const paidSalaries = salaries.filter(s => s.paidAt !== null);
-    const unpaidSalaries = salaries.filter(s => s.paidAt === null);
+    const paidSalaries = salaries.filter(s => s.paidAt !== null || s.status?.toUpperCase() === "PAID");
+    const unpaidSalaries = salaries.filter(s => s.paidAt === null && s.status?.toUpperCase() !== "PAID");
 
     const totalPaidSalary = paidSalaries.reduce((sum, salary) => {
       return sum + calculateNetSalaryFromObject(salary as unknown as import('@/models/models').Salary);
