@@ -103,7 +103,7 @@ export async function POST(req: Request) {
     }
 
     // Set initial status based on who's creating the attendance
-    const status = ["HR", "MANAGEMENT"].includes(creatorRole)
+    let status = ["HR", "MANAGEMENT"].includes(creatorRole)
       ? "APPROVED" 
       : "PENDING_VERIFICATION";
 
@@ -131,6 +131,66 @@ export async function POST(req: Request) {
       );
     }
 
+    // Get user's weekly off configuration
+    const userWithWeeklyOff = await prisma.user.findUnique({
+      where: { id: data.userId },
+      select: {
+        hasWeeklyOff: true,
+        weeklyOffType: true,
+        weeklyOffDay: true,
+      },
+    });
+
+    // Validate weekly off if employee has weekly off configured
+    let isWeeklyOff = data.isWeeklyOff || false;
+    if (userWithWeeklyOff?.hasWeeklyOff) {
+      if (userWithWeeklyOff.weeklyOffType === "FIXED") {
+        // For fixed weekly off, check if the date matches the weekly off day
+        const dayOfWeek = attendanceDate.getDay();
+        isWeeklyOff = userWithWeeklyOff.weeklyOffDay === dayOfWeek;
+      } else if (userWithWeeklyOff.weeklyOffType === "FLEXIBLE") {
+        // For flexible weekly off, use the value from the request
+        isWeeklyOff = data.isWeeklyOff || false;
+        
+        // Validate only one weekly off per week for flexible
+        if (isWeeklyOff) {
+          const weekStart = new Date(attendanceDate);
+          weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+          weekStart.setHours(0, 0, 0, 0);
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekEnd.getDate() + 6);
+          weekEnd.setHours(23, 59, 59, 999);
+
+          const existingWeeklyOff = await prisma.attendance.findFirst({
+            where: {
+              userId: data.userId,
+              date: {
+                gte: weekStart,
+                lte: weekEnd,
+              },
+              isWeeklyOff: true,
+              NOT: {
+                id: duplicateAttendance?.id,
+              },
+            },
+          });
+
+          if (existingWeeklyOff) {
+            return NextResponse.json(
+              { error: "Only one weekly off per week is allowed for flexible weekly off employees" },
+              { status: 400 }
+            );
+          }
+        }
+      }
+      
+      // Weekly off days are automatically marked as present and approved
+      if (isWeeklyOff) {
+        data.isPresent = true;
+        status = "APPROVED";
+      }
+    }
+
     // Create attendance with the user's current branch
     const attendance = await prisma.attendance.create({
       data: {
@@ -138,6 +198,7 @@ export async function POST(req: Request) {
         isPresent: data.isPresent,
         isHalfDay: data.isHalfDay,
         overtime: data.overtime,
+        isWeeklyOff: isWeeklyOff,
         checkIn: data.checkIn || null,
         checkOut: data.checkOut || null,
         shift1: data.shift1 || false,

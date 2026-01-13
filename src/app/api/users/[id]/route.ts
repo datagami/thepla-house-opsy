@@ -41,6 +41,9 @@ export async function PUT(
         bankAccountNo: true,
         bankIfscCode: true,
         doj: true,
+        hasWeeklyOff: true,
+        weeklyOffType: true,
+        weeklyOffDay: true,
       },
     });
 
@@ -67,7 +70,10 @@ export async function PUT(
       references,
       bankAccountNo,
       bankIfscCode,
-      referredById
+      referredById,
+      hasWeeklyOff,
+      weeklyOffType,
+      weeklyOffDay
     } = body;
 
     // Base update data
@@ -96,6 +102,9 @@ export async function PUT(
           : (oldUser.bankIfscCode && oldUser.bankIfscCode.trim() !== "" ? oldUser.bankIfscCode : null)
       }),
       branchId: branchId || null,
+      hasWeeklyOff: hasWeeklyOff !== undefined ? hasWeeklyOff : undefined,
+      weeklyOffType: weeklyOffType !== undefined ? (weeklyOffType === "null" || weeklyOffType === "" ? null : weeklyOffType) : undefined,
+      weeklyOffDay: weeklyOffDay !== undefined ? (weeklyOffDay === null || weeklyOffDay === "" ? null : parseInt(weeklyOffDay)) : undefined,
     };
 
     // Only update role if user has permission
@@ -230,6 +239,48 @@ export async function PUT(
 
       return updatedUser;
     });
+
+    // If weekly off configuration changed, trigger salary recalculation for PENDING salaries
+    const weeklyOffChanged = 
+      (hasWeeklyOff !== undefined && hasWeeklyOff !== oldUser.hasWeeklyOff) ||
+      (weeklyOffType !== undefined && weeklyOffType !== oldUser.weeklyOffType) ||
+      (weeklyOffDay !== undefined && weeklyOffDay !== oldUser.weeklyOffDay);
+
+    if (weeklyOffChanged) {
+      // Recalculate all PENDING salaries for this user
+      const pendingSalaries = await prisma.salary.findMany({
+        where: {
+          userId: id,
+          status: 'PENDING',
+        },
+      });
+
+      for (const salaryRecord of pendingSalaries) {
+        try {
+          const { calculateSalary } = await import('@/lib/services/salary-calculator');
+          const salaryDetails = await calculateSalary(
+            id,
+            salaryRecord.month,
+            salaryRecord.year
+          );
+
+          await prisma.salary.update({
+            where: { id: salaryRecord.id },
+            data: {
+              presentDays: salaryDetails.presentDays,
+              overtimeDays: salaryDetails.overtimeDays,
+              halfDays: salaryDetails.halfDays,
+              leavesEarned: salaryDetails.leavesEarned,
+              leaveSalary: salaryDetails.leaveSalary,
+              netSalary: salaryDetails.netSalary
+            }
+          });
+        } catch (error) {
+          console.error(`Error recalculating salary ${salaryRecord.id}:`, error);
+          // Continue with other salaries even if one fails
+        }
+      }
+    }
 
     // Log user update
     const changes: string[] = [];
