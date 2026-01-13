@@ -69,6 +69,9 @@ export interface User {
   references: Reference[];
   bankAccountNo?: string | null;
   bankIfscCode?: string | null;
+  hasWeeklyOff?: boolean;
+  weeklyOffType?: string | null;
+  weeklyOffDay?: number | null;
   joiningFormSignedAt?: Date | null;
   joiningFormSignedBy?: string | null;
   joiningFormSignature?: string | null;
@@ -199,6 +202,7 @@ export interface Attendance {
   checkOut?: string | null;
   isHalfDay: boolean;
   overtime: boolean;
+  isWeeklyOff: boolean;
   shift1: boolean;
   shift2: boolean;
   shift3: boolean;

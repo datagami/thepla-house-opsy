@@ -52,6 +52,7 @@ export function AttendanceTable({ users, date, viewOnly = false }: AttendanceTab
             <TableHead>Status</TableHead>
             <TableHead>Time</TableHead>
             <TableHead>Shifts</TableHead>
+            <TableHead>Weekly Off</TableHead>
             <TableHead>Half Day</TableHead>
             <TableHead>Overtime</TableHead>
             <TableHead>Verification</TableHead>
@@ -83,6 +84,13 @@ export function AttendanceTable({ users, date, viewOnly = false }: AttendanceTab
                 </TableCell>
                 <TableCell>
                   {attendance ? getShifts(attendance) : "-"}
+                </TableCell>
+                <TableCell>
+                  {attendance?.isWeeklyOff ? (
+                    <Badge variant="outline" className="bg-purple-100 text-purple-800">
+                      Weekly Off
+                    </Badge>
+                  ) : "-"}
                 </TableCell>
                 <TableCell>
                   {attendance?.isHalfDay ? (

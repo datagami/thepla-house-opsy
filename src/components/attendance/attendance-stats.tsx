@@ -66,8 +66,16 @@ export function AttendanceStats({ attendance }: AttendanceStatsProps) {
   let presentDays = 0;
   let overtimeDays = 0;
   let halfDays = 0;
+  let weeklyOffDays = 0;
 
   attendance.forEach(day => {
+    // Weekly off days are counted as present for salary calculation
+    if (day.isWeeklyOff && day.isPresent) {
+      presentDays += 1;
+      weeklyOffDays += 1;
+      return;
+    }
+
     if (!day.isPresent) {
       return;
     }
@@ -87,11 +95,23 @@ export function AttendanceStats({ attendance }: AttendanceStatsProps) {
     presentDays++;
   });
 
+  // Calculate bonus leaves - exclude weekly off days from threshold calculation
+  // Employees with weekly off are NOT eligible for bonus leaves
   let leavesEarned = 0;
-  if (presentDays >= 25) {
-    leavesEarned = 2;
-  } else if (presentDays >= 15) {
-    leavesEarned = 1;
+  if (!user.hasWeeklyOff) {
+    const presentDaysForBonusLeaves = attendance
+      .filter(day => day.isPresent && !day.isWeeklyOff)
+      .reduce((sum, day) => {
+        if (day.isHalfDay) return sum + 0.5;
+        if (day.overtime) return sum + 1;
+        return sum + 1;
+      }, 0);
+
+    if (presentDaysForBonusLeaves >= 25) {
+      leavesEarned = 2;
+    } else if (presentDaysForBonusLeaves >= 15) {
+      leavesEarned = 1;
+    }
   }
 
   // Calculate monthly stats
@@ -100,12 +120,13 @@ export function AttendanceStats({ attendance }: AttendanceStatsProps) {
     presentDays: parseFloat(presentDays.toFixed(2)),
     halfDays,
     overtimeDays,
+    weeklyOffDays,
     leavesEarned,
   };
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Days</CardTitle>
@@ -144,10 +165,22 @@ export function AttendanceStats({ attendance }: AttendanceStatsProps) {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Weekly Off Days</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-600">{monthlyStats.weeklyOffDays}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Leaves Earned</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-600">{monthlyStats.leavesEarned}</div>
+            {user.hasWeeklyOff && (
+              <p className="text-xs text-muted-foreground mt-1">Not eligible for bonus leaves</p>
+            )}
           </CardContent>
         </Card>
       </div>

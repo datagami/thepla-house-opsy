@@ -36,6 +36,7 @@ export function SharedAttendanceTable({
     if (!user.attendance?.length) return "PENDING";
     const attendance = user.attendance[0];
     if (!attendance.isPresent) return "ABSENT";
+    if (attendance.isWeeklyOff) return "WEEKLY_OFF";
     if (attendance.isHalfDay) return "HALF_DAY";
     return "PRESENT";
   };
@@ -51,6 +52,7 @@ export function SharedAttendanceTable({
     PENDING_VERIFICATION: "bg-yellow-100 text-yellow-800",
     PENDING: "bg-yellow-100 text-yellow-800",
     HALF_DAY: "bg-blue-100 text-blue-800",
+    WEEKLY_OFF: "bg-purple-100 text-purple-800",
     APPROVED: "bg-emerald-100 text-emerald-800",
     REJECTED: "bg-red-100 text-red-800",
   } as const;
@@ -66,6 +68,7 @@ export function SharedAttendanceTable({
             <TableHead>Check In</TableHead>
             <TableHead>Check Out</TableHead>
             <TableHead>Shifts</TableHead>
+            <TableHead>Weekly Off</TableHead>
             <TableHead>Notes</TableHead>
             {isHR && <TableHead>Verification</TableHead>}
           </TableRow>
@@ -95,6 +98,13 @@ export function SharedAttendanceTable({
                 <TableCell>
                   {attendance?.isPresent ? (
                     getShiftDisplay(attendance.shift1, attendance.shift2, attendance.shift3)
+                  ) : "-"}
+                </TableCell>
+                <TableCell>
+                  {attendance?.isWeeklyOff ? (
+                    <Badge variant="outline" className="bg-purple-100 text-purple-800">
+                      Weekly Off
+                    </Badge>
                   ) : "-"}
                 </TableCell>
                 <TableCell>

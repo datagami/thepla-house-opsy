@@ -7,6 +7,10 @@ export async function calculateSalary(userId: string, month: number, year: numbe
   // Get employee base salary
   const employee = await prisma.user.findUnique({
     where: { id: userId },
+    select: {
+      salary: true,
+      hasWeeklyOff: true,
+    },
   })
 
   if (!employee?.salary) {
@@ -31,9 +35,17 @@ export async function calculateSalary(userId: string, month: number, year: numbe
   // Initialize counters
   let presentDays = 0;
   let overtimeDays = 0;
-  let halfDays =0
+  let halfDays = 0;
+  let weeklyOffDays = 0;
 
   attendance.forEach(day => {
+    // Weekly off days are counted as present for salary calculation
+    if (day.isWeeklyOff && day.isPresent) {
+      presentDays += 1;
+      weeklyOffDays += 1;
+      return;
+    }
+
     if (!day.isPresent) {
       return;
     }
@@ -95,15 +107,29 @@ export async function calculateSalary(userId: string, month: number, year: numbe
   const otherBonuses = performanceBonus;
 
   // Calculate earned leaves based on attendance
+  // Employees with weekly off are NOT eligible for bonus leaves
   let leavesEarned = 0;
-  if (presentDays >= 25) {
-    leavesEarned = 2;
-  } else if (presentDays >= 15) {
-    leavesEarned = 1;
-  }
+  let leaveSalary = 0;
+  
+  if (!employee.hasWeeklyOff) {
+    // For bonus leaves calculation, exclude weekly off days from presentDays count
+    const presentDaysForBonusLeaves = attendance
+      .filter(day => day.isPresent && !day.isWeeklyOff)
+      .reduce((sum, day) => {
+        if (day.isHalfDay) return sum + 0.5;
+        if (day.overtime) return sum + 1;
+        return sum + 1;
+      }, 0);
 
-  // Calculate leave salary (per day salary * earned leaves)
-  const leaveSalary = parseFloat((leavesEarned * perDaySalary).toFixed(2));
+    if (presentDaysForBonusLeaves >= 25) {
+      leavesEarned = 2;
+    } else if (presentDaysForBonusLeaves >= 15) {
+      leavesEarned = 1;
+    }
+
+    // Calculate leave salary (per day salary * earned leaves)
+    leaveSalary = parseFloat((leavesEarned * perDaySalary).toFixed(2));
+  }
   
   // Add leave salary to total salary
   const totalSalaryWithLeaves = totalSalary + leaveSalary;
@@ -129,6 +155,7 @@ export async function calculateSalary(userId: string, month: number, year: numbe
     presentDays,
     overtimeDays,
     halfDays,
+    weeklyOffDays,
     roundedSalary
   }
 }

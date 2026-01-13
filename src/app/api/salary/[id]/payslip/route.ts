@@ -134,13 +134,14 @@ export async function GET(
 		const perDaySalary = Math.round((salary.baseSalary / totalDaysInMonth) * 100) / 100;
 
 		// Count different attendance types
-		const regularDays = attendance.filter(a => a.isPresent && !a.isHalfDay && !a.overtime).length;
-		const halfDays = attendance.filter(a => a.isPresent && a.isHalfDay).length;
-		const overtimeDays = attendance.filter(a => a.isPresent && a.overtime).length;
+		const weeklyOffDays = attendance.filter(a => a.isPresent && a.isWeeklyOff).length;
+		const regularDays = attendance.filter(a => a.isPresent && !a.isHalfDay && !a.overtime && !a.isWeeklyOff).length;
+		const halfDays = attendance.filter(a => a.isPresent && a.isHalfDay && !a.isWeeklyOff).length;
+		const overtimeDays = attendance.filter(a => a.isPresent && a.overtime && !a.isWeeklyOff).length;
 		const leaveDays = attendance.filter(a => !a.isPresent).length;
 
-		// Calculate present days (counting half days as 0.5)
-		const presentDays = regularDays + overtimeDays + halfDays * 0.5;
+		// Calculate present days (counting half days as 0.5, including weekly off days)
+		const presentDays = regularDays + overtimeDays + halfDays * 0.5 + weeklyOffDays;
 
 		// Calculate base salary from present days
 		const presentDaysSalary = presentDays * perDaySalary;
@@ -149,13 +150,22 @@ export async function GET(
 		const overtimeSalary = overtimeDays * 0.5 * perDaySalary;
 
 		// Calculate earned leaves
+		// Employees with weekly off are NOT eligible for bonus leaves
 		let leavesEarned = 0;
-		if (presentDays >= 25) {
-			leavesEarned = 2;
-		} else if (presentDays >= 15) {
-			leavesEarned = 1;
+		let leaveSalary = 0;
+		
+		const userHasWeeklyOff = (salary.user as any).hasWeeklyOff || false;
+		if (!userHasWeeklyOff) {
+			// For bonus leaves calculation, exclude weekly off days from presentDays count
+			const presentDaysForBonusLeaves = regularDays + overtimeDays + halfDays * 0.5;
+			
+			if (presentDaysForBonusLeaves >= 25) {
+				leavesEarned = 2;
+			} else if (presentDaysForBonusLeaves >= 15) {
+				leavesEarned = 1;
+			}
+			leaveSalary = leavesEarned * perDaySalary;
 		}
-		const leaveSalary = leavesEarned * perDaySalary;
 
 		// Calculate total deductions (matching stats endpoint logic - only APPROVED installments)
 		const totalAdvanceDeductions = advanceInstallments
@@ -407,6 +417,7 @@ export async function GET(
 			{ label: 'Number of Days in Month', value: totalDaysInMonth.toString() },
 			{ label: 'Present Days', value: formatDays(presentDays) },
 			{ label: 'Regular Days', value: regularDays.toString() },
+			{ label: 'Weekly Off Days', value: weeklyOffDays.toString() },
 			{ label: 'Half Days', value: halfDays.toString() },
 			{ label: 'Overtime Days', value: overtimeDays.toString() },
 			{ label: 'Leave Days', value: leaveDays.toString() },

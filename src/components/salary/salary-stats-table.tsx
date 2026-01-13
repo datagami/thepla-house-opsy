@@ -115,6 +115,7 @@ export function SalaryStatsTable({ salaryId }: SalaryStatsTableProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Regular Days</TableHead>
+                  <TableHead>Weekly Off Days</TableHead>
                   <TableHead>Half Days</TableHead>
                   <TableHead>Overtime Days</TableHead>
                   <TableHead>Leave Days</TableHead>
@@ -126,6 +127,7 @@ export function SalaryStatsTable({ salaryId }: SalaryStatsTableProps) {
               <TableBody>
                 <TableRow>
                   <TableCell>{stats.attendance.regularDays}</TableCell>
+                  <TableCell>{stats.attendance.weeklyOffDays || 0}</TableCell>
                   <TableCell>{stats.attendance.halfDays}</TableCell>
                   <TableCell>{stats.attendance.overtimeDays}</TableCell>
                   <TableCell>{stats.attendance.leaveDays}</TableCell>

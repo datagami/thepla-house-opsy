@@ -16,7 +16,14 @@ export async function GET(
     const salary = await prisma.salary.findUnique({
       where: { id: salaryId },
       include: {
-        user: true
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            hasWeeklyOff: true,
+          }
+        }
       }
     })
 
@@ -67,14 +74,15 @@ export async function GET(
     const perDaySalary = Math.round((salary.baseSalary / totalDaysInMonth *100)) /100;
     
     // Count different attendance types
-    const regularDays = attendance.filter(a => a.isPresent && !a.isHalfDay && !a.overtime).length
-    const halfDays = attendance.filter(a => a.isPresent && a.isHalfDay).length
-    const overtimeDays = attendance.filter(a => a.isPresent && a.overtime).length
+    const weeklyOffDays = attendance.filter(a => a.isPresent && a.isWeeklyOff).length
+    const regularDays = attendance.filter(a => a.isPresent && !a.isHalfDay && !a.overtime && !a.isWeeklyOff).length
+    const halfDays = attendance.filter(a => a.isPresent && a.isHalfDay && !a.isWeeklyOff).length
+    const overtimeDays = attendance.filter(a => a.isPresent && a.overtime && !a.isWeeklyOff).length
     const leaveDays = attendance.filter(a => !a.isPresent).length
     const absentDays = attendance.filter(a => !a.isPresent).length
     
-    // Calculate present days (counting half days as 0.5)
-    const presentDays = regularDays + overtimeDays + (halfDays * 0.5)
+    // Calculate present days (counting half days as 0.5, including weekly off days)
+    const presentDays = regularDays + overtimeDays + (halfDays * 0.5) + weeklyOffDays
     
     // Calculate base salary from present days
     const presentDaysSalary = presentDays * perDaySalary
@@ -85,13 +93,21 @@ export async function GET(
     
     
     // Calculate earned leaves
+    // Employees with weekly off are NOT eligible for bonus leaves
     let leavesEarned = 0
-    if (presentDays >= 25) {
-      leavesEarned = 2
-    } else if (presentDays >= 15) {
-      leavesEarned = 1
+    let leaveSalary = 0
+    
+    if (!salary.user.hasWeeklyOff) {
+      // For bonus leaves calculation, exclude weekly off days from presentDays count
+      const presentDaysForBonusLeaves = regularDays + overtimeDays + (halfDays * 0.5)
+      
+      if (presentDaysForBonusLeaves >= 25) {
+        leavesEarned = 2
+      } else if (presentDaysForBonusLeaves >= 15) {
+        leavesEarned = 1
+      }
+      leaveSalary = leavesEarned * perDaySalary
     }
-    const leaveSalary = leavesEarned * perDaySalary
 
     // Base salary earned is present days salary plus overtime bonus
     const baseSalaryEarned = presentDaysSalary + overtimeSalary + salary.otherBonuses + leaveSalary;
@@ -137,6 +153,7 @@ export async function GET(
         regularDays,
         halfDays,
         overtimeDays,
+        weeklyOffDays,
         leaveDays,
         absentDays,
         presentDays

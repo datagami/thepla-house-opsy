@@ -32,6 +32,7 @@ export function AttendanceForm({
   const [isPresent, setIsPresent] = useState(currentAttendance?.isPresent ?? true);
   const [isHalfDay, setIsHalfDay] = useState(currentAttendance?.isHalfDay ?? false);
   const [isOvertime, setIsOvertime] = useState(currentAttendance?.overtime ?? false);
+  const [isWeeklyOff, setIsWeeklyOff] = useState(currentAttendance?.isWeeklyOff ?? false);
   const [shift1, setShift1] = useState(currentAttendance?.shift1 ?? false);
   const [shift2, setShift2] = useState(currentAttendance?.shift2 ?? false);
   const [shift3, setShift3] = useState(currentAttendance?.shift3 ?? false);
@@ -39,9 +40,43 @@ export function AttendanceForm({
   const [checkOut, setCheckOut] = useState(currentAttendance?.checkOut || "");
   const [notes, setNotes] = useState(currentAttendance?.notes || "");
   const [verificationNote, setVerificationNote] = useState(currentAttendance?.verificationNote || "");
+  const [userWeeklyOffConfig, setUserWeeklyOffConfig] = useState<{
+    hasWeeklyOff: boolean;
+    weeklyOffType: string | null;
+    weeklyOffDay: number | null;
+  } | null>(null);
   
   const isPendingVerification = currentAttendance?.status === "PENDING_VERIFICATION";
   const showApproveReject = isHR && isPendingVerification && currentAttendance?.id;
+
+  // Fetch user's weekly off configuration
+  useEffect(() => {
+    if (userId) {
+      fetch(`/api/users/${userId}`)
+        .then(res => res.json())
+        .then(user => {
+          if (user) {
+            setUserWeeklyOffConfig({
+              hasWeeklyOff: user.hasWeeklyOff || false,
+              weeklyOffType: user.weeklyOffType || null,
+              weeklyOffDay: user.weeklyOffDay || null,
+            });
+            
+            // For fixed weekly off, check if selected date matches weekly off day
+            if (user.hasWeeklyOff && user.weeklyOffType === "FIXED" && date) {
+              const dayOfWeek = new Date(date).getDay();
+              if (user.weeklyOffDay === dayOfWeek) {
+                setIsWeeklyOff(true);
+                setIsPresent(true);
+              }
+            }
+          }
+        })
+        .catch(() => {
+          // Ignore errors
+        });
+    }
+  }, [userId, date]);
 
   // Update form fields when currentAttendance changes
   useEffect(() => {
@@ -49,6 +84,7 @@ export function AttendanceForm({
       setIsPresent(currentAttendance.isPresent ?? true);
       setIsHalfDay(currentAttendance.isHalfDay ?? false);
       setIsOvertime(currentAttendance.overtime ?? false);
+      setIsWeeklyOff(currentAttendance.isWeeklyOff ?? false);
       setShift1(currentAttendance.shift1 ?? false);
       setShift2(currentAttendance.shift2 ?? false);
       setShift3(currentAttendance.shift3 ?? false);
@@ -68,16 +104,17 @@ export function AttendanceForm({
       const attendanceData: AttendanceFormData = {
         userId: userId || null,
         date: attendanceDate,
-        isPresent,
+        isPresent: isWeeklyOff ? true : isPresent,
         checkIn: checkIn || null,
         checkOut: checkOut || null,
-        isHalfDay: isPresent && isHalfDay,
-        overtime: isPresent && isOvertime,
-        shift1: isPresent && shift1,
-        shift2: isPresent && shift2,
-        shift3: isPresent && shift3,
+        isHalfDay: isPresent && isHalfDay && !isWeeklyOff,
+        overtime: isPresent && isOvertime && !isWeeklyOff,
+        isWeeklyOff: isWeeklyOff,
+        shift1: isPresent && shift1 && !isWeeklyOff,
+        shift2: isPresent && shift2 && !isWeeklyOff,
+        shift3: isPresent && shift3 && !isWeeklyOff,
         notes: notes || null,
-        status: userRole === "HR" || "MANAGEMENT" ? "APPROVED" : "PENDING_VERIFICATION",
+        status: (userRole === "HR" || userRole === "MANAGEMENT" || isWeeklyOff) ? "APPROVED" : "PENDING_VERIFICATION",
         ...(currentAttendance?.id && userRole !== "HR" && {
           verificationNote: currentAttendance.verificationNote,
           verifiedById: currentAttendance.verifiedById,
@@ -131,14 +168,15 @@ export function AttendanceForm({
       const attendanceData: AttendanceFormData = {
         userId: userId || null,
         date: attendanceDate,
-        isPresent,
+        isPresent: isWeeklyOff ? true : isPresent,
         checkIn: checkIn || null,
         checkOut: checkOut || null,
-        isHalfDay: isPresent && isHalfDay,
-        overtime: isPresent && isOvertime,
-        shift1: isPresent && shift1,
-        shift2: isPresent && shift2,
-        shift3: isPresent && shift3,
+        isHalfDay: isPresent && isHalfDay && !isWeeklyOff,
+        overtime: isPresent && isOvertime && !isWeeklyOff,
+        isWeeklyOff: isWeeklyOff,
+        shift1: isPresent && shift1 && !isWeeklyOff,
+        shift2: isPresent && shift2 && !isWeeklyOff,
+        shift3: isPresent && shift3 && !isWeeklyOff,
         notes: notes || null,
         status: "APPROVED",
       };
@@ -198,14 +236,15 @@ export function AttendanceForm({
       const attendanceData: AttendanceFormData = {
         userId: userId || null,
         date: attendanceDate,
-        isPresent,
+        isPresent: isWeeklyOff ? true : isPresent,
         checkIn: checkIn || null,
         checkOut: checkOut || null,
-        isHalfDay: isPresent && isHalfDay,
-        overtime: isPresent && isOvertime,
-        shift1: isPresent && shift1,
-        shift2: isPresent && shift2,
-        shift3: isPresent && shift3,
+        isHalfDay: isPresent && isHalfDay && !isWeeklyOff,
+        overtime: isPresent && isOvertime && !isWeeklyOff,
+        isWeeklyOff: isWeeklyOff,
+        shift1: isPresent && shift1 && !isWeeklyOff,
+        shift2: isPresent && shift2 && !isWeeklyOff,
+        shift3: isPresent && shift3 && !isWeeklyOff,
         notes: notes || null,
         status: "REJECTED",
       };
@@ -254,11 +293,32 @@ export function AttendanceForm({
     if (!checked) {
       setIsHalfDay(false);
       setIsOvertime(false);
+      setIsWeeklyOff(false);
       setShift1(false);
       setShift2(false);
       setShift3(false);
     }
   };
+
+  const handleWeeklyOffChange = (checked: boolean) => {
+    setIsWeeklyOff(checked);
+    if (checked) {
+      setIsPresent(true);
+      setIsHalfDay(false);
+      setIsOvertime(false);
+      setShift1(false);
+      setShift2(false);
+      setShift3(false);
+      setCheckIn("");
+      setCheckOut("");
+    }
+  };
+
+  // Check if it's a fixed weekly off day
+  const isFixedWeeklyOffDay = userWeeklyOffConfig?.hasWeeklyOff && 
+    userWeeklyOffConfig.weeklyOffType === "FIXED" && 
+    date && 
+    userWeeklyOffConfig.weeklyOffDay === new Date(date).getDay();
 
   return (
     <Dialog open={isOpen} onOpenChange={onCloseAction}>
@@ -333,6 +393,25 @@ export function AttendanceForm({
             </div>
           </div>
 
+          {userWeeklyOffConfig?.hasWeeklyOff && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="isWeeklyOff">
+                  Weekly Off
+                  {isFixedWeeklyOffDay && (
+                    <span className="ml-2 text-xs text-muted-foreground">(Fixed weekly off day)</span>
+                  )}
+                </Label>
+                <Switch 
+                  id="isWeeklyOff" 
+                  checked={isWeeklyOff}
+                  onCheckedChange={handleWeeklyOffChange}
+                  disabled={userWeeklyOffConfig.weeklyOffType === "FIXED" && !isFixedWeeklyOffDay}
+                />
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Label htmlFor="isHalfDay">Half Day</Label>
@@ -340,7 +419,7 @@ export function AttendanceForm({
                 id="isHalfDay" 
                 checked={isHalfDay}
                 onCheckedChange={setIsHalfDay}
-                disabled={!isPresent || isOvertime}
+                disabled={!isPresent || isOvertime || isWeeklyOff}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -349,7 +428,7 @@ export function AttendanceForm({
                 id="overtime" 
                 checked={isOvertime}
                 onCheckedChange={setIsOvertime}
-                disabled={!isPresent || isHalfDay}
+                disabled={!isPresent || isHalfDay || isWeeklyOff}
               />
             </div>
           </div>

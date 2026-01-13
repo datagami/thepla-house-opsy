@@ -24,6 +24,7 @@ export interface AttendanceFormData {
   checkOut?: string | null;
   isHalfDay: boolean;
   overtime: boolean;
+  isWeeklyOff?: boolean;
   shift1: boolean;
   shift2: boolean;
   shift3: boolean;

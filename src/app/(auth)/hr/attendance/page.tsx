@@ -57,6 +57,7 @@ export default async function HRAttendancePage({
           checkOut: true,
           isHalfDay: true,
           overtime: true,
+          isWeeklyOff: true,
           shift1: true,
           shift2: true,
           shift3: true,

@@ -303,6 +303,93 @@ export async function PUT(
       }
     }
 
+    // Get user's weekly off configuration
+    const userWithWeeklyOff = await prisma.user.findUnique({
+      where: { id: currentAttendance.userId },
+      select: {
+        hasWeeklyOff: true,
+        weeklyOffType: true,
+        weeklyOffDay: true,
+      },
+    });
+
+    // Validate weekly off if employee has weekly off configured
+    let isWeeklyOff = body.isWeeklyOff || false;
+    if (userWithWeeklyOff?.hasWeeklyOff) {
+      const updateDate = body.date ? new Date(body.date) : currentAttendance.date;
+      if (userWithWeeklyOff.weeklyOffType === "FIXED") {
+        // For fixed weekly off, check if the date matches the weekly off day
+        const dayOfWeek = updateDate.getDay();
+        isWeeklyOff = userWithWeeklyOff.weeklyOffDay === dayOfWeek;
+      } else if (userWithWeeklyOff.weeklyOffType === "FLEXIBLE") {
+        // For flexible weekly off, use the value from the request
+        isWeeklyOff = body.isWeeklyOff || false;
+        
+        // Validate only one weekly off per week for flexible
+        if (isWeeklyOff) {
+          const weekStart = new Date(updateDate);
+          weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+          weekStart.setHours(0, 0, 0, 0);
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekEnd.getDate() + 6);
+          weekEnd.setHours(23, 59, 59, 999);
+
+          const existingWeeklyOff = await prisma.attendance.findFirst({
+            where: {
+              userId: currentAttendance.userId,
+              date: {
+                gte: weekStart,
+                lte: weekEnd,
+              },
+              isWeeklyOff: true,
+              NOT: {
+                id: id,
+              },
+            },
+          });
+
+          if (existingWeeklyOff) {
+            return NextResponse.json(
+              { error: "Only one weekly off per week is allowed for flexible weekly off employees" },
+              { status: 400 }
+            );
+          }
+        }
+      }
+      
+      // Weekly off days are automatically marked as present and approved
+      if (isWeeklyOff) {
+        body.isPresent = true;
+        if (role === "HR") {
+          verificationData = {
+            status: "APPROVED",
+            verifiedById: sessionUserId,
+            verifiedAt: new Date()
+          };
+        }
+      }
+    }
+
+    // Check if salary exists for this month and its status
+    const updateDate = body.date ? new Date(body.date) : currentAttendance.date;
+    const existingSalary = await prisma.salary.findFirst({
+      where: {
+        userId: currentAttendance.userId,
+        month: updateDate.getMonth() + 1,
+        year: updateDate.getFullYear(),
+        status: {
+          in: ['PENDING', 'PROCESSING']
+        }
+      }
+    });
+
+    if (existingSalary?.status === 'PROCESSING') {
+      return NextResponse.json(
+        { error: 'Cannot edit attendance as salary is already in processing state' },
+        { status: 400 }
+      );
+    }
+
     const attendance = await prisma.attendance.update({
       where: { id },
       data: {
@@ -312,6 +399,7 @@ export async function PUT(
         checkOut: body.checkOut || null,
         isHalfDay: body.isHalfDay || false,
         overtime: body.overtime || false,
+        isWeeklyOff: isWeeklyOff,
         shift1: body.shift1 || false,
         shift2: body.shift2 || false,
         shift3: body.shift3 || false,
@@ -319,6 +407,28 @@ export async function PUT(
         ...verificationData
       }
     });
+
+    // If salary exists and is in PENDING state, recalculate it
+    if (existingSalary?.status === 'PENDING') {
+      const { calculateSalary } = await import('@/lib/services/salary-calculator');
+      const salaryDetails = await calculateSalary(
+        currentAttendance.userId,
+        updateDate.getMonth() + 1,
+        updateDate.getFullYear()
+      );
+
+      await prisma.salary.update({
+        where: { id: existingSalary.id },
+        data: {
+          presentDays: salaryDetails.presentDays,
+          overtimeDays: salaryDetails.overtimeDays,
+          halfDays: salaryDetails.halfDays,
+          leavesEarned: salaryDetails.leavesEarned,
+          leaveSalary: salaryDetails.leaveSalary,
+          netSalary: salaryDetails.netSalary
+        }
+      });
+    }
 
     return NextResponse.json(attendance);
   } catch (error) {

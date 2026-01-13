@@ -106,6 +106,7 @@ export default async function EmployeeAttendancePage({
           name: true,
         },
       },
+      hasWeeklyOff: true,
     },
   }) as User;
 

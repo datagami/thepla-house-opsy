@@ -15,6 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
+import {Switch} from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -63,6 +64,9 @@ const userFormSchema = z.object({
   ).min(1, "At least one reference is required"),
   password: z.string().min(6, "Password must be at least 6 characters").optional().or(z.literal('')),
   referredById: z.string().optional(),
+  hasWeeklyOff: z.boolean().optional(),
+  weeklyOffType: z.enum(["FIXED", "FLEXIBLE"]).optional().nullable(),
+  weeklyOffDay: z.number().min(0).max(6).optional().nullable(),
 });
 
 interface UserProfileFormProps {
@@ -122,6 +126,9 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
           referralsReceived?: Array<{ referrerId: string }>
         }
       )?.referralsReceived?.[0]?.referrerId || undefined,
+      hasWeeklyOff: (user as User & { hasWeeklyOff?: boolean })?.hasWeeklyOff || false,
+      weeklyOffType: (user as User & { weeklyOffType?: string | null })?.weeklyOffType || null,
+      weeklyOffDay: (user as User & { weeklyOffDay?: number | null })?.weeklyOffDay || null,
     },
   });
 
@@ -710,6 +717,94 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
                 </FormItem>
               )}
             />
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Weekly Off Configuration</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="hasWeeklyOff"
+              render={({field}) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">Has Weekly Off</FormLabel>
+                    <div className="text-sm text-muted-foreground">
+                      Enable weekly off for this employee
+                    </div>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={!canEdit}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            {form.watch("hasWeeklyOff") && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="weeklyOffType"
+                  render={({field}) => (
+                    <FormItem>
+                      <FormLabel>Weekly Off Type</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || undefined}
+                        disabled={!canEdit}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select type"/>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="FIXED">Fixed (Same day each week)</SelectItem>
+                          <SelectItem value="FLEXIBLE">Flexible (Employee chooses)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage/>
+                    </FormItem>
+                  )}
+                />
+                {form.watch("weeklyOffType") === "FIXED" && (
+                  <FormField
+                    control={form.control}
+                    name="weeklyOffDay"
+                    render={({field}) => (
+                      <FormItem>
+                        <FormLabel>Weekly Off Day</FormLabel>
+                        <Select
+                          onValueChange={(value) => field.onChange(parseInt(value))}
+                          value={field.value?.toString() || undefined}
+                          disabled={!canEdit}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select day"/>
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="0">Sunday</SelectItem>
+                            <SelectItem value="1">Monday</SelectItem>
+                            <SelectItem value="2">Tuesday</SelectItem>
+                            <SelectItem value="3">Wednesday</SelectItem>
+                            <SelectItem value="4">Thursday</SelectItem>
+                            <SelectItem value="5">Friday</SelectItem>
+                            <SelectItem value="6">Saturday</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage/>
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </>
+            )}
           </div>
         </div>
 

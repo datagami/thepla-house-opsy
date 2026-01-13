@@ -143,6 +143,11 @@ model User {
   bankAccountNo       String?
   bankIfscCode        String?
 
+  // Weekly Off fields
+  hasWeeklyOff        Boolean  @default(false) @map("has_weekly_off")
+  weeklyOffType      String?  @map("weekly_off_type") // "FIXED" or "FLEXIBLE"
+  weeklyOffDay        Int?     @map("weekly_off_day") // Day of week (0=Sunday, 1=Monday, etc.) for fixed weekly off
+
   // E-Signature fields
   joiningFormSignedAt  DateTime? @map("joining_form_signed_at")
   joiningFormSignedBy  String?   @map("joining_form_signed_by")
@@ -327,6 +332,7 @@ model Attendance {
   checkOut         String?          @map("check_out")
   isHalfDay        Boolean          @default(false) @map("is_half_day")
   overtime         Boolean          @default(false)
+  isWeeklyOff      Boolean          @default(false) @map("is_weekly_off")
   shift1           Boolean          @default(false) @map("shift_1")
   shift2           Boolean          @default(false) @map("shift_2")
   shift3           Boolean          @default(false) @map("shift_3")
