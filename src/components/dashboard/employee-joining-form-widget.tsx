@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { formatDateOnly } from '@/lib/utils';
 import { FileSignature, CheckCircle, XCircle, Calendar, ArrowRight } from 'lucide-react';
 import { User } from '@/models/models';
 
@@ -48,7 +49,7 @@ export function EmployeeJoiningFormWidget({ currentUser }: EmployeeJoiningFormWi
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Calendar className="h-4 w-4" />
-                <span>Signed on: {new Date(currentUser.joiningFormSignedAt!).toLocaleDateString()}</span>
+                <span>Signed on: {formatDateOnly(currentUser.joiningFormSignedAt!)}</span>
               </div>
               <div className="text-sm text-gray-600">
                 <p>✓ Agreement accepted</p>

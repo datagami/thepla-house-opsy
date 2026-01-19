@@ -14,6 +14,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Trash2, Edit } from "lucide-react";
+import { formatDateOnly } from "@/lib/utils";
 
 interface Uniform {
   id: string;
@@ -197,12 +198,12 @@ export function UniformsList({ userId, refreshKey = 0, canModify = true, canDele
                     {uniform.size && `Size: ${uniform.size}`} {uniform.uniformNumber && `• No: ${uniform.uniformNumber}`}
                   </p>
                   <p className="text-xs text-gray-500">
-                    Issued on {new Date(uniform.issuedAt).toLocaleDateString()}
+                    Issued on {formatDateOnly(uniform.issuedAt)}
                     {uniform.issuedBy && ` by ${uniform.issuedBy.name}`}
                   </p>
                   {uniform.returnedAt && (
                     <p className="text-xs text-gray-500">
-                      Returned on {new Date(uniform.returnedAt).toLocaleDateString()}
+                      Returned on {formatDateOnly(uniform.returnedAt)}
                       {uniform.returnedBy && ` by ${uniform.returnedBy.name}`}
                     </p>
                   )}

@@ -7,6 +7,7 @@ import { SalaryStatsDTO, fetchSalaryStats } from '@/lib/types/salary-stats.dto'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { formatDateOnly } from '@/lib/utils'
 
 interface SalaryStatsTableProps {
   salaryId: string
@@ -242,7 +243,7 @@ export function SalaryStatsTable({ salaryId }: SalaryStatsTableProps) {
                       </TableCell>
                       <TableCell>
                         {deduction.approvedAt 
-                          ? new Date(deduction.approvedAt).toLocaleDateString() 
+                          ? formatDateOnly(deduction.approvedAt) 
                           : 'Pending'}
                       </TableCell>
                     </TableRow>

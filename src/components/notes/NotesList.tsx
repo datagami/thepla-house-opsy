@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { formatDateOnly } from "@/lib/utils";
 import {
   Select,
   SelectTrigger,
@@ -51,7 +52,6 @@ export default function NotesList() {
         setNotes(data);
         setLoading(false);
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, refreshParam]);
 
   return (
@@ -98,10 +98,10 @@ export default function NotesList() {
                 </div>
                 <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
                   <span>By {note.owner?.name || 'Unknown'}</span>
-                  <span>Created: {new Date(note.createdAt).toLocaleDateString()}</span>
+                  <span>Created: {formatDateOnly(note.createdAt)}</span>
                 </div>
                 <div className="flex items-center justify-between mt-1 text-xs text-gray-400">
-                  <span>Updated: {new Date(note.updatedAt).toLocaleDateString()}</span>
+                  <span>Updated: {formatDateOnly(note.updatedAt)}</span>
                   {note.isArchived && (
                     <span className="text-yellow-600">Archived</span>
                   )}

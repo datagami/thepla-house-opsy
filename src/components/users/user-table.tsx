@@ -22,6 +22,7 @@ import { UserActions } from "./user-actions";
 import {Branch, User} from "@/models/models";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatDateOnly } from "@/lib/utils";
 
 interface UserTableProps {
   users: User[];
@@ -217,7 +218,7 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
                 <TableCell>
                   {user.joiningFormSignedAt ? (
                     <Badge variant="secondary" className="text-green-600 bg-green-100">
-                      ✓ Signed {new Date(user.joiningFormSignedAt).toLocaleDateString()}
+                      ✓ Signed {formatDateOnly(user.joiningFormSignedAt)}
                     </Badge>
                   ) : (
                     <Badge variant="secondary" className="text-red-600 bg-red-100">

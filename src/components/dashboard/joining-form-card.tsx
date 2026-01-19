@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { formatDateOnly } from "@/lib/utils";
 import { FileSignature } from "lucide-react";
 
 interface JoiningFormCardProps {
@@ -37,7 +38,7 @@ export function JoiningFormCard({ userId, isSigned, signedAt }: JoiningFormCardP
             <div>
               <div className="text-2xl font-bold text-green-600">✓ Signed</div>
               <p className="text-xs text-muted-foreground">
-                Completed on {signedAt ? new Date(signedAt).toLocaleDateString() : 'N/A'}
+                Completed on {signedAt ? formatDateOnly(signedAt) : 'N/A'}
               </p>
             </div>
           ) : (

@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { formatDateOnly } from '@/lib/utils';
 import { User } from '@/models/models';
 import { CheckCircle, XCircle, Calendar, User as UserIcon } from 'lucide-react';
 
@@ -54,7 +55,7 @@ export function SignatureStatus({ user, currentUserId, canManageUsers, isBranchM
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <Calendar className="h-4 w-4" />
-              <span>Signed on: {new Date(user.joiningFormSignedAt!).toLocaleDateString()}</span>
+              <span>Signed on: {formatDateOnly(user.joiningFormSignedAt!)}</span>
             </div>
             
             {user.joiningFormSignature && (

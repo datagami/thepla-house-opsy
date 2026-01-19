@@ -36,6 +36,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { formatDateOnly } from "@/lib/utils";
 
 interface UploadedBy {
   id: string;
@@ -209,7 +210,7 @@ export function UserDocumentsList({ userId, canModify = false }: UserDocumentsLi
                       <div className="text-sm">
                         <div className="font-medium">{document.uploadedBy?.name}</div>
                         <div className="text-muted-foreground">
-                          {new Date(document.createdAt).toLocaleDateString()}
+                          {formatDateOnly(document.createdAt)}
                         </div>
                       </div>
                     </TableCell>

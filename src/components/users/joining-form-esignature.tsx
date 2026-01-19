@@ -11,6 +11,7 @@ import { WebcamCapture } from './webcam-capture';
 import { toast } from 'sonner';
 import { User } from '@/models/models';
 import { Camera } from 'lucide-react';
+import { formatDateOnly } from '@/lib/utils';
 
 interface JoiningFormESignatureProps {
   user: User;
@@ -121,7 +122,7 @@ export function JoiningFormESignature({ user, onComplete }: JoiningFormESignatur
               <div>
                 <Label className="font-medium">Date of Joining:</Label>
                 <p className="text-gray-700">
-                  {user.doj ? new Date(user.doj).toLocaleDateString() : 'N/A'}
+                  {user.doj ? formatDateOnly(user.doj) : 'N/A'}
                 </p>
               </div>
               <div>

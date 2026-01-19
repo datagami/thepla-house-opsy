@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { BranchDocument } from "@/models/models";
+import { formatDateOnly } from "@/lib/utils";
 
 interface BranchDocumentsListProps {
   branchId: string;
@@ -242,7 +243,7 @@ export function BranchDocumentsList({ branchId, canUpload = false, showHeading =
                           <Calendar className="h-4 w-4" />
                           <div>
                             <div className="text-sm">
-                              {new Date(document.renewalDate).toLocaleDateString()}
+                              {formatDateOnly(document.renewalDate)}
                             </div>
                             <Badge variant={renewalStatus.color}>
                               {renewalStatus.text}
@@ -255,7 +256,7 @@ export function BranchDocumentsList({ branchId, canUpload = false, showHeading =
                           <AlertTriangle className="h-4 w-4" />
                           <div>
                             <div className="text-sm">
-                              {new Date(document.reminderDate).toLocaleDateString()}
+                              {formatDateOnly(document.reminderDate)}
                             </div>
                             <Badge variant={reminderStatus.color}>
                               {reminderStatus.text}
@@ -267,7 +268,7 @@ export function BranchDocumentsList({ branchId, canUpload = false, showHeading =
                         <div className="text-sm">
                           <div className="font-medium">{document.uploadedBy.name}</div>
                           <div className="text-muted-foreground">
-                            {new Date(document.createdAt).toLocaleDateString()}
+                            {formatDateOnly(document.createdAt)}
                           </div>
                         </div>
                       </TableCell>

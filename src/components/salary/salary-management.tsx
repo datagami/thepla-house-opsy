@@ -23,6 +23,7 @@ import { DownloadENETButton } from './download-enet-button'
 import { DownloadReportButton } from './download-report-button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import Link from 'next/link'
+import { formatDateOnly } from '@/lib/utils'
 
 interface SalaryManagementProps {
   initialYear?: number
@@ -147,7 +148,7 @@ export function SalaryManagement({ initialYear, initialMonth }: SalaryManagement
               <ul className="list-disc list-inside text-sm text-muted-foreground">
                 {conflictWarning.sampleConflicts.map((conflict, index) => (
                   <li key={`${conflict.userId ?? index}-${conflict.date}`}>
-                    {conflict.userName ?? 'Unknown user'} — {new Date(conflict.date).toLocaleDateString()} ({conflict.entries} entries)
+                    {conflict.userName ?? 'Unknown user'} — {formatDateOnly(conflict.date)} ({conflict.entries} entries)
                   </li>
                 ))}
               </ul>

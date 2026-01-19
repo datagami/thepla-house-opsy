@@ -29,6 +29,7 @@ import {Branch, User} from "@/models/models";
 import {UserImageUpload} from './user-image-upload';
 import {DateInput} from "@/components/ui/date-input";
 import {PasswordDisplayDialog} from './password-display-dialog';
+import { formatDateOnly } from "@/lib/utils";
 
 const userFormSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
@@ -892,7 +893,7 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
             {user && user.joiningFormSignedAt && (
               <div className="flex items-center gap-2 text-sm text-green-600">
                 <span>✓</span>
-                <span>Joining form signed on {new Date(user.joiningFormSignedAt).toLocaleDateString()}</span>
+                <span>Joining form signed on {formatDateOnly(user.joiningFormSignedAt)}</span>
               </div>
             )}
           </div>

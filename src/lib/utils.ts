@@ -12,6 +12,38 @@ export function formatDate(date: Date) {
   }).format(new Date(date));
 }
 
+/**
+ * Deterministic date-only formatting for SSR/CSR consistency.
+ *
+ * Using the runtime's default locale can cause hydration mismatches
+ * (e.g. `23/8/2025` vs `8/23/2025`) when server and client locales differ.
+ */
+export function formatDateOnly(
+  date: Date | string | number | null | undefined,
+  opts?: { locale?: string; timeZone?: string }
+): string {
+  if (!date) return "";
+
+  const locale = opts?.locale ?? "en-GB"; // common dd/mm/yyyy ordering
+  const timeZone = opts?.timeZone ?? "Asia/Kolkata";
+
+  const baseOptions: Intl.DateTimeFormatOptions = {
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+  };
+
+  try {
+    return new Intl.DateTimeFormat(locale, {
+      ...baseOptions,
+      timeZone,
+    }).format(new Date(date));
+  } catch {
+    // Fallback if the runtime doesn't support the provided timeZone.
+    return new Intl.DateTimeFormat(locale, baseOptions).format(new Date(date));
+  }
+}
+
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',

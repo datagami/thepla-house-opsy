@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { formatDateOnly } from "@/lib/utils";
 
 interface PayslipTableClientProps {
   salaries: Array<{
@@ -50,7 +51,7 @@ export default function PayslipTableClient({ salaries }: PayslipTableClientProps
               <td className="px-4 py-2">{monthNames[salary.month - 1]}</td>
               <td className="px-4 py-2">{salary.year}</td>
               <td className="px-4 py-2">{salary.status}</td>
-              <td className="px-4 py-2">{new Date(salary.createdAt).toLocaleDateString()}</td>
+              <td className="px-4 py-2">{formatDateOnly(salary.createdAt)}</td>
             </tr>
           ))
         )}
