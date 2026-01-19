@@ -320,6 +320,8 @@ export function AttendanceForm({
     date && 
     userWeeklyOffConfig.weeklyOffDay === new Date(date).getDay();
 
+  const canOverrideWeeklyOff = ["HR", "MANAGEMENT"].includes(userRole || "");
+
   return (
     <Dialog open={isOpen} onOpenChange={onCloseAction}>
       <DialogContent>
@@ -406,7 +408,7 @@ export function AttendanceForm({
                   id="isWeeklyOff" 
                   checked={isWeeklyOff}
                   onCheckedChange={handleWeeklyOffChange}
-                  disabled={userWeeklyOffConfig.weeklyOffType === "FIXED" && !isFixedWeeklyOffDay}
+                  disabled={!canOverrideWeeklyOff && userWeeklyOffConfig.weeklyOffType === "FIXED" && !isFixedWeeklyOffDay}
                 />
               </div>
             </div>

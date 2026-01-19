@@ -7,6 +7,49 @@ import {Prisma} from "@prisma/client";
 import { logTargetUserActivity, logUserActivity } from "@/lib/services/activity-log";
 import { ActivityType } from "@prisma/client";
 
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+    const { id } = await params;
+
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const sessionUserId = (session.user as { id?: string }).id;
+    const isOwnProfile = sessionUserId === id;
+
+    // @ts-expect-error - role is not defined in the session type
+    const canViewUsers = hasAccess(session.user.role, "users.view");
+
+    if (!canViewUsers && !isOwnProfile) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        hasWeeklyOff: true,
+        weeklyOffType: true,
+        weeklyOffDay: true,
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(user);
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    return NextResponse.json({ error: "Error fetching user" }, { status: 500 });
+  }
+}
+
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

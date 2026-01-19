@@ -10,6 +10,7 @@ interface Attendance {
   id: string;
   date: Date;
   isPresent: boolean;
+  isWeeklyOff?: boolean;
   isHalfDay: boolean;
   overtime: boolean;
   checkIn: string | null;
@@ -69,13 +70,17 @@ export function AttendanceCalendar({ attendance, month }: AttendanceCalendarProp
             return (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Badge variant={attendance.isPresent ? "default" : "destructive"}>
-                    {attendance.isPresent ? "Present" : "Absent"}
-                  </Badge>
+                  {attendance.isWeeklyOff ? (
+                    <Badge className="bg-purple-100 text-purple-800">Weekly Off</Badge>
+                  ) : (
+                    <Badge variant={attendance.isPresent ? "default" : "destructive"}>
+                      {attendance.isPresent ? "Present" : "Absent"}
+                    </Badge>
+                  )}
                   {attendance.isHalfDay && <Badge>Half Day</Badge>}
                   {attendance.overtime && <Badge variant="outline">Overtime</Badge>}
                 </div>
-                {attendance.isPresent && (
+                {attendance.isPresent && !attendance.isWeeklyOff && (
                   <>
                     <p className="text-sm">
                       Time: {attendance.checkIn} - {attendance.checkOut}

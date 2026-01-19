@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 export type SerializedAttendanceConflictEntry = {
   id: string;
   isPresent: boolean;
+  isWeeklyOff?: boolean;
   isHalfDay: boolean;
   overtime: boolean;
   status: string;
@@ -153,9 +154,13 @@ export function AttendanceConflictTable({ conflicts }: AttendanceConflictTablePr
                 >
                   <div>
                     <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
-                      <Badge variant={entry.isPresent ? "default" : "outline"}>
-                        {entry.isPresent ? "Present" : "Absent"}
-                      </Badge>
+                      {entry.isWeeklyOff ? (
+                        <Badge className="bg-purple-100 text-purple-800">Weekly Off</Badge>
+                      ) : (
+                        <Badge variant={entry.isPresent ? "default" : "outline"}>
+                          {entry.isPresent ? "Present" : "Absent"}
+                        </Badge>
+                      )}
                       <Badge
                         variant={
                           entry.status === "APPROVED"
@@ -219,7 +224,11 @@ export function AttendanceConflictTable({ conflicts }: AttendanceConflictTablePr
             <AlertDialogDescription>
               {selectedEntry
                 ? `You are about to delete the ${
-                    selectedEntry.isPresent ? "present" : "absent"
+                    selectedEntry.isWeeklyOff
+                      ? "weekly off"
+                      : selectedEntry.isPresent
+                        ? "present"
+                        : "absent"
                   } entry recorded on ${new Date(
                     selectedEntry.createdAt
                   ).toLocaleString()}. This action cannot be undone.`
