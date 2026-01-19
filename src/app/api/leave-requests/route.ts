@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { startDate, endDate, leaveType, reason } = await req.json();
+    const { startDate, endDate, leaveType, reason, userId: requestedUserId } = await req.json();
 
     // Basic validation
     if (!startDate || !endDate || !leaveType || !reason) {
@@ -25,11 +25,70 @@ export async function POST(req: Request) {
       );
     }
 
+    const sessionUserId = (session.user as { id?: string; role?: string; branchId?: string | null }).id;
+    const role = (session.user as { role?: string }).role;
+    const managerBranchId = (session.user as { branchId?: string | null }).branchId ?? null;
+
+    if (!sessionUserId) {
+      return NextResponse.json(
+        { error: "User ID not found in session" },
+        { status: 401 }
+      );
+    }
+
+    let targetUserId: string;
+    let targetUserName: string | null = null;
+
+    if (role === "BRANCH_MANAGER") {
+      if (!managerBranchId) {
+        return NextResponse.json(
+          { error: "Manager branch not found" },
+          { status: 400 }
+        );
+      }
+
+      // If no userId is provided, manager is creating for self.
+      if (!requestedUserId) {
+        targetUserId = sessionUserId;
+      } else {
+        // Allow explicit self as well
+        if (requestedUserId === sessionUserId) {
+          targetUserId = sessionUserId;
+        } else {
+          const employee = await prisma.user.findFirst({
+            where: {
+              id: requestedUserId,
+              branchId: managerBranchId,
+              role: "EMPLOYEE",
+              status: "ACTIVE",
+            },
+            select: { id: true, name: true },
+          });
+
+          if (!employee) {
+            return NextResponse.json(
+              { error: "Employee not found in your branch" },
+              { status: 403 }
+            );
+          }
+
+          targetUserId = employee.id;
+          targetUserName = employee.name ?? null;
+        }
+      }
+    } else if (role === "EMPLOYEE") {
+      targetUserId = sessionUserId;
+    } else {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 403 }
+      );
+    }
+
     // Check if there's an overlapping leave request
     const existingLeave = await prisma.leaveRequest.findFirst({
       where: {
-        // @ts-expect-error - userId is not in the User type
-        userId: session.user.id,
+        userId: targetUserId,
         OR: [
           {
             AND: [
@@ -48,17 +107,23 @@ export async function POST(req: Request) {
     });
 
     if (existingLeave) {
+      const isSelf = targetUserId === sessionUserId;
       return NextResponse.json(
-        { error: "You already have a leave request for these dates" },
+        {
+          error:
+            role === "BRANCH_MANAGER"
+              ? isSelf
+                ? "You already have a leave request for these dates"
+                : "Employee already has a leave request for these dates"
+              : "You already have a leave request for these dates",
+        },
         { status: 400 }
       );
     }
 
-    // @ts-expect-error - userId is not in the User type
-    const userId = session.user.id || '';
     const leaveRequest = await prisma.leaveRequest.create({
       data: {
-        userId: userId,
+        userId: targetUserId,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         leaveType: leaveType as "CASUAL" | "SICK" | "ANNUAL" | "UNPAID" | "OTHER",
@@ -68,22 +133,20 @@ export async function POST(req: Request) {
     });
 
     // Log leave request creation
-    const sessionUserId = (session.user as { id?: string }).id;
-    if (!sessionUserId) {
-      return NextResponse.json(
-        { error: "User ID not found in session" },
-        { status: 401 }
-      );
-    }
     await logEntityActivity(
       ActivityType.LEAVE_REQUEST_CREATED,
       sessionUserId,
       "LeaveRequest",
       leaveRequest.id,
-      `Created leave request: ${leaveType} from ${startDate} to ${endDate}`,
+      role === "BRANCH_MANAGER"
+        ? targetUserId === sessionUserId
+          ? `Created leave request for self: ${leaveType} from ${startDate} to ${endDate}`
+          : `Created leave request for ${targetUserName ?? "employee"}: ${leaveType} from ${startDate} to ${endDate}`
+        : `Created leave request: ${leaveType} from ${startDate} to ${endDate}`,
       {
         leaveRequestId: leaveRequest.id,
         userId: leaveRequest.userId,
+        createdByUserId: sessionUserId,
         leaveType,
         startDate,
         endDate,

@@ -6,6 +6,7 @@ import { LeaveRequestTable } from "@/components/leave/leave-request-table";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import {LeaveRequest} from "@/models/models";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Leave Requests - HRMS",
@@ -27,6 +28,11 @@ export default async function LeaveRequestsPage() {
         select: {
           name: true,
           branch: {
+            select: {
+              name: true,
+            },
+          },
+          department: {
             select: {
               name: true,
             },
@@ -63,10 +69,12 @@ export default async function LeaveRequestsPage() {
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Leave Requests</h2>
-        {role === "EMPLOYEE" && (
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Request
+        {["EMPLOYEE", "BRANCH_MANAGER"].includes(role) && (
+          <Button asChild>
+            <Link href="/leave-requests/new">
+              <Plus className="mr-2 h-4 w-4" />
+              {role === "BRANCH_MANAGER" ? "Create for Employee" : "New Request"}
+            </Link>
           </Button>
         )}
       </div>
@@ -76,6 +84,8 @@ export default async function LeaveRequestsPage() {
           requests={leaveRequests}
           showBranch={["HR", "MANAGEMENT"].includes(role)}
           userRole={role}
+          // @ts-expect-error - id is not in the User type
+          userId={session.user.id}
         />
       </div>
     </div>

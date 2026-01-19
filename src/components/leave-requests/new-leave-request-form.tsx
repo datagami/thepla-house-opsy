@@ -36,13 +36,24 @@ const LEAVE_TYPES = [
   { value: "UNPAID", label: "Unpaid Leave" },
 ];
 
-export function NewLeaveRequestForm() {
+type EmployeeOption = { id: string; name: string | null; departmentName: string | null };
+
+export function NewLeaveRequestForm({
+  userRole,
+  employees = [],
+}: {
+  userRole: string;
+  employees?: EmployeeOption[];
+}) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [leaveType, setLeaveType] = useState<string>();
   const [reason, setReason] = useState("");
+  const [employeeId, setEmployeeId] = useState<string>(() =>
+    userRole === "BRANCH_MANAGER" ? "SELF" : ""
+  );
 
   const handleSubmit = async () => {
     if (!startDate || !endDate || !leaveType || !reason) {
@@ -63,6 +74,9 @@ export function NewLeaveRequestForm() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          ...(userRole === "BRANCH_MANAGER" && employeeId && employeeId !== "SELF"
+            ? { userId: employeeId }
+            : {}),
           startDate: startDate.toISOString(),
           endDate: endDate.toISOString(),
           leaveType,
@@ -72,10 +86,10 @@ export function NewLeaveRequestForm() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Failed to submit leave request");
+        throw new Error(error.error || error.message || "Failed to submit leave request");
       }
 
-      toast.success("Leave request submitted successfully");
+      toast.success(userRole === "BRANCH_MANAGER" ? "Leave request submitted for review" : "Leave request submitted successfully");
       router.push("/leave-requests");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to submit leave request");
@@ -87,13 +101,34 @@ export function NewLeaveRequestForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Submit Leave Request</CardTitle>
+        <CardTitle>{userRole === "BRANCH_MANAGER" ? "Create Leave Request (for employee)" : "Submit Leave Request"}</CardTitle>
         <CardDescription>
-          Fill in the details below to submit your leave request
+          {userRole === "BRANCH_MANAGER"
+            ? "Select an employee from your branch and submit their leave for review"
+            : "Fill in the details below to submit your leave request"}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
+          {userRole === "BRANCH_MANAGER" && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Employee</label>
+              <Select value={employeeId} onValueChange={setEmployeeId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select employee" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SELF">Myself</SelectItem>
+                  {employees.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {(e.name ?? "Unnamed")} {e.departmentName ? `(${e.departmentName})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="text-sm font-medium">Leave Type</label>
             <Select value={leaveType} onValueChange={setLeaveType}>
@@ -197,7 +232,7 @@ export function NewLeaveRequestForm() {
               onClick={handleSubmit}
               disabled={isLoading}
             >
-              {isLoading ? "Submitting..." : "Submit Request"}
+              {isLoading ? "Submitting..." : userRole === "BRANCH_MANAGER" ? "Submit for Review" : "Submit Request"}
             </Button>
           </div>
         </div>

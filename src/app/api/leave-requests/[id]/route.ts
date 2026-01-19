@@ -11,11 +11,11 @@ export async function PATCH(
   try {
     const session = await auth();
 
-    // @ts-expect-error - role is not in the User type
-    if (!session || session.user.role !== "MANAGEMENT") {
+    const role = (session?.user as { role?: string } | undefined)?.role;
+    if (!session || !role || !["MANAGEMENT", "HR"].includes(role)) {
       return NextResponse.json(
         { error: "Unauthorized" },
-        { status: 401 }
+        { status: 403 }
       );
     }
 
