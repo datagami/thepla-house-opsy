@@ -248,6 +248,8 @@ export function SalaryDetails({ salary, month, year, canEdit = false, activeWarn
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [undoReferralDialogOpen, setUndoReferralDialogOpen] = useState(false)
+  const [isUndoingReferrals, setIsUndoingReferrals] = useState(false)
 
   const handleDeleteSalary = async () => {
     try {
@@ -265,6 +267,25 @@ export function SalaryDetails({ salary, month, year, canEdit = false, activeWarn
       toast.error(e instanceof Error ? e.message : 'Failed to delete salary')
     } finally {
       setIsDeleting(false)
+    }
+  }
+
+  const handleUndoReferralBonus = async () => {
+    try {
+      setIsUndoingReferrals(true)
+      const response = await fetch(`/api/salary/${salary.id}/undo-referrals`, { method: 'POST' })
+      const data = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(data?.error || 'Failed to undo referral bonus')
+      }
+      toast.success('Referral bonus undone')
+      setUndoReferralDialogOpen(false)
+      router.refresh()
+    } catch (e) {
+      console.error(e)
+      toast.error(e instanceof Error ? e.message : 'Failed to undo referral bonus')
+    } finally {
+      setIsUndoingReferrals(false)
     }
   }
 
@@ -576,7 +597,18 @@ export function SalaryDetails({ salary, month, year, canEdit = false, activeWarn
 
             {referrals.length > 0 && (
               <div className="space-y-2">
-                <h4 className="text-sm font-medium">Referral Bonuses</h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-medium">Referral Bonuses</h4>
+                  {canEdit && salary.status === 'PENDING' && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setUndoReferralDialogOpen(true)}
+                    >
+                      Undo Referral Bonus
+                    </Button>
+                  )}
+                </div>
                 <div className="space-y-1">
                   {referrals.map((r) => (
                     <div key={r.id} className="flex items-center justify-between text-sm">
@@ -614,6 +646,26 @@ export function SalaryDetails({ salary, month, year, canEdit = false, activeWarn
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={undoReferralDialogOpen} onOpenChange={setUndoReferralDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Undo Referral Bonus</DialogTitle>
+            <DialogDescription>
+              This will mark the referral bonuses on this salary as unpaid again and remove the bonus amount from this salary.
+              You can re-process referral bonuses later and they will carry over.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex space-x-2 justify-end">
+            <Button variant="outline" onClick={() => setUndoReferralDialogOpen(false)} disabled={isUndoingReferrals}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleUndoReferralBonus} disabled={isUndoingReferrals}>
+              {isUndoingReferrals ? 'Undoing...' : 'Undo Referral Bonus'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <SalaryStatsTable salaryId={salary.id} />
 
