@@ -36,6 +36,7 @@ export async function POST(request: Request) {
       panNo,
       aadharNo,
       bankAccountNo,
+      bankIfscCode,
       salary,
       references,
       referredById 
@@ -93,6 +94,10 @@ export async function POST(request: Request) {
         aadharNo,
         salary: parseFloat(salary),
         bankAccountNo: bankAccountNo || null,
+        bankIfscCode:
+          typeof bankIfscCode === "string" && bankIfscCode.trim() !== ""
+            ? bankIfscCode.trim()
+            : null,
         references: {
           create: references.map((ref: { name: string; contactNo: string }) => ({
             name: ref.name,
