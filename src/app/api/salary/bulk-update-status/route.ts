@@ -10,11 +10,19 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { salaryIds } = await request.json()
+    const { salaryIds, status } = await request.json()
 
     if (!salaryIds || !Array.isArray(salaryIds) || salaryIds.length === 0) {
       return NextResponse.json(
         { error: 'Invalid salary IDs' },
+        { status: 400 }
+      )
+    }
+
+    const allowedStatuses = ['PENDING', 'PROCESSING', 'PAID', 'FAILED'] as const
+    if (!status || !allowedStatuses.includes(status)) {
+      return NextResponse.json(
+        { error: 'Invalid status' },
         { status: 400 }
       )
     }
@@ -31,79 +39,81 @@ export async function PATCH(request: Request) {
       }
     })
 
-    // Validate all salaries first
-    const validationResults = salaries.map(salary => {
-      const hasPendingInstallments = salary.installments.some(
-        inst => inst.status === 'PENDING'
-      )
-
-      return {
-        salaryId: salary.id,
-        isValid: !hasPendingInstallments,
-        error: hasPendingInstallments 
-          ? 'Has pending advance payment installments'
-          : null
-      }
-    })
-
-    // Check if any salaries have pending installments
-    const invalidSalaries = validationResults.filter(result => !result.isValid)
-    if (invalidSalaries.length > 0) {
-      return NextResponse.json({
-        error: 'Some salaries have pending installments',
-        details: invalidSalaries
-      }, { status: 400 })
-    }
-
-    // Process only valid salaries
-    const validSalaryIds = validationResults
-      .filter(result => result.isValid)
-      .map(result => result.salaryId)
-
     await prisma.$transaction(async (tx) => {
-      for (const salaryId of validSalaryIds) {
-        const salary = salaries.find(s => s.id === salaryId)!
+      for (const salary of salaries) {
+        const hasPendingInstallments = salary.installments.some((inst) => inst.status === 'PENDING')
 
-        // Get approved installments
-        const approvedInstallments = salary.installments.filter(
-          inst => inst.status === 'APPROVED'
-        )
+        // Disallow moving to PROCESSING/PAID when there are pending installments
+        if ((status === 'PROCESSING' || status === 'PAID') && hasPendingInstallments) {
+          throw new Error(`Salary ${salary.id} has pending advance payment installments`)
+        }
 
-        // Calculate total approved deductions
-        const totalApprovedDeductions = approvedInstallments.reduce(
-          (sum, inst) => sum + inst.amountPaid,
-          0
-        )
+        if (status === 'PROCESSING') {
+          // Get approved installments
+          const approvedInstallments = salary.installments.filter(
+            inst => inst.status === 'APPROVED'
+          )
 
-        // Update salary
-        await tx.salary.update({
-          where: { id: salaryId },
-          data: {
-            status: 'PROCESSING',
-            advanceDeduction: totalApprovedDeductions,
-            netSalary: salary.baseSalary + salary.overtimeBonus + salary.otherBonuses - totalApprovedDeductions - salary.deductions
-          }
-        })
+          // Calculate total approved deductions
+          const totalApprovedDeductions = approvedInstallments.reduce(
+            (sum, inst) => sum + inst.amountPaid,
+            0
+          )
 
-        // Delete any remaining pending installments
-        await tx.advancePaymentInstallment.deleteMany({
-          where: {
-            salaryId,
-            status: 'PENDING'
-          }
-        })
+          await tx.salary.update({
+            where: { id: salary.id },
+            data: {
+              status: 'PROCESSING',
+              paidAt: null,
+              advanceDeduction: totalApprovedDeductions,
+              netSalary: salary.baseSalary + salary.overtimeBonus + salary.otherBonuses - totalApprovedDeductions - salary.deductions
+            }
+          })
+
+          // Delete any remaining pending installments (safety)
+          await tx.advancePaymentInstallment.deleteMany({
+            where: {
+              salaryId: salary.id,
+              status: 'PENDING'
+            }
+          })
+        } else if (status === 'PAID') {
+          await tx.salary.update({
+            where: { id: salary.id },
+            data: {
+              status: 'PAID',
+              paidAt: new Date(),
+            }
+          })
+        } else if (status === 'FAILED') {
+          await tx.salary.update({
+            where: { id: salary.id },
+            data: {
+              status: 'FAILED',
+              paidAt: null,
+            }
+          })
+        } else if (status === 'PENDING') {
+          await tx.salary.update({
+            where: { id: salary.id },
+            data: {
+              status: 'PENDING',
+              paidAt: null,
+            }
+          })
+        }
       }
     })
 
     return NextResponse.json({
-      message: `Successfully processed ${validSalaryIds.length} salaries`,
-      processedIds: validSalaryIds
+      message: `Successfully updated ${salaries.length} salaries to ${status}`,
+      processedIds: salaries.map(s => s.id)
     })
 
   } catch (error) {
     console.error('Error updating salaries:', error)
     return NextResponse.json(
-      { error: 'Failed to update salaries' },
+      { error: error instanceof Error ? error.message : 'Failed to update salaries' },
       { status: 500 }
     )
   }

@@ -1,6 +1,6 @@
 'use client'
 
-import {useEffect, useState} from 'react'
+import {useCallback, useEffect, useState} from 'react'
 import {Branch, Salary, User} from "@/models/models"
 import {Button} from '@/components/ui/button'
 import {useRouter, useSearchParams} from 'next/navigation'
@@ -16,6 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {CalendarDays, Clock, CalendarOff, CalendarCheck, Download} from 'lucide-react'
 import {Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter} from "@/components/ui/card"
 import {Badge} from "@/components/ui/badge"
@@ -47,29 +55,16 @@ export function SalaryList({month, year}: SalaryListProps) {
   // Add state for users without salary
   const [usersWithoutSalary, setUsersWithoutSalary] = useState<User[]>([]);
 
+  type DeactivateCandidate = { userId: string; name: string | null; numId: number | null }
+  const [deactivateCandidates, setDeactivateCandidates] = useState<DeactivateCandidate[]>([])
+  const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false)
+  const [isDeactivating, setIsDeactivating] = useState(false)
+
   // Get current year and month from URL
   const currentYear = searchParams.get('year')
   const currentMonth = searchParams.get('month')
 
-  useEffect(() => {
-    if (month && year) {
-      fetchSalaries()
-      fetchBranches()
-      fetchRoles()
-    }
-  }, [month, year])
-
-  // Fetch users without salary for selected month/year if filter is selected
-  useEffect(() => {
-    if (selectedFilters.status === 'no-salary' && month && year) {
-      fetchUsersWithoutSalary();
-    } else {
-      setUsersWithoutSalary([]); // Clear when not in 'no-salary' mode
-    }
-    // eslint-disable-next-line
-  }, [selectedFilters.status, month, year]);
-
-  const fetchSalaries = async () => {
+  const fetchSalaries = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch(`/api/salary?month=${month}&year=${year}${selectedFilters.referralOnly ? '&referralOnly=true' : ''}`)
@@ -82,7 +77,25 @@ export function SalaryList({month, year}: SalaryListProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [month, year, selectedFilters.referralOnly])
+
+  useEffect(() => {
+    if (month && year) {
+      fetchSalaries()
+      fetchBranches()
+      fetchRoles()
+    }
+  }, [fetchSalaries, month, year])
+
+  // Fetch users without salary for selected month/year if filter is selected
+  useEffect(() => {
+    if (selectedFilters.status === 'no-salary' && month && year) {
+      fetchUsersWithoutSalary();
+    } else {
+      setUsersWithoutSalary([]); // Clear when not in 'no-salary' mode
+    }
+    // eslint-disable-next-line
+  }, [selectedFilters.status, month, year]);
 
   const fetchBranches = async () => {
     try {
@@ -192,6 +205,7 @@ export function SalaryList({month, year}: SalaryListProps) {
   const handleUpdateStatus = async (salaryId: string, newStatus: 'PAID' | 'FAILED') => {
     try {
       setIsProcessing(true)
+      const targetSalary = salaries.find(s => s.id === salaryId)
       const response = await fetch(`/api/salary/${salaryId}/status`, {
         method: 'PATCH',
         headers: {
@@ -220,6 +234,22 @@ export function SalaryList({month, year}: SalaryListProps) {
 
       toast.success(`Salary status updated to ${newStatus}`)
       router.refresh()
+
+      const targetUserId = targetSalary?.userId
+      if (
+        newStatus === 'PAID' &&
+        String(targetSalary?.user?.status) === 'PARTIAL_INACTIVE' &&
+        targetUserId
+      ) {
+        setDeactivateCandidates([
+          {
+            userId: targetUserId,
+            name: targetSalary.user?.name ?? null,
+            numId: targetSalary.user?.numId ?? null,
+          },
+        ])
+        setDeactivateDialogOpen(true)
+      }
     } catch (error) {
       console.error('Error updating salary status:', error)
       toast.error('Failed to update salary status')
@@ -231,6 +261,17 @@ export function SalaryList({month, year}: SalaryListProps) {
   const handleBulkUpdateStatus = async (newStatus: 'PAID' | 'FAILED' | 'PROCESSING') => {
     try {
       setIsProcessing(true)
+      const bulkDeactivateCandidates: DeactivateCandidate[] =
+        newStatus === 'PAID'
+          ? salaries
+            .filter(s => selectedSalaries.includes(s.id) && String(s.user?.status) === 'PARTIAL_INACTIVE')
+            .map(s => ({
+              userId: s.userId,
+              name: s.user?.name ?? null,
+              numId: s.user?.numId ?? null,
+            }))
+          : []
+
       const response = await fetch('/api/salary/bulk-update-status', {
         method: 'PATCH',
         headers: {
@@ -265,11 +306,57 @@ export function SalaryList({month, year}: SalaryListProps) {
       toast.success(`Successfully updated ${data.processedIds.length} salaries to ${newStatus}`)
       setSelectedSalaries([])
       router.refresh()
+
+      if (bulkDeactivateCandidates.length > 0) {
+        // Dedupe by userId (defensive)
+        const unique = Array.from(
+          new Map(bulkDeactivateCandidates.map(c => [c.userId, c])).values()
+        )
+        setDeactivateCandidates(unique)
+        setDeactivateDialogOpen(true)
+      }
     } catch (error) {
       console.error('Error updating salaries:', error)
       toast.error('Failed to update salaries')
     } finally {
       setIsProcessing(false)
+    }
+  }
+
+  const handleDeactivateUsers = async () => {
+    if (deactivateCandidates.length === 0) {
+      setDeactivateDialogOpen(false)
+      return
+    }
+
+    try {
+      setIsDeactivating(true)
+      const results = await Promise.all(
+        deactivateCandidates.map(async (candidate) => {
+          const resp = await fetch('/api/users/update-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: candidate.userId, status: 'INACTIVE' }),
+          })
+          return { userId: candidate.userId, ok: resp.ok }
+        })
+      )
+
+      const failed = results.filter(r => !r.ok)
+      if (failed.length > 0) {
+        toast.error(`Failed to mark ${failed.length} user(s) as inactive`)
+      } else {
+        toast.success(`Marked ${results.length} user(s) as inactive`)
+      }
+
+      setDeactivateDialogOpen(false)
+      setDeactivateCandidates([])
+      router.refresh()
+    } catch (e) {
+      console.error(e)
+      toast.error('Failed to update user status')
+    } finally {
+      setIsDeactivating(false)
     }
   }
 
@@ -356,6 +443,45 @@ export function SalaryList({month, year}: SalaryListProps) {
 
   return (
     <div className="space-y-4">
+      <Dialog open={deactivateDialogOpen} onOpenChange={setDeactivateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mark employee(s) as inactive?</DialogTitle>
+            <DialogDescription>
+              These employees are marked as partial inactive. Since their salary is now paid, you can mark them inactive.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            {deactivateCandidates.map((c) => (
+              <div key={c.userId} className="text-sm">
+                {c.name || 'Employee'}{c.numId ? ` (Emp #${c.numId})` : ''}
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeactivateDialogOpen(false)
+                setDeactivateCandidates([])
+              }}
+              disabled={isDeactivating}
+            >
+              Not now
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700"
+              onClick={handleDeactivateUsers}
+              disabled={isDeactivating}
+            >
+              {isDeactivating ? 'Updating...' : 'Mark as Inactive'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="flex flex-wrap gap-4 items-end">
         <div className="flex-1 min-w-[200px]">
           <label className="text-sm font-medium mb-2 block">Search</label>

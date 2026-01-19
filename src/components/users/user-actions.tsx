@@ -233,14 +233,41 @@ export function UserActions({ user, currentUserRole, branches, onUpdate }: UserA
               Approve User
             </DropdownMenuItem>
           )}
-          {user.status === "ACTIVE" ? (
-            <DropdownMenuItem
-              className="text-red-600"
-              onClick={() => handleStatusUpdate(user.id, "INACTIVE")}
-            >
-              Mark as Inactive
-            </DropdownMenuItem>
-          ) : (
+          {user.status === "ACTIVE" && (
+            <>
+              <DropdownMenuItem
+                className="text-orange-700"
+                onClick={() => handleStatusUpdate(user.id, "PARTIAL_INACTIVE")}
+              >
+                Mark as Partial Inactive
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-red-600"
+                onClick={() => handleStatusUpdate(user.id, "INACTIVE")}
+              >
+                Mark as Inactive
+              </DropdownMenuItem>
+            </>
+          )}
+
+          {user.status === "PARTIAL_INACTIVE" && (
+            <>
+              <DropdownMenuItem
+                className="text-red-600"
+                onClick={() => handleStatusUpdate(user.id, "INACTIVE")}
+              >
+                Mark as Inactive
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-green-600"
+                onClick={() => handleStatusUpdate(user.id, "ACTIVE")}
+              >
+                Mark as Active
+              </DropdownMenuItem>
+            </>
+          )}
+
+          {user.status === "INACTIVE" && (
             <DropdownMenuItem
               className="text-green-600"
               onClick={() => handleStatusUpdate(user.id, "ACTIVE")}

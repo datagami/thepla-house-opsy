@@ -154,7 +154,8 @@ export async function GET(
 		let leavesEarned = 0;
 		let leaveSalary = 0;
 		
-		const userHasWeeklyOff = (salary.user as any).hasWeeklyOff || false;
+		const userHasWeeklyOff =
+			(salary.user as unknown as { hasWeeklyOff?: boolean | null }).hasWeeklyOff || false;
 		if (!userHasWeeklyOff) {
 			// For bonus leaves calculation, exclude weekly off days from presentDays count
 			const presentDaysForBonusLeaves = regularDays + overtimeDays + halfDays * 0.5;

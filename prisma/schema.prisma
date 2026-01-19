@@ -18,6 +18,7 @@ enum UserRole {
 enum UserStatus {
   PENDING
   ACTIVE
+  PARTIAL_INACTIVE
   INACTIVE
   JOB_OFFER
 }

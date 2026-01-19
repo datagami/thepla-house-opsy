@@ -18,11 +18,28 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Month and year are required' }, { status: 400 });
     }
 
+    const startDate = new Date(year, month - 1, 1)
+    const endDate = new Date(year, month, 0)
+
     // Single query: find users who do not have a salary for the given month/year
     const usersWithoutSalary = await prisma.user.findMany({
       where: {
-        status: 'ACTIVE',
         salary: { not: null },
+        OR: [
+          { status: 'ACTIVE' },
+          {
+            status: 'PARTIAL_INACTIVE',
+            attendance: {
+              some: {
+                status: 'APPROVED',
+                date: {
+                  gte: startDate,
+                  lte: endDate,
+                },
+              },
+            },
+          },
+        ],
         salaries: {
           none: {
             month,

@@ -1,6 +1,8 @@
 export type UserRole = "EMPLOYEE" | "BRANCH_MANAGER" | "HR" | "MANAGEMENT" | "SELF_ATTENDANCE";
 
-type UserStatus = "PENDING" | "ACTIVE" | "INACTIVE" | "JOB_OFFER";
+// NOTE: When updating Prisma enum `UserStatus`, keep this in sync.
+// Added for mid-month leavers who should still be payroll-eligible.
+type UserStatus = "PENDING" | "ACTIVE" | "PARTIAL_INACTIVE" | "INACTIVE" | "JOB_OFFER";
 
 type LeaveType = "CASUAL" | "SICK" | "ANNUAL" | "UNPAID" | "OTHER";
 

@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import type { Attendance } from '@prisma/client';
 
 /**
  * Service for automatically creating weekly off attendance records
@@ -15,7 +16,7 @@ import { prisma } from '@/lib/prisma';
 export async function createWeeklyOffAttendance(
   userId: string,
   date: Date
-): Promise<any | null> {
+): Promise<Attendance | null> {
   // Get user's weekly off configuration
   const user = await prisma.user.findUnique({
     where: { id: userId },

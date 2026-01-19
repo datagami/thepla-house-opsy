@@ -41,6 +41,7 @@ const roleColors = {
 const statusColors = {
   PENDING: "text-yellow-600 bg-yellow-100",
   ACTIVE: "text-green-600 bg-green-100",
+  PARTIAL_INACTIVE: "text-orange-700 bg-orange-100",
   INACTIVE: "text-red-600 bg-red-100",
 } as const;
 
@@ -130,6 +131,7 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
             <SelectItem value="ALL">All Status</SelectItem>
             <SelectItem value="PENDING">Pending</SelectItem>
             <SelectItem value="ACTIVE">Active</SelectItem>
+            <SelectItem value="PARTIAL_INACTIVE">Partial Inactive</SelectItem>
             <SelectItem value="INACTIVE">Inactive</SelectItem>
           </SelectContent>
         </Select>

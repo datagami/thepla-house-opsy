@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { logEntityActivity } from "@/lib/services/activity-log";
-import { ActivityType } from "@prisma/client";
+import { ActivityType, AttendanceStatus } from "@prisma/client";
 
 export async function POST(req: Request) {
   try {
@@ -103,9 +103,9 @@ export async function POST(req: Request) {
     }
 
     // Set initial status based on who's creating the attendance
-    let status = ["HR", "MANAGEMENT"].includes(creatorRole)
-      ? "APPROVED" 
-      : "PENDING_VERIFICATION";
+    let status: AttendanceStatus = ["HR", "MANAGEMENT"].includes(creatorRole)
+      ? AttendanceStatus.APPROVED
+      : AttendanceStatus.PENDING_VERIFICATION;
 
     // Prevent duplicate attendance for the same user and day
     const duplicateAttendance = await prisma.attendance.findFirst({
@@ -169,9 +169,6 @@ export async function POST(req: Request) {
                 lte: weekEnd,
               },
               isWeeklyOff: true,
-              NOT: {
-                id: duplicateAttendance?.id,
-              },
             },
           });
 
@@ -187,7 +184,7 @@ export async function POST(req: Request) {
       // Weekly off days are automatically marked as present and approved
       if (isWeeklyOff) {
         data.isPresent = true;
-        status = "APPROVED";
+        status = AttendanceStatus.APPROVED;
       }
     }
 
@@ -210,7 +207,7 @@ export async function POST(req: Request) {
         status,
         // If HR or MANAGEMENT is creating, set verification details
         // Only set verifiedById if creatorId is valid and user exists
-        ...(status === "APPROVED" && creatorId && creator ? {
+        ...(status === AttendanceStatus.APPROVED && creatorId && creator ? {
           verifiedById: creatorId,
           verifiedAt: new Date()
         } : {})

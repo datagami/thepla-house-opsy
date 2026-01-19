@@ -97,6 +97,11 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
   const [resetPassword, setResetPassword] = useState<string>("");
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
+  const initialWeeklyOffType = (() => {
+    const raw = (user as User & { weeklyOffType?: string | null })?.weeklyOffType ?? null;
+    return raw === "FIXED" || raw === "FLEXIBLE" ? raw : null;
+  })();
+
   const form = useForm<z.infer<typeof userFormSchema>>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
@@ -128,7 +133,7 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
         }
       )?.referralsReceived?.[0]?.referrerId || undefined,
       hasWeeklyOff: (user as User & { hasWeeklyOff?: boolean })?.hasWeeklyOff || false,
-      weeklyOffType: (user as User & { weeklyOffType?: string | null })?.weeklyOffType || null,
+      weeklyOffType: initialWeeklyOffType,
       weeklyOffDay: (user as User & { weeklyOffDay?: number | null })?.weeklyOffDay || null,
     },
   });

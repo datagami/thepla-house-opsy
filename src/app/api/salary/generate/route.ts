@@ -52,14 +52,31 @@ export async function POST(request: Request) {
       existingSalaries.map(salary => [salary.userId, salary.status])
     )
 
-    // Get all active users
+    const startDate = new Date(year, month - 1, 1)
+    const endDate = new Date(year, month, 0)
+
+    // Payroll-eligible users:
+    // - ACTIVE users with a base salary
+    // - PARTIAL_INACTIVE users with a base salary AND some approved attendance in the month
     const users = await prisma.user.findMany({
       where: {
-        status: 'ACTIVE',
-        salary: {
-          not: null
-        }
-      }
+        salary: { not: null },
+        OR: [
+          { status: 'ACTIVE' },
+          {
+            status: 'PARTIAL_INACTIVE',
+            attendance: {
+              some: {
+                status: 'APPROVED',
+                date: {
+                  gte: startDate,
+                  lte: endDate,
+                },
+              },
+            },
+          },
+        ],
+      },
     })
 
     // Filter out users whose salaries are already processed (not in PENDING state)
