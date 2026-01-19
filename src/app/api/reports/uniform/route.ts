@@ -7,7 +7,7 @@ export async function GET(req: Request) {
   try {
     const session = await auth();
     // @ts-expect-error - role is not in the User type
-    if (!session?.user || !["HR", "MANAGEMENT"].includes(session.user.role)) {
+    if (!session?.user || !["HR", "MANAGEMENT", "BRANCH_MANAGER"].includes(session.user.role)) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
@@ -15,8 +15,8 @@ export async function GET(req: Request) {
     const year = parseInt(searchParams.get("year") || new Date().getFullYear().toString());
     const branchFilter = searchParams.get("branch") || "ALL";
 
-    // @ts-expect-error - branchId is not in the User type
-    const userBranchId = session.user.branchId;
+    // @ts-expect-error - branchId/managedBranchId are not in the User type
+    const userBranchId = session.user.managedBranchId ?? session.user.branchId;
     // @ts-expect-error - role is not in the User type
     const isBranchManager = session.user.role === "BRANCH_MANAGER";
 

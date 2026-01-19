@@ -27,15 +27,17 @@ import { SalaryStatsTable } from '@/components/salary/salary-stats-table'
 import { Input } from "@/components/ui/input"
 import { AddBonusForm } from './add-bonus-form'
 import { formatDate } from '@/lib/utils'
+import Link from "next/link"
 
 interface SalaryDetailsProps {
   salary: Salary;
   month?: string;
   year?: string;
   canEdit?: boolean;
+  activeWarningCount?: number;
 }
 
-export function SalaryDetails({ salary, month, year, canEdit = false }: SalaryDetailsProps) {
+export function SalaryDetails({ salary, month, year, canEdit = false, activeWarningCount = 0 }: SalaryDetailsProps) {
   const router = useRouter()
   const [isUpdating, setIsUpdating] = useState(false)
   const [, setAdvanceDeductions] = useState<Array<{
@@ -463,6 +465,9 @@ export function SalaryDetails({ salary, month, year, canEdit = false }: SalaryDe
           Back
         </Button>
         <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link href={`/users/${salary.userId}/warnings`}>Active Warnings: {activeWarningCount}</Link>
+          </Button>
           {canEdit && (
             <Button
               variant="outline"

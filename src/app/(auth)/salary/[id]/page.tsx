@@ -35,9 +35,14 @@ async function getSalaryDetails(id: string) {
     throw new Error('Salary not found')
   }
 
+  const activeWarningCount = await prisma.warning.count({
+    where: { userId: salary.userId, isArchived: false },
+  });
+
   return {
     salary,
-    canEdit: role === 'HR' || role === 'MANAGEMENT'
+    canEdit: role === 'HR' || role === 'MANAGEMENT',
+    activeWarningCount,
   }
 }
 
@@ -50,7 +55,7 @@ export default async function SalaryDetailsPage({
 }) {
   const {id} = await params;
   const {month, year} = await searchParams;
-  const {salary, canEdit} = await getSalaryDetails(id);
+  const {salary, canEdit, activeWarningCount} = await getSalaryDetails(id);
 
-  return <SalaryDetails salary={salary} month={month} year={year} canEdit={canEdit} />
+  return <SalaryDetails salary={salary} month={month} year={year} canEdit={canEdit} activeWarningCount={activeWarningCount} />
 } 

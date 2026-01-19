@@ -99,7 +99,27 @@ export interface User {
   uploadedBranchDocuments: BranchDocument[];
   userDocuments: UserDocument[];
   uploadedUserDocuments: UserDocument[];
+  warningsReceived?: Warning[];
+  warningsReported?: Warning[];
+  warningsArchived?: Warning[];
   jobOffer?: JobOffer | null;
+}
+
+export interface Warning {
+  id: string;
+  numId: number;
+  userId: string;
+  reportedById?: string | null;
+  archivedById?: string | null;
+  reason: string;
+  photoUrl?: string | null;
+  isArchived?: boolean;
+  archivedAt?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  user?: User;
+  reportedBy?: User | null;
+  archivedBy?: User | null;
 }
 
 export interface VerificationToken {

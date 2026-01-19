@@ -193,6 +193,11 @@ model User {
   issuedUniforms   Uniform[] @relation("UniformIssuedBy")
   returnedUniforms Uniform[] @relation("UniformReturnedBy")
 
+  // --- Warnings / Incidents ---
+  warningsReceived Warning[] @relation("UserWarnings")
+  warningsReported Warning[] @relation("ReportedWarnings")
+  warningsArchived Warning[] @relation("ArchivedWarnings")
+
   // --- Referral Relations ---
   referralsMade     Referral[] @relation("UserReferralsMade")
   referralsReceived Referral[] @relation("UserReferralsReceived")
@@ -210,6 +215,32 @@ model User {
   @@index([approvedById])
   @@index([departmentId])
   @@map("users1")
+}
+
+model Warning {
+  id           String   @id @default(cuid())
+  numId        Int      @default(autoincrement()) @map("num_id")
+  userId       String   @map("user_id") // Employee against whom warning is registered
+  reportedById String?  @map("reported_by_id") // Who reported (can be null if reporter user deleted)
+  reason       String   @db.Text
+  photoUrl     String?  @map("photo_url")
+  isArchived   Boolean  @default(false) @map("is_archived")
+  archivedAt   DateTime? @map("archived_at")
+  archivedById String?   @map("archived_by_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user       User  @relation("UserWarnings", fields: [userId], references: [id], onDelete: Cascade)
+  reportedBy User? @relation("ReportedWarnings", fields: [reportedById], references: [id], onDelete: SetNull)
+  archivedBy User? @relation("ArchivedWarnings", fields: [archivedById], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([reportedById])
+  @@index([archivedById])
+  @@index([isArchived])
+  @@index([createdAt])
+  @@map("warnings")
 }
 
 model VerificationToken {

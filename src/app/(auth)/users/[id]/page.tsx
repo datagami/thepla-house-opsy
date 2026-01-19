@@ -12,6 +12,8 @@ import { UniformForm } from "@/components/users/uniform-form";
 import { UniformsList } from "@/components/users/uniforms-list";
 import { UserDocumentUpload } from "@/components/users/user-document-upload";
 import { UserDocumentsList } from "@/components/users/user-documents-list";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
   title: "User Profile - HRMS",
@@ -200,6 +202,15 @@ export default async function UserProfilePage({ params }: Props) {
           canModify={canManageUsers || isBranchManagerForUser}
           canDelete={canDeleteUniforms}
         />
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Warnings</h2>
+          <Button asChild variant="outline">
+            <Link href={`/users/${id}/warnings`}>View Warnings</Link>
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-4">
