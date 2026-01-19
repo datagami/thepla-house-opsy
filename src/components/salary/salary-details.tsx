@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog"
 import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
-import { AlertCircle, CheckCircle, DollarSign, ArrowLeft, Download } from 'lucide-react'
+import { AlertCircle, CheckCircle, DollarSign, ArrowLeft, Download, Trash2 } from 'lucide-react'
 import { AdvancePaymentInstallment, Salary } from "@/models/models"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { toast } from 'sonner';
@@ -246,6 +246,28 @@ export function SalaryDetails({ salary, month, year, canEdit = false, activeWarn
     }
   }
 
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleDeleteSalary = async () => {
+    try {
+      setIsDeleting(true)
+      const response = await fetch(`/api/salary/${salary.id}`, { method: 'DELETE' })
+      const data = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(data?.error || 'Failed to delete salary')
+      }
+      toast.success('Salary deleted')
+      setDeleteDialogOpen(false)
+      handleBack()
+    } catch (e) {
+      console.error(e)
+      toast.error(e instanceof Error ? e.message : 'Failed to delete salary')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   const renderAdvanceInstallments = () => {
     if (!salary.installments || salary.installments.length === 0) {
       return null
@@ -468,6 +490,16 @@ export function SalaryDetails({ salary, month, year, canEdit = false, activeWarn
           <Button asChild variant="outline">
             <Link href={`/users/${salary.userId}/warnings`}>Active Warnings: {activeWarningCount}</Link>
           </Button>
+          {canEdit && salary.status === 'PENDING' && (
+            <Button
+              variant="destructive"
+              onClick={() => setDeleteDialogOpen(true)}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </Button>
+          )}
           {canEdit && (
             <Button
               variant="outline"
@@ -492,6 +524,24 @@ export function SalaryDetails({ salary, month, year, canEdit = false, activeWarn
       </div>
 
       {renderConfirmationDialog()}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Salary</DialogTitle>
+            <DialogDescription>
+              This will permanently delete this salary record (only allowed for pending/unpaid salaries).
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex space-x-2 justify-end">
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteSalary} disabled={isDeleting}>
+              {isDeleting ? 'Deleting...' : 'Delete Salary'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Card>
         <CardHeader>
           {salary.user && salary.user.name && <CardTitle>Salary Details - {salary.user.name}</CardTitle>}
