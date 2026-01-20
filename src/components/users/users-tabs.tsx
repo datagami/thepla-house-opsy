@@ -18,7 +18,11 @@ export function UsersTabs({ users, branches, currentUserRole, canEdit }: UsersTa
   const searchParams = useSearchParams();
   const userStateParam = searchParams.get("userState");
   // Validate userState parameter - default to "active" if invalid
-  const validUserState = userStateParam === "active" || userStateParam === "inactive" || userStateParam === "pending"
+  const validUserState =
+    userStateParam === "active" ||
+    userStateParam === "pending" ||
+    userStateParam === "partial_inactive" ||
+    userStateParam === "inactive"
     ? userStateParam 
     : "active";
   const [activeTab, setActiveTab] = useState<string>(validUserState);
@@ -30,6 +34,7 @@ export function UsersTabs({ users, branches, currentUserRole, canEdit }: UsersTa
 
   // Filter users based on status
   const activeUsers = users.filter((user) => user.status === "ACTIVE");
+  const partialInactiveUsers = users.filter((user) => user.status === "PARTIAL_INACTIVE");
   const inactiveUsers = users.filter((user) => user.status === "INACTIVE");
   const pendingUsers = users.filter((user) => user.status === "PENDING");
 
@@ -49,6 +54,9 @@ export function UsersTabs({ users, branches, currentUserRole, canEdit }: UsersTa
         <TabsTrigger value="pending">
           Pending ({pendingUsers.length})
         </TabsTrigger>
+        <TabsTrigger value="partial_inactive">
+          Partial Inactive ({partialInactiveUsers.length})
+        </TabsTrigger>
         <TabsTrigger value="inactive">
           Inactive ({inactiveUsers.length})
         </TabsTrigger>
@@ -66,6 +74,15 @@ export function UsersTabs({ users, branches, currentUserRole, canEdit }: UsersTa
       <TabsContent value="pending" className="space-y-4">
         <UserTable 
           users={pendingUsers} 
+          branches={branches} 
+          currentUserRole={currentUserRole} 
+          canEdit={canEdit} 
+        />
+      </TabsContent>
+
+      <TabsContent value="partial_inactive" className="space-y-4">
+        <UserTable 
+          users={partialInactiveUsers} 
           branches={branches} 
           currentUserRole={currentUserRole} 
           canEdit={canEdit} 
