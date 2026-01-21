@@ -80,6 +80,7 @@ export function UserActions({ user, currentUserRole, branches, onUpdate }: UserA
         },
         body: JSON.stringify({
           userId: user.id,
+          status: "ACTIVE",
         }),
       });
 
