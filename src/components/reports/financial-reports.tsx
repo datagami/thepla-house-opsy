@@ -29,6 +29,19 @@ interface FinancialStats {
     count: number;
     amount: number;
   }>;
+  advanceByBranch: Array<{
+    branch: string;
+    amount: number;
+    count: number;
+    employeeCount: number;
+  }>;
+  advanceByIndividual: Array<{
+    userId: string;
+    name: string;
+    branch: string;
+    amount: number;
+    count: number;
+  }>;
   salaryTrend: Array<{
     month: string;
     amount: number;
@@ -275,6 +288,61 @@ export function FinancialReports({ userRole }: FinancialReportsProps) {
                   </CardContent>
                 </Card>
               )}
+
+              <div className="grid gap-4 md:grid-cols-2">
+                {stats.advanceByBranch.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Advance by Branch</CardTitle>
+                      <CardDescription>
+                        Advance payments created in {format(new Date(year, month - 1, 1), "MMMM yyyy")}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {stats.advanceByBranch.map((b) => (
+                          <div key={b.branch} className="flex justify-between text-sm">
+                            <span className="font-medium">
+                              {b.branch} ({b.employeeCount} employees, {b.count} advances)
+                            </span>
+                            <span className="font-bold text-orange-600">{formatCurrency(b.amount)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {stats.advanceByIndividual.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Advance by Individual</CardTitle>
+                      <CardDescription>
+                        Advance payments created in {format(new Date(year, month - 1, 1), "MMMM yyyy")}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3 max-h-[420px] overflow-auto pr-1">
+                        {stats.advanceByIndividual.map((u) => (
+                          <div key={u.userId} className="flex items-start justify-between gap-4 text-sm">
+                            <div className="min-w-0">
+                              <div className="font-medium truncate">
+                                {u.name}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {u.branch} • {u.count} advance{u.count !== 1 ? "s" : ""}
+                              </div>
+                            </div>
+                            <div className="font-bold text-orange-600 whitespace-nowrap">
+                              {formatCurrency(u.amount)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             </div>
           )}
         </CardContent>

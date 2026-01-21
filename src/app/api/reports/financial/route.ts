@@ -12,7 +12,9 @@ export async function GET(req: Request) {
     }
 
     const { searchParams } = new URL(req.url);
-    const month = parseInt(searchParams.get("month") || new Date().getMonth().toString());
+    const month = parseInt(
+      searchParams.get("month") || (new Date().getMonth() + 1).toString()
+    );
     const year = parseInt(searchParams.get("year") || new Date().getFullYear().toString());
     const branchFilter = searchParams.get("branch") || "ALL";
 
@@ -77,6 +79,19 @@ export async function GET(req: Request) {
           },
         }),
       },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            branch: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     const totalAdvance = advancePayments.reduce((sum, advance) => sum + advance.amount, 0);
@@ -130,6 +145,56 @@ export async function GET(req: Request) {
       amount: stats.amount,
     }));
 
+    // Advance by branch
+    const advanceBranchMap = new Map<
+      string,
+      { amount: number; count: number; employees: Set<string> }
+    >();
+
+    advancePayments.forEach((advance) => {
+      const branchName = advance.user?.branch?.name || "Unknown";
+      if (!advanceBranchMap.has(branchName)) {
+        advanceBranchMap.set(branchName, { amount: 0, count: 0, employees: new Set() });
+      }
+      const stats = advanceBranchMap.get(branchName)!;
+      stats.amount += advance.amount;
+      stats.count += 1;
+      stats.employees.add(advance.userId);
+    });
+
+    const advanceByBranch = Array.from(advanceBranchMap.entries())
+      .map(([branch, stats]) => ({
+        branch,
+        amount: stats.amount,
+        count: stats.count,
+        employeeCount: stats.employees.size,
+      }))
+      .sort((a, b) => b.amount - a.amount);
+
+    // Advance by individual
+    const advanceIndividualMap = new Map<
+      string,
+      { userId: string; name: string; branch: string; amount: number; count: number }
+    >();
+
+    advancePayments.forEach((advance) => {
+      const userId = advance.userId;
+      const name = advance.user?.name || "Unknown";
+      const branchName = advance.user?.branch?.name || "Unknown";
+
+      if (!advanceIndividualMap.has(userId)) {
+        advanceIndividualMap.set(userId, { userId, name, branch: branchName, amount: 0, count: 0 });
+      }
+
+      const stats = advanceIndividualMap.get(userId)!;
+      stats.amount += advance.amount;
+      stats.count += 1;
+    });
+
+    const advanceByIndividual = Array.from(advanceIndividualMap.values()).sort(
+      (a, b) => b.amount - a.amount
+    );
+
     // Salary trend (last 6 months)
     const trendData = [];
     for (let i = 5; i >= 0; i--) {
@@ -175,6 +240,8 @@ export async function GET(req: Request) {
       totalReferralBonus,
       salaryByBranch,
       advanceSummary,
+      advanceByBranch,
+      advanceByIndividual,
       salaryTrend: trendData,
     });
   } catch (error) {

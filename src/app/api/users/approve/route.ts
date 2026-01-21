@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from "@/auth";
 import { logTargetUserActivity } from "@/lib/services/activity-log";
-import { ActivityType } from "@prisma/client";
+import { ActivityType, Prisma, UserRole, UserStatus } from "@prisma/client";
 
 export async function POST(req: Request) {
   try {
@@ -44,21 +44,26 @@ export async function POST(req: Request) {
       );
     }
 
-    // Build update data
-    const updateData = {
-      role: undefined,
-      status: undefined,
-      branchId: undefined,
-      approvedById: ''
-    };
-    
-    if (role) updateData.role = role;
-    if (status) updateData.status = status;
-    if (branchId) updateData.branchId = branchId;
+    // If status isn't provided, approving a PENDING user should activate them.
+    const nextStatus = status ?? (userToUpdate.status === "PENDING" ? "ACTIVE" : undefined);
 
-    // Only set approvedById if status is being set to ACTIVE and approver exists
-    if (status === 'ACTIVE' && approver) {
-      updateData.approvedById = approver.id;
+    // Build update data
+    const updateData: Prisma.UserUpdateInput = {};
+    
+    if (role) updateData.role = role as UserRole;
+    if (nextStatus) updateData.status = nextStatus as UserStatus;
+    if (branchId) {
+      updateData.branch = {
+        connect: { id: branchId },
+      };
+    }
+
+    // Only set approvedById when approving to ACTIVE.
+    // (Don't send empty string / invalid FK values.)
+    if (nextStatus === 'ACTIVE') {
+      updateData.approvedBy = {
+        connect: { id: approver.id },
+      };
     }
 
     const updatedUser = await prisma.user.update({
@@ -95,10 +100,10 @@ export async function POST(req: Request) {
     }
     const changes: string[] = [];
     if (role) changes.push(`role: ${role}`);
-    if (status) changes.push(`status: ${status}`);
+    if (nextStatus) changes.push(`status: ${nextStatus}`);
     if (branchId) changes.push(`branchId: ${branchId}`);
 
-    if (status === 'ACTIVE') {
+    if (nextStatus === 'ACTIVE') {
       await logTargetUserActivity(
         ActivityType.USER_APPROVED,
         approverId,
@@ -113,15 +118,15 @@ export async function POST(req: Request) {
       );
     }
 
-    if (status && status !== 'ACTIVE') {
+    if (nextStatus && nextStatus !== 'ACTIVE') {
       await logTargetUserActivity(
         ActivityType.USER_STATUS_CHANGED,
         approverId,
         userId,
-        `Changed status of user ${updatedUser.name} to ${status}`,
+        `Changed status of user ${updatedUser.name} to ${nextStatus}`,
         {
           userId,
-          newStatus: status,
+          newStatus: nextStatus,
           changes,
         },
         req
