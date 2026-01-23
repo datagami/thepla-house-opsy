@@ -8,15 +8,23 @@ import type { Attendance } from '@prisma/client';
  */
 
 /**
+ * Result of creating weekly off attendance
+ */
+export interface CreateWeeklyOffResult {
+  attendance: Attendance | null;
+  action: 'created' | 'updated' | 'skipped' | 'no_match';
+}
+
+/**
  * Create weekly off attendance for a specific user and date
  * @param userId - User ID
  * @param date - Date for the weekly off
- * @returns Created attendance record or null if already exists
+ * @returns Result with attendance record and action taken
  */
 export async function createWeeklyOffAttendance(
   userId: string,
   date: Date
-): Promise<Attendance | null> {
+): Promise<CreateWeeklyOffResult> {
   // Get user's weekly off configuration
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -30,13 +38,13 @@ export async function createWeeklyOffAttendance(
   });
 
   if (!user || !user.hasWeeklyOff || user.weeklyOffType !== 'FIXED') {
-    return null;
+    return { attendance: null, action: 'no_match' };
   }
 
   // Check if it's the correct day of week
   const dayOfWeek = date.getDay();
   if (user.weeklyOffDay !== dayOfWeek) {
-    return null;
+    return { attendance: null, action: 'no_match' };
   }
 
   // Check if attendance already exists for this date
@@ -58,7 +66,7 @@ export async function createWeeklyOffAttendance(
   if (existingAttendance) {
     // Update existing attendance to mark as weekly off if not already
     if (!existingAttendance.isWeeklyOff) {
-      return await prisma.attendance.update({
+      const updated = await prisma.attendance.update({
         where: { id: existingAttendance.id },
         data: {
           isWeeklyOff: true,
@@ -66,8 +74,9 @@ export async function createWeeklyOffAttendance(
           status: 'APPROVED',
         },
       });
+      return { attendance: updated, action: 'updated' };
     }
-    return existingAttendance;
+    return { attendance: existingAttendance, action: 'skipped' };
   }
 
   // Create new weekly off attendance
@@ -75,7 +84,7 @@ export async function createWeeklyOffAttendance(
     throw new Error(`User ${userId} does not have a branch assigned`);
   }
 
-  return await prisma.attendance.create({
+  const created = await prisma.attendance.create({
     data: {
       userId,
       date: startOfDay,
@@ -85,6 +94,22 @@ export async function createWeeklyOffAttendance(
       branchId: user.branchId,
     },
   });
+  
+  return { attendance: created, action: 'created' };
+}
+
+/**
+ * Result type for weekly off attendance creation
+ */
+export interface WeeklyOffResult {
+  userId: string;
+  userName: string;
+  userEmail: string | null;
+  date: Date;
+  dayOfWeek: number;
+  dayName: string;
+  action: 'created' | 'updated' | 'skipped';
+  attendanceId: string | null;
 }
 
 /**
@@ -98,6 +123,23 @@ export async function createWeeklyOffAttendanceForDateRange(
   startDate: Date,
   endDate: Date
 ): Promise<number> {
+  const results = await createWeeklyOffAttendanceForDateRangeWithDetails(startDate, endDate);
+  return results.filter(r => r.action !== 'skipped').length;
+}
+
+/**
+ * Create weekly off attendance for all employees with fixed weekly off
+ * for a specific date range with detailed results
+ * @param startDate - Start date (inclusive)
+ * @param endDate - End date (inclusive)
+ * @returns Array of results with user details
+ */
+export async function createWeeklyOffAttendanceForDateRangeWithDetails(
+  startDate: Date,
+  endDate: Date
+): Promise<WeeklyOffResult[]> {
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  
   // Get all users with fixed weekly off
   const users = await prisma.user.findMany({
     where: {
@@ -107,12 +149,14 @@ export async function createWeeklyOffAttendanceForDateRange(
     },
     select: {
       id: true,
+      name: true,
+      email: true,
       weeklyOffDay: true,
       branchId: true,
     },
   });
 
-  let createdCount = 0;
+  const results: WeeklyOffResult[] = [];
 
   // Iterate through each day in the date range
   const currentDate = new Date(startDate);
@@ -128,13 +172,23 @@ export async function createWeeklyOffAttendanceForDateRange(
 
     for (const user of usersForToday) {
       try {
-        const attendance = await createWeeklyOffAttendance(user.id, currentDate);
-        if (attendance) {
-          createdCount++;
+        const result = await createWeeklyOffAttendance(user.id, currentDate);
+        // Only include in results if action was 'created' or 'updated' (not 'skipped' or 'no_match')
+        if (result.action === 'created' || result.action === 'updated') {
+          results.push({
+            userId: user.id,
+            userName: user.name || 'Unknown',
+            userEmail: user.email,
+            date: new Date(currentDate),
+            dayOfWeek,
+            dayName: dayNames[dayOfWeek],
+            action: result.action,
+            attendanceId: result.attendance?.id || null,
+          });
         }
       } catch (error) {
         console.error(
-          `Error creating weekly off attendance for user ${user.id} on ${currentDate.toISOString()}:`,
+          `Error creating weekly off attendance for user ${user.id} (${user.name || user.email}) on ${currentDate.toISOString()}:`,
           error
         );
         // Continue with other users
@@ -145,7 +199,7 @@ export async function createWeeklyOffAttendanceForDateRange(
     currentDate.setDate(currentDate.getDate() + 1);
   }
 
-  return createdCount;
+  return results;
 }
 
 /**
@@ -166,6 +220,26 @@ export async function createWeeklyOffAttendanceForCurrentWeek(): Promise<number>
   endOfWeek.setHours(23, 59, 59, 999);
 
   return await createWeeklyOffAttendanceForDateRange(startOfWeek, endOfWeek);
+}
+
+/**
+ * Create weekly off attendance for the current week with detailed results
+ * Useful for scheduled jobs or manual triggers that need user details
+ */
+export async function createWeeklyOffAttendanceForCurrentWeekWithDetails() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Get start of week (Sunday)
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - today.getDay());
+
+  // Get end of week (Saturday)
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  endOfWeek.setHours(23, 59, 59, 999);
+
+  return await createWeeklyOffAttendanceForDateRangeWithDetails(startOfWeek, endOfWeek);
 }
 
 /**
