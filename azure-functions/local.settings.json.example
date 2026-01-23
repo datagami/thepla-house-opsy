@@ -1,0 +1,9 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "CRON_SECRET": "your-cron-secret-here",
+    "API_URL": "https://opsy.theplahouse.com/api/cron/weekly-off"
+  }
+}
