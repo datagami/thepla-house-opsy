@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createWeeklyOffAttendanceForCurrentWeek, createWeeklyOffAttendanceForCurrentWeekWithDetails } from '@/lib/services/weekly-off-attendance';
+import { createWeeklyOffAttendanceForCurrentWeekWithDetails } from '@/lib/services/weekly-off-attendance';
 
 /**
  * Cron job endpoint for automatically creating weekly off attendance records
