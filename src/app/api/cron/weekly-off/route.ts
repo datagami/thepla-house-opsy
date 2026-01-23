@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createWeeklyOffAttendanceForCurrentWeekWithDetails } from '@/lib/services/weekly-off-attendance';
+import { createWeeklyOffAttendanceForTodayWithDetails } from '@/lib/services/weekly-off-attendance';
 
 /**
  * Cron job endpoint for automatically creating weekly off attendance records
@@ -60,23 +60,20 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log('');
-    console.log('Processing weekly off attendance...');
-    console.log('Current Week Range:');
-    
+    // Process only today - find users with weekly off on today's day
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay());
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
-    endOfWeek.setHours(23, 59, 59, 999);
+    const dayOfWeek = today.getDay();
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     
-    console.log('  Start:', startOfWeek.toISOString(), `(${startOfWeek.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })})`);
-    console.log('  End:', endOfWeek.toISOString(), `(${endOfWeek.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })})`);
+    console.log('');
+    console.log('Processing weekly off for TODAY only:');
+    console.log(`  Today's Date: ${today.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
+    console.log(`  Day of Week: ${dayNames[dayOfWeek]} (${dayOfWeek})`);
+    console.log(`  Looking for users with weekly off on: ${dayNames[dayOfWeek]}`);
     console.log('');
     
-    const results = await createWeeklyOffAttendanceForCurrentWeekWithDetails();
+    const results = await createWeeklyOffAttendanceForTodayWithDetails();
     const createdOrUpdated = results.filter(r => r.action !== 'skipped');
     const count = createdOrUpdated.length;
     
@@ -114,10 +111,8 @@ export async function GET(request: NextRequest) {
       timestamp,
       istTime,
       dayOfWeek: dayNames[dayOfWeek],
-      weekRange: {
-        start: startOfWeek.toISOString(),
-        end: endOfWeek.toISOString()
-      },
+      todayDate: today.toISOString(),
+      todayDateIST: today.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' }),
       users: createdOrUpdated.map(r => ({
         userId: r.userId,
         userName: r.userName,

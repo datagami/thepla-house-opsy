@@ -243,6 +243,80 @@ export async function createWeeklyOffAttendanceForCurrentWeekWithDetails() {
 }
 
 /**
+ * Create weekly off attendance for today only
+ * Finds all users with weekly off on today's day of week and marks them
+ * 
+ * @returns Array of results with user details for today
+ */
+export async function createWeeklyOffAttendanceForTodayWithDetails(): Promise<WeeklyOffResult[]> {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  
+  console.log(`Processing weekly off for today: ${dayNames[dayOfWeek]} (day ${dayOfWeek})`);
+  console.log(`Date: ${today.toISOString()}`);
+  
+  // Get all users with fixed weekly off matching today's day
+  const users = await prisma.user.findMany({
+    where: {
+      hasWeeklyOff: true,
+      weeklyOffType: 'FIXED',
+      weeklyOffDay: dayOfWeek, // Only users with weekly off on today's day
+      branchId: { not: null },
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      weeklyOffDay: true,
+      branchId: true,
+    },
+  });
+
+  console.log(`Found ${users.length} user(s) with weekly off on ${dayNames[dayOfWeek]}`);
+
+  const results: WeeklyOffResult[] = [];
+
+  for (const user of users) {
+    try {
+      const result = await createWeeklyOffAttendance(user.id, today);
+      // Only include in results if action was 'created' or 'updated' (not 'skipped' or 'no_match')
+      if (result.action === 'created' || result.action === 'updated') {
+        results.push({
+          userId: user.id,
+          userName: user.name || 'Unknown',
+          userEmail: user.email,
+          date: new Date(today),
+          dayOfWeek,
+          dayName: dayNames[dayOfWeek],
+          action: result.action,
+          attendanceId: result.attendance?.id || null,
+        });
+      }
+    } catch (error) {
+      console.error(
+        `Error creating weekly off attendance for user ${user.id} (${user.name || user.email}) on ${today.toISOString()}:`,
+        error
+      );
+      // Continue with other users
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Create weekly off attendance for today only
+ * Returns count of records created/updated
+ */
+export async function createWeeklyOffAttendanceForToday(): Promise<number> {
+  const results = await createWeeklyOffAttendanceForTodayWithDetails();
+  return results.length;
+}
+
+/**
  * Create weekly off attendance for the current month
  * Useful for monthly batch processing
  */
