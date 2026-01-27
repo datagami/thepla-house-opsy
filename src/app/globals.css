@@ -6,6 +6,7 @@
 
 @layer base {
   :root {
+    --app-scale: 0.90;
     --background: 39 100% 97%;            /* soft yellowish beige */
     --foreground: 147 41% 16%;            /* dark green */
 
@@ -81,6 +82,9 @@
 
 
 @layer base {
+  html {
+    font-size: calc(var(--app-scale) * 100%);
+  }
   * {
     @apply border-border outline-ring/50;
   }
