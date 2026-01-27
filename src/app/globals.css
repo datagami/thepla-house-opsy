@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    --app-scale: 0.90;
+    --app-scale: 0.85;
     --background: 39 100% 97%;            /* soft yellowish beige */
     --foreground: 147 41% 16%;            /* dark green */
 
