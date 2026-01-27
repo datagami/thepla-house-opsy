@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, CalendarCheck } from "lucide-react";
+import { CalendarCheck } from "lucide-react";
 import { format } from "date-fns";
+import { DownloadLeaveReport } from "@/components/leave-requests/download-leave-report";
 
 interface LeaveReportsProps {
   userRole: string;
@@ -37,6 +38,8 @@ export function LeaveReports({ userRole }: LeaveReportsProps) {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
   const [branch, setBranch] = useState<string>("ALL");
+  const [status, setStatus] = useState<string>("ALL");
+  const [leaveType, setLeaveType] = useState<string>("ALL");
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<LeaveStats | null>(null);
   const [branches, setBranches] = useState<string[]>([]);
@@ -76,32 +79,6 @@ export function LeaveReports({ userRole }: LeaveReportsProps) {
     fetchLeaveReport();
   }, [month, year, branch]);
 
-  const handleExport = async () => {
-    try {
-      const params = new URLSearchParams({
-        month: month.toString(),
-        year: year.toString(),
-        branch: branch,
-        format: "excel",
-      });
-
-      const response = await fetch(`/api/reports/leave/export?${params}`);
-      if (!response.ok) throw new Error("Failed to export report");
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `leave-report-${month}-${year}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error) {
-      console.error("Error exporting report:", error);
-    }
-  };
-
   return (
     <div className="space-y-4">
       <Card>
@@ -113,14 +90,19 @@ export function LeaveReports({ userRole }: LeaveReportsProps) {
                 Leave utilization and trends analysis
               </CardDescription>
             </div>
-            <Button onClick={handleExport} variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export Excel
-            </Button>
+            <DownloadLeaveReport
+              filters={{
+                month,
+                year,
+                branchId: branch,
+                status,
+                leaveType,
+              }}
+            />
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
             <Select
               value={month.toString()}
               onValueChange={(value) => setMonth(parseInt(value))}
@@ -168,6 +150,32 @@ export function LeaveReports({ userRole }: LeaveReportsProps) {
                 </SelectContent>
               </Select>
             )}
+
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger>
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Status</SelectItem>
+                <SelectItem value="PENDING">Pending</SelectItem>
+                <SelectItem value="APPROVED">Approved</SelectItem>
+                <SelectItem value="REJECTED">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={leaveType} onValueChange={setLeaveType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Leave Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Types</SelectItem>
+                <SelectItem value="CASUAL">Casual</SelectItem>
+                <SelectItem value="SICK">Sick</SelectItem>
+                <SelectItem value="ANNUAL">Annual</SelectItem>
+                <SelectItem value="UNPAID">Unpaid</SelectItem>
+                <SelectItem value="OTHER">Other</SelectItem>
+              </SelectContent>
+            </Select>
 
             <Button onClick={fetchLeaveReport} disabled={loading}>
               {loading ? "Loading..." : "Refresh"}

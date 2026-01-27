@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { ReferralsTable } from "@/components/referrals/referrals-table";
+import { ReferralsManagement } from "@/components/referrals/referrals-management";
 
 export const metadata: Metadata = {
   title: "Referrals - HRMS",
@@ -15,6 +15,9 @@ export default async function ReferralsPage() {
   if (!session) {
     redirect("/login");
   }
+
+  // @ts-expect-error - role is not in the User type
+  const userRole = session.user.role;
 
   // Fetch all referrals with related data
   const referrals = await prisma.referral.findMany({
@@ -50,13 +53,7 @@ export default async function ReferralsPage() {
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Referrals</h2>
-      </div>
-
-      <div className="rounded-md border">
-        <ReferralsTable referrals={referrals} />
-      </div>
+      <ReferralsManagement initialReferrals={referrals} userRole={userRole} />
     </div>
   );
 }
