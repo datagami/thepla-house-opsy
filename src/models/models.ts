@@ -108,12 +108,24 @@ export interface User {
   jobOffer?: JobOffer | null;
 }
 
+export interface WarningType {
+  id: string;
+  numId: number;
+  name: string;
+  description?: string | null;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  warnings?: Warning[];
+}
+
 export interface Warning {
   id: string;
   numId: number;
   userId: string;
   reportedById?: string | null;
   archivedById?: string | null;
+  warningTypeId?: string | null;
   reason: string;
   photoUrl?: string | null;
   isArchived?: boolean;
@@ -123,6 +135,7 @@ export interface Warning {
   user?: User;
   reportedBy?: User | null;
   archivedBy?: User | null;
+  warningType?: WarningType | null;
 }
 
 export interface VerificationToken {

@@ -11,8 +11,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { CalendarDays, Building2, Shirt } from "lucide-react";
+import { CalendarDays, Building2, Shirt, AlertTriangle } from "lucide-react";
 import { UniformForm } from "@/components/users/uniform-form";
+import { WarningForm } from "@/components/users/warning-form";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import AssignBranchModal from "../users/assign-branch-modal";
@@ -155,6 +156,25 @@ export function EmployeeTable({ employees, branches, onEmployeeUpdate }: Employe
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>Issue Uniform</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        {/* Register Warning */}
+                        <div>
+                          <WarningForm
+                            userId={employee.id}
+                            userName={employee.name}
+                            trigger={
+                              <Button variant="outline" size="icon">
+                                <AlertTriangle className="h-4 w-4" />
+                              </Button>
+                            }
+                          />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>Register Warning</TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>

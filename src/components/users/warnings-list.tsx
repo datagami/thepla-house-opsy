@@ -15,6 +15,7 @@ interface WarningItem {
   archivedBy?: { id: string; name: string | null } | null;
   createdAt: string;
   reportedBy?: { id: string; name: string | null } | null;
+  warningType?: { id: string; name: string; description?: string | null } | null;
 }
 
 interface WarningsListProps {
@@ -99,7 +100,7 @@ export function WarningsList({ userId, archived = false, canArchive = false, ref
       {warnings.map((w) => (
         <div key={w.id} className="border rounded-lg p-4 space-y-2">
           <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1">
+            <div className="space-y-1 flex-1">
               <p className="text-sm text-muted-foreground">
                 {formatDateOnly(w.createdAt)}
                 {w.reportedBy?.name ? ` · Reported by ${w.reportedBy.name}` : ""}
@@ -109,7 +110,18 @@ export function WarningsList({ userId, archived = false, canArchive = false, ref
                     }`
                   : ""}
               </p>
-              <p className="text-sm">{w.reason}</p>
+              {w.warningType ? (
+                <>
+                  <p className="font-medium text-base">{w.warningType.name}</p>
+                  {w.reason && w.reason.trim() !== "" && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      <span className="font-medium">Notes:</span> {w.reason}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm">{w.reason}</p>
+              )}
             </div>
             <div className="flex items-center gap-2">
               {w.photoUrl ? (

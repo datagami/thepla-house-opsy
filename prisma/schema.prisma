@@ -221,27 +221,45 @@ model User {
   @@map("users1")
 }
 
-model Warning {
-  id           String   @id @default(cuid())
-  numId        Int      @default(autoincrement()) @map("num_id")
-  userId       String   @map("user_id") // Employee against whom warning is registered
-  reportedById String?  @map("reported_by_id") // Who reported (can be null if reporter user deleted)
-  reason       String   @db.Text
-  photoUrl     String?  @map("photo_url")
-  isArchived   Boolean  @default(false) @map("is_archived")
-  archivedAt   DateTime? @map("archived_at")
-  archivedById String?   @map("archived_by_id")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+model WarningType {
+  id          String   @id @default(cuid())
+  numId       Int      @default(autoincrement()) @map("num_id")
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   // Relations
-  user       User  @relation("UserWarnings", fields: [userId], references: [id], onDelete: Cascade)
-  reportedBy User? @relation("ReportedWarnings", fields: [reportedById], references: [id], onDelete: SetNull)
-  archivedBy User? @relation("ArchivedWarnings", fields: [archivedById], references: [id], onDelete: SetNull)
+  warnings Warning[]
+
+  @@map("warning_types")
+}
+
+model Warning {
+  id            String   @id @default(cuid())
+  numId         Int      @default(autoincrement()) @map("num_id")
+  userId        String   @map("user_id") // Employee against whom warning is registered
+  reportedById  String?  @map("reported_by_id") // Who reported (can be null if reporter user deleted)
+  warningTypeId String?  @map("warning_type_id") // Optional for backward compatibility
+  reason        String   @db.Text
+  photoUrl      String?  @map("photo_url")
+  isArchived    Boolean  @default(false) @map("is_archived")
+  archivedAt    DateTime? @map("archived_at")
+  archivedById  String?   @map("archived_by_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user        User         @relation("UserWarnings", fields: [userId], references: [id], onDelete: Cascade)
+  reportedBy  User?        @relation("ReportedWarnings", fields: [reportedById], references: [id], onDelete: SetNull)
+  archivedBy  User?        @relation("ArchivedWarnings", fields: [archivedById], references: [id], onDelete: SetNull)
+  warningType WarningType? @relation(fields: [warningTypeId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([reportedById])
   @@index([archivedById])
+  @@index([warningTypeId])
   @@index([isArchived])
   @@index([createdAt])
   @@map("warnings")

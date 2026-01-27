@@ -31,6 +31,10 @@ export type Feature =
   | "uniform.create"
   | "uniform.edit"
   | "uniform.delete"
+  | "warning_types.view"
+  | "warning_types.manage"
+  | "warnings.view"
+  | "warnings.manage"
   | "activity-logs.view"
   | "notes.view";
 
@@ -86,6 +90,14 @@ const permissions: RolePermissions = {
   "uniform.create": ["HR", "MANAGEMENT", "BRANCH_MANAGER"],
   "uniform.edit": ["HR", "MANAGEMENT", "BRANCH_MANAGER"],
   "uniform.delete": ["HR", "MANAGEMENT"],
+
+  // Warning Types Management
+  "warning_types.view": ["HR", "MANAGEMENT", "BRANCH_MANAGER"],
+  "warning_types.manage": ["HR", "MANAGEMENT"],
+
+  // Warnings Management
+  "warnings.view": ["HR", "MANAGEMENT", "BRANCH_MANAGER"],
+  "warnings.manage": ["HR", "MANAGEMENT", "BRANCH_MANAGER"],
 
   // Activity Logs
   "activity-logs.view": ["HR", "MANAGEMENT"],

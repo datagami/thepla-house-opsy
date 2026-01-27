@@ -22,6 +22,7 @@ import {
   UserPlus,
   FileCheck,
   Wallet,
+  AlertCircle,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
@@ -70,6 +71,18 @@ const roleNavItems: Record<string, NavItem[]> = {
       title: "Departments", 
       href: "/departments", 
       icon: <Briefcase className="h-5 w-5" />,
+      feature: "users.manage" 
+    },
+    { 
+      title: "Warning Types", 
+      href: "/warning-types", 
+      icon: <AlertCircle className="h-5 w-5" />,
+      feature: "users.manage" 
+    },
+    { 
+      title: "Warnings", 
+      href: "/warnings", 
+      icon: <AlertTriangle className="h-5 w-5" />,
       feature: "users.manage" 
     },
     { 
@@ -174,6 +187,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       feature: "employees.view" 
     },
     { 
+      title: "Warnings", 
+      href: "/warnings", 
+      icon: <AlertTriangle className="h-5 w-5" />,
+      feature: "employees.view" 
+    },
+    { 
       title: "Attendance", 
       href: "/attendance", 
       icon: <Clock className="h-5 w-5" />,
@@ -233,6 +252,18 @@ const roleNavItems: Record<string, NavItem[]> = {
       title: "Departments", 
       href: "/departments", 
       icon: <Briefcase className="h-5 w-5" />,
+      feature: "users.manage" 
+    },
+    { 
+      title: "Warning Types", 
+      href: "/warning-types", 
+      icon: <AlertCircle className="h-5 w-5" />,
+      feature: "users.manage" 
+    },
+    { 
+      title: "Warnings", 
+      href: "/warnings", 
+      icon: <AlertTriangle className="h-5 w-5" />,
       feature: "users.manage" 
     },
     { 

@@ -71,11 +71,21 @@ export async function POST(
     }
 
     const formData = await req.formData();
+    const warningTypeId = (formData.get("warningTypeId") as string | null)?.trim();
     const reason = (formData.get("reason") as string | null)?.trim();
     const file = formData.get("file") as File | null;
 
-    if (!reason) {
-      return NextResponse.json({ error: "Reason is required" }, { status: 400 });
+    if (!warningTypeId) {
+      return NextResponse.json({ error: "Warning type is required" }, { status: 400 });
+    }
+
+    // Validate warning type exists and is active
+    const warningType = await prisma.warningType.findUnique({
+      where: { id: warningTypeId },
+    });
+
+    if (!warningType || !warningType.isActive) {
+      return NextResponse.json({ error: "Invalid warning type" }, { status: 400 });
     }
 
     let photoUrl: string | null = null;
@@ -97,12 +107,14 @@ export async function POST(
       data: {
         userId,
         reportedById: reporterId,
-        reason,
+        warningTypeId,
+        reason: reason || "",
         photoUrl,
         isArchived: false,
       },
       include: {
         reportedBy: { select: { id: true, name: true } },
+        warningType: { select: { id: true, name: true, description: true } },
       },
     });
 
@@ -111,11 +123,13 @@ export async function POST(
       reporterId,
       "Warning",
       warning.id,
-      `Registered warning for ${targetUser.name ?? "employee"}: ${reason}`,
+      `Registered warning for ${targetUser.name ?? "employee"}: ${warningType.name}${reason ? ` - ${reason}` : ""}`,
       {
         warningId: warning.id,
         userId,
         reportedById: reporterId,
+        warningTypeId,
+        warningTypeName: warningType.name,
         hasPhoto: Boolean(photoUrl),
       },
       req
@@ -169,6 +183,7 @@ export async function GET(
       include: {
         reportedBy: { select: { id: true, name: true } },
         archivedBy: { select: { id: true, name: true } },
+        warningType: { select: { id: true, name: true, description: true } },
       },
       orderBy: { createdAt: "desc" },
     });

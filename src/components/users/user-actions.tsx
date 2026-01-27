@@ -14,11 +14,12 @@ import {
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, UserCog, Calendar, Edit, Eye, Building2 } from "lucide-react";
+import { MoreHorizontal, UserCog, Calendar, Edit, Eye, Building2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { hasAccess } from "@/lib/access-control";
 import { User, Branch } from "@/models/models";
 import AssignBranchModal from './assign-branch-modal';
+import { WarningForm } from './warning-form';
 
 interface UserActionsProps {
   user: User;
@@ -31,10 +32,12 @@ export function UserActions({ user, currentUserRole, branches, onUpdate }: UserA
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isAssignBranchModalOpen, setIsAssignBranchModalOpen] = useState(false);
+  const [isWarningDialogOpen, setIsWarningDialogOpen] = useState(false);
   const canApproveUser = hasAccess(currentUserRole, "users.approve");
   const canChangeRole = hasAccess(currentUserRole, "users.change_role");
   const canViewAttendance = ['HR', 'MANAGEMENT', 'BRANCH_MANAGER'].includes(currentUserRole);
   const canEdit = ['HR', 'MANAGEMENT'].includes(currentUserRole);
+  const canRegisterWarning = ['HR', 'MANAGEMENT', 'BRANCH_MANAGER'].includes(currentUserRole);
 
   const handleAssignBranch = async (branchId: string) => {
     setIsLoading(true);
@@ -328,6 +331,14 @@ export function UserActions({ user, currentUserRole, branches, onUpdate }: UserA
               View & Manage Attendance
             </DropdownMenuItem>
           )}
+          {canRegisterWarning && (
+            <DropdownMenuItem
+              onClick={() => setIsWarningDialogOpen(true)}
+            >
+              <AlertTriangle className="mr-2 h-4 w-4" />
+              Register Warning
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -340,6 +351,18 @@ export function UserActions({ user, currentUserRole, branches, onUpdate }: UserA
           currentBranchId={user.branch?.id}
         />
       )}
+      
+      <WarningForm
+        userId={user.id}
+        userName={user.name}
+        open={isWarningDialogOpen}
+        onOpenChange={setIsWarningDialogOpen}
+        onSuccess={() => {
+          if (onUpdate) {
+            onUpdate();
+          }
+        }}
+      />
     </>
   );
 } 

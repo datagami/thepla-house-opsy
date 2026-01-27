@@ -22,10 +22,7 @@ export default async function UserWarningsPage({ params }: Props) {
   // @ts-expect-error - role is not defined in the session type
   const canManageUsers = hasAccess(session.user.role, "users.manage");
 
-  if (!canManageUsers && !isOwnProfile) {
-    redirect("/dashboard");
-  }
-
+  // Fetch user first to check branch access for branch managers
   const user = await prisma.user.findUnique({
     where: { id },
     select: { id: true, name: true, branchId: true, branch: { select: { id: true } } },
@@ -42,6 +39,11 @@ export default async function UserWarningsPage({ params }: Props) {
     ((session.user.managedBranchId && session.user.managedBranchId === user.branch?.id) ||
       // @ts-expect-error branchId in session
       (session.user.branchId && session.user.branchId === user.branch?.id));
+
+  // Check access: must be own profile, have manage users permission, or be branch manager for this user
+  if (!canManageUsers && !isOwnProfile && !isBranchManagerForUser) {
+    redirect("/dashboard");
+  }
 
   const canRegister = ["HR", "MANAGEMENT", "BRANCH_MANAGER"].includes(role) && (canManageUsers || isBranchManagerForUser);
   const canArchive = ["HR", "MANAGEMENT", "BRANCH_MANAGER"].includes(role) && (canManageUsers || isBranchManagerForUser);
