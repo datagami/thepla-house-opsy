@@ -1,14 +1,17 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
+import { logEntityActivity } from '@/lib/services/activity-log'
+import { ActivityType } from '@prisma/client'
 
 export async function POST(req: Request) {
   try {
     const session = await auth()
     // @ts-expect-error - role is not in the User type
-    if (!session || !['HR', 'MANAGEMENT'].includes(session.user.role)) {
+    if (!session?.user || !['HR', 'MANAGEMENT'].includes(session.user.role)) {
       return new NextResponse('Unauthorized', { status: 401 })
     }
+    const sessionUserId = session.user.id!
 
     const { month, year } = await req.json()
     if (!month || !year) {
@@ -87,6 +90,19 @@ export async function POST(req: Request) {
         results.push({ referrerId, count: refs.length, total, salaryId: salary.id })
       }
     })
+
+    // Log each referral bonus processing
+    for (const result of results) {
+      await logEntityActivity(
+        ActivityType.REFERRAL_BONUS_PROCESSED,
+        sessionUserId,
+        "Salary",
+        result.salaryId,
+        `Processed ${result.count} referral bonus(es) totaling ₹${result.total}`,
+        { month, year, count: result.count, totalAmount: result.total, referrerId: result.referrerId },
+        req
+      )
+    }
 
     return NextResponse.json({ processed: results.length, results })
   } catch (error) {

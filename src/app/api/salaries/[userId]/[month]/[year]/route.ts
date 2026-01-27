@@ -2,6 +2,9 @@ import {NextResponse} from "next/server";
 import {auth} from "@/auth";
 import {prisma} from "@/lib/prisma";
 import {calculateSalary} from "@/lib/services/salary-calculator";
+import { logEntityActivity } from "@/lib/services/activity-log";
+import { ActivityType } from "@prisma/client";
+import { format } from "date-fns";
 
 export async function POST(
   request: Request,
@@ -149,11 +152,12 @@ export async function DELETE(
 ) {
   try {
     const session = await auth();
-    if (!session) {
+    if (!session?.user) {
       return NextResponse.json({error: "Unauthorized"}, {status: 401});
     }
     // @ts-expect-error - session is not null
-    const role = session?.user?.role;
+    const role = session.user.role;
+    const sessionUserId = session.user.id!;
 
     // Only HR and MANAGEMENT can delete salaries
     if (!["HR", "MANAGEMENT"].includes(role)) {
@@ -199,6 +203,17 @@ export async function DELETE(
         where: {id: salary.id}
       });
     });
+
+    // Log the deletion
+    await logEntityActivity(
+      ActivityType.SALARY_DELETED,
+      sessionUserId,
+      "Salary",
+      salary.id,
+      `Deleted salary for ${format(new Date(yearNum, monthNum - 1), "MMMM yyyy")}`,
+      { month: monthNum, year: yearNum, netSalary: salary.netSalary, userId: salary.userId },
+      request
+    );
 
     return NextResponse.json({message: "Salary deleted successfully"});
   } catch (error) {

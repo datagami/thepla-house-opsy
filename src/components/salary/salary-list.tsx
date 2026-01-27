@@ -60,6 +60,8 @@ export function SalaryList({month, year}: SalaryListProps) {
   const [deactivateCandidates, setDeactivateCandidates] = useState<DeactivateCandidate[]>([])
   const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false)
   const [isDeactivating, setIsDeactivating] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Get current year and month from URL
   const currentYear = searchParams.get('year')
@@ -365,6 +367,43 @@ export function SalaryList({month, year}: SalaryListProps) {
     }
   }
 
+  const handleBulkDelete = async () => {
+    try {
+      setIsDeleting(true)
+      const response = await fetch('/api/salary/bulk-delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          salaryIds: selectedSalaries
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (data.details) {
+          toast.error(`Failed to delete some salaries: ${data.details[0]?.error || 'Unknown error'}`)
+        } else {
+          toast.error(data.error || 'Failed to delete salaries')
+        }
+        return
+      }
+
+      toast.success(`Successfully deleted ${data.deletedCount} salary records`)
+      setSelectedSalaries([])
+      setDeleteDialogOpen(false)
+      await fetchSalaries()
+      router.refresh()
+    } catch (error) {
+      console.error('Error deleting salaries:', error)
+      toast.error('Failed to delete salaries')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   const handleViewDetails = (salaryId: string) => {
     const params = new URLSearchParams()
     if (currentYear) params.set('year', currentYear)
@@ -499,6 +538,35 @@ export function SalaryList({month, year}: SalaryListProps) {
               disabled={isDeactivating}
             >
               {isDeactivating ? 'Updating...' : 'Mark as Inactive'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Selected Salaries?</DialogTitle>
+            <DialogDescription>
+              You are about to delete {selectedSalaries.length} salary record(s). This action cannot be undone.
+              Only PENDING salaries without processed referral bonuses can be deleted.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700"
+              onClick={handleBulkDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : `Delete ${selectedSalaries.length} Salaries`}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -713,14 +781,24 @@ export function SalaryList({month, year}: SalaryListProps) {
 
               if (allPending) {
                 return (
-                  <Button
-                    onClick={() => handleBulkUpdateStatus('PROCESSING')}
-                    disabled={isProcessing}
-                    variant="outline"
-                    className="bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800"
-                  >
-                    {isProcessing ? 'Processing...' : 'Move to Processing'}
-                  </Button>
+                  <>
+                    <Button
+                      onClick={() => handleBulkUpdateStatus('PROCESSING')}
+                      disabled={isProcessing}
+                      variant="outline"
+                      className="bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800"
+                    >
+                      {isProcessing ? 'Processing...' : 'Move to Processing'}
+                    </Button>
+                    <Button
+                      onClick={() => setDeleteDialogOpen(true)}
+                      disabled={isProcessing || isDeleting}
+                      variant="outline"
+                      className="bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800"
+                    >
+                      {isDeleting ? 'Deleting...' : 'Delete Selected'}
+                    </Button>
+                  </>
                 );
               }
 

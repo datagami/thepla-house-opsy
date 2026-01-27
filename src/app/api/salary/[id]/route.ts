@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { logEntityActivity } from "@/lib/services/activity-log";
+import { ActivityType } from "@prisma/client";
+import { format } from "date-fns";
 
 export async function DELETE(
   _req: Request,
@@ -58,6 +61,17 @@ export async function DELETE(
       await tx.advancePaymentInstallment.deleteMany({ where: { salaryId: id } });
       await tx.salary.delete({ where: { id } });
     });
+
+    // Log the deletion
+    await logEntityActivity(
+      ActivityType.SALARY_DELETED,
+      session.user.id!,
+      "Salary",
+      salary.id,
+      `Deleted salary for ${format(new Date(salary.year, salary.month - 1), "MMMM yyyy")}`,
+      { month: salary.month, year: salary.year, netSalary: salary.netSalary, userId: salary.userId },
+      _req
+    );
 
     return NextResponse.json({ message: "Salary deleted successfully" });
   } catch (error) {

@@ -4,15 +4,17 @@ import { auth } from '@/auth';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
 import { calculateNetSalaryFromObject } from '@/lib/services/salary-calculator';
-import { SalaryStatus } from '@prisma/client';
+import { SalaryStatus, ActivityType } from '@prisma/client';
 import { Salary } from '@/models/models';
+import { logEntityActivity } from '@/lib/services/activity-log';
 export async function POST(req: Request) {
   try {
     const session = await auth();
     // @ts-expect-error - role is not in the User type
-    if (!session || !['HR', 'MANAGEMENT'].includes(session.user.role)) {
+    if (!session?.user || !['HR', 'MANAGEMENT'].includes(session.user.role)) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
+    const sessionUserId = session.user.id!;
 
     const { year, month } = await req.json();
 
@@ -114,6 +116,17 @@ export async function POST(req: Request) {
 
     // Generate Excel buffer
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+
+    // Log the ENET file download
+    await logEntityActivity(
+      ActivityType.ENET_FILE_DOWNLOADED,
+      sessionUserId,
+      "Salary",
+      `enet-${month}-${year}`,
+      `Downloaded ENET file for ${format(new Date(year, month - 1), 'MMMM yyyy')} - ${salaries.length} salaries`,
+      { month, year, salaryCount: salaries.length, branches: Object.keys(salariesByBranch) },
+      req
+    );
 
     // Create response with Excel file
     const response = new NextResponse(excelBuffer);
