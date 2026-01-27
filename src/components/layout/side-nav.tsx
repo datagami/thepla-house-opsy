@@ -11,6 +11,7 @@ import {
   Building,
   Building2,
   FileText,
+  Calendar,
   CalendarCheck,
   Plus,
   DollarSign,
@@ -37,6 +38,10 @@ interface NavSubItem {
   href: string;
   icon?: React.ReactNode;
   feature: string;
+  badge?: {
+    count?: number;
+    variant?: "default" | "warning" | "error";
+  };
 }
 
 interface NavItem {
@@ -45,6 +50,11 @@ interface NavItem {
   icon: React.ReactNode;
   feature: string;
   subItems?: NavSubItem[];
+  badge?: {
+    count?: number;
+    variant?: "default" | "warning" | "error";
+  };
+  isSeparator?: boolean;
 }
 
 const roleNavItems: Record<string, NavItem[]> = {
@@ -55,81 +65,113 @@ const roleNavItems: Record<string, NavItem[]> = {
       icon: <LayoutDashboard className="h-5 w-5" />,
       feature: "dashboard.view" 
     },
-    { 
-      title: "Users", 
-      href: "/users",
+    {
+      title: "People Management",
       icon: <Users className="h-5 w-5" />,
-      feature: "users.view" 
-    },
-    { 
-      title: "Job Offers", 
-      href: "/job-offers",
-      icon: <FileCheck className="h-5 w-5" />,
-      feature: "users.manage" 
-    },
-    { 
-      title: "Departments", 
-      href: "/departments", 
-      icon: <Briefcase className="h-5 w-5" />,
-      feature: "users.manage" 
-    },
-    { 
-      title: "Warning Types", 
-      href: "/warning-types", 
-      icon: <AlertCircle className="h-5 w-5" />,
-      feature: "users.manage" 
-    },
-    { 
-      title: "Warnings", 
-      href: "/warnings", 
-      icon: <AlertTriangle className="h-5 w-5" />,
-      feature: "users.manage" 
-    },
-    { 
-      title: "Branch Attendance", 
-      href: "/attendance", 
-      icon: <Clock className="h-5 w-5" />,
-      feature: "attendance.mark" 
-    },
-    { 
-      title: "Manager Attendance", 
-      href: "/hr/attendance", 
-      icon: <ClipboardCheck className="h-5 w-5" />,
-      feature: "attendance.verify" 
+      feature: "users.view",
+      subItems: [
+        {
+          title: "Users",
+          href: "/users",
+          icon: <Users className="h-4 w-4" />,
+          feature: "users.view"
+        },
+        {
+          title: "Job Offers",
+          href: "/job-offers",
+          icon: <FileCheck className="h-4 w-4" />,
+          feature: "users.manage"
+        },
+        {
+          title: "Departments",
+          href: "/departments",
+          icon: <Briefcase className="h-4 w-4" />,
+          feature: "users.manage"
+        },
+      ]
     },
     {
-      title: "Branch Submissions",
-      href: "/hr/branch-attendance",
-      icon: <Building2 className="h-5 w-5" />,
-      feature: "attendance.view_branch_submissions",
+      title: "Attendance & Time",
+      icon: <Clock className="h-5 w-5" />,
+      feature: "attendance.mark",
       subItems: [
+        {
+          title: "Branch Attendance",
+          href: "/attendance",
+          icon: <Clock className="h-4 w-4" />,
+          feature: "attendance.mark"
+        },
+        {
+          title: "Manager Attendance",
+          href: "/hr/attendance",
+          icon: <ClipboardCheck className="h-4 w-4" />,
+          feature: "attendance.verify"
+        },
+        {
+          title: "Manage Attendance",
+          href: "/hr/manage-attendance",
+          icon: <Calendar className="h-4 w-4" />,
+          feature: "attendance.mark"
+        },
+        {
+          title: "Branch Submissions",
+          href: "/hr/branch-attendance",
+          icon: <Building2 className="h-4 w-4" />,
+          feature: "attendance.view_branch_submissions"
+        },
         {
           title: "Attendance Verification",
           href: "/hr/attendance-verification",
           icon: <ClipboardCheck className="h-4 w-4" />,
           feature: "attendance.verify"
         },
+        {
+          title: "Attendance Conflicts",
+          href: "/hr/attendance-conflicts",
+          icon: <AlertTriangle className="h-4 w-4" />,
+          feature: "attendance.resolve_conflicts"
+        },
       ]
     },
-    { 
-      title: "Leave Requests", 
-      href: "/leave-requests", 
-      icon: <CalendarCheck className="h-5 w-5" />,
-      feature: "leave.view" 
-    },
-    { 
-      title: "Reports", 
-      href: "/reports", 
-      icon: <FileText className="h-5 w-5" />,
-      feature: "attendance.report" 
+    {
+      title: "Warnings & Compliance",
+      icon: <AlertCircle className="h-5 w-5" />,
+      feature: "users.manage",
+      subItems: [
+        {
+          title: "Warnings",
+          href: "/warnings",
+          icon: <AlertTriangle className="h-4 w-4" />,
+          feature: "users.manage"
+        },
+        {
+          title: "Warning Types",
+          href: "/warning-types",
+          icon: <AlertCircle className="h-4 w-4" />,
+          feature: "users.manage"
+        },
+      ]
     },
     {
-      title: "Salary & Finance",
+      title: "Leave Management",
+      icon: <CalendarCheck className="h-5 w-5" />,
+      feature: "leave.view",
+      subItems: [
+        {
+          title: "Leave Requests",
+          href: "/leave-requests",
+          icon: <CalendarCheck className="h-4 w-4" />,
+          feature: "leave.view"
+        },
+      ]
+    },
+    {
+      title: "Payroll & Finance",
       icon: <DollarSign className="h-5 w-5" />,
       feature: "salary.edit",
       subItems: [
         {
-          title: "Salary",
+          title: "Salary Management",
           href: "/salary",
           icon: <DollarSign className="h-4 w-4" />,
           feature: "salary.edit"
@@ -141,10 +183,10 @@ const roleNavItems: Record<string, NavItem[]> = {
           feature: "salary.view"
         },
         {
-          title: "Attendance Conflicts",
-          href: "/hr/attendance-conflicts",
-          icon: <AlertTriangle className="h-4 w-4" />,
-          feature: "attendance.resolve_conflicts"
+          title: "Advances",
+          href: "/advances",
+          icon: <Wallet className="h-4 w-4" />,
+          feature: "salary.view"
         },
         {
           title: "Referrals",
@@ -152,11 +194,24 @@ const roleNavItems: Record<string, NavItem[]> = {
           icon: <UserPlus className="h-4 w-4" />,
           feature: "salary.view"
         },
+      ]
+    },
+    {
+      title: "Reports & Analytics",
+      icon: <FileText className="h-5 w-5" />,
+      feature: "attendance.report",
+      subItems: [
         {
-          title: "Advances",
-          href: "/advances",
-          icon: <Wallet className="h-4 w-4" />,
-          feature: "salary.view"
+          title: "Reports",
+          href: "/reports",
+          icon: <FileText className="h-4 w-4" />,
+          feature: "attendance.report"
+        },
+        {
+          title: "Activity Logs",
+          href: "/activity-logs",
+          icon: <History className="h-4 w-4" />,
+          feature: "activity-logs.view"
         },
       ]
     },
@@ -165,12 +220,6 @@ const roleNavItems: Record<string, NavItem[]> = {
       href: "/notes",
       icon: <FileText className="h-5 w-5" />,
       feature: "notes.view"
-    },
-    {
-      title: "Activity Logs",
-      href: "/activity-logs",
-      icon: <History className="h-5 w-5" />,
-      feature: "activity-logs.view"
     },
   ],
   BRANCH_MANAGER: [
@@ -230,87 +279,119 @@ const roleNavItems: Record<string, NavItem[]> = {
       icon: <LayoutDashboard className="h-5 w-5" />,
       feature: "dashboard.view" 
     },
-    { 
-      title: "Users", 
-      href: "/users",
+    {
+      title: "People Management",
       icon: <Users className="h-5 w-5" />,
-      feature: "users.view" 
-    },
-    { 
-      title: "Job Offers", 
-      href: "/job-offers",
-      icon: <FileCheck className="h-5 w-5" />,
-      feature: "users.manage" 
-    },
-    { 
-      title: "Branches", 
-      href: "/branches", 
-      icon: <Building className="h-5 w-5" />,
-      feature: "branch.view" 
-    },
-    { 
-      title: "Departments", 
-      href: "/departments", 
-      icon: <Briefcase className="h-5 w-5" />,
-      feature: "users.manage" 
-    },
-    { 
-      title: "Warning Types", 
-      href: "/warning-types", 
-      icon: <AlertCircle className="h-5 w-5" />,
-      feature: "users.manage" 
-    },
-    { 
-      title: "Warnings", 
-      href: "/warnings", 
-      icon: <AlertTriangle className="h-5 w-5" />,
-      feature: "users.manage" 
-    },
-    { 
-      title: "Branch Attendance", 
-      href: "/attendance", 
-      icon: <Clock className="h-5 w-5" />,
-      feature: "attendance.mark" 
-    },
-    { 
-      title: "Manager Attendance", 
-      href: "/hr/attendance", 
-      icon: <ClipboardCheck className="h-5 w-5" />,
-      feature: "attendance.verify" 
+      feature: "users.view",
+      subItems: [
+        {
+          title: "Users",
+          href: "/users",
+          icon: <Users className="h-4 w-4" />,
+          feature: "users.view"
+        },
+        {
+          title: "Job Offers",
+          href: "/job-offers",
+          icon: <FileCheck className="h-4 w-4" />,
+          feature: "users.manage"
+        },
+        {
+          title: "Branches",
+          href: "/branches",
+          icon: <Building className="h-4 w-4" />,
+          feature: "branch.view"
+        },
+        {
+          title: "Departments",
+          href: "/departments",
+          icon: <Briefcase className="h-4 w-4" />,
+          feature: "users.manage"
+        },
+      ]
     },
     {
-      title: "Branch Submissions",
-      href: "/hr/branch-attendance",
-      icon: <Building2 className="h-5 w-5" />,
-      feature: "attendance.view_branch_submissions",
+      title: "Attendance & Time",
+      icon: <Clock className="h-5 w-5" />,
+      feature: "attendance.mark",
       subItems: [
+        {
+          title: "Branch Attendance",
+          href: "/attendance",
+          icon: <Clock className="h-4 w-4" />,
+          feature: "attendance.mark"
+        },
+        {
+          title: "Manager Attendance",
+          href: "/hr/attendance",
+          icon: <ClipboardCheck className="h-4 w-4" />,
+          feature: "attendance.verify"
+        },
+        {
+          title: "Manage Attendance",
+          href: "/hr/manage-attendance",
+          icon: <Calendar className="h-4 w-4" />,
+          feature: "attendance.mark"
+        },
+        {
+          title: "Branch Submissions",
+          href: "/hr/branch-attendance",
+          icon: <Building2 className="h-4 w-4" />,
+          feature: "attendance.view_branch_submissions"
+        },
         {
           title: "Attendance Verification",
           href: "/hr/attendance-verification",
           icon: <ClipboardCheck className="h-4 w-4" />,
           feature: "attendance.verify"
         },
+        {
+          title: "Attendance Conflicts",
+          href: "/hr/attendance-conflicts",
+          icon: <AlertTriangle className="h-4 w-4" />,
+          feature: "attendance.resolve_conflicts"
+        },
       ]
     },
-    { 
-      title: "Leave Requests", 
-      href: "/leave-requests", 
-      icon: <CalendarCheck className="h-5 w-5" />,
-      feature: "leave.view" 
-    },
-    { 
-      title: "Reports", 
-      href: "/reports", 
-      icon: <FileText className="h-5 w-5" />,
-      feature: "attendance.report" 
+    {
+      title: "Warnings & Compliance",
+      icon: <AlertCircle className="h-5 w-5" />,
+      feature: "users.manage",
+      subItems: [
+        {
+          title: "Warnings",
+          href: "/warnings",
+          icon: <AlertTriangle className="h-4 w-4" />,
+          feature: "users.manage"
+        },
+        {
+          title: "Warning Types",
+          href: "/warning-types",
+          icon: <AlertCircle className="h-4 w-4" />,
+          feature: "users.manage"
+        },
+      ]
     },
     {
-      title: "Salary & Finance",
+      title: "Leave Management",
+      icon: <CalendarCheck className="h-5 w-5" />,
+      feature: "leave.view",
+      subItems: [
+        {
+          title: "Leave Requests",
+          href: "/leave-requests",
+          icon: <CalendarCheck className="h-4 w-4" />,
+          feature: "leave.view"
+        },
+      ]
+    },
+    {
+      title: "Payroll & Finance",
       icon: <DollarSign className="h-5 w-5" />,
       feature: "salary.edit",
       subItems: [
         {
-          title: "Salary",
+          title: "Salary Management",
           href: "/salary",
           icon: <DollarSign className="h-4 w-4" />,
           feature: "salary.edit"
@@ -322,10 +403,10 @@ const roleNavItems: Record<string, NavItem[]> = {
           feature: "salary.view"
         },
         {
-          title: "Attendance Conflicts",
-          href: "/hr/attendance-conflicts",
-          icon: <AlertTriangle className="h-4 w-4" />,
-          feature: "attendance.resolve_conflicts"
+          title: "Advances",
+          href: "/advances",
+          icon: <Wallet className="h-4 w-4" />,
+          feature: "salary.view"
         },
         {
           title: "Referrals",
@@ -333,11 +414,24 @@ const roleNavItems: Record<string, NavItem[]> = {
           icon: <UserPlus className="h-4 w-4" />,
           feature: "salary.view"
         },
+      ]
+    },
+    {
+      title: "Reports & Analytics",
+      icon: <FileText className="h-5 w-5" />,
+      feature: "attendance.report",
+      subItems: [
         {
-          title: "Advances",
-          href: "/advances",
-          icon: <Wallet className="h-4 w-4" />,
-          feature: "salary.view"
+          title: "Reports",
+          href: "/reports",
+          icon: <FileText className="h-4 w-4" />,
+          feature: "attendance.report"
+        },
+        {
+          title: "Activity Logs",
+          href: "/activity-logs",
+          icon: <History className="h-4 w-4" />,
+          feature: "activity-logs.view"
         },
       ]
     },
@@ -346,12 +440,6 @@ const roleNavItems: Record<string, NavItem[]> = {
       href: "/notes",
       icon: <FileText className="h-5 w-5" />,
       feature: "notes.view"
-    },
-    {
-      title: "Activity Logs",
-      href: "/activity-logs",
-      icon: <History className="h-5 w-5" />,
-      feature: "activity-logs.view"
     },
   ],
   EMPLOYEE: [
@@ -404,6 +492,28 @@ interface SideNavProps {
   userRole: string;
 }
 
+// Badge component for notifications
+function NavBadge({ badge }: { badge: NavItem["badge"] }) {
+  if (!badge) return null;
+  
+  const variantStyles = {
+    default: "bg-blue-500 text-white",
+    warning: "bg-yellow-500 text-white",
+    error: "bg-red-500 text-white",
+  };
+  
+  return (
+    <span 
+      className={cn(
+        "ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-medium",
+        variantStyles[badge.variant || "default"]
+      )}
+    >
+      {badge.count || ""}
+    </span>
+  );
+}
+
 function NavItemComponent({ 
   item, 
   pathname, 
@@ -414,12 +524,9 @@ function NavItemComponent({
   userId?: string;
 }) {
   const [isOpen, setIsOpen] = useState(() => {
-    // Auto-expand if any submenu item is active
+    // Keep all menus expanded by default
     if (item.subItems) {
-      return item.subItems.some(subItem => {
-        const href = subItem.href?.replace("<user_id>", userId || "");
-        return href && pathname.startsWith(href);
-      });
+      return true;
     }
     return false;
   });
@@ -431,6 +538,11 @@ function NavItemComponent({
     }
     return href;
   };
+
+  // Render separator
+  if (item.isSeparator) {
+    return <div className="my-4 border-t border-border" />;
+  }
 
   // Check if item or any subitem is active
   const isActive = item.href 
@@ -447,7 +559,7 @@ function NavItemComponent({
   if (item.subItems && item.subItems.length > 0) {
     const parentHref = item.href ? processHref(item.href) : null;
     const isParentActive = parentHref && (pathname === parentHref || pathname.startsWith(parentHref + "/"));
-    const shouldHighlight = isItemActive || isOpen || isParentActive;
+    const shouldHighlight = hasActiveSubItem || isParentActive;
 
     return (
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -456,7 +568,7 @@ function NavItemComponent({
             className={cn(
               "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm transition-all",
               shouldHighlight
-                ? "bg-[#FFF4E6] text-foreground"
+                ? "bg-primary/10 text-foreground font-medium"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -482,20 +594,23 @@ function NavItemComponent({
                 <span>{item.title}</span>
               </div>
             )}
-            <CollapsibleTrigger asChild>
-              <button
-                className="flex items-center"
-                onClick={(e) => {
-                  e.stopPropagation();
-                }}
-              >
-                {isOpen ? (
-                  <ChevronDown className="h-4 w-4 text-foreground" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-              </button>
-            </CollapsibleTrigger>
+            <div className="flex items-center gap-2">
+              <NavBadge badge={item.badge} />
+              <CollapsibleTrigger asChild>
+                <button
+                  className="flex items-center"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  {isOpen ? (
+                    <ChevronDown className="h-4 w-4 text-foreground" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </button>
+              </CollapsibleTrigger>
+            </div>
           </div>
           <CollapsibleContent className="space-y-1 pt-1">
             {item.subItems.map((subItem) => {
@@ -509,16 +624,17 @@ function NavItemComponent({
                   className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ml-4",
                     isSubActive
-                      ? "bg-[#FFF4E6] text-foreground"
+                      ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   <span className={cn(
-                    isSubActive ? "text-foreground" : "text-muted-foreground"
+                    isSubActive ? "text-primary-foreground" : "text-muted-foreground"
                   )}>
                     {subItem.icon || <div className="h-4 w-4" />}
                   </span>
-                  <span>{subItem.title}</span>
+                  <span className="flex-1">{subItem.title}</span>
+                  <NavBadge badge={subItem.badge} />
                 </Link>
               );
             })}
@@ -537,16 +653,17 @@ function NavItemComponent({
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all",
         isActive
-          ? "bg-[#FFF4E6] text-foreground"
+          ? "bg-primary text-primary-foreground"
           : "text-muted-foreground hover:text-foreground"
       )}
     >
       <span className={cn(
-        isActive ? "text-foreground" : "text-muted-foreground"
+        isActive ? "text-primary-foreground" : "text-muted-foreground"
       )}>
         {item.icon}
       </span>
-      <span>{item.title}</span>
+      <span className="flex-1">{item.title}</span>
+      <NavBadge badge={item.badge} />
     </Link>
   );
 }
