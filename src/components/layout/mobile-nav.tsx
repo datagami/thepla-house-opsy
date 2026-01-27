@@ -548,8 +548,6 @@ function NavItemComponent({
     return href && (pathname === href || pathname.startsWith(href + "/"));
   });
 
-  const isItemActive = isActive || hasActiveSubItem;
-
   if (item.subItems && item.subItems.length > 0) {
     const parentHref = item.href ? processHref(item.href) : null;
     const isParentActive = parentHref && (pathname === parentHref || pathname.startsWith(parentHref + "/"));
