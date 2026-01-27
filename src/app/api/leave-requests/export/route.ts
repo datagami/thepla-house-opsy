@@ -31,6 +31,7 @@ export async function GET(req: Request) {
     const leaveType = searchParams.get("leaveType");
 
     // Build where clause
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {};
 
     // Filter by date range if month and year are provided
@@ -219,6 +220,7 @@ export async function GET(req: Request) {
     XLSX.utils.book_append_sheet(workbook, leaveRequestsSheet, "All Leave Requests");
 
     // Sheet 3: Leave Statistics
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const statsData: any[] = [];
 
     // Statistics header

@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { ReferralsTable } from "@/components/referrals/referrals-table";
 import { DownloadReferralsReport } from "@/components/referrals/download-referrals-report";
-import { toast } from "sonner";
 
 interface ReferralWithRelations {
   id: string;
@@ -46,7 +45,7 @@ export function ReferralsManagement({
   initialReferrals,
   userRole,
 }: ReferralsManagementProps) {
-  const [referrals, setReferrals] = useState<ReferralWithRelations[]>(initialReferrals);
+  const [referrals] = useState<ReferralWithRelations[]>(initialReferrals);
   const [filteredReferrals, setFilteredReferrals] = useState<ReferralWithRelations[]>(initialReferrals);
   const [status, setStatus] = useState<string>("ALL");
   const [fromDate, setFromDate] = useState<string>("");

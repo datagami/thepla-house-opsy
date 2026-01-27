@@ -23,6 +23,7 @@ export async function GET(req: Request) {
     const userId = session.user.id;
 
     // Build where clause
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {};
 
     // Role-based filtering: employees see only their own advances

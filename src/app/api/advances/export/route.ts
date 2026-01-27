@@ -25,6 +25,7 @@ export async function GET(req: Request) {
     const userId = session.user.id;
 
     // Build where clause (same as main route)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {};
 
     if (!isHROrManagement) {
@@ -202,6 +203,7 @@ export async function GET(req: Request) {
     XLSX.utils.book_append_sheet(workbook, advancesSheet, "All Advances");
 
     // Sheet 3: Payment History - All installments
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const paymentHistoryData: any[] = [];
 
     allAdvances.forEach((advance) => {

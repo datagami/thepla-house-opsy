@@ -24,7 +24,6 @@ import { Badge } from "@/components/ui/badge";
 import { formatDateOnly } from "@/lib/utils";
 import { Download, Filter, AlertTriangle, Archive, TrendingUp, Building2 } from "lucide-react";
 import { toast } from "sonner";
-import Image from "next/image";
 
 interface Branch {
   id: string;

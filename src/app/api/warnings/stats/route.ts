@@ -12,7 +12,6 @@ export async function GET(req: Request) {
 
     // @ts-expect-error - role is not in the User type
     const role = session.user.role;
-    // @ts-expect-error - id is not in the User type
     const userId = session.user.id;
 
     if (!["HR", "MANAGEMENT", "BRANCH_MANAGER"].includes(role)) {
@@ -24,6 +23,7 @@ export async function GET(req: Request) {
     const endDate = searchParams.get("endDate");
 
     // Build where clause for date range
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const dateFilter: any = {};
     if (startDate || endDate) {
       dateFilter.createdAt = {};
@@ -38,6 +38,7 @@ export async function GET(req: Request) {
     }
 
     // Branch filter for branch managers
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let branchFilter: any = {};
     if (role === "BRANCH_MANAGER") {
       const manager = await prisma.user.findUnique({

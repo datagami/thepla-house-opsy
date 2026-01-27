@@ -16,6 +16,12 @@ import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
+interface Advance {
+  id: string;
+  status: string;
+  [key: string]: unknown;
+}
+
 interface AdvanceData {
   userId: string;
   userName: string;
@@ -26,7 +32,7 @@ interface AdvanceData {
   totalEmiAmount: number;
   advancesCount: number;
   lastPaymentDate: Date | null;
-  advances: any[];
+  advances: Advance[];
 }
 
 interface AdvancesTableProps {
@@ -46,7 +52,7 @@ export function AdvancesTable({ advances }: AdvancesTableProps) {
     setExpandedUsers(newExpanded);
   };
 
-  const getStatusBadge = (advances: any[]) => {
+  const getStatusBadge = (advances: Advance[]) => {
     if (advances.length === 0) return null;
 
     const statuses = advances.map((adv) => adv.status);
@@ -163,7 +169,7 @@ export function AdvancesTable({ advances }: AdvancesTableProps) {
                         </div>
                         <div className="space-y-2">
                           {userAdvance.advances.map((advance) => (
-                            <AdvanceRow key={advance.id} advance={advance} />
+                            <AdvanceRow key={advance.id} advance={advance as never} />
                           ))}
                         </div>
                       </div>

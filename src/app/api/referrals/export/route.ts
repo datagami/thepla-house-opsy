@@ -30,6 +30,7 @@ export async function GET(req: Request) {
     const branchId = searchParams.get("branchId");
 
     // Build where clause
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {};
 
     // Filter by status (paid/eligible/pending)
@@ -107,7 +108,7 @@ export async function GET(req: Request) {
     });
 
     // Helper function to get status
-    const getStatus = (referral: any) => {
+    const getStatus = (referral: { paidAt: Date | null; eligibleAt: Date }) => {
       if (referral.paidAt) {
         return "Paid";
       }
@@ -222,6 +223,7 @@ export async function GET(req: Request) {
     XLSX.utils.book_append_sheet(workbook, referralsSheet, "All Referrals");
 
     // Sheet 3: Statistics
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const statsData: any[] = [];
 
     // Overall Statistics

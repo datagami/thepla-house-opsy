@@ -16,8 +16,43 @@ import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
+interface Installment {
+  id: string;
+  numId: number;
+  amountPaid: number;
+  status: string;
+  paidAt: Date | null;
+  approvedAt: Date | null;
+  salary?: {
+    month: number;
+    year: number;
+  } | null;
+  approvedBy?: {
+    name: string;
+    numId: number;
+  } | null;
+}
+
+interface Advance {
+  id: string;
+  numId: number;
+  amount: number;
+  remainingAmount: number;
+  emiAmount: number;
+  status: string;
+  reason?: string | null;
+  createdAt: Date;
+  approvedAt?: Date | null;
+  isSettled: boolean;
+  approvedBy?: {
+    name: string;
+    numId: number;
+  } | null;
+  installments?: Installment[];
+}
+
 interface AdvanceRowProps {
-  advance: any;
+  advance: Advance;
 }
 
 export function AdvanceRow({ advance }: AdvanceRowProps) {
@@ -26,7 +61,7 @@ export function AdvanceRow({ advance }: AdvanceRowProps) {
   const getStatusVariant = (
     status: string
   ): "default" | "secondary" | "destructive" | "outline" => {
-    const variants: Record<string, any> = {
+    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       PENDING: "outline",
       APPROVED: "default",
       PAID: "default",
@@ -39,7 +74,7 @@ export function AdvanceRow({ advance }: AdvanceRowProps) {
   const getInstallmentStatusVariant = (
     status: string
   ): "default" | "secondary" | "destructive" | "outline" => {
-    const variants: Record<string, any> = {
+    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       PENDING: "outline",
       APPROVED: "default",
       PAID: "default",
@@ -198,7 +233,7 @@ export function AdvanceRow({ advance }: AdvanceRowProps) {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {advance.installments.map((installment: any) => (
+                      {advance.installments.map((installment) => (
                         <TableRow key={installment.id}>
                           <TableCell className="font-medium">
                             #{installment.numId}

@@ -14,6 +14,12 @@ interface AdvancesManagementProps {
   userId: string;
 }
 
+interface Advance {
+  id: string;
+  status: string;
+  [key: string]: unknown;
+}
+
 export interface AdvanceData {
   userId: string;
   userName: string;
@@ -24,7 +30,7 @@ export interface AdvanceData {
   totalEmiAmount: number;
   advancesCount: number;
   lastPaymentDate: Date | null;
-  advances: any[];
+  advances: Advance[];
 }
 
 export interface AdvancesStats {
@@ -36,7 +42,6 @@ export interface AdvancesStats {
 
 export function AdvancesManagement({
   userRole,
-  userId,
 }: AdvancesManagementProps) {
   const [activeTab, setActiveTab] = useState<"unsettled" | "settled">(
     "unsettled"

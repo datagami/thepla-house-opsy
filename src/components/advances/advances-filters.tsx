@@ -22,15 +22,22 @@ import {
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
+interface Branch {
+  id: string;
+  name: string;
+}
+
+interface Filters {
+  search: string;
+  status: string;
+  fromDate: string;
+  toDate: string;
+  branchId: string;
+}
+
 interface AdvancesFiltersProps {
-  filters: {
-    search: string;
-    status: string;
-    fromDate: string;
-    toDate: string;
-    branchId: string;
-  };
-  onFilterChange: (filters: any) => void;
+  filters: Filters;
+  onFilterChange: (filters: Filters) => void;
   isHROrManagement: boolean;
 }
 
@@ -40,7 +47,7 @@ export function AdvancesFilters({
   isHROrManagement,
 }: AdvancesFiltersProps) {
   const [localSearch, setLocalSearch] = useState(filters.search);
-  const [branches, setBranches] = useState<any[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [fromDate, setFromDate] = useState<Date | undefined>(
     filters.fromDate ? new Date(filters.fromDate) : undefined
   );
