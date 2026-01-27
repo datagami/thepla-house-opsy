@@ -19,6 +19,7 @@ interface SharedAttendanceTableProps {
   users: User[];
   date: Date;
   showBranch?: boolean;
+  showRole?: boolean;
   isHR?: boolean;
   userRole: string;
 }
@@ -27,6 +28,7 @@ export function SharedAttendanceTable({
   users, 
   date,
   showBranch = false,
+  showRole = false,
   isHR = false,
   userRole,
 }: SharedAttendanceTableProps) {
@@ -59,12 +61,20 @@ export function SharedAttendanceTable({
     REJECTED: "bg-red-100 text-red-800",
   } as const;
 
+  const roleColors = {
+    EMPLOYEE: "text-blue-600 bg-blue-100",
+    BRANCH_MANAGER: "text-purple-600 bg-purple-100",
+    HR: "text-green-600 bg-green-100",
+    MANAGEMENT: "text-orange-600 bg-orange-100",
+  } as const;
+
   return (
     <>
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
+            {showRole && <TableHead>Role</TableHead>}
             {showBranch && <TableHead>Branch</TableHead>}
             <TableHead>Status</TableHead>
             <TableHead>Check In</TableHead>
@@ -87,6 +97,13 @@ export function SharedAttendanceTable({
                 onClick={() => setSelectedUser(user)}
               >
                 <TableCell>{user.name}</TableCell>
+                {showRole && (
+                  <TableCell>
+                    <Badge variant="secondary" className={roleColors[user.role as keyof typeof roleColors]}>
+                      {user.role}
+                    </Badge>
+                  </TableCell>
+                )}
                 {showBranch && (
                   <TableCell>{user.branch?.name || "-"}</TableCell>
                 )}

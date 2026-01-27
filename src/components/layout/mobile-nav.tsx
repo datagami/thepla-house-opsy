@@ -11,6 +11,7 @@ import {
   Building,
   Building2,
   FileText,
+  Calendar,
   CalendarCheck,
   Plus,
   DollarSign,
@@ -96,6 +97,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       href: "/hr/attendance", 
       icon: <ClipboardCheck className="h-5 w-5" />,
       feature: "attendance.verify" 
+    },
+    { 
+      title: "Manage Attendance", 
+      href: "/hr/manage-attendance", 
+      icon: <Calendar className="h-5 w-5" />,
+      feature: "attendance.mark" 
     },
     {
       title: "Branch Submissions",
@@ -271,6 +278,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       href: "/hr/attendance", 
       icon: <ClipboardCheck className="h-5 w-5" />,
       feature: "attendance.verify" 
+    },
+    { 
+      title: "Manage Attendance", 
+      href: "/hr/manage-attendance", 
+      icon: <Calendar className="h-5 w-5" />,
+      feature: "attendance.mark" 
     },
     {
       title: "Branch Submissions",

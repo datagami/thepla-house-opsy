@@ -23,6 +23,7 @@ import {Branch, User} from "@/models/models";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDateOnly } from "@/lib/utils";
+import { MultiSelect } from "@/components/ui/multi-select";
 
 interface UserTableProps {
   users: User[];
@@ -54,8 +55,21 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [branchFilter, setBranchFilter] = useState("ALL");
   const [joiningFormFilter, setJoiningFormFilter] = useState("ALL");
+  const [weeklyOffFilters, setWeeklyOffFilters] = useState<string[]>([]);
   const [sortField, setSortField] = useState<SortField>('numId');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+
+  const weeklyOffOptions = [
+    { label: "No Weekly Off", value: "none" },
+    { label: "Flexible Weekly Off", value: "flexible" },
+    { label: "Sunday (Fixed)", value: "0" },
+    { label: "Monday (Fixed)", value: "1" },
+    { label: "Tuesday (Fixed)", value: "2" },
+    { label: "Wednesday (Fixed)", value: "3" },
+    { label: "Thursday (Fixed)", value: "4" },
+    { label: "Friday (Fixed)", value: "5" },
+    { label: "Saturday (Fixed)", value: "6" },
+  ];
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -97,14 +111,34 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
       (joiningFormFilter === "PENDING" && !user.joiningFormSignedAt) ||
       (joiningFormFilter === "SIGNED" && !!user.joiningFormSignedAt);
 
-    return matchesSearch && matchesRole && matchesStatus && matchesBranch && matchesJoiningForm;
+    // Weekly off multi-select filter logic
+    const matchesWeeklyOff = (() => {
+      // If no filters selected, show all
+      if (weeklyOffFilters.length === 0) {
+        return true;
+      }
+
+      // Check if any selected filter matches
+      for (const filter of weeklyOffFilters) {
+        if (filter === "none" && !user.hasWeeklyOff) return true;
+        if (filter === "flexible" && user.weeklyOffType === "FLEXIBLE") return true;
+        // Check fixed day filters (0-6)
+        if (/^[0-6]$/.test(filter) && user.weeklyOffType === "FIXED" && user.weeklyOffDay?.toString() === filter) {
+          return true;
+        }
+      }
+
+      return false;
+    })();
+
+    return matchesSearch && matchesRole && matchesStatus && matchesBranch && matchesJoiningForm && matchesWeeklyOff;
   });
 
   const sortedUsers = sortUsers(filteredUsers);
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <Input
           placeholder="Search users..."
           value={search}
@@ -158,6 +192,14 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
             <SelectItem value="SIGNED">Signed</SelectItem>
           </SelectContent>
         </Select>
+        <div className="w-[300px]">
+          <MultiSelect
+            options={weeklyOffOptions}
+            selected={weeklyOffFilters}
+            onChange={setWeeklyOffFilters}
+            placeholder="Filter by Weekly Off"
+          />
+        </div>
       </div>
       <div className="rounded-md border">
         <Table>
