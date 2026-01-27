@@ -21,6 +21,7 @@ import {
   History,
   UserPlus,
   FileCheck,
+  Wallet,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
@@ -136,6 +137,12 @@ const roleNavItems: Record<string, NavItem[]> = {
           title: "Referrals",
           href: "/referrals",
           icon: <UserPlus className="h-4 w-4" />,
+          feature: "salary.view"
+        },
+        {
+          title: "Advances",
+          href: "/advances",
+          icon: <Wallet className="h-4 w-4" />,
           feature: "salary.view"
         },
       ]
@@ -295,6 +302,12 @@ const roleNavItems: Record<string, NavItem[]> = {
           icon: <UserPlus className="h-4 w-4" />,
           feature: "salary.view"
         },
+        {
+          title: "Advances",
+          href: "/advances",
+          icon: <Wallet className="h-4 w-4" />,
+          feature: "salary.view"
+        },
       ]
     },
     {
@@ -327,6 +340,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       title: "My Payslips",
       href: "/users/<user_id>/payslips",
       icon: <FileText className="h-5 w-5" />,
+      feature: "salary.view"
+    },
+    {
+      title: "My Advances",
+      href: "/advances",
+      icon: <Wallet className="h-5 w-5" />,
       feature: "salary.view"
     },
     { 
