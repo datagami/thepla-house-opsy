@@ -86,7 +86,11 @@ export function AttendanceTable({ users, date, viewOnly = false }: AttendanceTab
                   {attendance ? getShifts(attendance) : "-"}
                 </TableCell>
                 <TableCell>
-                  {attendance?.isWeeklyOff ? (
+                  {attendance?.isWorkFromHome ? (
+                    <Badge variant="outline" className="bg-teal-100 text-teal-800">
+                      Work From Home
+                    </Badge>
+                  ) : attendance?.isWeeklyOff ? (
                     <Badge variant="outline" className="bg-purple-100 text-purple-800">
                       Weekly Off
                     </Badge>

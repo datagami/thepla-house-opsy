@@ -37,6 +37,7 @@ export function SharedAttendanceTable({
     const attendance = user.attendance[0];
     if (!attendance.isPresent) return "ABSENT";
     if (attendance.isWeeklyOff) return "WEEKLY_OFF";
+    if ((attendance as { isWorkFromHome?: boolean }).isWorkFromHome) return "WORK_FROM_HOME";
     if (attendance.isHalfDay) return "HALF_DAY";
     return "PRESENT";
   };
@@ -53,6 +54,7 @@ export function SharedAttendanceTable({
     PENDING: "bg-yellow-100 text-yellow-800",
     HALF_DAY: "bg-blue-100 text-blue-800",
     WEEKLY_OFF: "bg-purple-100 text-purple-800",
+    WORK_FROM_HOME: "bg-teal-100 text-teal-800",
     APPROVED: "bg-emerald-100 text-emerald-800",
     REJECTED: "bg-red-100 text-red-800",
   } as const;
@@ -101,7 +103,11 @@ export function SharedAttendanceTable({
                   ) : "-"}
                 </TableCell>
                 <TableCell>
-                  {attendance?.isWeeklyOff ? (
+                  {(attendance as { isWorkFromHome?: boolean })?.isWorkFromHome ? (
+                    <Badge variant="outline" className="bg-teal-100 text-teal-800">
+                      Work From Home
+                    </Badge>
+                  ) : attendance?.isWeeklyOff ? (
                     <Badge variant="outline" className="bg-purple-100 text-purple-800">
                       Weekly Off
                     </Badge>
@@ -140,6 +146,7 @@ export function SharedAttendanceTable({
           department={selectedUser.department?.name || ''}
           onCloseAction={() => setSelectedUser(null)}
           isHR={userRole === "HR"}
+          userRole={userRole}
         />
       )}
     </>

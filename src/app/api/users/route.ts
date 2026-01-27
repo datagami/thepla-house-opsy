@@ -39,7 +39,8 @@ export async function POST(request: Request) {
       bankIfscCode,
       salary,
       references,
-      referredById 
+      referredById,
+      hasWorkFromHome
     } = body;
 
     if (!email || !name) {
@@ -98,6 +99,7 @@ export async function POST(request: Request) {
           typeof bankIfscCode === "string" && bankIfscCode.trim() !== ""
             ? bankIfscCode.trim()
             : null,
+        hasWorkFromHome: hasWorkFromHome === true,
         references: {
           create: references.map((ref: { name: string; contactNo: string }) => ({
             name: ref.name,

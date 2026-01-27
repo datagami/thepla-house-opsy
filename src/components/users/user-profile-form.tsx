@@ -68,6 +68,7 @@ const userFormSchema = z.object({
   hasWeeklyOff: z.boolean().optional(),
   weeklyOffType: z.enum(["FIXED", "FLEXIBLE"]).optional().nullable(),
   weeklyOffDay: z.number().min(0).max(6).optional().nullable(),
+  hasWorkFromHome: z.boolean().optional(),
 });
 
 interface UserProfileFormProps {
@@ -135,6 +136,7 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
       hasWeeklyOff: (user as User & { hasWeeklyOff?: boolean })?.hasWeeklyOff || false,
       weeklyOffType: initialWeeklyOffType,
       weeklyOffDay: (user as User & { weeklyOffDay?: number | null })?.weeklyOffDay || null,
+      hasWorkFromHome: (user as User & { hasWorkFromHome?: boolean })?.hasWorkFromHome || false,
     },
   });
 
@@ -811,6 +813,27 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
                 )}
               </>
             )}
+            <FormField
+              control={form.control}
+              name="hasWorkFromHome"
+              render={({field}) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">Can work from home</FormLabel>
+                    <div className="text-sm text-muted-foreground">
+                      Allow this employee to mark Work From Home in attendance.
+                    </div>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={!canEdit}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
           </div>
         </div>
 

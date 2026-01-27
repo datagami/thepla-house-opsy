@@ -135,13 +135,14 @@ export async function GET(
 
 		// Count different attendance types
 		const weeklyOffDays = attendance.filter(a => a.isPresent && a.isWeeklyOff).length;
-		const regularDays = attendance.filter(a => a.isPresent && !a.isHalfDay && !a.overtime && !a.isWeeklyOff).length;
+		const wfhDays = attendance.filter(a => a.isPresent && a.isWorkFromHome).length;
+		const regularDays = attendance.filter(a => a.isPresent && !a.isHalfDay && !a.overtime && !a.isWeeklyOff && !a.isWorkFromHome).length;
 		const halfDays = attendance.filter(a => a.isPresent && a.isHalfDay && !a.isWeeklyOff).length;
 		const overtimeDays = attendance.filter(a => a.isPresent && a.overtime && !a.isWeeklyOff).length;
 		const leaveDays = attendance.filter(a => !a.isPresent).length;
 
-		// Calculate present days (counting half days as 0.5, including weekly off days)
-		const presentDays = regularDays + overtimeDays + halfDays * 0.5 + weeklyOffDays;
+		// Calculate present days (counting half days as 0.5, including weekly off and WFH days)
+		const presentDays = regularDays + overtimeDays + halfDays * 0.5 + weeklyOffDays + wfhDays;
 
 		// Calculate base salary from present days
 		const presentDaysSalary = presentDays * perDaySalary;
@@ -419,6 +420,7 @@ export async function GET(
 			{ label: 'Present Days', value: formatDays(presentDays) },
 			{ label: 'Regular Days', value: regularDays.toString() },
 			{ label: 'Weekly Off Days', value: weeklyOffDays.toString() },
+			{ label: 'Work From Home Days', value: wfhDays.toString() },
 			{ label: 'Half Days', value: halfDays.toString() },
 			{ label: 'Overtime Days', value: overtimeDays.toString() },
 			{ label: 'Leave Days', value: leaveDays.toString() },

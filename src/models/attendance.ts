@@ -25,6 +25,7 @@ export interface AttendanceFormData {
   isHalfDay: boolean;
   overtime: boolean;
   isWeeklyOff?: boolean;
+  isWorkFromHome?: boolean;
   shift1: boolean;
   shift2: boolean;
   shift3: boolean;

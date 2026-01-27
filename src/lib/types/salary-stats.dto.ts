@@ -23,6 +23,7 @@ export interface SalaryStatsDTO {
     totalDaysInMonth: number;
     regularDays: number;
     weeklyOffDays: number;
+    wfhDays?: number;
     halfDays: number;
     overtimeDays: number;
     leaveDays: number;

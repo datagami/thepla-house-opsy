@@ -67,12 +67,20 @@ export function AttendanceStats({ attendance, user }: AttendanceStatsProps) {
   let overtimeDays = 0;
   let halfDays = 0;
   let weeklyOffDays = 0;
+  let wfhDays = 0;
 
   attendance.forEach(day => {
     // Weekly off days are counted as present for salary calculation
     if (day.isWeeklyOff && day.isPresent) {
       presentDays += 1;
       weeklyOffDays += 1;
+      return;
+    }
+
+    // Work from home days are counted as present
+    if (day.isWorkFromHome && day.isPresent) {
+      presentDays += 1;
+      wfhDays += 1;
       return;
     }
 
@@ -95,12 +103,12 @@ export function AttendanceStats({ attendance, user }: AttendanceStatsProps) {
     presentDays++;
   });
 
-  // Calculate bonus leaves - exclude weekly off days from threshold calculation
+  // Calculate bonus leaves - exclude weekly off and WFH days from threshold calculation
   // Employees with weekly off are NOT eligible for bonus leaves
   let leavesEarned = 0;
   if (!user.hasWeeklyOff) {
     const presentDaysForBonusLeaves = attendance
-      .filter(day => day.isPresent && !day.isWeeklyOff)
+      .filter(day => day.isPresent && !day.isWeeklyOff && !day.isWorkFromHome)
       .reduce((sum, day) => {
         if (day.isHalfDay) return sum + 0.5;
         if (day.overtime) return sum + 1;
@@ -121,6 +129,7 @@ export function AttendanceStats({ attendance, user }: AttendanceStatsProps) {
     halfDays,
     overtimeDays,
     weeklyOffDays,
+    wfhDays,
     leavesEarned,
   };
 
@@ -169,6 +178,15 @@ export function AttendanceStats({ attendance, user }: AttendanceStatsProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">{monthlyStats.weeklyOffDays}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Work From Home Days</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-teal-600">{monthlyStats.wfhDays}</div>
           </CardContent>
         </Card>
 

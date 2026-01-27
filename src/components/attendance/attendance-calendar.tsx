@@ -11,6 +11,7 @@ interface Attendance {
   date: Date;
   isPresent: boolean;
   isWeeklyOff?: boolean;
+  isWorkFromHome?: boolean;
   isHalfDay: boolean;
   overtime: boolean;
   checkIn: string | null;
@@ -72,6 +73,8 @@ export function AttendanceCalendar({ attendance, month }: AttendanceCalendarProp
                 <div className="flex items-center gap-2">
                   {attendance.isWeeklyOff ? (
                     <Badge className="bg-purple-100 text-purple-800">Weekly Off</Badge>
+                  ) : attendance.isWorkFromHome ? (
+                    <Badge className="bg-teal-100 text-teal-800">Work From Home</Badge>
                   ) : (
                     <Badge variant={attendance.isPresent ? "default" : "destructive"}>
                       {attendance.isPresent ? "Present" : "Absent"}
@@ -80,7 +83,7 @@ export function AttendanceCalendar({ attendance, month }: AttendanceCalendarProp
                   {attendance.isHalfDay && <Badge>Half Day</Badge>}
                   {attendance.overtime && <Badge variant="outline">Overtime</Badge>}
                 </div>
-                {attendance.isPresent && !attendance.isWeeklyOff && (
+                {attendance.isPresent && !attendance.isWeeklyOff && !attendance.isWorkFromHome && (
                   <>
                     <p className="text-sm">
                       Time: {attendance.checkIn} - {attendance.checkOut}

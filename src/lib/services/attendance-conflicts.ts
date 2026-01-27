@@ -12,6 +12,8 @@ const shiftByOffset = (date: Date, offsetMinutes: number) => {
 type AttendanceConflictEntry = {
   id: string;
   isPresent: boolean;
+  isWeeklyOff?: boolean;
+  isWorkFromHome?: boolean;
   isHalfDay: boolean;
   overtime: boolean;
   status: string;
@@ -114,6 +116,8 @@ export async function getAttendanceConflicts(month: number, year: number) {
     grouped.get(mapKey)!.entries.push({
       id: record.id,
       isPresent: record.isPresent,
+      isWeeklyOff: record.isWeeklyOff,
+      isWorkFromHome: record.isWorkFromHome,
       isHalfDay: record.isHalfDay,
       overtime: record.overtime,
       status: record.status,

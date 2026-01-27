@@ -22,6 +22,7 @@ export type SerializedAttendanceConflictEntry = {
   id: string;
   isPresent: boolean;
   isWeeklyOff?: boolean;
+  isWorkFromHome?: boolean;
   isHalfDay: boolean;
   overtime: boolean;
   status: string;
@@ -156,6 +157,8 @@ export function AttendanceConflictTable({ conflicts }: AttendanceConflictTablePr
                     <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
                       {entry.isWeeklyOff ? (
                         <Badge className="bg-purple-100 text-purple-800">Weekly Off</Badge>
+                      ) : entry.isWorkFromHome ? (
+                        <Badge className="bg-teal-100 text-teal-800">Work From Home</Badge>
                       ) : (
                         <Badge variant={entry.isPresent ? "default" : "outline"}>
                           {entry.isPresent ? "Present" : "Absent"}
@@ -226,7 +229,9 @@ export function AttendanceConflictTable({ conflicts }: AttendanceConflictTablePr
                 ? `You are about to delete the ${
                     selectedEntry.isWeeklyOff
                       ? "weekly off"
-                      : selectedEntry.isPresent
+                      : selectedEntry.isWorkFromHome
+                        ? "work from home"
+                        : selectedEntry.isPresent
                         ? "present"
                         : "absent"
                   } entry recorded on ${new Date(

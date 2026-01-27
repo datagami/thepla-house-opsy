@@ -36,6 +36,7 @@ export async function GET(
         hasWeeklyOff: true,
         weeklyOffType: true,
         weeklyOffDay: true,
+        hasWorkFromHome: true,
       },
     });
 
@@ -116,7 +117,8 @@ export async function PUT(
       referredById,
       hasWeeklyOff,
       weeklyOffType,
-      weeklyOffDay
+      weeklyOffDay,
+      hasWorkFromHome
     } = body;
 
     // Base update data
@@ -148,6 +150,7 @@ export async function PUT(
       hasWeeklyOff: hasWeeklyOff !== undefined ? hasWeeklyOff : undefined,
       weeklyOffType: weeklyOffType !== undefined ? (weeklyOffType === "null" || weeklyOffType === "" ? null : weeklyOffType) : undefined,
       weeklyOffDay: weeklyOffDay !== undefined ? (weeklyOffDay === null || weeklyOffDay === "" ? null : parseInt(weeklyOffDay)) : undefined,
+      hasWorkFromHome: hasWorkFromHome !== undefined ? hasWorkFromHome : undefined,
     };
 
     // Only update role if user has permission

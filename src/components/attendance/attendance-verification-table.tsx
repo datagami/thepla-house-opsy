@@ -69,6 +69,7 @@ export function AttendanceVerificationTable({
 
   const getAttendanceStatus = (record: Attendance) => {
     if (record.isWeeklyOff) return <Badge className="bg-purple-100 text-purple-800">Weekly Off</Badge>;
+    if (record.isWorkFromHome) return <Badge className="bg-teal-100 text-teal-800">Work From Home</Badge>;
     if (record.isHalfDay) return <Badge className="bg-blue-100 text-blue-800">Half Day</Badge>;
     if (record.overtime) return <Badge className="bg-purple-100 text-purple-800">Overtime</Badge>;
     return record.isPresent ? 
@@ -139,13 +140,13 @@ export function AttendanceVerificationTable({
                 <TableCell>{record.user.department?.name || "-"}</TableCell>
                 <TableCell>{getAttendanceStatus(record)}</TableCell>
                 <TableCell>
-                  {record.isPresent && !record.isWeeklyOff && record.checkIn && record.checkOut ? 
+                  {record.isPresent && !record.isWeeklyOff && !record.isWorkFromHome && record.checkIn && record.checkOut ? 
                     `${record.checkIn} - ${record.checkOut}` : 
                     "-"
                   }
                 </TableCell>
                 <TableCell>
-                  {record.isPresent && !record.isWeeklyOff ? getShiftDisplay(record.shift1, record.shift2, record.shift3) : "-"}
+                  {record.isPresent && !record.isWeeklyOff && !record.isWorkFromHome ? getShiftDisplay(record.shift1, record.shift2, record.shift3) : "-"}
                 </TableCell>
                 <TableCell>{getVerificationStatus(record.status)}</TableCell>
               </TableRow>

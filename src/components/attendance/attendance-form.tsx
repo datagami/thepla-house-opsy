@@ -33,6 +33,7 @@ export function AttendanceForm({
   const [isHalfDay, setIsHalfDay] = useState(currentAttendance?.isHalfDay ?? false);
   const [isOvertime, setIsOvertime] = useState(currentAttendance?.overtime ?? false);
   const [isWeeklyOff, setIsWeeklyOff] = useState(currentAttendance?.isWeeklyOff ?? false);
+  const [isWorkFromHome, setIsWorkFromHome] = useState(currentAttendance?.isWorkFromHome ?? false);
   const [shift1, setShift1] = useState(currentAttendance?.shift1 ?? false);
   const [shift2, setShift2] = useState(currentAttendance?.shift2 ?? false);
   const [shift3, setShift3] = useState(currentAttendance?.shift3 ?? false);
@@ -44,6 +45,7 @@ export function AttendanceForm({
     hasWeeklyOff: boolean;
     weeklyOffType: string | null;
     weeklyOffDay: number | null;
+    hasWorkFromHome: boolean;
   } | null>(null);
   
   const isPendingVerification = currentAttendance?.status === "PENDING_VERIFICATION";
@@ -60,6 +62,7 @@ export function AttendanceForm({
               hasWeeklyOff: user.hasWeeklyOff || false,
               weeklyOffType: user.weeklyOffType || null,
               weeklyOffDay: user.weeklyOffDay || null,
+              hasWorkFromHome: user.hasWorkFromHome || false,
             });
             
             // For fixed weekly off, check if selected date matches weekly off day
@@ -85,6 +88,7 @@ export function AttendanceForm({
       setIsHalfDay(currentAttendance.isHalfDay ?? false);
       setIsOvertime(currentAttendance.overtime ?? false);
       setIsWeeklyOff(currentAttendance.isWeeklyOff ?? false);
+      setIsWorkFromHome((currentAttendance as { isWorkFromHome?: boolean }).isWorkFromHome ?? false);
       setShift1(currentAttendance.shift1 ?? false);
       setShift2(currentAttendance.shift2 ?? false);
       setShift3(currentAttendance.shift3 ?? false);
@@ -104,15 +108,16 @@ export function AttendanceForm({
       const attendanceData: AttendanceFormData = {
         userId: userId || null,
         date: attendanceDate,
-        isPresent: isWeeklyOff ? true : isPresent,
-        checkIn: checkIn || null,
-        checkOut: checkOut || null,
-        isHalfDay: isPresent && isHalfDay && !isWeeklyOff,
-        overtime: isPresent && isOvertime && !isWeeklyOff,
+        isPresent: (isWeeklyOff || isWorkFromHome) ? true : isPresent,
+        checkIn: (isWeeklyOff || isWorkFromHome) ? null : (checkIn || null),
+        checkOut: (isWeeklyOff || isWorkFromHome) ? null : (checkOut || null),
+        isHalfDay: isPresent && isHalfDay && !isWeeklyOff && !isWorkFromHome,
+        overtime: isPresent && isOvertime && !isWeeklyOff && !isWorkFromHome,
         isWeeklyOff: isWeeklyOff,
-        shift1: isPresent && shift1 && !isWeeklyOff,
-        shift2: isPresent && shift2 && !isWeeklyOff,
-        shift3: isPresent && shift3 && !isWeeklyOff,
+        isWorkFromHome: isWorkFromHome,
+        shift1: isPresent && shift1 && !isWeeklyOff && !isWorkFromHome,
+        shift2: isPresent && shift2 && !isWeeklyOff && !isWorkFromHome,
+        shift3: isPresent && shift3 && !isWeeklyOff && !isWorkFromHome,
         notes: notes || null,
         status: (userRole === "HR" || userRole === "MANAGEMENT" || isWeeklyOff) ? "APPROVED" : "PENDING_VERIFICATION",
         ...(currentAttendance?.id && userRole !== "HR" && {
@@ -168,15 +173,16 @@ export function AttendanceForm({
       const attendanceData: AttendanceFormData = {
         userId: userId || null,
         date: attendanceDate,
-        isPresent: isWeeklyOff ? true : isPresent,
-        checkIn: checkIn || null,
-        checkOut: checkOut || null,
-        isHalfDay: isPresent && isHalfDay && !isWeeklyOff,
-        overtime: isPresent && isOvertime && !isWeeklyOff,
+        isPresent: (isWeeklyOff || isWorkFromHome) ? true : isPresent,
+        checkIn: (isWeeklyOff || isWorkFromHome) ? null : (checkIn || null),
+        checkOut: (isWeeklyOff || isWorkFromHome) ? null : (checkOut || null),
+        isHalfDay: isPresent && isHalfDay && !isWeeklyOff && !isWorkFromHome,
+        overtime: isPresent && isOvertime && !isWeeklyOff && !isWorkFromHome,
         isWeeklyOff: isWeeklyOff,
-        shift1: isPresent && shift1 && !isWeeklyOff,
-        shift2: isPresent && shift2 && !isWeeklyOff,
-        shift3: isPresent && shift3 && !isWeeklyOff,
+        isWorkFromHome: isWorkFromHome,
+        shift1: isPresent && shift1 && !isWeeklyOff && !isWorkFromHome,
+        shift2: isPresent && shift2 && !isWeeklyOff && !isWorkFromHome,
+        shift3: isPresent && shift3 && !isWeeklyOff && !isWorkFromHome,
         notes: notes || null,
         status: "APPROVED",
       };
@@ -236,15 +242,16 @@ export function AttendanceForm({
       const attendanceData: AttendanceFormData = {
         userId: userId || null,
         date: attendanceDate,
-        isPresent: isWeeklyOff ? true : isPresent,
-        checkIn: checkIn || null,
-        checkOut: checkOut || null,
-        isHalfDay: isPresent && isHalfDay && !isWeeklyOff,
-        overtime: isPresent && isOvertime && !isWeeklyOff,
+        isPresent: (isWeeklyOff || isWorkFromHome) ? true : isPresent,
+        checkIn: (isWeeklyOff || isWorkFromHome) ? null : (checkIn || null),
+        checkOut: (isWeeklyOff || isWorkFromHome) ? null : (checkOut || null),
+        isHalfDay: isPresent && isHalfDay && !isWeeklyOff && !isWorkFromHome,
+        overtime: isPresent && isOvertime && !isWeeklyOff && !isWorkFromHome,
         isWeeklyOff: isWeeklyOff,
-        shift1: isPresent && shift1 && !isWeeklyOff,
-        shift2: isPresent && shift2 && !isWeeklyOff,
-        shift3: isPresent && shift3 && !isWeeklyOff,
+        isWorkFromHome: isWorkFromHome,
+        shift1: isPresent && shift1 && !isWeeklyOff && !isWorkFromHome,
+        shift2: isPresent && shift2 && !isWeeklyOff && !isWorkFromHome,
+        shift3: isPresent && shift3 && !isWeeklyOff && !isWorkFromHome,
         notes: notes || null,
         status: "REJECTED",
       };
@@ -294,6 +301,7 @@ export function AttendanceForm({
       setIsHalfDay(false);
       setIsOvertime(false);
       setIsWeeklyOff(false);
+      setIsWorkFromHome(false);
       setShift1(false);
       setShift2(false);
       setShift3(false);
@@ -306,6 +314,22 @@ export function AttendanceForm({
       setIsPresent(true);
       setIsHalfDay(false);
       setIsOvertime(false);
+      setIsWorkFromHome(false);
+      setShift1(false);
+      setShift2(false);
+      setShift3(false);
+      setCheckIn("");
+      setCheckOut("");
+    }
+  };
+
+  const handleWorkFromHomeChange = (checked: boolean) => {
+    setIsWorkFromHome(checked);
+    if (checked) {
+      setIsPresent(true);
+      setIsHalfDay(false);
+      setIsOvertime(false);
+      setIsWeeklyOff(false);
       setShift1(false);
       setShift2(false);
       setShift3(false);
@@ -348,7 +372,7 @@ export function AttendanceForm({
                 type="time"
                 value={checkIn}
                 onChange={(e) => setCheckIn(e.target.value)}
-                disabled={!isPresent}
+                disabled={!isPresent || isWorkFromHome}
                 className="mt-1"
               />
             </div>
@@ -359,7 +383,7 @@ export function AttendanceForm({
                 type="time"
                 value={checkOut}
                 onChange={(e) => setCheckOut(e.target.value)}
-                disabled={!isPresent}
+                disabled={!isPresent || isWorkFromHome}
                 className="mt-1"
               />
             </div>
@@ -372,7 +396,7 @@ export function AttendanceForm({
                 id="shift1"
                 checked={shift1}
                 onCheckedChange={setShift1}
-                disabled={!isPresent}
+                disabled={!isPresent || isWorkFromHome}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -381,7 +405,7 @@ export function AttendanceForm({
                 id="shift2"
                 checked={shift2}
                 onCheckedChange={setShift2}
-                disabled={!isPresent}
+                disabled={!isPresent || isWorkFromHome}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -390,7 +414,7 @@ export function AttendanceForm({
                 id="shift3"
                 checked={shift3}
                 onCheckedChange={setShift3}
-                disabled={!isPresent}
+                disabled={!isPresent || isWorkFromHome}
               />
             </div>
           </div>
@@ -414,6 +438,19 @@ export function AttendanceForm({
             </div>
           )}
 
+          {userWeeklyOffConfig?.hasWorkFromHome && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="isWorkFromHome">Work From Home</Label>
+                <Switch 
+                  id="isWorkFromHome" 
+                  checked={isWorkFromHome}
+                  onCheckedChange={handleWorkFromHomeChange}
+                />
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Label htmlFor="isHalfDay">Half Day</Label>
@@ -421,7 +458,7 @@ export function AttendanceForm({
                 id="isHalfDay" 
                 checked={isHalfDay}
                 onCheckedChange={setIsHalfDay}
-                disabled={!isPresent || isOvertime || isWeeklyOff}
+                disabled={!isPresent || isOvertime || isWeeklyOff || isWorkFromHome}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -430,7 +467,7 @@ export function AttendanceForm({
                 id="overtime" 
                 checked={isOvertime}
                 onCheckedChange={setIsOvertime}
-                disabled={!isPresent || isHalfDay || isWeeklyOff}
+                disabled={!isPresent || isHalfDay || isWeeklyOff || isWorkFromHome}
               />
             </div>
           </div>

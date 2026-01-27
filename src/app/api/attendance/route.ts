@@ -188,14 +188,21 @@ export async function POST(req: Request) {
       }
     }
 
+    // Work from home: mark present, no OT; status follows normal flow (do not override)
+    const isWorkFromHome = data.isWorkFromHome || false;
+    if (isWorkFromHome) {
+      data.isPresent = true;
+    }
+
     // Create attendance with the user's current branch
     const attendance = await prisma.attendance.create({
       data: {
         date: attendanceDate,
         isPresent: data.isPresent,
         isHalfDay: data.isHalfDay,
-        overtime: data.overtime,
+        overtime: isWorkFromHome ? false : (data.overtime || false),
         isWeeklyOff: isWeeklyOff,
+        isWorkFromHome: isWorkFromHome,
         checkIn: data.checkIn || null,
         checkOut: data.checkOut || null,
         shift1: data.shift1 || false,

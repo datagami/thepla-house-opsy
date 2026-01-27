@@ -114,10 +114,12 @@ export default async function SelfAttendancePage({ searchParams }: Props) {
                   <div className="text-2xl font-bold">
                     {attendance.isWeeklyOff
                       ? "Weekly Off"
-                      : attendance.isPresent
+                      : attendance.isWorkFromHome
+                        ? "Work From Home"
+                        : attendance.isPresent
                         ? "Present"
                         : "Absent"}
-                    {!attendance.isWeeklyOff && attendance.isHalfDay && " (Half Day)"}
+                    {!attendance.isWeeklyOff && !attendance.isWorkFromHome && attendance.isHalfDay && " (Half Day)"}
                   </div>
                   {attendance.status && (
                     <Badge 
@@ -137,12 +139,12 @@ export default async function SelfAttendancePage({ searchParams }: Props) {
                     </Badge>
                   )}
                 </div>
-                {attendance.checkIn && !attendance.isWeeklyOff && (
+                {attendance.checkIn && !attendance.isWeeklyOff && !attendance.isWorkFromHome && (
                   <p className="text-sm text-muted-foreground">
                     Check In: {attendance.checkIn}
                   </p>
                 )}
-                {attendance.checkOut && !attendance.isWeeklyOff && (
+                {attendance.checkOut && !attendance.isWeeklyOff && !attendance.isWorkFromHome && (
                   <p className="text-sm text-muted-foreground">
                     Check Out: {attendance.checkOut}
                   </p>
@@ -152,7 +154,7 @@ export default async function SelfAttendancePage({ searchParams }: Props) {
                     Verified At: {attendance.verifiedAt.toLocaleString()}
                   </p>
                 )}
-                {attendance.isPresent && !attendance.isWeeklyOff && (
+                {attendance.isPresent && !attendance.isWeeklyOff && !attendance.isWorkFromHome && (
                   <p className="text-sm text-muted-foreground">
                     Shifts: {getShiftDisplay(attendance.shift1, attendance.shift2, attendance.shift3)}
                   </p>

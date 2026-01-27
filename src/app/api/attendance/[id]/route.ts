@@ -370,6 +370,12 @@ export async function PUT(
       }
     }
 
+    // Work from home: mark present, no OT; status/verificationData follow normal flow (do not change)
+    const isWorkFromHome = body.isWorkFromHome || false;
+    if (isWorkFromHome) {
+      body.isPresent = true;
+    }
+
     // Check if salary exists for this month and its status
     const updateDate = body.date ? new Date(body.date) : currentAttendance.date;
     const existingSalary = await prisma.salary.findFirst({
@@ -398,8 +404,9 @@ export async function PUT(
         checkIn: body.checkIn || null,
         checkOut: body.checkOut || null,
         isHalfDay: body.isHalfDay || false,
-        overtime: body.overtime || false,
+        overtime: isWorkFromHome ? false : (body.overtime || false),
         isWeeklyOff: isWeeklyOff,
+        isWorkFromHome: isWorkFromHome,
         shift1: body.shift1 || false,
         shift2: body.shift2 || false,
         shift3: body.shift3 || false,

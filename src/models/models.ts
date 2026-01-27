@@ -74,6 +74,7 @@ export interface User {
   hasWeeklyOff?: boolean;
   weeklyOffType?: string | null;
   weeklyOffDay?: number | null;
+  hasWorkFromHome?: boolean;
   joiningFormSignedAt?: Date | null;
   joiningFormSignedBy?: string | null;
   joiningFormSignature?: string | null;
@@ -225,6 +226,7 @@ export interface Attendance {
   isHalfDay: boolean;
   overtime: boolean;
   isWeeklyOff: boolean;
+  isWorkFromHome: boolean;
   shift1: boolean;
   shift2: boolean;
   shift3: boolean;
