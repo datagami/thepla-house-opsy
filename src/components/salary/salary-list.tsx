@@ -51,6 +51,7 @@ export function SalaryList({month, year}: SalaryListProps) {
     branch: 'all',
     role: 'all',
     referralOnly: false,
+    userStatus: 'all',
   })
   // Add state for users without salary
   const [usersWithoutSalary, setUsersWithoutSalary] = useState<User[]>([]);
@@ -171,8 +172,12 @@ export function SalaryList({month, year}: SalaryListProps) {
       const matchesStatus = selectedFilters.status === 'all' ? true :
         salary.status === selectedFilters.status
 
+      // User status filter
+      const matchesUserStatus = selectedFilters.userStatus === 'all' ||
+        salary.user.status === selectedFilters.userStatus
+
       return matchesSearch && matchesBranch && matchesRole &&
-        matchesDeductions && matchesStatus
+        matchesDeductions && matchesStatus && matchesUserStatus
     })
   }
 
@@ -421,6 +426,23 @@ export function SalaryList({month, year}: SalaryListProps) {
     }
   }
 
+  const getUserStatusColor = (status: string) => {
+    switch (status) {
+      case 'ACTIVE':
+        return 'bg-green-50 text-green-700 border-green-200'
+      case 'PARTIAL_INACTIVE':
+        return 'bg-orange-50 text-orange-700 border-orange-200'
+      case 'INACTIVE':
+        return 'bg-red-50 text-red-700 border-red-200'
+      case 'PENDING':
+        return 'bg-yellow-50 text-yellow-700 border-yellow-200'
+      case 'JOB_OFFER':
+        return 'bg-blue-50 text-blue-700 border-blue-200'
+      default:
+        return 'bg-gray-50 text-gray-700 border-gray-200'
+    }
+  }
+
   const getSelectedSalariesStatus = () => {
     const selectedSalariesData = filteredSalaries.filter(salary => selectedSalaries.includes(salary.id));
     const allProcessing = selectedSalariesData.every(salary => salary.status === 'PROCESSING');
@@ -583,8 +605,29 @@ export function SalaryList({month, year}: SalaryListProps) {
             </SelectContent>
           </Select>
         </div>
+        <div className="w-[200px]">
+          <label className="text-sm font-medium mb-2 block">User Status</label>
+          <Select
+            value={selectedFilters.userStatus}
+            onValueChange={(value) => setSelectedFilters(prev => ({
+              ...prev,
+              userStatus: value
+            }))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Filter by User Status"/>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All User Status</SelectItem>
+              <SelectItem value="ACTIVE">Active</SelectItem>
+              <SelectItem value="PARTIAL_INACTIVE">Partial Inactive</SelectItem>
+              <SelectItem value="INACTIVE">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         {(selectedFilters.deductions !== 'all' ||
           selectedFilters.status !== 'all' ||
+          selectedFilters.userStatus !== 'all' ||
           selectedFilters.search ||
           selectedFilters.branch ||
           selectedFilters.role ||
@@ -598,6 +641,7 @@ export function SalaryList({month, year}: SalaryListProps) {
               branch: 'all',
               role: 'all',
               referralOnly: false,
+              userStatus: 'all',
             })}
           >
             Clear Filters
@@ -731,9 +775,14 @@ export function SalaryList({month, year}: SalaryListProps) {
                       </CardDescription>
                     </div>
                   </div>
-                  <Badge className={getStatusColor(salary.status)}>
-                    {salary.status}
-                  </Badge>
+                  <div className="flex gap-2">
+                    <Badge className={getUserStatusColor(salary.user.status)}>
+                      {salary.user.status.replace('_', ' ')}
+                    </Badge>
+                    <Badge className={getStatusColor(salary.status)}>
+                      {salary.status}
+                    </Badge>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
