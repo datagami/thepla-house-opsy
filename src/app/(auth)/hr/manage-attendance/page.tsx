@@ -68,10 +68,14 @@ export default async function HRManageAttendancePage({
       if (filter === "none") {
         orConditions.push({ hasWeeklyOff: false });
       } else if (filter === "flexible") {
-        orConditions.push({ weeklyOffType: "FLEXIBLE" });
-      } else if (/^[0-6]$/.test(filter)) {
-        // Fixed day filters
         orConditions.push({
+          hasWeeklyOff: true,
+          weeklyOffType: "FLEXIBLE",
+        });
+      } else if (/^[0-6]$/.test(filter)) {
+        // Fixed day filters: require hasWeeklyOff + FIXED + matching day
+        orConditions.push({
+          hasWeeklyOff: true,
           weeklyOffType: "FIXED",
           weeklyOffDay: parseInt(filter),
         });

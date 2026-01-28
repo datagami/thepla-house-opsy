@@ -118,12 +118,12 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
         return true;
       }
 
-      // Check if any selected filter matches
+      // Check if any selected filter matches (all require hasWeeklyOff except "none")
       for (const filter of weeklyOffFilters) {
         if (filter === "none" && !user.hasWeeklyOff) return true;
-        if (filter === "flexible" && user.weeklyOffType === "FLEXIBLE") return true;
-        // Check fixed day filters (0-6)
-        if (/^[0-6]$/.test(filter) && user.weeklyOffType === "FIXED" && user.weeklyOffDay?.toString() === filter) {
+        if (filter === "flexible" && user.hasWeeklyOff && user.weeklyOffType === "FLEXIBLE") return true;
+        // Check fixed day filters (0-6): hasWeeklyOff + FIXED + matching day
+        if (/^[0-6]$/.test(filter) && user.hasWeeklyOff && user.weeklyOffType === "FIXED" && user.weeklyOffDay?.toString() === filter) {
           return true;
         }
       }

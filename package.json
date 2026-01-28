@@ -10,7 +10,8 @@
     "seed:employees": "tsx scripts/seed-employees.ts",
     "seed:attendance": "tsx scripts/seed-attendance.ts",
     "reset:passwords": "tsx scripts/reset-passwords.ts",
-    "seed:attendance-duplicates": "tsx scripts/create-duplicate-attendance.ts"
+    "seed:attendance-duplicates": "tsx scripts/create-duplicate-attendance.ts",
+    "delete:todays-weekly-off": "tsx scripts/delete-todays-weekly-off-attendance.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.8.0",
