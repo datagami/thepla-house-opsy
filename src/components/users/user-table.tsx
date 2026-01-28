@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Table,
   TableBody,
@@ -49,15 +50,72 @@ const statusColors = {
 type SortField = 'numId' | 'name' | 'branch';
 type SortOrder = 'asc' | 'desc';
 
+const DEBOUNCE_MS = 400;
+
+function readParams(sp: URLSearchParams) {
+  return {
+    search: sp.get("search") || "",
+    role: sp.get("role") || "ALL",
+    branch: sp.get("branch") || "ALL",
+    joiningForm: sp.get("joiningForm") || "ALL",
+    weeklyOff: sp.get("weeklyOff")?.split(",").filter(Boolean) || [] as string[],
+    sortField: (sp.get("sortField") as SortField) || "numId",
+    sortOrder: (sp.get("sortOrder") as SortOrder) || "asc",
+  };
+}
+
 export function  UserTable({ users, branches, currentUserRole }: UserTableProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
-  const [statusFilter, setStatusFilter] = useState("ALL");
   const [branchFilter, setBranchFilter] = useState("ALL");
   const [joiningFormFilter, setJoiningFormFilter] = useState("ALL");
   const [weeklyOffFilters, setWeeklyOffFilters] = useState<string[]>([]);
-  const [sortField, setSortField] = useState<SortField>('numId');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  const [sortField, setSortField] = useState<SortField>("numId");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
+
+  // Initialize from URL on mount
+  const [initialized, setInitialized] = useState(false);
+  useEffect(() => {
+    if (initialized) return;
+    const p = readParams(searchParams);
+    setSearch(p.search);
+    setRoleFilter(p.role);
+    setBranchFilter(p.branch);
+    setJoiningFormFilter(p.joiningForm);
+    setWeeklyOffFilters(p.weeklyOff);
+    setSortField(p.sortField);
+    setSortOrder(p.sortOrder);
+    setInitialized(true);
+  }, [initialized, searchParams]);
+
+  const updateUrl = useCallback(
+    (updates: Record<string, string | string[] | undefined>) => {
+      const p = new URLSearchParams(searchParams.toString());
+      for (const [key, val] of Object.entries(updates)) {
+        if (val === undefined || val === "" || val === "ALL" || (Array.isArray(val) && val.length === 0)) {
+          p.delete(key);
+        } else if (Array.isArray(val)) {
+          p.set(key, val.join(","));
+        } else {
+          p.set(key, val);
+        }
+      }
+      router.replace(`/users?${p.toString()}`, { scroll: false });
+    },
+    [router, searchParams]
+  );
+
+  // Debounce search -> URL
+  useEffect(() => {
+    if (!initialized) return;
+    const t = setTimeout(() => {
+      updateUrl({ search: search || undefined });
+    }, DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [search, initialized, updateUrl]);
 
   const weeklyOffOptions = [
     { label: "No Weekly Off", value: "none" },
@@ -72,12 +130,13 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
   ];
 
   const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('asc');
-    }
+    const nextField = field;
+    const nextOrder = sortField === field
+      ? (sortOrder === "asc" ? "desc" : "asc")
+      : "asc";
+    setSortField(nextField);
+    setSortOrder(nextOrder);
+    updateUrl({ sortField: nextField, sortOrder: nextOrder });
   };
 
   const sortUsers = (users: User[]) => {
@@ -104,7 +163,6 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
       user.numId?.toString().toLowerCase().includes(search.toLowerCase());
 
     const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
-    const matchesStatus = statusFilter === "ALL" || user.status === statusFilter;
     const matchesBranch = branchFilter === "ALL" || user.branch?.id === branchFilter;
     const matchesJoiningForm = 
       joiningFormFilter === "ALL" || 
@@ -131,7 +189,7 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
       return false;
     })();
 
-    return matchesSearch && matchesRole && matchesStatus && matchesBranch && matchesJoiningForm && matchesWeeklyOff;
+    return matchesSearch && matchesRole && matchesBranch && matchesJoiningForm && matchesWeeklyOff;
   });
 
   const sortedUsers = sortUsers(filteredUsers);
@@ -145,7 +203,13 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm"
         />
-        <Select value={roleFilter} onValueChange={setRoleFilter}>
+        <Select
+          value={roleFilter}
+          onValueChange={(v) => {
+            setRoleFilter(v);
+            updateUrl({ role: v });
+          }}
+        >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by role" />
           </SelectTrigger>
@@ -157,19 +221,13 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
             <SelectItem value="MANAGEMENT">Management</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All Status</SelectItem>
-            <SelectItem value="PENDING">Pending</SelectItem>
-            <SelectItem value="ACTIVE">Active</SelectItem>
-            <SelectItem value="PARTIAL_INACTIVE">Partial Inactive</SelectItem>
-            <SelectItem value="INACTIVE">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={branchFilter} onValueChange={setBranchFilter}>
+        <Select
+          value={branchFilter}
+          onValueChange={(v) => {
+            setBranchFilter(v);
+            updateUrl({ branch: v });
+          }}
+        >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by branch" />
           </SelectTrigger>
@@ -182,7 +240,13 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
             ))}
           </SelectContent>
         </Select>
-        <Select value={joiningFormFilter} onValueChange={setJoiningFormFilter}>
+        <Select
+          value={joiningFormFilter}
+          onValueChange={(v) => {
+            setJoiningFormFilter(v);
+            updateUrl({ joiningForm: v });
+          }}
+        >
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Joining Form" />
           </SelectTrigger>
@@ -196,7 +260,10 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
           <MultiSelect
             options={weeklyOffOptions}
             selected={weeklyOffFilters}
-            onChange={setWeeklyOffFilters}
+            onChange={(v) => {
+              setWeeklyOffFilters(v);
+              updateUrl({ weeklyOff: v });
+            }}
             placeholder="Filter by Weekly Off"
           />
         </div>
