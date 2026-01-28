@@ -23,14 +23,24 @@ export function UsersTabs({ users, branches, currentUserRole, canEdit }: UsersTa
     userStateParam === "pending" ||
     userStateParam === "partial_inactive" ||
     userStateParam === "inactive"
-    ? userStateParam 
-    : "active";
+      ? userStateParam
+      : "active";
   const [activeTab, setActiveTab] = useState<string>(validUserState);
 
-  // Sync tab state with URL parameter
+  // Sync tab state with URL: read from URL and, when userState is missing, write default so URL reflects the active tab
   useEffect(() => {
     setActiveTab(validUserState);
-  }, [validUserState]);
+    const hasValidUserState =
+      userStateParam === "active" ||
+      userStateParam === "pending" ||
+      userStateParam === "partial_inactive" ||
+      userStateParam === "inactive";
+    if (!hasValidUserState) {
+      const params = new URLSearchParams(Array.from(searchParams.entries()));
+      params.set("userState", validUserState);
+      router.replace(`/users?${params.toString()}`, { scroll: false });
+    }
+  }, [validUserState, userStateParam, searchParams, router]);
 
   // Filter users based on status
   const activeUsers = users.filter((user) => user.status === "ACTIVE");
