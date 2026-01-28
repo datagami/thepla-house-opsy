@@ -29,11 +29,13 @@ export default async function LeaveRequestsPage() {
           name: true,
           branch: {
             select: {
+              id: true,
               name: true,
             },
           },
           department: {
             select: {
+              id: true,
               name: true,
             },
           },

@@ -11,8 +11,11 @@ interface DownloadLeaveReportProps {
     month?: number;
     year?: number;
     branchId?: string;
+    departmentId?: string;
     status?: string;
     leaveType?: string;
+    startDate?: string;
+    endDate?: string;
   };
 }
 
@@ -24,7 +27,13 @@ export function DownloadLeaveReport({ filters }: DownloadLeaveReportProps) {
       setIsDownloading(true);
 
       const params = new URLSearchParams();
-      
+
+      if (filters.startDate) {
+        params.append("startDate", filters.startDate);
+      }
+      if (filters.endDate) {
+        params.append("endDate", filters.endDate);
+      }
       if (filters.month) {
         params.append("month", filters.month.toString());
       }
@@ -33,6 +42,9 @@ export function DownloadLeaveReport({ filters }: DownloadLeaveReportProps) {
       }
       if (filters.branchId && filters.branchId !== "ALL") {
         params.append("branchId", filters.branchId);
+      }
+      if (filters.departmentId && filters.departmentId !== "ALL") {
+        params.append("departmentId", filters.departmentId);
       }
       if (filters.status && filters.status !== "ALL") {
         params.append("status", filters.status);

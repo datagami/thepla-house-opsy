@@ -31,18 +31,28 @@ import {
   eachDayOfInterval,
   endOfMonth,
   endOfWeek,
+  endOfYear,
   format,
   isSameDay,
   isSameMonth,
   startOfDay,
   startOfMonth,
   startOfWeek,
+  startOfYear,
   subMonths,
 } from "date-fns";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import {LeaveRequest} from "@/models/models";
+import { LeaveRequest } from "@/models/models";
 import * as React from "react";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { DownloadLeaveReport } from "@/components/leave-requests/download-leave-report";
 
 
 interface LeaveRequestTableProps {
@@ -107,6 +117,12 @@ export function LeaveRequestTable({
   const [dialogDay, setDialogDay] = React.useState<Date>(() => startOfDay(new Date()));
   const [branchFilter, setBranchFilter] = React.useState<string>("ALL");
   const [departmentFilter, setDepartmentFilter] = React.useState<string>("ALL");
+  const [startDateFilter, setStartDateFilter] = React.useState<Date>(() =>
+    startOfYear(new Date())
+  );
+  const [endDateFilter, setEndDateFilter] = React.useState<Date>(() =>
+    endOfYear(new Date())
+  );
 
   React.useEffect(() => {
     // avoid confusing "empty" states when switching time ranges
@@ -175,32 +191,37 @@ export function LeaveRequestTable({
   }, [requests, timeRange]);
 
   const branchOptions = React.useMemo(() => {
-    const set = new Set<string>();
+    const map = new Map<string, { id: string; name: string }>();
     for (const req of baseRequests) {
-      const name = req.user?.branch?.name;
-      if (name) set.add(name);
+      const b = req.user?.branch;
+      if (b?.id && b?.name) map.set(b.id, { id: b.id, name: b.name });
     }
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [baseRequests]);
 
   const departmentOptions = React.useMemo(() => {
-    const set = new Set<string>();
+    const map = new Map<string, { id: string; name: string }>();
     for (const req of baseRequests) {
-      const name = req.user?.department?.name;
-      if (name) set.add(name);
+      const d = req.user?.department;
+      if (d?.id && d?.name) map.set(d.id, { id: d.id, name: d.name });
     }
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [baseRequests]);
 
   const filteredRequests = React.useMemo(() => {
+    const filterStart = startOfDay(startDateFilter);
+    const filterEnd = startOfDay(endDateFilter);
     return baseRequests.filter((req) => {
-      const branchName = req.user?.branch?.name ?? "";
-      const deptName = req.user?.department?.name ?? "";
-      const branchOk = branchFilter === "ALL" ? true : branchName === branchFilter;
-      const deptOk = departmentFilter === "ALL" ? true : deptName === departmentFilter;
-      return branchOk && deptOk;
+      const reqStart = startOfDay(toDate(req.startDate));
+      const reqEnd = startOfDay(toDate(req.endDate));
+      const dateOk = reqStart <= filterEnd && reqEnd >= filterStart;
+      const branchId = req.user?.branch?.id ?? "";
+      const deptId = req.user?.department?.id ?? "";
+      const branchOk = branchFilter === "ALL" ? true : branchId === branchFilter;
+      const deptOk = departmentFilter === "ALL" ? true : deptId === departmentFilter;
+      return dateOk && branchOk && deptOk;
     });
-  }, [baseRequests, branchFilter, departmentFilter]);
+  }, [baseRequests, branchFilter, departmentFilter, startDateFilter, endDateFilter]);
 
   const daysInView = React.useMemo(() => {
     const start = startOfWeek(startOfMonth(month), { weekStartsOn: 0 });
@@ -274,6 +295,52 @@ export function LeaveRequestTable({
 
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-[180px] justify-start text-left font-normal",
+                    "text-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {format(startDateFilter, "MMM d, yyyy")}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={startDateFilter}
+                  onSelect={(d) => d && setStartDateFilter(startOfDay(d))}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-[180px] justify-start text-left font-normal",
+                    "text-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {format(endDateFilter, "MMM d, yyyy")}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={endDateFilter}
+                  onSelect={(d) => d && setEndDateFilter(startOfDay(d))}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+
             <div className="w-[220px]">
               <Select value={branchFilter} onValueChange={setBranchFilter}>
                 <SelectTrigger>
@@ -282,8 +349,8 @@ export function LeaveRequestTable({
                 <SelectContent>
                   <SelectItem value="ALL">All branches</SelectItem>
                   {branchOptions.map((b) => (
-                    <SelectItem key={b} value={b}>
-                      {b}
+                    <SelectItem key={b.id} value={b.id}>
+                      {b.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -298,8 +365,8 @@ export function LeaveRequestTable({
                 <SelectContent>
                   <SelectItem value="ALL">All departments</SelectItem>
                   {departmentOptions.map((d) => (
-                    <SelectItem key={d} value={d}>
-                      {d}
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -310,6 +377,17 @@ export function LeaveRequestTable({
               Showing <span className="font-medium text-foreground">{filteredRequests.length}</span> of{" "}
               <span className="font-medium text-foreground">{baseRequests.length}</span>
             </div>
+
+            {canReview && (
+              <DownloadLeaveReport
+                filters={{
+                  startDate: format(startDateFilter, "yyyy-MM-dd"),
+                  endDate: format(endDateFilter, "yyyy-MM-dd"),
+                  branchId: branchFilter === "ALL" ? undefined : branchFilter,
+                  departmentId: departmentFilter === "ALL" ? undefined : departmentFilter,
+                }}
+              />
+            )}
           </div>
 
           <div className="flex items-center gap-2 text-xs text-muted-foreground">

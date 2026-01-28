@@ -26,7 +26,10 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const month = searchParams.get("month");
     const year = searchParams.get("year");
+    const startDateParam = searchParams.get("startDate");
+    const endDateParam = searchParams.get("endDate");
     const branchId = searchParams.get("branchId");
+    const departmentId = searchParams.get("departmentId");
     const status = searchParams.get("status");
     const leaveType = searchParams.get("leaveType");
 
@@ -34,18 +37,25 @@ export async function GET(req: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {};
 
-    // Filter by date range if month and year are provided
-    if (month && year) {
-      const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
-      const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
-      
+    // Filter by date range: prefer startDate/endDate, else month/year
+    if (startDateParam && endDateParam) {
+      const rangeStart = new Date(startDateParam);
+      const rangeEnd = new Date(endDateParam);
+      rangeEnd.setHours(23, 59, 59, 999);
+      where.AND = [
+        { startDate: { lte: rangeEnd } },
+        { endDate: { gte: rangeStart } },
+      ];
+    } else if (month && year) {
+      const rangeStart = new Date(parseInt(year), parseInt(month) - 1, 1);
+      const rangeEnd = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
       where.OR = [
         {
           AND: [
-            { startDate: { lte: endDate } },
-            { endDate: { gte: startDate } }
-          ]
-        }
+            { startDate: { lte: rangeEnd } },
+            { endDate: { gte: rangeStart } },
+          ],
+        },
       ];
     }
 
@@ -57,10 +67,16 @@ export async function GET(req: Request) {
       where.leaveType = leaveType;
     }
 
+    // User filters: branch and/or department
+    const userFilter: { branchId?: string; departmentId?: string } = {};
     if (branchId && branchId !== "ALL") {
-      where.user = {
-        branchId: branchId,
-      };
+      userFilter.branchId = branchId;
+    }
+    if (departmentId && departmentId !== "ALL") {
+      userFilter.departmentId = departmentId;
+    }
+    if (Object.keys(userFilter).length > 0) {
+      where.user = userFilter;
     }
 
     // Fetch all leave requests with related data
