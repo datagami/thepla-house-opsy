@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Clock, CheckCircle, Users, TrendingUp, AlertTriangle, Award } from "lucide-react";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -109,7 +110,11 @@ export function AttendanceReports({ userRole }: AttendanceReportsProps) {
       });
 
       const response = await fetch(`/api/reports/attendance/export?${params}`);
-      if (!response.ok) throw new Error("Failed to export report");
+      if (!response.ok) {
+        const err = await response.json().catch(() => null);
+        toast.error(err?.error ?? "Failed to export report");
+        return;
+      }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -120,8 +125,10 @@ export function AttendanceReports({ userRole }: AttendanceReportsProps) {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      toast.success("Attendance report downloaded successfully");
     } catch (error) {
       console.error("Error exporting report:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to export report");
     }
   };
 
