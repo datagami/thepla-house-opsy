@@ -144,14 +144,6 @@ export async function GET(req: Request) {
       ];
       sheet.addRow(headerRow);
 
-      const presentCol = 2 + daysInMonth + 1;
-      const absentCol = presentCol + 1;
-      const halfDayCol = absentCol + 1;
-      const wfhCol = halfDayCol + 1;
-      const woCol = wfhCol + 1;
-      const pendingCol = woCol + 1;
-      const rejectedCol = pendingCol + 1;
-
       for (const emp of branchEmps) {
         const counts: Record<StatusKey, number> = {
           PRESENT: 0,
