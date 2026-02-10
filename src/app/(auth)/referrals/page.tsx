@@ -51,9 +51,34 @@ export default async function ReferralsPage() {
     },
   });
 
+  // Recent referral reversals where bonus was reversed (HR may need to recover if salary was already paid)
+  const since = new Date();
+  since.setDate(since.getDate() - 60);
+  const reversalLogs = await prisma.activityLog.findMany({
+    where: {
+      activityType: "REFERRAL_ARCHIVED",
+      createdAt: { gte: since },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
+  let recoveryReminderCount = 0;
+  for (const log of reversalLogs) {
+    try {
+      const meta = log.metadata ? (JSON.parse(log.metadata) as { totalReversed?: number }) : null;
+      if (meta?.totalReversed != null && meta.totalReversed > 0) recoveryReminderCount += 1;
+    } catch {
+      // ignore invalid metadata
+    }
+  }
+
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
-      <ReferralsManagement initialReferrals={referrals} userRole={userRole} />
+      <ReferralsManagement
+        initialReferrals={referrals}
+        userRole={userRole}
+        recoveryReminderCount={recoveryReminderCount}
+      />
     </div>
   );
 }

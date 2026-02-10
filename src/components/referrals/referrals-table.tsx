@@ -20,6 +20,7 @@ interface ReferralWithRelations {
   eligibleAt: Date;
   paidAt: Date | null;
   salaryId: string | null;
+  archivedAt: Date | null;
   createdAt: Date;
   referrer: {
     id: string;
@@ -46,6 +47,9 @@ interface ReferralsTableProps {
 
 export function ReferralsTable({ referrals }: ReferralsTableProps) {
   const getStatus = (referral: ReferralWithRelations) => {
+    if (referral.archivedAt) {
+      return { label: "Archived", variant: "secondary" as const };
+    }
     if (referral.paidAt) {
       return { label: "Paid", variant: "default" as const };
     }

@@ -22,11 +22,13 @@ export async function POST(req: Request) {
     // e.g., if eligible in January, bonus is paid in February salary
     const previousMonthEnd = new Date(year, month - 1, 0)
 
-    // Find eligible unpaid referrals
+    // Find eligible unpaid referrals (only non-archived, referred user must be ACTIVE)
     const referrals = await prisma.referral.findMany({
       where: {
         paidAt: null,
-        eligibleAt: { lte: previousMonthEnd }
+        archivedAt: null,
+        eligibleAt: { lte: previousMonthEnd },
+        referredUser: { status: 'ACTIVE' }
       }
     })
 

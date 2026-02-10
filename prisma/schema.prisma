@@ -482,6 +482,7 @@ model Referral {
   eligibleAt     DateTime  @map("eligible_at")
   paidAt         DateTime? @map("paid_at")
   salaryId       String?   @map("salary_id")
+  archivedAt     DateTime? @map("archived_at")
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
@@ -495,6 +496,7 @@ model Referral {
   @@index([referredUserId])
   @@index([eligibleAt])
   @@index([salaryId])
+  @@index([archivedAt])
 }
 
 model AdvancePayment {
@@ -657,6 +659,7 @@ enum ActivityType {
   SALARY_STATUS_CHANGED
   SALARY_DELETED
   REFERRAL_BONUS_PROCESSED
+  REFERRAL_ARCHIVED
   ENET_FILE_DOWNLOADED
   ADVANCE_PAYMENT_REQUESTED
   ADVANCE_PAYMENT_APPROVED

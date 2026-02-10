@@ -38,13 +38,17 @@ export async function POST(
       return NextResponse.json({ error: "No referral bonuses attached to this salary" }, { status: 400 });
     }
 
-    // Only undo if these referrals were actually processed (paidAt set)
-    const processedReferralIds = referrals.filter((r) => r.paidAt !== null).map((r) => r.id);
+    // Only undo non-archived referrals that were actually processed (paidAt set)
+    const toUndo = referrals.filter((r) => r.paidAt !== null && r.archivedAt == null);
+    const processedReferralIds = toUndo.map((r) => r.id);
     if (processedReferralIds.length === 0) {
-      return NextResponse.json({ error: "Referral bonuses are not processed for this salary" }, { status: 400 });
+      return NextResponse.json(
+        { error: "No active referral bonuses to undo for this salary (archived referrals are not undone)" },
+        { status: 400 }
+      );
     }
 
-    const total = referrals.reduce((sum, r) => sum + (r.bonusAmount || 0), 0);
+    const total = toUndo.reduce((sum, r) => sum + (r.bonusAmount || 0), 0);
 
     await prisma.$transaction(async (tx) => {
       // Unlink and unpay referrals so they carry over again

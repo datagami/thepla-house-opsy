@@ -147,8 +147,18 @@ export function UserActions({ user, currentUserRole, branches, onUpdate }: UserA
         throw new Error(error.error || 'Failed to update status');
       }
 
+      const data = await response.json();
       toast.success(`User status updated to ${newStatus.toLowerCase()}`);
-      
+
+      // Notify HR if referral bonus was reversed (recovery may be needed if salary was already paid)
+      const reversal = data.referralReversal as { paidCount: number; totalReversed: number } | undefined;
+      if (reversal?.paidCount > 0 && reversal?.totalReversed > 0) {
+        toast.warning(
+          `Referral bonus reversed: ₹${reversal.totalReversed.toLocaleString()} (${reversal.paidCount} referral(s)). If the referrer's salary was already paid, recovery may be required. Check Activity Log for details.`,
+          { duration: 8000 }
+        );
+      }
+
       if (onUpdate) {
         onUpdate();
       }

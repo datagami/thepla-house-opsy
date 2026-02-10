@@ -316,6 +316,7 @@ export interface Referral {
   eligibleAt: Date;
   paidAt?: Date | null;
   salaryId?: string | null;
+  archivedAt?: Date | null;
 }
 
 export interface AdvancePayment {

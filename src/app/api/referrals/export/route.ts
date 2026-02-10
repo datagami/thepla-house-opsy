@@ -33,15 +33,20 @@ export async function GET(req: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {};
 
-    // Filter by status (paid/eligible/pending)
-    if (status === "paid") {
-      where.paidAt = { not: null };
-    } else if (status === "eligible") {
-      where.paidAt = null;
-      where.eligibleAt = { lte: new Date() };
-    } else if (status === "pending") {
-      where.paidAt = null;
-      where.eligibleAt = { gt: new Date() };
+    // Filter by status (paid/eligible/pending/archived)
+    if (status === "archived") {
+      where.archivedAt = { not: null };
+    } else {
+      where.archivedAt = null; // active referrals only for payout statuses
+      if (status === "paid") {
+        where.paidAt = { not: null };
+      } else if (status === "eligible") {
+        where.paidAt = null;
+        where.eligibleAt = { lte: new Date() };
+      } else if (status === "pending") {
+        where.paidAt = null;
+        where.eligibleAt = { gt: new Date() };
+      }
     }
 
     // Filter by eligibility date range
@@ -86,6 +91,7 @@ export async function GET(req: Request) {
             numId: true,
             email: true,
             doj: true,
+            status: true,
             branch: {
               select: {
                 name: true,
@@ -108,12 +114,19 @@ export async function GET(req: Request) {
     });
 
     // Helper function to get status
-    const getStatus = (referral: { paidAt: Date | null; eligibleAt: Date }) => {
+    const getStatus = (referral: {
+      paidAt: Date | null;
+      eligibleAt: Date | null;
+      archivedAt: Date | null;
+    }) => {
+      if (referral.archivedAt) {
+        return "Archived";
+      }
       if (referral.paidAt) {
         return "Paid";
       }
       const now = new Date();
-      const eligibleDate = new Date(referral.eligibleAt);
+      const eligibleDate = new Date(referral.eligibleAt!);
       if (now >= eligibleDate) {
         return "Eligible";
       }
@@ -204,12 +217,17 @@ export async function GET(req: Request) {
       "Referred Emp No": referral.referredUser.numId,
       "Referred Name": referral.referredUser.name ?? "Unknown",
       "Referred Branch": referral.referredUser.branch?.name ?? "N/A",
+      "Referred User Status": referral.referredUser.status ?? "N/A",
       "Referred DOJ": referral.referredUser.doj
         ? format(new Date(referral.referredUser.doj), "yyyy-MM-dd")
         : "N/A",
       "Bonus Amount": referral.bonusAmount,
       "Eligible Date": format(new Date(referral.eligibleAt), "yyyy-MM-dd"),
       Status: getStatus(referral),
+      Archived: referral.archivedAt ? "Yes" : "No",
+      "Archived At": referral.archivedAt
+        ? format(new Date(referral.archivedAt), "yyyy-MM-dd")
+        : "N/A",
       "Paid Date": referral.paidAt
         ? format(new Date(referral.paidAt), "yyyy-MM-dd")
         : "N/A",
@@ -226,19 +244,21 @@ export async function GET(req: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const statsData: any[] = [];
 
-    // Overall Statistics
+    // Overall Statistics (exclude archived from payout-related counts)
     const totalReferrals = allReferrals.length;
-    const paidCount = allReferrals.filter((r) => r.paidAt).length;
-    const eligibleCount = allReferrals.filter(
+    const activeReferrals = allReferrals.filter((r) => r.archivedAt == null);
+    const archivedCount = allReferrals.filter((r) => r.archivedAt != null).length;
+    const paidCount = activeReferrals.filter((r) => r.paidAt).length;
+    const eligibleCount = activeReferrals.filter(
       (r) => !r.paidAt && new Date(r.eligibleAt) <= new Date()
     ).length;
-    const pendingCount = allReferrals.filter(
+    const pendingCount = activeReferrals.filter(
       (r) => !r.paidAt && new Date(r.eligibleAt) > new Date()
     ).length;
-    const totalBonusPaid = allReferrals
+    const totalBonusPaid = activeReferrals
       .filter((r) => r.paidAt)
       .reduce((sum, r) => sum + r.bonusAmount, 0);
-    const totalBonusPending = allReferrals
+    const totalBonusPending = activeReferrals
       .filter((r) => !r.paidAt)
       .reduce((sum, r) => sum + r.bonusAmount, 0);
 
@@ -246,6 +266,10 @@ export async function GET(req: Request) {
     statsData.push({
       "Statistic Type": "Total Referrals",
       Value: totalReferrals,
+    });
+    statsData.push({
+      "Statistic Type": "Archived Count",
+      Value: archivedCount,
     });
     statsData.push({
       "Statistic Type": "Paid Count",

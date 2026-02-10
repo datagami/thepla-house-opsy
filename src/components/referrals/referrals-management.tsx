@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 import { ReferralsTable } from "@/components/referrals/referrals-table";
 import { DownloadReferralsReport } from "@/components/referrals/download-referrals-report";
 
@@ -16,6 +19,7 @@ interface ReferralWithRelations {
   eligibleAt: Date;
   paidAt: Date | null;
   salaryId: string | null;
+  archivedAt: Date | null;
   createdAt: Date;
   referrer: {
     id: string;
@@ -39,11 +43,13 @@ interface ReferralWithRelations {
 interface ReferralsManagementProps {
   initialReferrals: ReferralWithRelations[];
   userRole: string;
+  recoveryReminderCount?: number;
 }
 
 export function ReferralsManagement({
   initialReferrals,
   userRole,
+  recoveryReminderCount = 0,
 }: ReferralsManagementProps) {
   const [referrals] = useState<ReferralWithRelations[]>(initialReferrals);
   const [filteredReferrals, setFilteredReferrals] = useState<ReferralWithRelations[]>(initialReferrals);
@@ -74,13 +80,19 @@ export function ReferralsManagement({
       filtered = filtered.filter((referral) => {
         const now = new Date();
         const eligibleDate = new Date(referral.eligibleAt);
+        const isArchived = referral.archivedAt != null;
 
+        if (status === "archived") {
+          return isArchived;
+        }
         if (status === "paid") {
-          return referral.paidAt !== null;
-        } else if (status === "eligible") {
-          return referral.paidAt === null && now >= eligibleDate;
-        } else if (status === "pending") {
-          return referral.paidAt === null && now < eligibleDate;
+          return referral.paidAt !== null && !isArchived;
+        }
+        if (status === "eligible") {
+          return referral.paidAt === null && !isArchived && now >= eligibleDate;
+        }
+        if (status === "pending") {
+          return referral.paidAt === null && !isArchived && now < eligibleDate;
         }
         return true;
       });
@@ -117,24 +129,37 @@ export function ReferralsManagement({
     setBranchId("ALL");
   };
 
-  // Calculate stats
+  // Calculate stats (exclude archived from payout-related counts)
   const totalReferrals = filteredReferrals.length;
-  const paidCount = filteredReferrals.filter((r) => r.paidAt).length;
-  const eligibleCount = filteredReferrals.filter(
+  const activeReferrals = filteredReferrals.filter((r) => r.archivedAt == null);
+  const paidCount = activeReferrals.filter((r) => r.paidAt).length;
+  const eligibleCount = activeReferrals.filter(
     (r) => !r.paidAt && new Date(r.eligibleAt) <= new Date()
   ).length;
-  const pendingCount = filteredReferrals.filter(
+  const pendingCount = activeReferrals.filter(
     (r) => !r.paidAt && new Date(r.eligibleAt) > new Date()
   ).length;
-  const totalBonusPaid = filteredReferrals
+  const totalBonusPaid = activeReferrals
     .filter((r) => r.paidAt)
     .reduce((sum, r) => sum + r.bonusAmount, 0);
-  const totalBonusPending = filteredReferrals
+  const totalBonusPending = activeReferrals
     .filter((r) => !r.paidAt)
     .reduce((sum, r) => sum + r.bonusAmount, 0);
 
   return (
     <div className="space-y-4">
+      {recoveryReminderCount > 0 && isHROrManagement && (
+        <Alert className="border-amber-200 bg-amber-50">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-amber-800">Referral bonus recovery reminder</AlertTitle>
+          <AlertDescription className="text-amber-700">
+            {recoveryReminderCount} referral reversal event{recoveryReminderCount !== 1 ? "s" : ""} in the last 60 days involved reversing an already-paid bonus. If the referrer&apos;s salary was already paid, recovery may be required.{" "}
+            <Link href="/activity-logs?activityType=REFERRAL_ARCHIVED" className="font-medium underline hover:no-underline">
+              View Activity Log
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -168,6 +193,7 @@ export function ReferralsManagement({
                 <SelectItem value="paid">Paid</SelectItem>
                 <SelectItem value="eligible">Eligible</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
               </SelectContent>
             </Select>
 
