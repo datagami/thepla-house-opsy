@@ -35,6 +35,12 @@ const salaryComponentSchema = z.object({
   perMonth: z.number().min(0, 'Per month must be a positive number'),
 });
 
+const deductionSchema = z.object({
+  name: z.string().min(1, 'Deduction name is required'),
+  perAnnum: z.number().min(0, 'Per annum must be a positive number'),
+  perMonth: z.number().min(0, 'Per month must be a positive number'),
+});
+
 const jobOfferFormSchema = z
   .object({
     title: z.string().min(1, 'Title is required'),
@@ -44,6 +50,7 @@ const jobOfferFormSchema = z
     departmentId: z.string().min(1, 'Department is required'),
     totalSalary: z.number().min(0, 'Total salary must be a positive number'),
     salaryComponents: z.array(salaryComponentSchema).min(1, 'At least one salary component is required'),
+    deductions: z.array(deductionSchema).default([]),
     joiningDate: z.date({
       required_error: 'Joining date is required',
     }),
@@ -119,6 +126,9 @@ export function JobOfferForm({
               { name: 'Basic', perAnnum: 0, perMonth: 0 },
               { name: 'Other Allowances', perAnnum: 0, perMonth: 0 },
             ],
+      deductions: jobOffer?.deductions && Array.isArray(jobOffer.deductions)
+        ? jobOffer.deductions
+        : [],
       joiningDate: jobOffer?.joiningDate
         ? new Date(jobOffer.joiningDate)
         : new Date(),
@@ -132,8 +142,9 @@ export function JobOfferForm({
     },
   });
 
-  // Watch salary components and total salary
+  // Watch salary components, deductions, and total salary
   const salaryComponents = form.watch('salaryComponents');
+  const deductions = form.watch('deductions') ?? [];
   const prevComponentsRef = useRef<string>('');
 
   // Auto-calculate total from components
@@ -164,6 +175,22 @@ export function JobOfferForm({
     form.setValue(
       'salaryComponents',
       currentComponents.filter((_, i) => i !== index)
+    );
+  };
+
+  const addDeduction = () => {
+    const current = form.getValues('deductions');
+    form.setValue('deductions', [
+      ...current,
+      { name: '', perAnnum: 0, perMonth: 0 },
+    ]);
+  };
+
+  const removeDeduction = (index: number) => {
+    const current = form.getValues('deductions');
+    form.setValue(
+      'deductions',
+      current.filter((_, i) => i !== index)
     );
   };
 
@@ -494,6 +521,108 @@ export function JobOfferForm({
                   </div>
                 </div>
               ))}
+            </div>
+
+            <div className="space-y-4 pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-medium">Deductions</h4>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addDeduction}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Deduction
+                </Button>
+              </div>
+              <FormDescription>
+                Add statutory deductions like PF, Professional Tax, etc. Take-home will be CTC minus total deductions.
+              </FormDescription>
+              {deductions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No deductions added. Click &quot;Add Deduction&quot; to add PF, Professional Tax, etc.</p>
+              ) : (
+                deductions.map((_, index) => (
+                  <div
+                    key={index}
+                    className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-lg bg-muted/30"
+                  >
+                    <FormField
+                      control={form.control}
+                      name={`deductions.${index}.name`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Deduction Name *</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="e.g., PF, Professional Tax"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`deductions.${index}.perAnnum`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Per Annum *</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              {...field}
+                              onChange={(e) => {
+                                const value = parseFloat(e.target.value) || 0;
+                                field.onChange(value);
+                                const current = form.getValues('deductions');
+                                if (current?.[index]) {
+                                  current[index].perMonth = Math.round(value / 12);
+                                  form.setValue('deductions', current);
+                                }
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`deductions.${index}.perMonth`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Per Month *</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              placeholder="Auto-calculated"
+                              {...field}
+                              onChange={(e) =>
+                                field.onChange(parseFloat(e.target.value) || 0)
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="flex items-end">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeDeduction(index)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>

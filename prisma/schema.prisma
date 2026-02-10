@@ -737,6 +737,10 @@ model JobOffer {
   // Format: [{"name": "Basic", "perAnnum": 102000, "perMonth": 8500}, ...]
   salaryComponents      Json?          @map("salary_components")
   
+  // Deductions - JSON array (PF, Professional Tax, etc.)
+  // Format: [{"name": "PF", "perAnnum": 12000, "perMonth": 1000}, ...]
+  deductions            Json?          @map("deductions")
+  
   // Legacy fields (kept for backward compatibility, can be removed later)
   basicPerAnnum         Float?         @map("basic_per_annum")
   basicPerMonth         Float?         @map("basic_per_month")

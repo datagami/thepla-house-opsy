@@ -548,31 +548,62 @@ export async function GET(
       ];
     }
     
-    // Add total row
+    // CTC (Cost to Company)
     rows.push({
-      label: 'Total Cost to Company',
+      label: 'CTC (Cost to Company)',
       perAnnum: jobOffer.totalSalary,
       perMonth: jobOffer.totalSalary / 12,
     });
 
+    // Deductions section
+    const deductionsList = (jobOffer.deductions && Array.isArray(jobOffer.deductions))
+      ? (jobOffer.deductions as Array<{ name: string; perAnnum: number; perMonth: number }>)
+      : [];
+    let totalDeductionsPerAnnum = 0;
+    let totalDeductionsPerMonth = 0;
+    if (deductionsList.length > 0) {
+      for (const d of deductionsList) {
+        rows.push({
+          label: d.name,
+          perAnnum: d.perAnnum,
+          perMonth: d.perMonth,
+        });
+      }
+      totalDeductionsPerAnnum = deductionsList.reduce((sum, d) => sum + d.perAnnum, 0);
+      totalDeductionsPerMonth = deductionsList.reduce((sum, d) => sum + d.perMonth, 0);
+      rows.push({
+        label: 'Total Deductions (B)',
+        perAnnum: totalDeductionsPerAnnum,
+        perMonth: totalDeductionsPerMonth,
+      });
+    }
+    // Take Home (Net Salary) - always show (CTC - deductions)
+    rows.push({
+      label: 'Take Home (Net Salary)',
+      perAnnum: jobOffer.totalSalary - totalDeductionsPerAnnum,
+      perMonth: jobOffer.totalSalary / 12 - totalDeductionsPerMonth,
+    });
+
+    const boldRows = ['Sub Total (A)', 'CTC (Cost to Company)', 'Total Deductions (B)', 'Take Home (Net Salary)'];
     for (const row of rows) {
+      const isBold = boldRows.some((key) => row.label.includes(key));
       page2.drawText(row.label, {
         x: col1X,
         y: y2,
         size: 10,
-        font: row.label.includes('Total') ? boldFont : regularFont,
+        font: isBold ? boldFont : regularFont,
       });
       page2.drawText(formatIndianCurrency(row.perAnnum), {
         x: col2X,
         y: y2,
         size: 10,
-        font: row.label.includes('Total') ? boldFont : regularFont,
+        font: isBold ? boldFont : regularFont,
       });
       page2.drawText(formatIndianCurrency(row.perMonth), {
         x: col3X,
         y: y2,
         size: 10,
-        font: row.label.includes('Total') ? boldFont : regularFont,
+        font: isBold ? boldFont : regularFont,
       });
       y2 -= rowHeight;
     }
