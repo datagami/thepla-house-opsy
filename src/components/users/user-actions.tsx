@@ -151,10 +151,12 @@ export function UserActions({ user, currentUserRole, branches, onUpdate }: UserA
       toast.success(`User status updated to ${newStatus.toLowerCase()}`);
 
       // Notify HR if referral bonus was reversed (recovery may be needed if salary was already paid)
-      const reversal = data.referralReversal as { paidCount: number; totalReversed: number } | undefined;
-      if (reversal?.paidCount > 0 && reversal?.totalReversed > 0) {
+      const reversal = data.referralReversal as { paidCount?: number; totalReversed?: number } | undefined;
+      const paidCount = reversal?.paidCount ?? 0;
+      const totalReversed = reversal?.totalReversed ?? 0;
+      if (paidCount > 0 && totalReversed > 0) {
         toast.warning(
-          `Referral bonus reversed: ₹${reversal.totalReversed.toLocaleString()} (${reversal.paidCount} referral(s)). If the referrer's salary was already paid, recovery may be required. Check Activity Log for details.`,
+          `Referral bonus reversed: ₹${totalReversed.toLocaleString()} (${paidCount} referral(s)). If the referrer's salary was already paid, recovery may be required. Check Activity Log for details.`,
           { duration: 8000 }
         );
       }
