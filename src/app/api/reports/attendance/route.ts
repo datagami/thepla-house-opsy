@@ -271,6 +271,55 @@ export async function GET(req: Request) {
       .sort((a, b) => a.attendanceRate - b.attendanceRate)
       .slice(0, 10);
 
+    // 6-month attendance trend (monthly rate for current employee set)
+    const employeeIds = employees.map((e) => e.id);
+    const attendanceTrend6Months: Array<{ month: string; rate: number; presentDays: number; totalPossible: number }> = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const trendMonth = month - i;
+      const trendYear = trendMonth <= 0 ? year - 1 : year;
+      const adjustedMonth = trendMonth <= 0 ? trendMonth + 12 : trendMonth;
+      const trendStart = new Date(trendYear, adjustedMonth - 1, 1);
+      const trendEnd = new Date(trendYear, adjustedMonth, 0);
+      const trendDaysInMonth = trendEnd.getDate();
+      const trendIsCurrentMonth =
+        trendYear === today.getFullYear() && adjustedMonth === today.getMonth() + 1;
+      const trendDaysToCount = trendIsCurrentMonth ? today.getDate() : trendDaysInMonth;
+      const trendTotalPossible = totalEmployees * trendDaysToCount;
+
+      const trendRecords = await prisma.attendance.findMany({
+        where: {
+          date: { gte: trendStart, lte: trendEnd },
+          userId: { in: employeeIds },
+          status: "APPROVED",
+        },
+        select: {
+          userId: true,
+          isPresent: true,
+          isHalfDay: true,
+        },
+      });
+
+      let trendPresentDays = 0;
+      trendRecords.forEach((record) => {
+        if (record.isPresent) {
+          trendPresentDays += record.isHalfDay ? 0.5 : 1;
+        }
+      });
+
+      const trendRate =
+        trendTotalPossible > 0
+          ? parseFloat(((trendPresentDays / trendTotalPossible) * 100).toFixed(1))
+          : 0;
+
+      attendanceTrend6Months.push({
+        month: `${adjustedMonth}/${trendYear}`,
+        rate: trendRate,
+        presentDays: parseFloat(trendPresentDays.toFixed(1)),
+        totalPossible: trendTotalPossible,
+      });
+    }
+
     return NextResponse.json({
       totalEmployees,
       totalDaysInMonth,
@@ -284,6 +333,7 @@ export async function GET(req: Request) {
       avgPresentDaysPerEmployee: parseFloat(avgPresentDaysPerEmployee.toFixed(1)),
       attendanceByBranch,
       attendanceTrend,
+      attendanceTrend6Months,
       topPerformers,
       lowAttendanceEmployees,
     });

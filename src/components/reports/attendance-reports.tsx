@@ -9,6 +9,15 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
 
 interface AttendanceReportsProps {
   userRole: string;
@@ -41,6 +50,12 @@ interface AttendanceStats {
     absent: number;
     total: number;
     rate: number;
+  }>;
+  attendanceTrend6Months?: Array<{
+    month: string;
+    rate: number;
+    presentDays: number;
+    totalPossible: number;
   }>;
   topPerformers: Array<{
     name: string;
@@ -266,6 +281,134 @@ export function AttendanceReports({ userRole }: AttendanceReportsProps) {
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Daily attendance trend (selected month) */}
+              {stats.attendanceTrend.length > 0 && stats.attendanceTrend.some((d) => d.total > 0) ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Daily attendance rate</CardTitle>
+                    <CardDescription>
+                      Day-wise attendance rate for {format(new Date(year, month - 1, 1), "MMMM yyyy")}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[300px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                          data={stats.attendanceTrend.map((d) => ({
+                            ...d,
+                            dateLabel: format(new Date(d.date), "d MMM"),
+                          }))}
+                          margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                          <XAxis dataKey="dateLabel" tick={{ fontSize: 12 }} />
+                          <YAxis tick={{ fontSize: 12 }} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                          <Tooltip
+                            content={({ active, payload }) => {
+                              if (!active || !payload?.length) return null;
+                              const p = payload[0].payload as { date: string; rate: number; present: number; absent: number; total: number };
+                              return (
+                                <div className="rounded-md border bg-background px-3 py-2 text-sm shadow-md">
+                                  <div className="font-medium">{format(new Date(p.date), "d MMM yyyy")}</div>
+                                  <div className="text-muted-foreground mt-1">
+                                    Rate: {p.rate.toFixed(1)}% · Present: {p.present} · Absent: {p.absent}
+                                  </div>
+                                </div>
+                              );
+                            }}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="rate"
+                            name="rate"
+                            stroke="hsl(var(--primary))"
+                            strokeWidth={2}
+                            dot={{ r: 3 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                stats.attendanceTrend.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Daily attendance rate</CardTitle>
+                      <CardDescription>
+                        Day-wise attendance for {format(new Date(year, month - 1, 1), "MMMM yyyy")}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground py-8 text-center">
+                        No data for the selected period
+                      </p>
+                    </CardContent>
+                  </Card>
+                )
+              )}
+
+              {/* 6-month attendance trend */}
+              {stats.attendanceTrend6Months && stats.attendanceTrend6Months.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Attendance trend (last 6 months)</CardTitle>
+                    <CardDescription>
+                      Monthly average attendance rate for selected branch
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {stats.attendanceTrend6Months.some((d) => d.totalPossible > 0) ? (
+                      <div className="h-[300px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart
+                            data={stats.attendanceTrend6Months.map((d) => ({
+                              ...d,
+                              monthLabel: (() => {
+                                const [m, y] = d.month.split("/").map(Number);
+                                return format(new Date(y, m - 1, 1), "MMM yyyy");
+                              })(),
+                            }))}
+                            margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                            <XAxis dataKey="monthLabel" tick={{ fontSize: 12 }} />
+                            <YAxis tick={{ fontSize: 12 }} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                            <Tooltip
+                              formatter={(value: number) => [`${value}%`, "Rate"]}
+                              content={({ active, payload }) => {
+                                if (!active || !payload?.length) return null;
+                                const p = payload[0].payload as { month: string; rate: number; presentDays: number; totalPossible: number; monthLabel: string };
+                                return (
+                                  <div className="rounded-md border bg-background px-3 py-2 text-sm shadow-md">
+                                    <div className="font-medium">{p.monthLabel}</div>
+                                    <div className="text-muted-foreground mt-1">
+                                      Rate: {p.rate}% · Present: {p.presentDays} / {p.totalPossible} days
+                                    </div>
+                                  </div>
+                                );
+                              }}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="rate"
+                              name="Rate"
+                              stroke="hsl(var(--primary))"
+                              strokeWidth={2}
+                              dot={{ r: 4 }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground py-8 text-center">
+                        No data for the selected period
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Attendance by Branch */}
               {stats.attendanceByBranch.length > 0 && (

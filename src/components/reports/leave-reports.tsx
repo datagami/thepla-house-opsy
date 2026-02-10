@@ -7,6 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CalendarCheck } from "lucide-react";
 import { format } from "date-fns";
 import { DownloadLeaveReport } from "@/components/leave-requests/download-leave-report";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  CartesianGrid,
+} from "recharts";
 
 interface LeaveReportsProps {
   userRole: string;
@@ -78,6 +88,21 @@ export function LeaveReports({ userRole }: LeaveReportsProps) {
   useEffect(() => {
     fetchLeaveReport();
   }, [month, year, branch]);
+
+  const formatMonthLabel = (monthStr: string) => {
+    const [m, y] = monthStr.split("/").map(Number);
+    return format(new Date(y, m - 1, 1), "MMM yyyy");
+  };
+
+  const leaveChartData =
+    stats?.leaveTrend?.map((d) => ({
+      ...d,
+      monthLabel: formatMonthLabel(d.month),
+    })) ?? [];
+  const hasLeaveTrendData =
+    leaveChartData.length > 0 &&
+    leaveChartData.some((d) => d.requests > 0 || d.approved > 0);
+  const totalRequests6Months = leaveChartData.reduce((s, d) => s + d.requests, 0);
 
   return (
     <div className="space-y-4">
@@ -227,6 +252,36 @@ export function LeaveReports({ userRole }: LeaveReportsProps) {
                   </CardContent>
                 </Card>
               </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Leave trend (last 6 months)</CardTitle>
+                  <CardDescription>
+                    Requests and approved by month. Total requests (6 months): {totalRequests6Months}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {hasLeaveTrendData ? (
+                    <div className="h-[300px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={leaveChartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                          <XAxis dataKey="monthLabel" tick={{ fontSize: 12 }} />
+                          <YAxis tick={{ fontSize: 12 }} />
+                          <Tooltip />
+                          <Legend />
+                          <Bar dataKey="requests" name="Requests" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="approved" name="Approved" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground py-8 text-center">
+                      No data for the selected period
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
 
               {stats.leaveByType.length > 0 && (
                 <Card>

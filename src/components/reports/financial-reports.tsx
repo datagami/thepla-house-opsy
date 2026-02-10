@@ -6,6 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, DollarSign, ArrowUp, ArrowDown } from "lucide-react";
 import { format } from "date-fns";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
 
 interface FinancialReportsProps {
   userRole: string;
@@ -126,6 +135,20 @@ export function FinancialReports({ userRole }: FinancialReportsProps) {
       maximumFractionDigits: 0,
     }).format(amount);
   };
+
+  // Format "M/YYYY" from API to "MMM yyyy" for chart labels
+  const formatMonthLabel = (monthStr: string) => {
+    const [m, y] = monthStr.split("/").map(Number);
+    return format(new Date(y, m - 1, 1), "MMM yyyy");
+  };
+
+  const salaryChartData =
+    stats?.salaryTrend?.map((d) => ({
+      ...d,
+      monthLabel: formatMonthLabel(d.month),
+    })) ?? [];
+  const hasSalaryTrendData =
+    salaryChartData.length > 0 && salaryChartData.some((d) => d.amount > 0);
 
   return (
     <div className="space-y-4">
@@ -268,6 +291,43 @@ export function FinancialReports({ userRole }: FinancialReportsProps) {
                   </CardContent>
                 </Card>
               </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Salary trend (last 6 months)</CardTitle>
+                  <CardDescription>
+                    Total salary (INR) by month for selected branch
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {hasSalaryTrendData ? (
+                    <div className="h-[300px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={salaryChartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                          <XAxis dataKey="monthLabel" tick={{ fontSize: 12 }} />
+                          <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${(v / 100000).toFixed(0)}L`} />
+                          <Tooltip
+                            formatter={(value: number) => [formatCurrency(value), "Salary"]}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="amount"
+                            name="Salary"
+                            stroke="hsl(var(--primary))"
+                            strokeWidth={2}
+                            dot={{ r: 4 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground py-8 text-center">
+                      No data for the selected period
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
 
               {stats.salaryByBranch.length > 0 && (
                 <Card>
