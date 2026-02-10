@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 import * as XLSX from 'xlsx';
 import { calculateNetSalaryFromObject } from '@/lib/services/salary-calculator';
+import { sortBranchesForReport } from '@/lib/branch-order';
 import { Salary } from '@/models/models';
 
 export async function POST(req: Request) {
@@ -63,8 +64,13 @@ export async function POST(req: Request) {
     // Calculate days in month
     const daysInMonth = new Date(year, month, 0).getDate();
 
-    // Create a sheet for each branch
-    Object.entries(salariesByBranch).forEach(([branch, branchSalaries]) => {
+    // Same branch order as financial report (sheets and TOTALS)
+    const branchNamesOrdered = sortBranchesForReport(Object.keys(salariesByBranch));
+
+    // Create a sheet for each branch in canonical order
+    branchNamesOrdered.forEach((branch) => {
+      const branchSalaries = salariesByBranch[branch];
+      if (!branchSalaries) return;
       // Generate salary report data for this branch
       const reportData = branchSalaries.map((salary) => {
         // Use calculateNetSalaryFromObject for uniformity
@@ -126,8 +132,10 @@ export async function POST(req: Request) {
       "Remark": ""
     };
 
-    // Calculate branch totals and grand totals
-    Object.entries(salariesByBranch).forEach(([branch, branchSalaries]) => {
+    // Calculate branch totals and grand totals (same order as sheets)
+    branchNamesOrdered.forEach((branch) => {
+      const branchSalaries = salariesByBranch[branch];
+      if (!branchSalaries) return;
       const branchTotals = {
         "EMP ID": `${branch} TOTAL`,
         "EMPLOYE NAME": "",

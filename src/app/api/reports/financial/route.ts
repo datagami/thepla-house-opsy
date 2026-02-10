@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { calculateNetSalaryFromObject } from "@/lib/services/salary-calculator";
+import { sortBranchesForReport } from "@/lib/branch-order";
 
 export async function GET(req: Request) {
   try {
@@ -121,11 +122,46 @@ export async function GET(req: Request) {
       branchStats.employeeCount = branchStats.employees.size;
     });
 
-    const salaryByBranch = Array.from(branchMap.entries()).map(([branch, stats]) => ({
+    // Previous month for difference
+    const prevMonth = month === 1 ? 12 : month - 1;
+    const prevYear = month === 1 ? year - 1 : year;
+    const prevSalaries = await prisma.salary.findMany({
+      where: {
+        month: prevMonth,
+        year: prevYear,
+        ...(branchFilter !== "ALL" && {
+          user: {
+            branch: { name: branchFilter },
+          },
+        }),
+      },
+      include: {
+        user: { select: { branch: { select: { name: true } } } },
+        installments: true,
+      },
+    });
+    const prevByBranch = new Map<string, number>();
+    prevSalaries.forEach((salary) => {
+      const branchName = salary.user?.branch?.name || "Unknown";
+      const net = calculateNetSalaryFromObject(salary as unknown as import('@/models/models').Salary);
+      prevByBranch.set(branchName, (prevByBranch.get(branchName) ?? 0) + net);
+    });
+
+    const salaryByBranchUnsorted = Array.from(branchMap.entries()).map(([branch, stats]) => ({
       branch,
       amount: stats.amount,
       employeeCount: stats.employeeCount,
+      previousAmount: prevByBranch.get(branch) ?? null,
+      difference: (() => {
+        const prev = prevByBranch.get(branch);
+        if (prev == null) return null;
+        return stats.amount - prev;
+      })(),
     }));
+    const branchOrder = sortBranchesForReport(salaryByBranchUnsorted.map((s) => s.branch));
+    const salaryByBranch = branchOrder.map(
+      (branch) => salaryByBranchUnsorted.find((s) => s.branch === branch)!
+    );
 
     // Advance summary
     const advanceStatusMap = new Map<string, { count: number; amount: number }>();

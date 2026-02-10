@@ -23,6 +23,8 @@ interface FinancialStats {
     branch: string;
     amount: number;
     employeeCount: number;
+    previousAmount: number | null;
+    difference: number | null;
   }>;
   advanceSummary: Array<{
     status: string;
@@ -271,16 +273,35 @@ export function FinancialReports({ userRole }: FinancialReportsProps) {
                 <Card>
                   <CardHeader>
                     <CardTitle>Salary by Branch</CardTitle>
+                    <CardDescription>
+                      Same order as salary report. Difference vs previous month ({format(new Date(year, month - 2, 1), "MMM yyyy")}).
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       {stats.salaryByBranch.map((branch) => (
                         <div key={branch.branch} className="space-y-2">
-                          <div className="flex justify-between text-sm">
+                          <div className="flex justify-between items-baseline gap-2 text-sm">
                             <span className="font-medium">
                               {branch.branch} ({branch.employeeCount} employees)
                             </span>
-                            <span className="font-bold">{formatCurrency(branch.amount)}</span>
+                            <div className="flex flex-col items-end">
+                              <span className="font-bold">{formatCurrency(branch.amount)}</span>
+                              {branch.difference != null && (
+                                <span
+                                  className={
+                                    branch.difference > 0
+                                      ? "text-xs text-green-600"
+                                      : branch.difference < 0
+                                        ? "text-xs text-red-600"
+                                        : "text-xs text-muted-foreground"
+                                  }
+                                >
+                                  {branch.difference > 0 && "+"}
+                                  {formatCurrency(branch.difference)} vs prev month
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))}
