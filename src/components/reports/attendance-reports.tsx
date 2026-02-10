@@ -17,6 +17,7 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
+  LabelList,
 } from "recharts";
 
 interface AttendanceReportsProps {
@@ -288,18 +289,25 @@ export function AttendanceReports({ userRole }: AttendanceReportsProps) {
                   <CardHeader>
                     <CardTitle>Daily attendance rate</CardTitle>
                     <CardDescription>
-                      Day-wise attendance rate for {format(new Date(year, month - 1, 1), "MMMM yyyy")}
+                      Day-wise attendance rate for {format(new Date(year, month - 1, 1), "MMMM yyyy")} — {branch === "ALL" ? "All Branches" : branch}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px] w-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart
-                          data={stats.attendanceTrend.map((d) => ({
-                            ...d,
-                            dateLabel: format(new Date(d.date), "d MMM"),
-                          }))}
-                          margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+                          data={stats.attendanceTrend.map((d, i, arr) => {
+                            const prevRate = i > 0 ? arr[i - 1].rate : null;
+                            const rateChangePp = prevRate != null ? d.rate - prevRate : null;
+                            const rateChangeLabel =
+                              rateChangePp == null ? "—" : (rateChangePp >= 0 ? "+" : "") + rateChangePp.toFixed(1) + "pp";
+                            return {
+                              ...d,
+                              dateLabel: format(new Date(d.date), "d MMM"),
+                              rateChangeLabel,
+                            };
+                          })}
+                          margin={{ top: 28, right: 10, left: 0, bottom: 5 }}
                         >
                           <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                           <XAxis dataKey="dateLabel" tick={{ fontSize: 12 }} />
@@ -325,7 +333,9 @@ export function AttendanceReports({ userRole }: AttendanceReportsProps) {
                             stroke="hsl(var(--primary))"
                             strokeWidth={2}
                             dot={{ r: 3 }}
-                          />
+                          >
+                            <LabelList dataKey="rateChangeLabel" position="top" style={{ fontSize: 10 }} className="fill-muted-foreground" />
+                          </Line>
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
@@ -355,7 +365,7 @@ export function AttendanceReports({ userRole }: AttendanceReportsProps) {
                   <CardHeader>
                     <CardTitle>Attendance trend (last 6 months)</CardTitle>
                     <CardDescription>
-                      Monthly average attendance rate for selected branch
+                      Monthly average attendance rate — {branch === "ALL" ? "All Branches" : branch}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -363,14 +373,19 @@ export function AttendanceReports({ userRole }: AttendanceReportsProps) {
                       <div className="h-[300px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                           <LineChart
-                            data={stats.attendanceTrend6Months.map((d) => ({
-                              ...d,
-                              monthLabel: (() => {
-                                const [m, y] = d.month.split("/").map(Number);
-                                return format(new Date(y, m - 1, 1), "MMM yyyy");
-                              })(),
-                            }))}
-                            margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+                            data={stats.attendanceTrend6Months.map((d, i, arr) => {
+                              const prevRate = i > 0 ? arr[i - 1].rate : null;
+                              const rateChangePp = prevRate != null ? d.rate - prevRate : null;
+                              const rateChangeLabel =
+                                rateChangePp == null ? "—" : (rateChangePp >= 0 ? "+" : "") + rateChangePp.toFixed(1) + "pp";
+                              const [m, y] = d.month.split("/").map(Number);
+                              return {
+                                ...d,
+                                monthLabel: format(new Date(y, m - 1, 1), "MMM yyyy"),
+                                rateChangeLabel,
+                              };
+                            })}
+                            margin={{ top: 28, right: 10, left: 0, bottom: 5 }}
                           >
                             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                             <XAxis dataKey="monthLabel" tick={{ fontSize: 12 }} />
@@ -397,7 +412,9 @@ export function AttendanceReports({ userRole }: AttendanceReportsProps) {
                               stroke="hsl(var(--primary))"
                               strokeWidth={2}
                               dot={{ r: 4 }}
-                            />
+                            >
+                              <LabelList dataKey="rateChangeLabel" position="top" style={{ fontSize: 11 }} className="fill-muted-foreground" />
+                            </Line>
                           </LineChart>
                         </ResponsiveContainer>
                       </div>

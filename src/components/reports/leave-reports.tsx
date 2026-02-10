@@ -16,6 +16,7 @@ import {
   Tooltip,
   Legend,
   CartesianGrid,
+  LabelList,
 } from "recharts";
 
 interface LeaveReportsProps {
@@ -95,10 +96,22 @@ export function LeaveReports({ userRole }: LeaveReportsProps) {
   };
 
   const leaveChartData =
-    stats?.leaveTrend?.map((d) => ({
-      ...d,
-      monthLabel: formatMonthLabel(d.month),
-    })) ?? [];
+    stats?.leaveTrend?.map((d, i, arr) => {
+      const prevRequests = i > 0 ? arr[i - 1].requests : 0;
+      const prevApproved = i > 0 ? arr[i - 1].approved : 0;
+      const pctRequests =
+        prevRequests > 0 ? ((d.requests - prevRequests) / prevRequests) * 100 : (d.requests > 0 ? 100 : null);
+      const pctApproved =
+        prevApproved > 0 ? ((d.approved - prevApproved) / prevApproved) * 100 : (d.approved > 0 ? 100 : null);
+      const fmt = (v: number | null) =>
+        v == null ? "—" : (v >= 0 ? "+" : "") + v.toFixed(0) + "%";
+      return {
+        ...d,
+        monthLabel: formatMonthLabel(d.month),
+        pctChangeRequestsLabel: fmt(pctRequests),
+        pctChangeApprovedLabel: fmt(pctApproved),
+      };
+    }) ?? [];
   const hasLeaveTrendData =
     leaveChartData.length > 0 &&
     leaveChartData.some((d) => d.requests > 0 || d.approved > 0);
@@ -257,21 +270,25 @@ export function LeaveReports({ userRole }: LeaveReportsProps) {
                 <CardHeader>
                   <CardTitle>Leave trend (last 6 months)</CardTitle>
                   <CardDescription>
-                    Requests and approved by month. Total requests (6 months): {totalRequests6Months}
+                    Requests and approved by month — {branch === "ALL" ? "All Branches" : branch}. Total requests (6 months): {totalRequests6Months}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {hasLeaveTrendData ? (
                     <div className="h-[300px] w-full">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={leaveChartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                        <BarChart data={leaveChartData} margin={{ top: 28, right: 10, left: 0, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                           <XAxis dataKey="monthLabel" tick={{ fontSize: 12 }} />
                           <YAxis tick={{ fontSize: 12 }} />
                           <Tooltip />
                           <Legend />
-                          <Bar dataKey="requests" name="Requests" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />
-                          <Bar dataKey="approved" name="Approved" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="requests" name="Requests" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]}>
+                            <LabelList dataKey="pctChangeRequestsLabel" position="top" style={{ fontSize: 11 }} className="fill-muted-foreground" />
+                          </Bar>
+                          <Bar dataKey="approved" name="Approved" fill="#22c55e" radius={[4, 4, 0, 0]}>
+                            <LabelList dataKey="pctChangeApprovedLabel" position="top" style={{ fontSize: 11 }} className="fill-muted-foreground" />
+                          </Bar>
                         </BarChart>
                       </ResponsiveContainer>
                     </div>

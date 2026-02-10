@@ -14,6 +14,7 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
+  LabelList,
 } from "recharts";
 
 interface FinancialReportsProps {
@@ -143,10 +144,19 @@ export function FinancialReports({ userRole }: FinancialReportsProps) {
   };
 
   const salaryChartData =
-    stats?.salaryTrend?.map((d) => ({
-      ...d,
-      monthLabel: formatMonthLabel(d.month),
-    })) ?? [];
+    stats?.salaryTrend?.map((d, i, arr) => {
+      const prevAmount = i > 0 ? arr[i - 1].amount : 0;
+      const pctChange =
+        prevAmount > 0 ? ((d.amount - prevAmount) / prevAmount) * 100 : null;
+      const pctChangeLabel =
+        pctChange == null ? "—" : (pctChange >= 0 ? "+" : "") + pctChange.toFixed(1) + "%";
+      return {
+        ...d,
+        monthLabel: formatMonthLabel(d.month),
+        pctChange,
+        pctChangeLabel,
+      };
+    }) ?? [];
   const hasSalaryTrendData =
     salaryChartData.length > 0 && salaryChartData.some((d) => d.amount > 0);
 
@@ -292,18 +302,59 @@ export function FinancialReports({ userRole }: FinancialReportsProps) {
                 </Card>
               </div>
 
+              {stats.salaryByBranch.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Salary by Branch</CardTitle>
+                    <CardDescription>
+                      Same order as salary report. Difference vs previous month ({format(new Date(year, month - 2, 1), "MMM yyyy")}).
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {stats.salaryByBranch.map((branchItem) => (
+                        <div key={branchItem.branch} className="space-y-2">
+                          <div className="flex justify-between items-baseline gap-2 text-sm">
+                            <span className="font-medium">
+                              {branchItem.branch} ({branchItem.employeeCount} employees)
+                            </span>
+                            <div className="flex flex-col items-end">
+                              <span className="font-bold">{formatCurrency(branchItem.amount)}</span>
+                              {branchItem.difference != null && (
+                                <span
+                                  className={
+                                    branchItem.difference > 0
+                                      ? "text-xs text-green-600"
+                                      : branchItem.difference < 0
+                                        ? "text-xs text-red-600"
+                                        : "text-xs text-muted-foreground"
+                                  }
+                                >
+                                  {branchItem.difference > 0 && "+"}
+                                  {formatCurrency(branchItem.difference)} vs prev month
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <Card>
                 <CardHeader>
                   <CardTitle>Salary trend (last 6 months)</CardTitle>
                   <CardDescription>
-                    Total salary (INR) by month for selected branch
+                    Total salary (INR) by month — {branch === "ALL" ? "All Branches" : branch}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {hasSalaryTrendData ? (
                     <div className="h-[300px] w-full">
                       <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={salaryChartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                        <LineChart data={salaryChartData} margin={{ top: 28, right: 10, left: 0, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                           <XAxis dataKey="monthLabel" tick={{ fontSize: 12 }} />
                           <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${(v / 100000).toFixed(0)}L`} />
@@ -317,7 +368,14 @@ export function FinancialReports({ userRole }: FinancialReportsProps) {
                             stroke="hsl(var(--primary))"
                             strokeWidth={2}
                             dot={{ r: 4 }}
-                          />
+                          >
+                            <LabelList
+                              dataKey="pctChangeLabel"
+                              position="top"
+                              className="fill-muted-foreground"
+                              style={{ fontSize: 11 }}
+                            />
+                          </Line>
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
@@ -328,47 +386,6 @@ export function FinancialReports({ userRole }: FinancialReportsProps) {
                   )}
                 </CardContent>
               </Card>
-
-              {stats.salaryByBranch.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Salary by Branch</CardTitle>
-                    <CardDescription>
-                      Same order as salary report. Difference vs previous month ({format(new Date(year, month - 2, 1), "MMM yyyy")}).
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {stats.salaryByBranch.map((branch) => (
-                        <div key={branch.branch} className="space-y-2">
-                          <div className="flex justify-between items-baseline gap-2 text-sm">
-                            <span className="font-medium">
-                              {branch.branch} ({branch.employeeCount} employees)
-                            </span>
-                            <div className="flex flex-col items-end">
-                              <span className="font-bold">{formatCurrency(branch.amount)}</span>
-                              {branch.difference != null && (
-                                <span
-                                  className={
-                                    branch.difference > 0
-                                      ? "text-xs text-green-600"
-                                      : branch.difference < 0
-                                        ? "text-xs text-red-600"
-                                        : "text-xs text-muted-foreground"
-                                  }
-                                >
-                                  {branch.difference > 0 && "+"}
-                                  {formatCurrency(branch.difference)} vs prev month
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
 
               <div className="grid gap-4 md:grid-cols-2">
                 {stats.advanceByBranch.length > 0 && (
