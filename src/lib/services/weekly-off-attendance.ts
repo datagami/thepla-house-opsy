@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import type { Attendance } from '@prisma/client';
+import { ActivityType } from '@prisma/client';
+import { logActivity } from '@/lib/services/activity-log';
 
 /**
  * Service for automatically creating weekly off attendance records
@@ -72,8 +74,26 @@ export async function createWeeklyOffAttendance(
           isWeeklyOff: true,
           isPresent: true,
           status: 'APPROVED',
+          notes: existingAttendance.notes
+            ? `${existingAttendance.notes}\n[System]: Marked as weekly off by cron job`
+            : 'Marked as weekly off by system cron job',
         },
       });
+
+      // Log activity
+      await logActivity({
+        activityType: ActivityType.ATTENDANCE_UPDATED,
+        targetUserId: userId,
+        targetId: updated.id,
+        entityType: 'Attendance',
+        description: `Marked as weekly off by system cron job for date ${startOfDay.toLocaleDateString()}`,
+        metadata: {
+          automated: true,
+          previousStatus: existingAttendance.status,
+          date: startOfDay.toISOString()
+        }
+      });
+
       return { attendance: updated, action: 'updated' };
     }
     return { attendance: existingAttendance, action: 'skipped' };
@@ -92,9 +112,23 @@ export async function createWeeklyOffAttendance(
       isWeeklyOff: true,
       status: 'APPROVED',
       branchId: user.branchId,
+      notes: 'Marked as weekly off by system cron job',
     },
   });
-  
+
+  // Log activity
+  await logActivity({
+    activityType: ActivityType.ATTENDANCE_CREATED,
+    targetUserId: userId,
+    targetId: created.id,
+    entityType: 'Attendance',
+    description: `Automatically created weekly off attendance by system cron job for date ${startOfDay.toLocaleDateString()}`,
+    metadata: {
+      automated: true,
+      date: startOfDay.toISOString()
+    }
+  });
+
   return { attendance: created, action: 'created' };
 }
 
@@ -139,7 +173,7 @@ export async function createWeeklyOffAttendanceForDateRangeWithDetails(
   endDate: Date
 ): Promise<WeeklyOffResult[]> {
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  
+
   // Get all users with fixed weekly off
   const users = await prisma.user.findMany({
     where: {
@@ -251,13 +285,13 @@ export async function createWeeklyOffAttendanceForCurrentWeekWithDetails() {
 export async function createWeeklyOffAttendanceForTodayWithDetails(): Promise<WeeklyOffResult[]> {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  
+
   console.log(`Processing weekly off for today: ${dayNames[dayOfWeek]} (day ${dayOfWeek})`);
   console.log(`Date: ${today.toISOString()}`);
-  
+
   // Get all users with fixed weekly off matching today's day
   const users = await prisma.user.findMany({
     where: {
