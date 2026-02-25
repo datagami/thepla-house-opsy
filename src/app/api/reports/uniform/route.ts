@@ -12,7 +12,8 @@ export async function GET(req: Request) {
     }
 
     const { searchParams } = new URL(req.url);
-    const year = parseInt(searchParams.get("year") || new Date().getFullYear().toString());
+    const startDateParam = searchParams.get("startDate");
+    const endDateParam = searchParams.get("endDate");
     const branchFilter = searchParams.get("branch") || "ALL";
 
     // @ts-expect-error - branchId/managedBranchId are not in the User type
@@ -20,15 +21,45 @@ export async function GET(req: Request) {
     // @ts-expect-error - role is not in the User type
     const isBranchManager = session.user.role === "BRANCH_MANAGER";
 
-    // Calculate date range for the year
-    const yearStart = new Date(year, 0, 1);
-    const yearEnd = new Date(year, 11, 31, 23, 59, 59);
+    // Compute date range: default to current year when both missing
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    let rangeStart: Date;
+    let rangeEnd: Date;
+
+    const parseDate = (dateStr: string | null, fallback: Date, isEndOfDay = false) => {
+      if (!dateStr) return fallback;
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return fallback;
+      if (isEndOfDay) {
+        d.setHours(23, 59, 59, 999);
+      } else {
+        d.setHours(0, 0, 0, 0);
+      }
+      return d;
+    };
+
+    if (startDateParam && endDateParam) {
+      rangeStart = parseDate(startDateParam, new Date(currentYear, 0, 1));
+      rangeEnd = parseDate(endDateParam, new Date(currentYear, 11, 31, 23, 59, 59), true);
+    } else if (startDateParam) {
+      rangeStart = parseDate(startDateParam, new Date(currentYear, 0, 1));
+      rangeEnd = new Date(rangeStart);
+      rangeEnd.setHours(23, 59, 59, 999);
+    } else if (endDateParam) {
+      rangeEnd = parseDate(endDateParam, new Date(currentYear, 11, 31, 23, 59, 59), true);
+      rangeStart = new Date(rangeEnd);
+      rangeStart.setHours(0, 0, 0, 0);
+    } else {
+      rangeStart = new Date(currentYear, 0, 1);
+      rangeEnd = new Date(currentYear, 11, 31, 23, 59, 59);
+    }
 
     // Build where clause
     const whereClause: Prisma.UniformWhereInput = {
       issuedAt: {
-        gte: yearStart,
-        lte: yearEnd,
+        gte: rangeStart,
+        lte: rangeEnd,
       },
       user: {
         status: "ACTIVE",
@@ -41,7 +72,7 @@ export async function GET(req: Request) {
       },
     };
 
-    // Get all uniforms for the year
+    // Get all uniforms for the date range
     const uniforms = await prisma.uniform.findMany({
       where: whereClause,
       include: {

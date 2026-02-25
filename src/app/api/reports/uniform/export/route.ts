@@ -13,7 +13,8 @@ export async function GET(req: Request) {
     }
 
     const { searchParams } = new URL(req.url);
-    const year = parseInt(searchParams.get("year") || new Date().getFullYear().toString());
+    const startDateParam = searchParams.get("startDate");
+    const endDateParam = searchParams.get("endDate");
     const branchFilter = searchParams.get("branch") || "ALL";
 
     // @ts-expect-error - branchId/managedBranchId are not in the User type
@@ -21,11 +22,40 @@ export async function GET(req: Request) {
     // @ts-expect-error - role is not in the User type
     const isBranchManager = session.user.role === "BRANCH_MANAGER";
 
-    const yearStart = new Date(year, 0, 1);
-    const yearEnd = new Date(year, 11, 31, 23, 59, 59);
+    const currentYear = new Date().getFullYear();
+    let rangeStart: Date;
+    let rangeEnd: Date;
+
+    const parseDate = (dateStr: string | null, fallback: Date, isEndOfDay = false) => {
+      if (!dateStr) return fallback;
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return fallback;
+      if (isEndOfDay) {
+        d.setHours(23, 59, 59, 999);
+      } else {
+        d.setHours(0, 0, 0, 0);
+      }
+      return d;
+    };
+
+    if (startDateParam && endDateParam) {
+      rangeStart = parseDate(startDateParam, new Date(currentYear, 0, 1));
+      rangeEnd = parseDate(endDateParam, new Date(currentYear, 11, 31, 23, 59, 59), true);
+    } else if (startDateParam) {
+      rangeStart = parseDate(startDateParam, new Date(currentYear, 0, 1));
+      rangeEnd = new Date(rangeStart);
+      rangeEnd.setHours(23, 59, 59, 999);
+    } else if (endDateParam) {
+      rangeEnd = parseDate(endDateParam, new Date(currentYear, 11, 31, 23, 59, 59), true);
+      rangeStart = new Date(rangeEnd);
+      rangeStart.setHours(0, 0, 0, 0);
+    } else {
+      rangeStart = new Date(currentYear, 0, 1);
+      rangeEnd = new Date(currentYear, 11, 31, 23, 59, 59);
+    }
 
     const whereClause: Prisma.UniformWhereInput = {
-      issuedAt: { gte: yearStart, lte: yearEnd },
+      issuedAt: { gte: rangeStart, lte: rangeEnd },
       user: {
         status: "ACTIVE",
         ...(isBranchManager && { branchId: userBranchId }),
@@ -78,7 +108,13 @@ export async function GET(req: Request) {
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
-    response.headers.set("Content-Disposition", `attachment; filename=uniform-report-${year}.xlsx`);
+    const startStr = rangeStart.toISOString().split("T")[0];
+    const endStr = rangeEnd.toISOString().split("T")[0];
+    const filename =
+      startStr === `${currentYear}-01-01` && endStr === `${currentYear}-12-31`
+        ? `uniform-report-${currentYear}.xlsx`
+        : `uniform-report-${startStr}-to-${endStr}.xlsx`;
+    response.headers.set("Content-Disposition", `attachment; filename=${filename}`);
     return response;
   } catch (error) {
     console.error("Error exporting uniform report:", error);
