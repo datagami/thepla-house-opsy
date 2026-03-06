@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     const salaries = await prisma.salary.findMany({
       where: { id: { in: salaryIds } },
       include: {
-        installments: { select: { id: true } },
+        installments: { select: { id: true, advanceId: true, amountPaid: true, status: true } },
         referrals: { select: { id: true, paidAt: true } },
       },
     });
@@ -83,6 +83,18 @@ export async function POST(req: Request) {
           await tx.referral.updateMany({
             where: { salaryId: salary.id, paidAt: null },
             data: { salaryId: null },
+          });
+        }
+
+        // Revert advance deductions for approved installments
+        const approvedInstallments = salary.installments.filter(i => i.status === 'APPROVED');
+        for (const installment of approvedInstallments) {
+          await tx.advancePayment.update({
+            where: { id: installment.advanceId },
+            data: {
+              remainingAmount: { increment: installment.amountPaid },
+              isSettled: false,
+            },
           });
         }
 

@@ -8,6 +8,9 @@ import { AdvancesTable } from "./advances-table";
 import { DownloadAdvancesReport } from "./download-advances-report";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle } from "lucide-react";
+import Link from "next/link";
 
 interface AdvancesManagementProps {
   userRole: string;
@@ -118,10 +121,20 @@ export function AdvancesManagement({
               : "View your salary advances and payment history"}
           </p>
         </div>
-        <DownloadAdvancesReport
-          isSettled={activeTab === "settled"}
-          filters={filters}
-        />
+        <div className="flex items-center gap-2">
+          {isHROrManagement && (
+            <Link href="/advances/discrepancies">
+              <Button variant="outline" size="sm">
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                View Discrepancies
+              </Button>
+            </Link>
+          )}
+          <DownloadAdvancesReport
+            isSettled={activeTab === "settled"}
+            filters={filters}
+          />
+        </div>
       </div>
 
       {/* Stats Cards */}

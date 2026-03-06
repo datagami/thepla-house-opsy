@@ -189,8 +189,25 @@ export async function DELETE(
       return NextResponse.json({error: "Salary not found"}, {status: 404});
     }
 
+    // Fetch approved installments to revert advance deductions
+    const approvedInstallments = await prisma.advancePaymentInstallment.findMany({
+      where: { salaryId: salary.id, status: 'APPROVED' },
+      select: { advanceId: true, amountPaid: true },
+    });
+
     // Delete the salary and its installments in a transaction
     await prisma.$transaction(async (tx) => {
+      // Revert advance deductions for approved installments
+      for (const installment of approvedInstallments) {
+        await tx.advancePayment.update({
+          where: { id: installment.advanceId },
+          data: {
+            remainingAmount: { increment: installment.amountPaid },
+            isSettled: false,
+          },
+        });
+      }
+
       // Delete all installments first
       await tx.advancePaymentInstallment.deleteMany({
         where: {
