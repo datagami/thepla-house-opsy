@@ -1,6 +1,8 @@
 import { prisma } from "@/prisma";
 import { sendEmail } from "./email";
 import { addDays, startOfDay, endOfDay, format } from "date-fns";
+import { logActivity } from "./activity-log";
+import { ActivityType } from "@prisma/client";
 
 export async function processDocumentExpiries() {
   const today = startOfDay(new Date());
@@ -132,6 +134,37 @@ export async function processDocumentExpiries() {
       });
       emailsSent++;
       console.log("Expiry report email sent successfully to", recipient);
+
+      // Log system activity for the overall report
+      await logActivity({
+        activityType: ActivityType.DOCUMENT_EXPIRY_ALERT,
+        description: `Daily document expiry report sent. Found ${alreadyExpired.length} expired, ${expiringIn15Days.length} in 15 days, ${expiringIn30Days.length} in 30 days.`,
+        metadata: {
+          recipient,
+          counts: {
+            expired: alreadyExpired.length,
+            in15Days: expiringIn15Days.length,
+            in30Days: expiringIn30Days.length
+          },
+          automated: true
+        }
+      });
+
+      // Also log individual expired documents for better tracking
+      for (const doc of alreadyExpired) {
+        await logActivity({
+          activityType: ActivityType.DOCUMENT_EXPIRY_ALERT,
+          targetId: doc.id,
+          entityType: 'BranchDocument',
+          description: `ALERT: Document "${doc.name}" for branch "${doc.branch.name}" has expired (Expiry: ${format(new Date(doc.renewalDate), 'PPP')}).`,
+          metadata: {
+            branch: doc.branch.name,
+            documentName: doc.name,
+            expiryDate: doc.renewalDate,
+            priority: 'HIGH'
+          }
+        });
+      }
     } catch (error) {
       console.error("Failed to send document expiry email:", error);
     }

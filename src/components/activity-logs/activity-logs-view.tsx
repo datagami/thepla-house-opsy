@@ -79,6 +79,7 @@ const activityTypeLabels: Record<ActivityType, string> = {
   UNIFORM_RETURNED: "Uniform Returned",
   DOCUMENT_UPLOADED: "Document Uploaded",
   DOCUMENT_DELETED: "Document Deleted",
+  DOCUMENT_EXPIRY_ALERT: "Document Expiry Alert",
   BRANCH_CREATED: "Branch Created",
   BRANCH_UPDATED: "Branch Updated",
   BRANCH_DELETED: "Branch Deleted",
