@@ -82,6 +82,7 @@ export async function PUT(
         branchId: true,
         departmentId: true,
         status: true,
+        salary: true,
         bankAccountNo: true,
         bankIfscCode: true,
         doj: true,
@@ -396,6 +397,41 @@ export async function PUT(
           userId: user.id,
           oldBranchId: oldUser.branchId,
           newBranchId: user.branchId,
+        },
+        request
+      );
+    }
+
+    // Create salary appraisal record if salary changed
+    const newSalary = salary ? parseFloat(salary) : null;
+    if (oldUser.salary !== null && newSalary !== null && oldUser.salary !== newSalary) {
+      const changeAmount = newSalary - oldUser.salary;
+      const changePercentage = oldUser.salary > 0
+        ? Math.round((changeAmount / oldUser.salary) * 10000) / 100
+        : 0;
+
+      await prisma.salaryAppraisal.create({
+        data: {
+          userId: id,
+          previousSalary: oldUser.salary,
+          newSalary,
+          changeAmount,
+          changePercentage,
+          changedById: logUserId,
+        },
+      });
+
+      await logTargetUserActivity(
+        ActivityType.SALARY_APPRAISAL,
+        logUserId,
+        user.id,
+        `Salary changed from ₹${oldUser.salary.toLocaleString()} to ₹${newSalary.toLocaleString()} (${changePercentage > 0 ? "+" : ""}${changePercentage}%)`,
+        {
+          userId: user.id,
+          previousSalary: oldUser.salary,
+          newSalary,
+          changeAmount,
+          changePercentage,
         },
         request
       );

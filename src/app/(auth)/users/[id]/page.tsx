@@ -12,6 +12,7 @@ import { UniformForm } from "@/components/users/uniform-form";
 import { UniformsList } from "@/components/users/uniforms-list";
 import { UserDocumentUpload } from "@/components/users/user-document-upload";
 import { UserDocumentsList } from "@/components/users/user-documents-list";
+import { AppraisalHistory } from "@/components/users/appraisal-history";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -181,6 +182,13 @@ export default async function UserProfilePage({ params }: Props) {
           </div>
         ) : null}
       </div>
+
+      {(canManageUsers || isOwnProfile) && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold">Salary Appraisal History</h2>
+          <AppraisalHistory userId={id} />
+        </div>
+      )}
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">

@@ -210,6 +210,10 @@ model User {
   activities       ActivityLog[] @relation("UserActivities")
   targetActivities ActivityLog[] @relation("TargetUserActivities")
 
+  // --- Appraisal Relations ---
+  appraisals    SalaryAppraisal[] @relation("UserAppraisals")
+  appraisalsMade SalaryAppraisal[] @relation("AppraisalChangedBy")
+
   // --- Job Offer Relations ---
   jobOffer JobOffer?
 
@@ -547,6 +551,28 @@ model AdvancePaymentInstallment {
   @@map("advance_payment_installments")
 }
 
+// --- Salary Appraisal Tracking ---
+
+model SalaryAppraisal {
+  id               String   @id @default(cuid())
+  numId            Int      @default(autoincrement()) @map("num_id")
+  userId           String   @map("user_id")
+  previousSalary   Float    @map("previous_salary")
+  newSalary        Float    @map("new_salary")
+  changeAmount     Float    @map("change_amount")
+  changePercentage Float    @map("change_percentage")
+  effectiveDate    DateTime @default(now()) @map("effective_date")
+  changedById      String?  @map("changed_by_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  user      User  @relation("UserAppraisals", fields: [userId], references: [id], onDelete: Cascade)
+  changedBy User? @relation("AppraisalChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([changedById])
+  @@map("salary_appraisals")
+}
+
 // --- Uniform Tracking Feature ---
 
 model Uniform {
@@ -658,6 +684,7 @@ enum ActivityType {
   SALARY_UPDATED
   SALARY_STATUS_CHANGED
   SALARY_DELETED
+  SALARY_APPRAISAL
   REFERRAL_BONUS_PROCESSED
   REFERRAL_ARCHIVED
   ENET_FILE_DOWNLOADED
@@ -685,6 +712,7 @@ enum ActivityType {
   LOGIN
   LOGOUT
   PASSWORD_CHANGED
+  DAILY_ATTENDANCE_REPORT
   OTHER
 }
 
