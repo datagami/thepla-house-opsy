@@ -35,7 +35,7 @@ export async function sendDailyAttendanceReport(options?: { previewOnly?: boolea
   // Fetch total active employees per branch
   const activeUsers = await prisma.user.findMany({
     where: {
-      status: { in: ["ACTIVE", "PARTIAL_INACTIVE"] },
+      status: "ACTIVE",
       branchId: { not: null },
     },
     select: { branchId: true },
