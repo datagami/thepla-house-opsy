@@ -96,7 +96,7 @@ export async function sendDailyAttendanceReport(options?: { previewOnly?: boolea
   }
 
   // Calculate absent for each branch
-  for (const [branchName, stats] of branchStats) {
+  for (const [, stats] of branchStats) {
     stats.absent = Math.max(0, stats.totalEmployees - stats.present - stats.weeklyOff);
   }
 

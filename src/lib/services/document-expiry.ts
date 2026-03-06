@@ -83,6 +83,7 @@ export async function processDocumentExpiries() {
 
   let hasContent = false;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renderDocList = (title: string, docs: any[], color: string) => {
     if (docs.length === 0) return "";
     let html = `<h3 style="color: ${color}; border-bottom: 2px solid ${color}; padding-bottom: 5px;">${title} (${docs.length})</h3>`;
