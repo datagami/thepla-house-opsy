@@ -122,6 +122,8 @@ export async function sendDailyAttendanceReport(options?: { previewOnly?: boolea
   const overallHalfDay = attendances.filter((a) => a.isHalfDay).length;
   const overallOvertime = attendances.filter((a) => a.overtime).length;
   const overallWeeklyOff = attendances.filter((a) => a.isWeeklyOff).length;
+  const overallApproved = attendances.filter((a) => a.status === "APPROVED").length;
+  const overallPending = attendances.filter((a) => a.status === "PENDING_VERIFICATION").length;
   const totalActiveEmployees = activeUsers.length;
   const overallAbsent = Math.max(0, totalActiveEmployees - overallPresent - overallWeeklyOff);
   const attendanceRate =
@@ -166,6 +168,8 @@ export async function sendDailyAttendanceReport(options?: { previewOnly?: boolea
 
         <div style="font-size: 13px; color: #6b7280; margin-bottom: 16px;">
           Total: ${totalActiveEmployees} employees &middot; Weekly Off: ${overallWeeklyOff} &middot; Overtime: ${overallOvertime}
+          &middot; <span style="color: #059669;">Approved: ${overallApproved}</span>
+          &middot; <span style="color: #ca8a04;">Pending: ${overallPending}</span>
         </div>
 
         <!-- Branch-wise Breakdown -->
@@ -183,6 +187,8 @@ export async function sendDailyAttendanceReport(options?: { previewOnly?: boolea
               <th style="text-align: center; padding: 8px 6px; border-bottom: 1px solid #e5e7eb;">Half Day</th>
               <th style="text-align: center; padding: 8px 6px; border-bottom: 1px solid #e5e7eb;">OT</th>
               <th style="text-align: center; padding: 8px 6px; border-bottom: 1px solid #e5e7eb;">W.Off</th>
+              <th style="text-align: center; padding: 8px 6px; border-bottom: 1px solid #e5e7eb;">Approved</th>
+              <th style="text-align: center; padding: 8px 6px; border-bottom: 1px solid #e5e7eb;">Pending</th>
               <th style="text-align: center; padding: 8px 6px; border-bottom: 1px solid #e5e7eb;">Rate</th>
             </tr>
           </thead>
@@ -207,6 +213,8 @@ export async function sendDailyAttendanceReport(options?: { previewOnly?: boolea
               <td style="text-align: center; padding: 8px 6px; border-bottom: 1px solid #f3f4f6;">${stats.halfDay}</td>
               <td style="text-align: center; padding: 8px 6px; border-bottom: 1px solid #f3f4f6;">${stats.overtime}</td>
               <td style="text-align: center; padding: 8px 6px; border-bottom: 1px solid #f3f4f6;">${stats.weeklyOff}</td>
+              <td style="text-align: center; padding: 8px 6px; border-bottom: 1px solid #f3f4f6; color: #059669;">${stats.approved}</td>
+              <td style="text-align: center; padding: 8px 6px; border-bottom: 1px solid #f3f4f6; color: ${stats.pending > 0 ? "#ca8a04" : "#6b7280"}; font-weight: ${stats.pending > 0 ? "600" : "normal"};">${stats.pending}</td>
               <td style="text-align: center; padding: 8px 6px; border-bottom: 1px solid #f3f4f6; color: ${rateColor}; font-weight: 600;">${branchRate}%</td>
             </tr>`;
   }
