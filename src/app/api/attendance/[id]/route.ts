@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import {Attendance} from "@/models/models";
 import { logEntityActivity } from "@/lib/services/activity-log";
 import { ActivityType } from "@prisma/client";
+import { checkWeekOffAvailability, createWeekOffCredit } from '@/lib/services/week-off-balance'
 
 export async function PATCH(
   req: Request,
@@ -189,7 +190,8 @@ export async function PUT(
         verifiedById: true,
         verifiedAt: true,
         verificationNote: true,
-        branchId: true
+        branchId: true,
+        isWeeklyOff: true
       }
     });
 
@@ -318,9 +320,15 @@ export async function PUT(
     if (userWithWeeklyOff?.hasWeeklyOff) {
       const updateDate = body.date ? new Date(body.date) : currentAttendance.date;
       if (userWithWeeklyOff.weeklyOffType === "FIXED") {
-        // For fixed weekly off, check if the date matches the weekly off day
         const dayOfWeek = updateDate.getDay();
-        isWeeklyOff = userWithWeeklyOff.weeklyOffDay === dayOfWeek;
+        const isOffDay = userWithWeeklyOff.weeklyOffDay === dayOfWeek;
+        // Allow HR/Management to override: if they explicitly set isWeeklyOff to false
+        // on the employee's off day, respect it (employee worked that day)
+        if (isOffDay && body.isWeeklyOff === false) {
+          isWeeklyOff = false; // HR override: employee worked on off day
+        } else {
+          isWeeklyOff = isOffDay;
+        }
       } else if (userWithWeeklyOff.weeklyOffType === "FLEXIBLE") {
         // For flexible weekly off, use the value from the request
         isWeeklyOff = body.isWeeklyOff || false;
@@ -357,6 +365,24 @@ export async function PUT(
         }
       }
       
+      // Check week-off balance before allowing weekly off
+      if (isWeeklyOff) {
+        // If the attendance was already a week-off, balance already includes that debit
+        const wasAlreadyWeeklyOff = currentAttendance.isWeeklyOff ?? false
+        const { available, balance } = await checkWeekOffAvailability(currentAttendance.userId)
+        const effectiveBalance = wasAlreadyWeeklyOff ? balance + 1 : balance
+
+        if (effectiveBalance <= 0) {
+          return NextResponse.json(
+            {
+              error: 'No week-off balance available. Employee must be marked as present or absent.',
+              currentBalance: balance,
+            },
+            { status: 400 }
+          )
+        }
+      }
+
       // Weekly off days are automatically marked as present and approved
       if (isWeeklyOff) {
         body.isPresent = true;
@@ -414,6 +440,34 @@ export async function PUT(
         ...verificationData
       }
     });
+
+    // Handle week-off ledger entries when isWeeklyOff status changes
+    const wasWeeklyOff = currentAttendance.isWeeklyOff ?? false
+    const isNowWeeklyOff = isWeeklyOff
+
+    if (!wasWeeklyOff && isNowWeeklyOff) {
+      // Changed to weekly off — create debit
+      await createWeekOffCredit({
+        userId: currentAttendance.userId,
+        date: updateDate,
+        type: 'DEBIT',
+        reason: 'WEEK_OFF_TAKEN',
+        amount: -1,
+        attendanceId: id,
+        createdBy: sessionUserId ?? undefined,
+      })
+    } else if (wasWeeklyOff && !isNowWeeklyOff) {
+      // Changed from weekly off to working — return credit
+      await createWeekOffCredit({
+        userId: currentAttendance.userId,
+        date: updateDate,
+        type: 'CREDIT',
+        reason: 'DELETION_REVERSAL',
+        amount: 1,
+        attendanceId: id,
+        createdBy: sessionUserId ?? undefined,
+      })
+    }
 
     // If salary exists and is in PENDING state, recalculate it
     if (existingSalary?.status === 'PENDING') {
