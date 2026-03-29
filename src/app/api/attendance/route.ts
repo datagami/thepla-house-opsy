@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { logEntityActivity } from "@/lib/services/activity-log";
+import { checkWeekOffAvailability, createWeekOffCredit } from "@/lib/services/week-off-balance";
 import { ActivityType, AttendanceStatus } from "@prisma/client";
 
 export async function POST(req: Request) {
@@ -181,6 +182,20 @@ export async function POST(req: Request) {
         }
       }
       
+      // Check week-off balance before allowing weekly off
+      if (isWeeklyOff) {
+        const { available, balance } = await checkWeekOffAvailability(data.userId)
+        if (!available) {
+          return NextResponse.json(
+            {
+              error: 'No week-off balance available. Employee must be marked as present or absent.',
+              currentBalance: balance,
+            },
+            { status: 400 }
+          )
+        }
+      }
+
       // Weekly off days are automatically marked as present and approved
       if (isWeeklyOff) {
         data.isPresent = true;
@@ -220,6 +235,19 @@ export async function POST(req: Request) {
         } : {})
       },
     });
+
+    // Create week-off debit in ledger
+    if (isWeeklyOff && attendance) {
+      await createWeekOffCredit({
+        userId: data.userId,
+        date: attendanceDate,
+        type: 'DEBIT',
+        reason: 'WEEK_OFF_TAKEN',
+        amount: -1,
+        attendanceId: attendance.id,
+        createdBy: creatorId,
+      })
+    }
 
     // If salary exists and is in PENDING state, recalculate it
     if (existingSalary?.status === 'PENDING') {
