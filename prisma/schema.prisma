@@ -148,6 +148,7 @@ model User {
   hasWeeklyOff        Boolean  @default(false) @map("has_weekly_off")
   weeklyOffType      String?  @map("weekly_off_type") // "FIXED" or "FLEXIBLE"
   weeklyOffDay        Int?     @map("weekly_off_day") // Day of week (0=Sunday, 1=Monday, etc.) for fixed weekly off
+  encashWeekOffs      Boolean  @default(true) @map("encash_week_offs")
 
   // Work From Home
   hasWorkFromHome     Boolean  @default(false) @map("has_work_from_home")
@@ -213,6 +214,9 @@ model User {
   // --- Appraisal Relations ---
   appraisals    SalaryAppraisal[] @relation("UserAppraisals")
   appraisalsMade SalaryAppraisal[] @relation("AppraisalChangedBy")
+
+  // --- Week Off Credit Relations ---
+  weekOffCredits     WeekOffCredit[] @relation("UserWeekOffCredits")
 
   // --- Job Offer Relations ---
   jobOffer JobOffer?
@@ -405,6 +409,7 @@ model Attendance {
   // Relations
   user       User   @relation("UserAttendance", fields: [userId], references: [id])
   verifiedBy User?  @relation("AttendanceVerifications", fields: [verifiedById], references: [id])
+  weekOffCredits WeekOffCredit[]
   branchId   String
   branch     Branch @relation(fields: [branchId], references: [id])
 
@@ -462,6 +467,9 @@ model Salary {
   halfDays         Int                         @default(0)
   leavesEarned     Int                         @default(0)
   leaveSalary      Float                       @default(0)
+  weeklyOffDays    Int                         @default(0) @map("weekly_off_days")
+  unusedWeekOffs   Int                         @default(0) @map("unused_week_offs")
+  weekOffAdjustment Float                      @default(0) @map("week_off_adjustment")
   status           String                      @default("PENDING")
   paidAt           DateTime?
   createdAt        DateTime                    @default(now())
@@ -469,6 +477,7 @@ model Salary {
   user             User                        @relation(fields: [userId], references: [id])
   installments     AdvancePaymentInstallment[]
   referrals        Referral[]
+  weekOffCredits   WeekOffCredit[] @relation("SalaryWeekOffCredits")
 
   @@unique([userId, month, year])
   @@index([userId])
@@ -741,6 +750,34 @@ model ActivityLog {
   @@index([createdAt])
   @@index([targetId])
   @@map("activity_logs")
+}
+
+// --- Week Off Credit Ledger ---
+
+model WeekOffCredit {
+  id           String   @id @default(cuid())
+  numId        Int      @default(autoincrement()) @map("num_id")
+  userId       String   @map("user_id")
+  date         DateTime
+  type         String   // CREDIT or DEBIT
+  reason       String   // WEEKLY_GRANT, WEEK_OFF_TAKEN, ENCASHMENT, MANUAL_ADJUSTMENT, DELETION_REVERSAL
+  amount       Float    // +1, -1, -0.5, etc.
+  attendanceId String?  @map("attendance_id")
+  salaryId     String?  @map("salary_id")
+  createdBy    String?  @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user       User        @relation("UserWeekOffCredits", fields: [userId], references: [id], onDelete: Cascade)
+  attendance Attendance? @relation(fields: [attendanceId], references: [id], onDelete: SetNull)
+  salary     Salary?     @relation("SalaryWeekOffCredits", fields: [salaryId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([userId, date])
+  @@index([userId, type])
+  @@index([attendanceId])
+  @@index([salaryId])
+  @@map("week_off_credits")
 }
 
 // --- Job Offer Feature ---
