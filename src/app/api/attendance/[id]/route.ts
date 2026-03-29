@@ -515,7 +515,8 @@ export async function DELETE(
       select: {
         id: true,
         userId: true,
-        date: true
+        date: true,
+        isWeeklyOff: true
       }
     });
 
@@ -562,6 +563,19 @@ export async function DELETE(
         },
         request
       );
+    }
+
+    // If deleted attendance was a weekly off, return the credit
+    if (attendance.isWeeklyOff) {
+      await createWeekOffCredit({
+        userId: attendance.userId,
+        date: new Date(attendance.date),
+        type: 'CREDIT',
+        reason: 'DELETION_REVERSAL',
+        amount: 1,
+        attendanceId: id,
+        createdBy: sessionUserId ?? undefined,
+      })
     }
 
     if (existingSalary?.status === "PENDING") {
