@@ -110,39 +110,34 @@ export default async function DashboardPage() {
     in30Days.setDate(in30Days.getDate() + 30);
 
     // Branch managers see only their branch; HR and Management see all
-    const branchFilter = role === "BRANCH_MANAGER"
-      ? { branchId: managedBranchId || userBranchId }
-      : {};
+    const effectiveBranchId = managedBranchId || userBranchId;
 
-    expiredDocuments = await prisma.branchDocument.findMany({
-      where: {
-        ...branchFilter,
-        renewalDate: { lt: today },
-      },
-      select: {
-        id: true,
-        name: true,
-        renewalDate: true,
-        branch: { select: { id: true, name: true } },
-        documentType: { select: { name: true } },
-      },
-      orderBy: { renewalDate: "asc" },
-    });
+    // Guard: skip queries if branch manager has no branch assigned
+    if (role !== "BRANCH_MANAGER" || effectiveBranchId) {
+      const branchFilter = role === "BRANCH_MANAGER"
+        ? { branchId: effectiveBranchId }
+        : {};
 
-    expiringSoonDocuments = await prisma.branchDocument.findMany({
-      where: {
-        ...branchFilter,
-        renewalDate: { gte: today, lte: in30Days },
-      },
-      select: {
-        id: true,
-        name: true,
-        renewalDate: true,
-        branch: { select: { id: true, name: true } },
-        documentType: { select: { name: true } },
-      },
-      orderBy: { renewalDate: "asc" },
-    });
+      // Single query for all documents expiring within 30 days or already expired
+      const allAlertDocuments = await prisma.branchDocument.findMany({
+        where: {
+          ...branchFilter,
+          renewalDate: { lte: in30Days },
+        },
+        select: {
+          id: true,
+          name: true,
+          renewalDate: true,
+          branch: { select: { id: true, name: true } },
+          documentType: { select: { name: true } },
+        },
+        orderBy: { renewalDate: "asc" },
+        take: 20,
+      });
+
+      expiredDocuments = allAlertDocuments.filter(d => d.renewalDate < today);
+      expiringSoonDocuments = allAlertDocuments.filter(d => d.renewalDate >= today);
+    }
   }
 
   if (role === "BRANCH_MANAGER") {
