@@ -1,6 +1,7 @@
 import { AdvancePayment, Salary } from "@/models/models";
 import { prisma } from '@/lib/prisma'
 import { SalaryStatus } from "@prisma/client";
+import { getMonthlyWeekOffSummary } from '@/lib/services/week-off-balance'
 
 
 export async function calculateSalary(userId: string, month: number, year: number) {
@@ -10,6 +11,9 @@ export async function calculateSalary(userId: string, month: number, year: numbe
     select: {
       salary: true,
       hasWeeklyOff: true,
+      encashWeekOffs: true,
+      weeklyOffType: true,
+      weeklyOffDay: true,
     },
   })
 
@@ -68,6 +72,19 @@ export async function calculateSalary(userId: string, month: number, year: numbe
   // Calculate attendance-based salary
   const workingDays = endDate.getDate()
   const perDaySalary = Math.round((employee.salary.valueOf() / workingDays) * 100) / 100;
+
+  // Calculate week-off adjustment from ledger
+  let unusedWeekOffs = 0
+  let weekOffAdjustment = 0
+
+  if (employee.hasWeeklyOff) {
+    const summary = await getMonthlyWeekOffSummary(userId, month, year)
+    unusedWeekOffs = summary.unusedThisMonth
+
+    if (employee.encashWeekOffs && unusedWeekOffs > 0) {
+      weekOffAdjustment = parseFloat((unusedWeekOffs * perDaySalary).toFixed(2))
+    }
+  }
   
   // Regular days get 1x per day salary
   const presentDaysAmount = parseFloat((presentDays * perDaySalary).toFixed(2));
@@ -135,7 +152,7 @@ export async function calculateSalary(userId: string, month: number, year: numbe
   const totalSalaryWithLeaves = totalSalary + leaveSalary;
   
   // Update net salary calculation to include leave salary
-  const netSalary = totalSalaryWithLeaves + otherBonuses - deductions;
+  const netSalary = totalSalaryWithLeaves + weekOffAdjustment + otherBonuses - deductions;
   const roundedSalary = Math.round(netSalary);
 
   return {
@@ -156,6 +173,8 @@ export async function calculateSalary(userId: string, month: number, year: numbe
     overtimeDays,
     halfDays,
     weeklyOffDays,
+    unusedWeekOffs,
+    weekOffAdjustment,
     roundedSalary
   }
 }
@@ -281,7 +300,7 @@ export function calculateNetSalaryFromObject(salary: Salary) {
   const leaveSalary = salary.leavesEarned * perDaySalary;
   
   // Calculate base salary earned
-  const baseSalaryEarned = presentDaysSalary + overtimeSalary + salary.otherBonuses + leaveSalary;
+  const baseSalaryEarned = presentDaysSalary + overtimeSalary + salary.otherBonuses + leaveSalary + (salary.weekOffAdjustment || 0);
   
   // Calculate total deductions
   let totalAdvanceDeductions = 0;
