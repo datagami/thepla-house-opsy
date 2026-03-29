@@ -95,7 +95,7 @@ export default async function DashboardPage() {
     }) as User[];
   }
 
-  // Fetch expiring/expired documents for BRANCH_MANAGER and MANAGEMENT
+  // Fetch expiring/expired documents for BRANCH_MANAGER, HR, and MANAGEMENT
   let expiredDocuments: { id: string; name: string; renewalDate: Date; branch: { id: string; name: string }; documentType: { name: string } | null }[] = [];
   let expiringSoonDocuments: typeof expiredDocuments = [];
   // @ts-expect-error - branchId is not in the User type
@@ -103,12 +103,13 @@ export default async function DashboardPage() {
   // @ts-expect-error - managedBranchId is not in the User type
   const managedBranchId = session.user.managedBranchId as string | undefined;
 
-  if (["BRANCH_MANAGER", "MANAGEMENT"].includes(role)) {
+  if (["BRANCH_MANAGER", "HR", "MANAGEMENT"].includes(role)) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const in30Days = new Date(today);
     in30Days.setDate(in30Days.getDate() + 30);
 
+    // Branch managers see only their branch; HR and Management see all
     const branchFilter = role === "BRANCH_MANAGER"
       ? { branchId: managedBranchId || userBranchId }
       : {};
@@ -548,8 +549,8 @@ export default async function DashboardPage() {
           currentUserRole={role}
         />
 
-        {/* Document Expiry Widget - Show for Branch Managers and Management */}
-        {["BRANCH_MANAGER", "MANAGEMENT"].includes(role) && (
+        {/* Document Expiry Widget - Show for Branch Managers, HR, and Management */}
+        {["BRANCH_MANAGER", "HR", "MANAGEMENT"].includes(role) && (
           <DocumentExpiryWidget
             expired={expiredDocuments}
             expiringSoon={expiringSoonDocuments}
