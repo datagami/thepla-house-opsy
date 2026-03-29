@@ -8,6 +8,7 @@ import Link from "next/link";
 import {Attendance, User} from "@/models/models";
 import { PendingSignaturesWidget } from "@/components/dashboard/pending-signatures-widget";
 import { JoiningFormCard } from "@/components/dashboard/joining-form-card";
+import { DocumentExpiryWidget } from "@/components/dashboard/document-expiry-widget";
 
 export const metadata: Metadata = {
   title: "Dashboard - HRMS",
@@ -92,6 +93,51 @@ export default async function DashboardPage() {
         createdAt: 'desc',
       },
     }) as User[];
+  }
+
+  // Fetch expiring/expired documents for BRANCH_MANAGER, HR, and MANAGEMENT
+  let expiredDocuments: { id: string; name: string; renewalDate: Date; branch: { id: string; name: string }; documentType: { name: string } | null }[] = [];
+  let expiringSoonDocuments: typeof expiredDocuments = [];
+  // @ts-expect-error - branchId is not in the User type
+  const userBranchId = session.user.branchId as string | undefined;
+  // @ts-expect-error - managedBranchId is not in the User type
+  const managedBranchId = session.user.managedBranchId as string | undefined;
+
+  if (["BRANCH_MANAGER", "HR", "MANAGEMENT"].includes(role)) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const in30Days = new Date(today);
+    in30Days.setDate(in30Days.getDate() + 30);
+
+    // Branch managers see only their branch; HR and Management see all
+    const effectiveBranchId = managedBranchId || userBranchId;
+
+    // Guard: skip queries if branch manager has no branch assigned
+    if (role !== "BRANCH_MANAGER" || effectiveBranchId) {
+      const branchFilter = role === "BRANCH_MANAGER"
+        ? { branchId: effectiveBranchId }
+        : {};
+
+      // Single query for all documents expiring within 30 days or already expired
+      const allAlertDocuments = await prisma.branchDocument.findMany({
+        where: {
+          ...branchFilter,
+          renewalDate: { lte: in30Days },
+        },
+        select: {
+          id: true,
+          name: true,
+          renewalDate: true,
+          branch: { select: { id: true, name: true } },
+          documentType: { select: { name: true } },
+        },
+        orderBy: { renewalDate: "asc" },
+        take: 20,
+      });
+
+      expiredDocuments = allAlertDocuments.filter(d => d.renewalDate < today);
+      expiringSoonDocuments = allAlertDocuments.filter(d => d.renewalDate >= today);
+    }
   }
 
   if (role === "BRANCH_MANAGER") {
@@ -493,10 +539,19 @@ export default async function DashboardPage() {
       {/* Dashboard Widgets */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Pending Signatures Widget - Show for HR/Management */}
-        <PendingSignaturesWidget 
+        <PendingSignaturesWidget
           pendingUsers={pendingSignatures}
           currentUserRole={role}
         />
+
+        {/* Document Expiry Widget - Show for Branch Managers, HR, and Management */}
+        {["BRANCH_MANAGER", "HR", "MANAGEMENT"].includes(role) && (
+          <DocumentExpiryWidget
+            expired={expiredDocuments}
+            expiringSoon={expiringSoonDocuments}
+            branchId={role === "BRANCH_MANAGER" ? (managedBranchId || userBranchId) : undefined}
+          />
+        )}
       </div>
     </div>
   );
