@@ -5,15 +5,17 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner"
+import { AlertCircle } from "lucide-react";
 
 const LoginForm = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsLoading(true);
+    setError(null);
 
     try {
       const formData = new FormData(event.currentTarget);
@@ -29,11 +31,8 @@ const LoginForm = () => {
 
       router.push("/dashboard");
       router.refresh();
-    } catch (err) {
-      toast("Error", {
-        description: "Invalid credentials or your account is pending approval",
-      });
-      console.error(err);
+    } catch {
+      setError("Invalid credentials or your account is pending approval");
     } finally {
       setIsLoading(false);
     }
@@ -41,8 +40,15 @@ const LoginForm = () => {
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
+      {error && (
+        <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-foreground">
+        <label htmlFor="email" className="block text-base font-medium text-foreground">
           Email address
         </label>
         <Input
@@ -56,7 +62,7 @@ const LoginForm = () => {
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-foreground">
+        <label htmlFor="password" className="block text-base font-medium text-foreground">
           Password
         </label>
         <Input
@@ -76,4 +82,4 @@ const LoginForm = () => {
   );
 };
 
-export default LoginForm; 
+export default LoginForm;

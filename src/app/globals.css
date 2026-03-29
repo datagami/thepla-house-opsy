@@ -31,6 +31,9 @@
     --success: 141 63% 45%; /* #2ECC71 */
     --success-foreground: 210 40% 98%;
 
+    --muted: 39 30% 92%;
+    --muted-foreground: 147 20% 40%;
+
     --border: 39 100% 90%;
     --input: 39 100% 90%;
     --ring: 147 41% 16%;
@@ -66,9 +69,12 @@
     --destructive: 0 70% 40%;
     --destructive-foreground: 39 100% 97%;
 
-    --border: 147 41% 25%;
-    --input: 147 41% 25%;
+    --border: 147 30% 35%;
+    --input: 147 30% 30%;
     --ring: 39 100% 70%;
+
+    --muted: 147 30% 22%;
+    --muted-foreground: 39 40% 70%;
 
     --chart-1: 168 59% 54%;
     --chart-2: 340 100% 94%;
