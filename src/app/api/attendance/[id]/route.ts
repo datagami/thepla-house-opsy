@@ -369,7 +369,7 @@ export async function PUT(
       if (isWeeklyOff) {
         // If the attendance was already a week-off, balance already includes that debit
         const wasAlreadyWeeklyOff = currentAttendance.isWeeklyOff ?? false
-        const { available, balance } = await checkWeekOffAvailability(currentAttendance.userId)
+        const { balance } = await checkWeekOffAvailability(currentAttendance.userId)
         const effectiveBalance = wasAlreadyWeeklyOff ? balance + 1 : balance
 
         if (effectiveBalance <= 0) {
