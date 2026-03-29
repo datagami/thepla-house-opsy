@@ -132,7 +132,7 @@ export default async function DashboardPage() {
           documentType: { select: { name: true } },
         },
         orderBy: { renewalDate: "asc" },
-        take: 20,
+        take: 50,
       });
 
       expiredDocuments = allAlertDocuments.filter(d => d.renewalDate < today);
