@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
 
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json(
       { error: 'Unauthorized', message: 'Invalid or missing CRON_SECRET', timestamp },
       { status: 401 }
@@ -35,7 +35,11 @@ export async function GET(request: NextRequest) {
       where: {
         hasWeeklyOff: true,
         status: 'ACTIVE',
-        createdAt: { lte: today },
+        // Use date of joining (doj) to determine eligibility; fall back to createdAt via OR
+        OR: [
+          { doj: { lte: today } },
+          { doj: null, createdAt: { lte: today } },
+        ],
       },
       select: {
         id: true,

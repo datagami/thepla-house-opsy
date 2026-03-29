@@ -447,12 +447,13 @@ export async function PUT(
 
     if (!wasWeeklyOff && isNowWeeklyOff) {
       // Changed to weekly off — create debit
+      const debitAmount = body.isHalfDay ? -0.5 : -1
       await createWeekOffCredit({
         userId: currentAttendance.userId,
         date: updateDate,
         type: 'DEBIT',
         reason: 'WEEK_OFF_TAKEN',
-        amount: -1,
+        amount: debitAmount,
         attendanceId: id,
         createdBy: sessionUserId ?? undefined,
       })
