@@ -10,7 +10,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 interface DatePickerProps {
   date: Date;
@@ -19,6 +19,7 @@ interface DatePickerProps {
 export function DatePicker({ date }: DatePickerProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   return (
     <Popover>
@@ -40,7 +41,9 @@ export function DatePicker({ date }: DatePickerProps) {
           selected={date}
           onSelect={(date) => {
             if (date) {
-              router.push(`${pathname}?date=${format(date, "yyyy-MM-dd")}`);
+              const params = new URLSearchParams(searchParams.toString());
+              params.set("date", format(date, "yyyy-MM-dd"));
+              router.push(`${pathname}?${params.toString()}`);
             }
           }}
           disabled={(date) => date > new Date()}
