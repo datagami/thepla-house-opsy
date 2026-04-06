@@ -10,7 +10,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 interface DatePickerProps {
   date: Date;
@@ -18,6 +18,7 @@ interface DatePickerProps {
 
 export function DatePicker({ date }: DatePickerProps) {
   const router = useRouter();
+  const pathname = usePathname();
 
   return (
     <Popover>
@@ -39,7 +40,7 @@ export function DatePicker({ date }: DatePickerProps) {
           selected={date}
           onSelect={(date) => {
             if (date) {
-              router.push(`/hr/attendance?date=${format(date, "yyyy-MM-dd")}`);
+              router.push(`${pathname}?date=${format(date, "yyyy-MM-dd")}`);
             }
           }}
           disabled={(date) => date > new Date()}
