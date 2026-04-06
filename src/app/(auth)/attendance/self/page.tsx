@@ -9,7 +9,7 @@ import {Attendance} from "@/models/models";
 import { getShiftDisplay } from "@/lib/utils/shift-display";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { SelfAttendanceDatePicker } from "@/components/attendance/self-attendance-date-picker";
+import { DatePicker } from "@/components/attendance/date-picker";
 
 export const metadata: Metadata = {
   title: "My Attendance - HRMS",
@@ -70,7 +70,7 @@ export default async function SelfAttendancePage({ searchParams }: Props) {
     <div className="flex-1 space-y-8 p-8 pt-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">My Attendance</h2>
-        <SelfAttendanceDatePicker date={selectedDate} />
+        <DatePicker date={selectedDate} />
       </div>
 
       {attendance?.status === "REJECTED" && (
