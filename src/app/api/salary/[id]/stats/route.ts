@@ -111,7 +111,7 @@ export async function GET(
     }
 
     // Base salary earned is present days salary plus overtime bonus
-    const baseSalaryEarned = presentDaysSalary + overtimeSalary + salary.otherBonuses + leaveSalary;
+    const baseSalaryEarned = presentDaysSalary + overtimeSalary + salary.otherBonuses + leaveSalary + (salary.weekOffAdjustment || 0);
     
     // Calculate total deductions from approved installments only
     const totalAdvanceDeductions = advanceInstallments
@@ -142,7 +142,10 @@ export async function GET(
         leavesEarned: salary.leavesEarned,
         leaveSalary: salary.leaveSalary,
         otherBonuses: salary.otherBonuses,
-        otherDeductions: salary.otherDeductions
+        otherDeductions: salary.otherDeductions,
+        weeklyOffDays: salary.weeklyOffDays,
+        unusedWeekOffs: salary.unusedWeekOffs,
+        weekOffAdjustment: salary.weekOffAdjustment,
       },
       employee: {
         id: salary.userId,

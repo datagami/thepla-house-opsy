@@ -74,6 +74,7 @@ export interface User {
   hasWeeklyOff?: boolean;
   weeklyOffType?: string | null;
   weeklyOffDay?: number | null;
+  encashWeekOffs: boolean;
   hasWorkFromHome?: boolean;
   joiningFormSignedAt?: Date | null;
   joiningFormSignedBy?: string | null;
@@ -298,6 +299,9 @@ export interface Salary {
   halfDays: number;
   leavesEarned: number;
   leaveSalary: number;
+  weeklyOffDays: number;
+  unusedWeekOffs: number;
+  weekOffAdjustment: number;
   status: SalaryStatus;
   paidAt?: Date | null;
   createdAt: Date;
@@ -445,4 +449,21 @@ export interface JobOffer {
   updatedAt: Date;
   user: User;
   department?: Department | null;
+}
+
+export interface WeekOffCredit {
+  id: string;
+  numId: number;
+  userId: string;
+  date: Date;
+  type: string;
+  reason: string;
+  amount: number;
+  attendanceId?: string | null;
+  salaryId?: string | null;
+  createdBy?: string | null;
+  createdAt: Date;
+  user?: User;
+  attendance?: Attendance | null;
+  salary?: Salary | null;
 }

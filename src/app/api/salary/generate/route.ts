@@ -6,6 +6,7 @@ import { AdvancePaymentInstallment } from "@/models/models";
 import { hasAttendanceConflicts } from "@/lib/services/attendance-conflicts";
 import { logEntityActivity } from "@/lib/services/activity-log";
 import { ActivityType } from "@prisma/client";
+import { createWeekOffCredit } from '@/lib/services/week-off-balance'
 
 export async function POST(request: Request) {
   try {
@@ -95,7 +96,22 @@ export async function POST(request: Request) {
     const salaries = await Promise.all(usersToProcess.map(async (user) => {
       // Delete existing PENDING salary and its installments if exists
       if (existingSalaryMap.get(user.id) === 'PENDING') {
+        // Find existing PENDING salary IDs to clean up related records
+        const existingPendingSalaries = await prisma.salary.findMany({
+          where: { userId: user.id, month, year, status: 'PENDING' },
+          select: { id: true },
+        })
+        const pendingSalaryIds = existingPendingSalaries.map(s => s.id)
+
         await prisma.$transaction([
+          // Delete encashment ledger entries linked to old salary
+          prisma.weekOffCredit.deleteMany({
+            where: {
+              userId: user.id,
+              reason: 'ENCASHMENT',
+              salaryId: { in: pendingSalaryIds },
+            }
+          }),
           prisma.advancePaymentInstallment.deleteMany({
             where: {
               userId: user.id,
@@ -158,9 +174,25 @@ export async function POST(request: Request) {
             halfDays: salaryDetails.halfDays,
             leavesEarned: salaryDetails.leavesEarned,
             leaveSalary: salaryDetails.leaveSalary,
+            weeklyOffDays: salaryDetails.weeklyOffDays,
+            unusedWeekOffs: salaryDetails.unusedWeekOffs,
+            weekOffAdjustment: salaryDetails.weekOffAdjustment,
             status: 'PENDING'
           }
         })
+
+        // Create encashment debit in ledger for users with encash enabled
+        if (salaryDetails.weekOffAdjustment > 0 && salaryDetails.unusedWeekOffs > 0) {
+          await createWeekOffCredit({
+            userId: user.id,
+            date: new Date(year, month - 1, endDate.getDate()), // last day of month
+            type: 'DEBIT',
+            reason: 'ENCASHMENT',
+            amount: -salaryDetails.unusedWeekOffs,
+            salaryId: salary.id,
+            createdBy: 'system:salary-generation',
+          })
+        }
 
         // Referral bonuses are processed explicitly via /api/salary/process-referrals.
         // This ensures that if referral bonuses are NOT processed in a given month,
@@ -315,10 +347,12 @@ export async function PATCH(req: Request) {
           data: {
             status: 'PROCESSING',
             advanceDeduction: totalApprovedDeductions,
-            netSalary: existingSalary.baseSalary + 
-                      existingSalary.overtimeBonus + 
-                      existingSalary.otherBonuses - 
-                      totalApprovedDeductions - 
+            netSalary: existingSalary.baseSalary +
+                      existingSalary.overtimeBonus +
+                      existingSalary.leaveSalary +
+                      existingSalary.weekOffAdjustment +
+                      existingSalary.otherBonuses -
+                      totalApprovedDeductions -
                       existingSalary.deductions
           }
         })
@@ -385,10 +419,12 @@ export async function PATCH(req: Request) {
             where: { id: installment.salaryId },
             data: {
               advanceDeduction: totalDeductions,
-              netSalary: installment.salary.baseSalary + 
-                        installment.salary.overtimeBonus + 
-                        installment.salary.otherBonuses - 
-                        totalDeductions - 
+              netSalary: installment.salary.baseSalary +
+                        installment.salary.overtimeBonus +
+                        installment.salary.leaveSalary +
+                        installment.salary.weekOffAdjustment +
+                        installment.salary.otherBonuses -
+                        totalDeductions -
                         installment.salary.deductions
             }
           })
@@ -495,10 +531,12 @@ export async function PATCH(req: Request) {
           where: { id: salaryId },
           data: {
             advanceDeduction: totalDeductions,
-            netSalary: existingSalary.baseSalary + 
-                      existingSalary.overtimeBonus + 
-                      existingSalary.otherBonuses - 
-                      totalDeductions - 
+            netSalary: existingSalary.baseSalary +
+                      existingSalary.overtimeBonus +
+                      existingSalary.leaveSalary +
+                      existingSalary.weekOffAdjustment +
+                      existingSalary.otherBonuses -
+                      totalDeductions -
                       existingSalary.deductions
           }
         })
@@ -583,10 +621,12 @@ export async function PUT(request: Request) {
         where: { id: installment.salaryId },
         data: {
           advanceDeduction: totalDeductions,
-          netSalary: installment.salary.baseSalary + 
-                     installment.salary.overtimeBonus + 
-                     installment.salary.otherBonuses - 
-                     totalDeductions - 
+          netSalary: installment.salary.baseSalary +
+                     installment.salary.overtimeBonus +
+                     installment.salary.leaveSalary +
+                     installment.salary.weekOffAdjustment +
+                     installment.salary.otherBonuses -
+                     totalDeductions -
                      installment.salary.deductions
         }
       })

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { logEntityActivity } from "@/lib/services/activity-log";
+import { checkWeekOffAvailability } from "@/lib/services/week-off-balance";
 import { ActivityType, AttendanceStatus } from "@prisma/client";
 
 export async function POST(req: Request) {
@@ -181,6 +182,20 @@ export async function POST(req: Request) {
         }
       }
       
+      // Check week-off balance before allowing weekly off
+      if (isWeeklyOff) {
+        const { available, balance } = await checkWeekOffAvailability(data.userId)
+        if (!available) {
+          return NextResponse.json(
+            {
+              error: 'No week-off balance available. Employee must be marked as present or absent.',
+              currentBalance: balance,
+            },
+            { status: 400 }
+          )
+        }
+      }
+
       // Weekly off days are automatically marked as present and approved
       if (isWeeklyOff) {
         data.isPresent = true;
@@ -195,30 +210,49 @@ export async function POST(req: Request) {
     }
 
     // Create attendance with the user's current branch
-    const attendance = await prisma.attendance.create({
-      data: {
-        date: attendanceDate,
-        isPresent: data.isPresent,
-        isHalfDay: data.isHalfDay,
-        overtime: isWorkFromHome ? false : (data.overtime || false),
-        isWeeklyOff: isWeeklyOff,
-        isWorkFromHome: isWorkFromHome,
-        checkIn: data.checkIn || null,
-        checkOut: data.checkOut || null,
-        shift1: data.shift1 || false,
-        shift2: data.shift2 || false,
-        shift3: data.shift3 || false,
-        notes: data.notes || null,
-        userId: data.userId,
-        branchId: user.branchId!,
-        status,
-        // If HR or MANAGEMENT is creating, set verification details
-        // Only set verifiedById if creatorId is valid and user exists
-        ...(status === AttendanceStatus.APPROVED && creatorId && creator ? {
-          verifiedById: creatorId,
-          verifiedAt: new Date()
-        } : {})
-      },
+    // Wrap in transaction to ensure attendance + ledger debit are atomic
+    const attendance = await prisma.$transaction(async (tx) => {
+      const att = await tx.attendance.create({
+        data: {
+          date: attendanceDate,
+          isPresent: data.isPresent,
+          isHalfDay: data.isHalfDay,
+          overtime: isWorkFromHome ? false : (data.overtime || false),
+          isWeeklyOff: isWeeklyOff,
+          isWorkFromHome: isWorkFromHome,
+          checkIn: data.checkIn || null,
+          checkOut: data.checkOut || null,
+          shift1: data.shift1 || false,
+          shift2: data.shift2 || false,
+          shift3: data.shift3 || false,
+          notes: data.notes || null,
+          userId: data.userId,
+          branchId: user.branchId!,
+          status,
+          ...(status === AttendanceStatus.APPROVED && creatorId && creator ? {
+            verifiedById: creatorId,
+            verifiedAt: new Date()
+          } : {})
+        },
+      });
+
+      // Create week-off debit in ledger (within same transaction)
+      if (isWeeklyOff) {
+        const debitAmount = data.isHalfDay ? -0.5 : -1
+        await tx.weekOffCredit.create({
+          data: {
+            userId: data.userId,
+            date: attendanceDate,
+            type: 'DEBIT',
+            reason: 'WEEK_OFF_TAKEN',
+            amount: debitAmount,
+            attendanceId: att.id,
+            createdBy: creatorId,
+          },
+        })
+      }
+
+      return att;
     });
 
     // If salary exists and is in PENDING state, recalculate it

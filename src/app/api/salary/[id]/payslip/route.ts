@@ -178,7 +178,7 @@ export async function GET(
 
 		// Calculate total earnings (matching stats endpoint logic exactly)
 		// Note: referral bonuses are already included in salary.otherBonuses
-		const baseSalaryEarned = presentDaysSalary + overtimeSalary + salary.otherBonuses + leaveSalary;
+		const baseSalaryEarned = presentDaysSalary + overtimeSalary + salary.otherBonuses + leaveSalary + (salary.weekOffAdjustment || 0);
 		const totalEarnings = baseSalaryEarned;
 		
 		// Calculate net salary (matching stats endpoint logic)
@@ -289,6 +289,11 @@ export async function GET(
 			{ label: 'Overtime Bonus', amount: overtimeSalary },
 			{ label: 'Leave Salary', amount: leaveSalary },
 		];
+
+		// Week Off Adjustment — only show when > 0
+		if (salary.weekOffAdjustment > 0) {
+			earnings.push({ label: 'Week Off Adjustment', amount: salary.weekOffAdjustment });
+		}
 
 		// Show other bonuses and referral bonus separately if referral bonus exists
 		if (totalReferralBonus > 0 && salary.otherBonuses > totalReferralBonus) {
