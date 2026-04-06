@@ -39,7 +39,7 @@ export async function POST(req: Request) {
         },
         installments: true
       }
-    }) as Salary[];
+    }) as unknown as Salary[];
 
     if (salaries.length === 0) {
       return NextResponse.json(
