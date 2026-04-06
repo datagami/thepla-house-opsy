@@ -36,7 +36,7 @@ export async function getNote(id: string): Promise<Note | null> {
     throw new NotAuthorizedError();
   }
 
-  return note as Note;
+  return note as unknown as Note;
 }
 
 export async function updateNote(id: string, title: string, content: string) {
