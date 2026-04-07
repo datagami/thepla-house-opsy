@@ -90,6 +90,7 @@
 @layer base {
   html {
     font-size: calc(var(--app-scale) * 100%);
+    overflow-x: hidden;
   }
   * {
     @apply border-border outline-ring/50;
