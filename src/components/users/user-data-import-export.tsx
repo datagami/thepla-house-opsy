@@ -83,13 +83,16 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
       });
 
       const workbook = XLSX.utils.book_new();
-      
-      // Create sheets for active and inactive users
+
+      // Create sheets per status + one sheet for all users
       const activeUsers = users.filter((user: User) => user.status === 'ACTIVE');
       const inactiveUsers = users.filter((user: User) => user.status === 'INACTIVE');
+      const partialActiveUsers = users.filter((user: User) => user.status === 'PARTIAL_INACTIVE');
 
       const activeSheet = XLSX.utils.json_to_sheet(activeUsers.map(formatUserData));
       const inactiveSheet = XLSX.utils.json_to_sheet(inactiveUsers.map(formatUserData));
+      const partialActiveSheet = XLSX.utils.json_to_sheet(partialActiveUsers.map(formatUserData));
+      const allUsersSheet = XLSX.utils.json_to_sheet(users.map(formatUserData));
 
       // Set column width and format
       const columnWidths = [
@@ -118,9 +121,13 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
 
       activeSheet['!cols'] = columnWidths;
       inactiveSheet['!cols'] = columnWidths;
+      partialActiveSheet['!cols'] = columnWidths;
+      allUsersSheet['!cols'] = columnWidths;
 
       XLSX.utils.book_append_sheet(workbook, activeSheet, 'Active Users');
       XLSX.utils.book_append_sheet(workbook, inactiveSheet, 'Inactive Users');
+      XLSX.utils.book_append_sheet(workbook, partialActiveSheet, 'Partial Active Users');
+      XLSX.utils.book_append_sheet(workbook, allUsersSheet, 'All Users');
       XLSX.writeFile(workbook, `users-data-${new Date().toLocaleDateString('en-GB')}.xlsx`);
     } catch (error) {
       console.error('Export failed:', error);
