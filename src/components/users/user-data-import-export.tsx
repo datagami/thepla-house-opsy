@@ -83,13 +83,13 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
       });
 
       const workbook = XLSX.utils.book_new();
-      
-      // Create sheets for active and inactive users
+
+      // Create sheets for active and non-active users
       const activeUsers = users.filter((user: User) => user.status === 'ACTIVE');
-      const inactiveUsers = users.filter((user: User) => user.status === 'INACTIVE');
+      const nonActiveUsers = users.filter((user: User) => user.status !== 'ACTIVE');
 
       const activeSheet = XLSX.utils.json_to_sheet(activeUsers.map(formatUserData));
-      const inactiveSheet = XLSX.utils.json_to_sheet(inactiveUsers.map(formatUserData));
+      const nonActiveSheet = XLSX.utils.json_to_sheet(nonActiveUsers.map(formatUserData));
 
       // Set column width and format
       const columnWidths = [
@@ -117,10 +117,10 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
       ];
 
       activeSheet['!cols'] = columnWidths;
-      inactiveSheet['!cols'] = columnWidths;
+      nonActiveSheet['!cols'] = columnWidths;
 
       XLSX.utils.book_append_sheet(workbook, activeSheet, 'Active Users');
-      XLSX.utils.book_append_sheet(workbook, inactiveSheet, 'Inactive Users');
+      XLSX.utils.book_append_sheet(workbook, nonActiveSheet, 'Non Active Users');
       XLSX.writeFile(workbook, `users-data-${new Date().toLocaleDateString('en-GB')}.xlsx`);
     } catch (error) {
       console.error('Export failed:', error);
