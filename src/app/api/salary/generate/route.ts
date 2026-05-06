@@ -309,17 +309,21 @@ export async function PATCH(req: Request) {
           0
         )
 
+        const recurringEntries = (existingSalary.recurringDeductions as Array<{ amount: number }> | null) ?? []
+        const recurringTotal = recurringEntries.reduce((s, e) => s + e.amount, 0)
+
         // Update salary with final calculations
         await tx.salary.update({
           where: { id: salaryId },
           data: {
             status: 'PROCESSING',
             advanceDeduction: totalApprovedDeductions,
-            netSalary: existingSalary.baseSalary + 
-                      existingSalary.overtimeBonus + 
-                      existingSalary.otherBonuses - 
-                      totalApprovedDeductions - 
-                      existingSalary.deductions
+            netSalary: existingSalary.baseSalary +
+                      existingSalary.overtimeBonus +
+                      existingSalary.otherBonuses -
+                      totalApprovedDeductions -
+                      existingSalary.deductions -
+                      recurringTotal
           }
         })
 
@@ -494,16 +498,20 @@ export async function PATCH(req: Request) {
           0
         )
 
+        const recurringEntriesForAdvance = (existingSalary.recurringDeductions as Array<{ amount: number }> | null) ?? []
+        const recurringTotalForAdvance = recurringEntriesForAdvance.reduce((s, e) => s + e.amount, 0)
+
         // Update salary
         await tx.salary.update({
           where: { id: salaryId },
           data: {
             advanceDeduction: totalDeductions,
-            netSalary: existingSalary.baseSalary + 
-                      existingSalary.overtimeBonus + 
-                      existingSalary.otherBonuses - 
-                      totalDeductions - 
-                      existingSalary.deductions
+            netSalary: existingSalary.baseSalary +
+                      existingSalary.overtimeBonus +
+                      existingSalary.otherBonuses -
+                      totalDeductions -
+                      existingSalary.deductions -
+                      recurringTotalForAdvance
           }
         })
       })
