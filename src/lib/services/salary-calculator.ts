@@ -1,6 +1,9 @@
 import { AdvancePayment, Salary } from "@/models/models";
 import { prisma } from '@/lib/prisma'
 import { SalaryStatus } from "@prisma/client";
+import { computeRecurringDeductions } from '@/lib/services/recurring-deductions'
+import { computeSalaryBreakdown } from '@/lib/services/salary-math'
+import type { RecurringDeductionEntry } from '@/models/models'
 
 
 export async function calculateSalary(userId: string, month: number, year: number) {
@@ -10,6 +13,9 @@ export async function calculateSalary(userId: string, month: number, year: numbe
     select: {
       salary: true,
       hasWeeklyOff: true,
+      optInPT: true,
+      optInPF: true,
+      optInESI: true,
     },
   })
 
@@ -65,19 +71,6 @@ export async function calculateSalary(userId: string, month: number, year: numbe
     presentDays++;
   });
 
-  // Calculate attendance-based salary
-  const workingDays = endDate.getDate()
-  const perDaySalary = Math.round((employee.salary.valueOf() / workingDays) * 100) / 100;
-  
-  // Regular days get 1x per day salary
-  const presentDaysAmount = parseFloat((presentDays * perDaySalary).toFixed(2));
-  
-  // Overtime days get 0.5x per day salary ( half extra)
-  const overtimeAmount = parseFloat((overtimeDays * (perDaySalary * 0.5)).toFixed(2));
-  
-  // Total salary is the sum of all attendance-based amounts
-  const totalSalary = presentDaysAmount + overtimeAmount;
-
   // Get pending advance payments but don't create installments yet
   const pendingAdvances = await prisma.advancePayment.findMany({
     where: {
@@ -99,64 +92,69 @@ export async function calculateSalary(userId: string, month: number, year: numbe
     0
   );
 
-  // Calculate bonuses (you can customize this based on your requirements)
-  const performanceBonus = 0 // You can implement your performance bonus logic here
+  // Days in month
+  const daysInMonth = endDate.getDate()
 
-  const baseSalary = employee.salary;
-  const deductions = totalAdvanceDeduction;
-  const otherBonuses = performanceBonus;
-
-  // Calculate earned leaves based on attendance
-  // Employees with weekly off are NOT eligible for bonus leaves
-  let leavesEarned = 0;
-  let leaveSalary = 0;
-  
+  // Earned leaves logic (kept here — depends on attendance shape)
+  let leavesEarned = 0
   if (!employee.hasWeeklyOff) {
-    // For bonus leaves calculation, exclude weekly off days from presentDays count
     const presentDaysForBonusLeaves = attendance
       .filter(day => day.isPresent && !day.isWeeklyOff)
       .reduce((sum, day) => {
-        if (day.isHalfDay) return sum + 0.5;
-        if (day.overtime) return sum + 1;
-        return sum + 1;
-      }, 0);
+        if (day.isHalfDay) return sum + 0.5
+        return sum + 1
+      }, 0)
 
-    if (presentDaysForBonusLeaves >= 25) {
-      leavesEarned = 2;
-    } else if (presentDaysForBonusLeaves >= 15) {
-      leavesEarned = 1;
-    }
-
-    // Calculate leave salary (per day salary * earned leaves)
-    leaveSalary = parseFloat((leavesEarned * perDaySalary).toFixed(2));
+    if (presentDaysForBonusLeaves >= 25) leavesEarned = 2
+    else if (presentDaysForBonusLeaves >= 15) leavesEarned = 1
   }
-  
-  // Add leave salary to total salary
-  const totalSalaryWithLeaves = totalSalary + leaveSalary;
-  
-  // Update net salary calculation to include leave salary
-  const netSalary = totalSalaryWithLeaves + otherBonuses - deductions;
-  const roundedSalary = Math.round(netSalary);
+
+  // Recurring deductions snapshot for this month
+  const recurringDeductions: RecurringDeductionEntry[] = computeRecurringDeductions(
+    {
+      optInPT: employee.optInPT ?? false,
+      optInPF: employee.optInPF ?? false,
+      optInESI: employee.optInESI ?? false,
+      salary: employee.salary,
+    },
+    month,
+  )
+
+  // All math via the pure helper — easy to test in isolation
+  const breakdown = computeSalaryBreakdown({
+    baseSalary: employee.salary,
+    daysInMonth,
+    presentDays,
+    overtimeDays,
+    leavesEarned,
+    otherBonuses: 0,                  // performance bonus placeholder, matches old code
+    advanceTotal: totalAdvanceDeduction,
+    recurringDeductions,
+  })
+
+  const baseSalary = employee.salary
+  const otherBonuses = 0
+  const roundedSalary = Math.round(breakdown.netSalary)
 
   return {
     baseSalary,
-    deductions,
-    netSalary,
-    // Additional details for breakdown
-    attendanceDeduction: 0, // Not used in this calculation
+    deductions: totalAdvanceDeduction,           // legacy key — advance total
+    netSalary: breakdown.netSalary,
+    attendanceDeduction: 0,
     suggestedAdvanceDeductions,
-    overtimeAmount,
+    overtimeAmount: breakdown.overtimeAmount,
     otherBonuses,
     attendance,
     leavesEarned,
-    leaveSalary,
-    // Add detailed amounts for UI
-    presentDaysAmount,
+    leaveSalary: breakdown.leaveSalary,
+    presentDaysAmount: breakdown.presentDaysAmount,
     presentDays,
     overtimeDays,
     halfDays,
     weeklyOffDays,
-    roundedSalary
+    roundedSalary,
+    recurringDeductions,
+    recurringDeductionTotal: breakdown.recurringTotal,
   }
 }
 
