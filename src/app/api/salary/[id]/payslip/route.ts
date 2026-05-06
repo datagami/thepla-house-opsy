@@ -235,9 +235,11 @@ export async function GET(
 			{ label: 'Name', value: salary.user.name || 'N/A' },
 			{ label: 'Employee ID', value: salary.user.numId.toString() },
 			{ label: 'Department', value: salary.user.department?.name || 'N/A' },
-			{ label: 'Designation', value: salary.user.title || salary.user.role || 'N/A' },
+			{ label: 'Title', value: salary.user.title || salary.user.role || 'N/A' },
 			{ label: 'Branch', value: salary.user.branch?.name || 'N/A' },
 			{ label: 'Date of Joining', value: salary.user.doj ? formatDate(new Date(salary.user.doj)) : 'N/A' },
+			{ label: 'Monthly Salary', value: formatCurrency(salary.baseSalary) },
+			{ label: 'Per Day Rate', value: formatCurrency(perDaySalary) },
 			{ label: 'Bank A/C.', value: salary.user.bankAccountNo || 'N/A' },
 			{ label: 'IFSC', value: salary.user.bankIfscCode || 'N/A' },
 			{ label: 'DOB', value: salary.user.dob ? formatDate(new Date(salary.user.dob)) : 'N/A' },
@@ -286,10 +288,18 @@ export async function GET(
 		y -= 28;
 
 		const earnings = [
-			{ label: 'Base Salary', amount: salary.baseSalary },
-			{ label: 'Present Days Salary', amount: presentDaysSalary },
-			{ label: 'Overtime Bonus', amount: overtimeSalary },
-			{ label: 'Leave Salary', amount: leaveSalary },
+			{
+				label: `Present Days Salary  (${presentDays.toFixed(presentDays % 1 === 0 ? 0 : 1)} × ${formatCurrency(perDaySalary)})`,
+				amount: presentDaysSalary,
+			},
+			{
+				label: `Overtime Bonus  (${overtimeDays} × 0.5 × ${formatCurrency(perDaySalary)})`,
+				amount: overtimeSalary,
+			},
+			{
+				label: `Leave Salary  (${leavesEarned} × ${formatCurrency(perDaySalary)})`,
+				amount: leaveSalary,
+			},
 		];
 
 		// Show other bonuses and referral bonus separately if referral bonus exists
