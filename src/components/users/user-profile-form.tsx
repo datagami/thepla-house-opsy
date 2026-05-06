@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
 import {Switch} from "@/components/ui/switch";
+import {Checkbox} from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -69,6 +70,9 @@ const userFormSchema = z.object({
   weeklyOffType: z.enum(["FIXED", "FLEXIBLE"]).optional().nullable(),
   weeklyOffDay: z.number().min(0).max(6).optional().nullable(),
   hasWorkFromHome: z.boolean().optional(),
+  optInPT: z.boolean().default(false),
+  optInPF: z.boolean().default(false),
+  optInESI: z.boolean().default(false),
 });
 
 interface UserProfileFormProps {
@@ -137,6 +141,9 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
       weeklyOffType: initialWeeklyOffType,
       weeklyOffDay: (user as User & { weeklyOffDay?: number | null })?.weeklyOffDay || null,
       hasWorkFromHome: (user as User & { hasWorkFromHome?: boolean })?.hasWorkFromHome || false,
+      optInPT: (user as User & { optInPT?: boolean })?.optInPT ?? false,
+      optInPF: (user as User & { optInPF?: boolean })?.optInPF ?? false,
+      optInESI: (user as User & { optInESI?: boolean })?.optInESI ?? false,
     },
   });
 
@@ -831,6 +838,60 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
                       disabled={!canEdit}
                     />
                   </FormControl>
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Statutory Deductions</h3>
+          <p className="text-sm text-muted-foreground">
+            Professional Tax is deducted automatically when enabled and base salary ≥ ₹10,000
+            (₹200/month, ₹300 in February).
+          </p>
+          <div className="space-y-3">
+            <FormField
+              control={form.control}
+              name="optInPT"
+              render={({field}) => (
+                <FormItem className="flex items-center gap-2 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={!canEdit}
+                    />
+                  </FormControl>
+                  <FormLabel className="font-normal">Professional Tax (PT)</FormLabel>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="optInPF"
+              render={({field}) => (
+                <FormItem className="flex items-center gap-2 space-y-0">
+                  <FormControl>
+                    <Checkbox checked={field.value} disabled />
+                  </FormControl>
+                  <FormLabel className="font-normal text-muted-foreground">
+                    Provident Fund (PF) <span className="text-xs">— coming soon</span>
+                  </FormLabel>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="optInESI"
+              render={({field}) => (
+                <FormItem className="flex items-center gap-2 space-y-0">
+                  <FormControl>
+                    <Checkbox checked={field.value} disabled />
+                  </FormControl>
+                  <FormLabel className="font-normal text-muted-foreground">
+                    ESI <span className="text-xs">— coming soon</span>
+                  </FormLabel>
                 </FormItem>
               )}
             />
