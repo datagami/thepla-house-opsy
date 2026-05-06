@@ -55,7 +55,7 @@ export default async function PayslipPage({
   })
   if (!salary || salary.userId !== userId) notFound()
 
-  // --- Derived values (mirrors pdf-lib route's math) ---
+  // --- Derived values ---
   const startDate = new Date(salary.year, salary.month - 1, 1)
   const endDate = new Date(salary.year, salary.month, 0)
   const attendance = await prisma.attendance.findMany({
