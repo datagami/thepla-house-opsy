@@ -194,6 +194,12 @@ const roleNavItems: Record<string, NavItem[]> = {
           icon: <UserPlus className="h-4 w-4" />,
           feature: "salary.view"
         },
+        {
+          title: "Deduction Settings",
+          href: "/users/deduction-settings",
+          icon: <Briefcase className="h-4 w-4" />,
+          feature: "salary.edit"
+        },
       ]
     },
     {
@@ -413,6 +419,12 @@ const roleNavItems: Record<string, NavItem[]> = {
           href: "/referrals",
           icon: <UserPlus className="h-4 w-4" />,
           feature: "salary.view"
+        },
+        {
+          title: "Deduction Settings",
+          href: "/users/deduction-settings",
+          icon: <Briefcase className="h-4 w-4" />,
+          feature: "salary.edit"
         },
       ]
     },
