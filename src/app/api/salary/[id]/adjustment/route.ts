@@ -30,7 +30,9 @@ export async function POST(
       return new NextResponse('Can only update adjustments for pending salary', { status: 400 })
     }
 
-    // Calculate new net salary by replacing the old adjustments with new ones
+    // Calculate new net salary by replacing the old adjustments with new ones.
+    // advanceDeduction holds the planned advance for PENDING (and approved-only for PROCESSING);
+    // it must be subtracted here too — adjustment used to silently drop it.
     const recurringTotal = sumRecurringDeductions(
       salary.recurringDeductions as RecurringDeductionEntry[] | null
     )
@@ -39,6 +41,7 @@ export async function POST(
                         salary.overtimeBonus +
                         (bonusAmount || 0) -
                         (deductionAmount || 0) -
+                        salary.advanceDeduction -
                         recurringTotal
 
     const updatedSalary = await prisma.salary.update({
