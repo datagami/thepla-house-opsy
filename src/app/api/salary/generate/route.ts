@@ -380,16 +380,20 @@ export async function PATCH(req: Request) {
             0
           )
 
+          const recurringEntries = (installment.salary.recurringDeductions as Array<{ amount: number }> | null) ?? []
+          const recurringTotal = recurringEntries.reduce((s, e) => s + e.amount, 0)
+
           // Update salary
           await tx.salary.update({
             where: { id: installment.salaryId },
             data: {
               advanceDeduction: totalDeductions,
-              netSalary: installment.salary.baseSalary + 
-                        installment.salary.overtimeBonus + 
-                        installment.salary.otherBonuses - 
-                        totalDeductions - 
-                        installment.salary.deductions
+              netSalary: installment.salary.baseSalary +
+                        installment.salary.overtimeBonus +
+                        installment.salary.otherBonuses -
+                        totalDeductions -
+                        installment.salary.deductions -
+                        recurringTotal
             }
           })
         } else if (installmentAction === 'APPROVE') {
@@ -579,15 +583,19 @@ export async function PUT(request: Request) {
         0
       )
 
+      const recurringEntries = (installment.salary.recurringDeductions as Array<{ amount: number }> | null) ?? []
+      const recurringTotal = recurringEntries.reduce((s, e) => s + e.amount, 0)
+
       await tx.salary.update({
         where: { id: installment.salaryId },
         data: {
           advanceDeduction: totalDeductions,
-          netSalary: installment.salary.baseSalary + 
-                     installment.salary.overtimeBonus + 
-                     installment.salary.otherBonuses - 
-                     totalDeductions - 
-                     installment.salary.deductions
+          netSalary: installment.salary.baseSalary +
+                     installment.salary.overtimeBonus +
+                     installment.salary.otherBonuses -
+                     totalDeductions -
+                     installment.salary.deductions -
+                     recurringTotal
         }
       })
     })

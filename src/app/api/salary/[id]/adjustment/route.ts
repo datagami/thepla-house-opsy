@@ -29,10 +29,14 @@ export async function POST(
     }
 
     // Calculate new net salary by replacing the old adjustments with new ones
-    const newNetSalary = salary.baseSalary + 
-                        salary.overtimeBonus + 
-                        (bonusAmount || 0) - 
-                        (deductionAmount || 0)
+    const recurringEntries = (salary.recurringDeductions as Array<{ amount: number }> | null) ?? []
+    const recurringTotal = recurringEntries.reduce((s, e) => s + e.amount, 0)
+
+    const newNetSalary = salary.baseSalary +
+                        salary.overtimeBonus +
+                        (bonusAmount || 0) -
+                        (deductionAmount || 0) -
+                        recurringTotal
 
     const updatedSalary = await prisma.salary.update({
       where: { id },

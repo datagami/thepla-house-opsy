@@ -60,13 +60,16 @@ export async function PATCH(request: Request) {
             0
           )
 
+          const recurringEntries = (salary.recurringDeductions as Array<{ amount: number }> | null) ?? []
+          const recurringTotal = recurringEntries.reduce((s, e) => s + e.amount, 0)
+
           await tx.salary.update({
             where: { id: salary.id },
             data: {
               status: 'PROCESSING',
               paidAt: null,
               advanceDeduction: totalApprovedDeductions,
-              netSalary: salary.baseSalary + salary.overtimeBonus + salary.otherBonuses - totalApprovedDeductions - salary.deductions
+              netSalary: salary.baseSalary + salary.overtimeBonus + salary.otherBonuses - totalApprovedDeductions - salary.deductions - recurringTotal
             }
           })
 
