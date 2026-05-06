@@ -1,6 +1,5 @@
 import { AdvancePayment, Salary } from "@/models/models";
 import { prisma } from '@/lib/prisma'
-import { SalaryStatus } from "@prisma/client";
 import { computeRecurringDeductions, sumRecurringDeductions } from '@/lib/services/recurring-deductions'
 import { computeSalaryBreakdown } from '@/lib/services/salary-math'
 import type { RecurringDeductionEntry } from '@/models/models'
@@ -156,116 +155,6 @@ export async function calculateSalary(userId: string, month: number, year: numbe
     recurringDeductions,
     recurringDeductionTotal: breakdown.recurringTotal,
   }
-}
-
-// New function to create/update salary with advance deductions
-export async function createOrUpdateSalary({
-  userId,
-  month,
-  year,
-  advanceDeductions,
-  salaryId,
-  status,
-  updateAdvanceRemaining = false
-}: {
-  userId: string;
-  month: number;
-  year: number;
-  advanceDeductions: Array<{ advanceId: string; amount: number }>;
-  salaryId?: string;
-  status?: string;
-  updateAdvanceRemaining?: boolean;
-}) {
-  const salaryDetails = await calculateSalary(userId, month, year);
-  
-  // Calculate total deductions from advance payments
-  const totalAdvanceDeduction = advanceDeductions.reduce(
-    (sum, deduction) => sum + deduction.amount, 
-    0
-  );
-  
-  await prisma.$transaction(async (tx) => {
-    // Create or update salary record
-    const salary = await tx.salary.upsert({
-      where: { 
-        id: salaryId ?? 'new',
-      },
-      create: {
-        userId,
-        month,
-        year,
-        baseSalary: salaryDetails.baseSalary,
-        advanceDeduction: totalAdvanceDeduction,
-        deductions: totalAdvanceDeduction,
-        overtimeBonus: salaryDetails.overtimeAmount,
-        otherBonuses: 0,
-        otherDeductions: 0,
-        recurringDeductions: salaryDetails.recurringDeductions as unknown as object,
-        netSalary: salaryDetails.netSalary,
-        presentDays: salaryDetails.presentDays,
-        overtimeDays: salaryDetails.overtimeDays || 0,
-        halfDays: salaryDetails.halfDays || 0,
-        leavesEarned: salaryDetails.leavesEarned,
-        leaveSalary: salaryDetails.leaveSalary,
-        status: 'PENDING',
-      },
-      update: {
-        deductions: totalAdvanceDeduction,
-        advanceDeduction: totalAdvanceDeduction,
-        recurringDeductions: salaryDetails.recurringDeductions as unknown as object,
-        netSalary: salaryDetails.netSalary,
-        status: status as SalaryStatus ?? 'PENDING',
-        presentDays: salaryDetails.presentDays,
-        overtimeDays: salaryDetails.overtimeDays || 0,
-        halfDays: salaryDetails.halfDays || 0,
-        leavesEarned: salaryDetails.leavesEarned,
-        leaveSalary: salaryDetails.leaveSalary
-      }
-    });
-
-    // Delete existing advance installments if updating
-    if (salaryId) {
-      await tx.advancePaymentInstallment.deleteMany({
-        where: { salaryId }
-      });
-    }
-
-    // Create advance installments
-    for (const deduction of advanceDeductions) {
-      if (deduction.amount > 0) {
-        await tx.advancePaymentInstallment.create({
-          data: {
-            userId,
-            status: 'PENDING',
-            advanceId: deduction.advanceId,
-            amountPaid: deduction.amount,
-            paidAt: new Date(),
-            salaryId: salary.id
-          }
-        });
-
-        if (updateAdvanceRemaining) {
-          await tx.advancePayment.update({
-            where: { id: deduction.advanceId },
-            data: {
-              remainingAmount: {
-                decrement: deduction.amount
-              },
-              isSettled: {
-                set: !!(await tx.advancePayment.findUnique({
-                  where: { id: deduction.advanceId }
-                }).then(advance => 
-                  advance && advance.remainingAmount - deduction.amount <= 0
-                ))
-              }
-            }
-          });
-        }
-      }
-    }
-
-    return salary;
-  });
 }
 
 export function calculateNetSalaryFromObject(salary: Salary) {

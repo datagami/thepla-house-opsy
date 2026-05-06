@@ -6,6 +6,7 @@ import { hasAccess } from "@/lib/access-control";
 import {Prisma} from "@prisma/client";
 import { logTargetUserActivity, logUserActivity } from "@/lib/services/activity-log";
 import { ActivityType } from "@prisma/client";
+import { recordSalaryAppraisal, logSalaryAppraisalActivity } from "@/lib/services/salary-appraisal";
 
 export async function GET(
   _request: Request,
@@ -417,38 +418,16 @@ export async function PUT(
     }
 
     // Create salary appraisal record if salary changed
-    const newSalary = salary ? parseFloat(salary) : null;
-    if (oldUser.salary !== null && newSalary !== null && oldUser.salary !== newSalary) {
-      const changeAmount = newSalary - oldUser.salary;
-      const changePercentage = oldUser.salary > 0
-        ? Math.round((changeAmount / oldUser.salary) * 10000) / 100
-        : 0;
-
-      await prisma.salaryAppraisal.create({
-        data: {
-          userId: id,
-          previousSalary: oldUser.salary,
-          newSalary,
-          changeAmount,
-          changePercentage,
-          changedById: logUserId,
-        },
+    if (salary) {
+      const change = await recordSalaryAppraisal({
+        userId: id,
+        previousSalary: oldUser.salary,
+        newSalary: parseFloat(salary),
+        changedById: logUserId ?? null,
       });
-
-      await logTargetUserActivity(
-        ActivityType.SALARY_APPRAISAL,
-        logUserId,
-        user.id,
-        `Salary changed from ₹${oldUser.salary.toLocaleString()} to ₹${newSalary.toLocaleString()} (${changePercentage > 0 ? "+" : ""}${changePercentage}%)`,
-        {
-          userId: user.id,
-          previousSalary: oldUser.salary,
-          newSalary,
-          changeAmount,
-          changePercentage,
-        },
-        request
-      );
+      if (change && logUserId) {
+        await logSalaryAppraisalActivity({ change, changedById: logUserId, request });
+      }
     }
 
     // Log statutory opt-in changes (HR/MANAGEMENT-only writes — affect take-home pay)

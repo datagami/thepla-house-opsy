@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { recordSalaryAppraisal, logSalaryAppraisalActivity } from '@/lib/services/salary-appraisal';
 
 export async function POST(
   request: NextRequest,
@@ -78,6 +79,23 @@ export async function POST(
         doj: jobOffer.joiningDate || new Date(),
       },
     });
+
+    // Track salary change as an appraisal (no-ops for net-new users with null prior salary)
+    const changedById = (session.user as { id?: string }).id ?? null;
+    const change = await recordSalaryAppraisal({
+      userId: jobOffer.userId,
+      previousSalary: jobOffer.user?.salary ?? null,
+      newSalary: jobOffer.totalSalary,
+      changedById,
+    });
+    if (change && changedById) {
+      await logSalaryAppraisalActivity({
+        change,
+        changedById,
+        source: 'job offer acceptance',
+        request,
+      });
+    }
 
     return NextResponse.json(updatedJobOffer);
   } catch (error) {
