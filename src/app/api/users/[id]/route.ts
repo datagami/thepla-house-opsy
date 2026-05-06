@@ -97,11 +97,11 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { 
-      name, 
-      email, 
-      role, 
-      branchId, 
+    const {
+      name,
+      email,
+      role,
+      branchId,
       password,
       title,
       departmentId,
@@ -119,7 +119,10 @@ export async function PUT(
       hasWeeklyOff,
       weeklyOffType,
       weeklyOffDay,
-      hasWorkFromHome
+      hasWorkFromHome,
+      optInPT,
+      optInPF,
+      optInESI,
     } = body;
 
     // Base update data
@@ -152,6 +155,9 @@ export async function PUT(
       weeklyOffType: weeklyOffType !== undefined ? (weeklyOffType === "null" || weeklyOffType === "" ? null : weeklyOffType) : undefined,
       weeklyOffDay: weeklyOffDay !== undefined ? (weeklyOffDay === null || weeklyOffDay === "" ? null : parseInt(weeklyOffDay)) : undefined,
       hasWorkFromHome: hasWorkFromHome !== undefined ? hasWorkFromHome : undefined,
+      optInPT: optInPT ?? undefined,
+      optInPF: optInPF ?? undefined,
+      optInESI: optInESI ?? undefined,
     };
 
     // Only update role if user has permission
