@@ -174,7 +174,9 @@ export async function GET(
 			.filter(i => i.status === 'APPROVED')
 			.reduce((sum, i) => sum + i.amountPaid, 0);
 		const totalOtherDeductions = salary.otherDeductions;
-		const totalDeductions = totalAdvanceDeductions + totalOtherDeductions;
+		const recurringEntries = (salary.recurringDeductions as Array<{ code: string; name: string; amount: number }> | null) ?? [];
+		const totalRecurringDeductions = recurringEntries.reduce((s, e) => s + e.amount, 0);
+		const totalDeductions = totalAdvanceDeductions + totalOtherDeductions + totalRecurringDeductions;
 
 		// Calculate total earnings (matching stats endpoint logic exactly)
 		// Note: referral bonuses are already included in salary.otherBonuses
@@ -357,6 +359,18 @@ export async function GET(
 			const otherDeductionsWidth = regularFont.widthOfTextAtSize(otherDeductionsText, 9);
 			page.drawText(otherDeductionsText, { x: 520 - otherDeductionsWidth, y, size: 9, font: regularFont, color: textDark });
 			y -= 15;
+		}
+
+		if (recurringEntries.length > 0) {
+			page.drawText('Statutory Deductions:', { x: 60, y, size: 9, font: boldFont, color: textDark });
+			y -= 15;
+			for (const entry of recurringEntries) {
+				page.drawText(`  • ${entry.name}`, { x: 70, y, size: 8, font: regularFont, color: textDark });
+				const amountText = formatCurrency(entry.amount);
+				const amountWidth = regularFont.widthOfTextAtSize(amountText, 8);
+				page.drawText(amountText, { x: 520 - amountWidth, y, size: 8, font: regularFont, color: textDark });
+				y -= 12;
+			}
 		}
 
 		if (totalDeductions === 0) {
