@@ -322,7 +322,16 @@ export async function GET(
 		y -= 25;
 		const deductionsStartY = y;
 		const approvedAdvanceInstallments = advanceInstallments.filter(i => i.status === 'APPROVED');
-		const deductionsContentHeight = approvedAdvanceInstallments.length > 0 ? 40 + (approvedAdvanceInstallments.length * 14) : 50;
+		const recurringHeight = recurringEntries.length > 0
+			? 15 + (recurringEntries.length * 12)
+			: 0;
+		const deductionsContentHeight = (
+			approvedAdvanceInstallments.length > 0
+				? 40 + (approvedAdvanceInstallments.length * 14)
+				: 50
+		)
+			+ (salary.otherDeductions > 0 ? 15 : 0)
+			+ recurringHeight;
 		const deductionsBoxHeight = deductionsContentHeight + 30; // Add space for header and padding
 		const deductionsBoxBottom = deductionsStartY - deductionsBoxHeight;
 		
