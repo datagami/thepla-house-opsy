@@ -155,10 +155,15 @@ export async function PUT(
       weeklyOffType: weeklyOffType !== undefined ? (weeklyOffType === "null" || weeklyOffType === "" ? null : weeklyOffType) : undefined,
       weeklyOffDay: weeklyOffDay !== undefined ? (weeklyOffDay === null || weeklyOffDay === "" ? null : parseInt(weeklyOffDay)) : undefined,
       hasWorkFromHome: hasWorkFromHome !== undefined ? hasWorkFromHome : undefined,
-      optInPT: optInPT ?? undefined,
-      optInPF: optInPF ?? undefined,
-      optInESI: optInESI ?? undefined,
     };
+
+    // Statutory opt-in flags are HR/MANAGEMENT-only — employees cannot toggle
+    // their own PT/PF/ESI enrollment.
+    if (canManageUsers) {
+      updateData.optInPT = optInPT ?? undefined;
+      updateData.optInPF = optInPF ?? undefined;
+      updateData.optInESI = optInESI ?? undefined;
+    }
 
     // Only update role if user has permission
     if (canManageUsers) {
