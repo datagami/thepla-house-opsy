@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from "@/auth"
+import { sumRecurringDeductions } from '@/lib/services/recurring-deductions'
+import type { RecurringDeductionEntry } from '@/models/models'
 
 export async function GET(
   req: Request,
@@ -120,7 +122,10 @@ export async function GET(
 
     const totalOtherDeductions = salary.otherDeductions
 
-    const totalDeductions = totalAdvanceDeductions + totalOtherDeductions
+    const recurringEntries = (salary.recurringDeductions as RecurringDeductionEntry[] | null) ?? [];
+    const totalRecurringDeductions = sumRecurringDeductions(recurringEntries);
+
+    const totalDeductions = totalAdvanceDeductions + totalOtherDeductions + totalRecurringDeductions
     
     // Add a count of approved deductions to the response
     const approvedDeductionsCount = advanceInstallments.filter(i => i.status === 'APPROVED').length
@@ -170,6 +175,7 @@ export async function GET(
         totalDeductions,
         totalAdvanceDeductions,
         totalOtherDeductions,
+        totalRecurringDeductions,
         approvedDeductionsCount,
         netSalary,
         roundedNetSalary
@@ -181,7 +187,8 @@ export async function GET(
         status: i.status,
         advanceTitle: i.advance.reason,
         approvedAt: i.approvedAt
-      }))
+      })),
+      recurringDeductions: recurringEntries
     }
 
     return NextResponse.json(stats)

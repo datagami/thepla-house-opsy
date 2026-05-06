@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 import { auth } from "@/auth"
+import { sumRecurringDeductions } from '@/lib/services/recurring-deductions'
+import type { RecurringDeductionEntry } from '@/models/models'
 
 export async function PATCH(request: Request) {
   try {
@@ -60,13 +62,17 @@ export async function PATCH(request: Request) {
             0
           )
 
+          const recurringTotal = sumRecurringDeductions(
+            salary.recurringDeductions as RecurringDeductionEntry[] | null
+          )
+
           await tx.salary.update({
             where: { id: salary.id },
             data: {
               status: 'PROCESSING',
               paidAt: null,
               advanceDeduction: totalApprovedDeductions,
-              netSalary: salary.baseSalary + salary.overtimeBonus + salary.otherBonuses - totalApprovedDeductions - salary.deductions
+              netSalary: salary.baseSalary + salary.overtimeBonus + salary.otherBonuses - totalApprovedDeductions - salary.deductions - recurringTotal
             }
           })
 

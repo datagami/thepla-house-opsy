@@ -1,0 +1,615 @@
+/* ---------------------------------------------------------------------------
+   Payslip page — screen + print
+   Design adapted from the brand reference HTML. A4 portrait, single page.
+   --------------------------------------------------------------------------- */
+
+.payslip-shell {
+  --green: hsl(150 28% 18%);
+  --green-soft: hsl(147 30% 92%);
+  --green-deep: hsl(147 45% 12%);
+  --cream: hsl(39 100% 97%);
+  --cream-deep: hsl(39 60% 92%);
+  --gold: hsl(38 80% 55%);
+  --coral: hsl(14 86% 57%);
+  --coral-soft: hsl(14 86% 96%);
+  --ink-1: hsl(150 15% 12%);
+  --ink-2: hsl(150 8% 35%);
+  --ink-3: hsl(150 6% 52%);
+  --ink-4: hsl(150 6% 68%);
+  --rule: hsl(150 10% 88%);
+  --rule-strong: hsl(150 10% 78%);
+  --tile-border: hsl(39 60% 88%);
+
+  background: hsl(0 0% 91%);
+  min-height: 100vh;
+  padding: 24px 0;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--ink-1);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.payslip-toolbar {
+  max-width: 210mm;
+  margin: 0 auto 16px;
+  padding: 0 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ---------- Page shell ---------- */
+.payslip-page {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  background: var(--cream);
+  padding: 8mm 13mm 12mm;
+  position: relative;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.payslip-page * {
+  box-sizing: border-box;
+}
+
+.ps-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Header ---------- */
+.ps-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.ps-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ps-logo {
+  width: 144px;
+  height: 144px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ps-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ps-brand-name {
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--green);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.ps-brand-by {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-top: 4px;
+}
+
+.ps-contact {
+  text-align: right;
+  font-size: 10px;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+.ps-addr {
+  margin-bottom: 4px;
+}
+
+.ps-links {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  color: var(--ink-3);
+  font-size: 9.5px;
+}
+
+/* ---------- Title band ---------- */
+.ps-title-band {
+  position: relative;
+  background: var(--green);
+  border-radius: 6px;
+  padding: 14px 22px 14px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  overflow: hidden;
+}
+
+.ps-title-band::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: var(--gold);
+}
+
+.ps-title {
+  color: var(--cream);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.ps-period {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ps-period-lbl {
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: hsl(147 25% 70%);
+}
+
+.ps-period-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cream);
+}
+
+/* ---------- Employee card ---------- */
+.ps-emp-card {
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 14px 18px;
+}
+
+.ps-emp-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.ps-prefix {
+  color: var(--ink-3);
+  font-size: 14px;
+  margin-right: 4px;
+}
+
+.ps-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink-1);
+}
+
+.ps-role {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.ps-dept {
+  font-weight: 600;
+  color: var(--green);
+}
+
+.ps-dot {
+  margin: 0 6px;
+  color: var(--ink-4);
+}
+
+.ps-id-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  background: var(--cream-deep);
+  padding: 6px 12px;
+  border-radius: 4px;
+}
+
+.ps-id-lbl {
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.ps-id-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--green);
+}
+
+.ps-emp-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  column-gap: 24px;
+  row-gap: 10px;
+}
+
+.ps-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--rule);
+}
+
+.ps-field.ps-wide {
+  grid-column: span 1;
+}
+
+.ps-k {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.ps-v {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-1);
+  text-align: right;
+}
+
+/* ---------- Calc panels ---------- */
+.ps-calc {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.ps-panel {
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  min-height: 170px;
+}
+
+.ps-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.ps-h {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-1);
+}
+
+.ps-earnings .ps-h {
+  color: var(--green);
+}
+
+.ps-deductions .ps-h {
+  color: var(--coral);
+}
+
+.ps-chip {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.ps-chip-credit {
+  background: var(--green-soft);
+  color: var(--green-deep);
+}
+
+.ps-chip-debit {
+  background: var(--coral-soft);
+  color: var(--coral);
+}
+
+.ps-sub-head {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 10px 0 6px;
+}
+
+.ps-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--rule);
+}
+
+.ps-row:last-of-type:not(.ps-subtotal) {
+  border-bottom: none;
+}
+
+.ps-lbl-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ps-lbl {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ink-1);
+}
+
+.ps-hint {
+  font-size: 9.5px;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+.ps-amt {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-1);
+}
+
+.ps-empty {
+  font-size: 11px;
+  color: var(--ink-4);
+  font-style: italic;
+  justify-content: center;
+}
+
+.ps-spacer {
+  flex: 1;
+  min-height: 8px;
+}
+
+.ps-subtotal {
+  border-top: 1.5px solid var(--rule-strong);
+  border-bottom: none !important;
+  padding-top: 10px;
+  margin-top: auto;
+}
+
+.ps-subtotal .ps-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ps-subtotal .ps-amt {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.ps-earnings .ps-subtotal .ps-amt {
+  color: var(--green);
+}
+
+.ps-deductions .ps-subtotal .ps-amt {
+  color: var(--coral);
+}
+
+/* ---------- Net salary hero ---------- */
+.ps-net {
+  position: relative;
+  background: var(--green);
+  border-radius: 6px;
+  padding: 18px 24px 18px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  overflow: hidden;
+}
+
+.ps-net::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: var(--gold);
+}
+
+.ps-net-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ps-net-lbl {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: hsl(147 25% 75%);
+}
+
+.ps-net-sub {
+  font-size: 11.5px;
+  color: hsl(147 18% 82%);
+}
+
+.ps-bullet {
+  margin: 0 4px;
+  opacity: 0.6;
+}
+
+.ps-net-right {
+  text-align: right;
+}
+
+.ps-net-amt {
+  font-size: 38px;
+  font-weight: 900;
+  color: var(--cream);
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.ps-net-raw {
+  margin-top: 4px;
+  font-size: 9px;
+  color: hsl(147 18% 78%);
+  letter-spacing: 0.04em;
+}
+
+/* ---------- Attendance ---------- */
+.ps-attendance {
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 14px 18px;
+}
+
+.ps-att-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.ps-att-meta {
+  font-size: 10px;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+
+.ps-tiles {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 8px;
+}
+
+.ps-tile {
+  background: var(--cream);
+  border: 1px solid var(--tile-border);
+  border-radius: 4px;
+  padding: 10px 6px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 60px;
+  justify-content: center;
+}
+
+.ps-tile-primary {
+  background: var(--green);
+  border-color: var(--green);
+  color: var(--cream);
+}
+
+.ps-tile-primary .ps-tile-k {
+  color: hsl(147 25% 78%);
+}
+
+.ps-tile-zero {
+  background: #fff;
+}
+
+.ps-tile-zero .ps-tile-v {
+  color: var(--ink-4);
+}
+
+.ps-tile-zero .ps-tile-k {
+  color: var(--ink-4);
+}
+
+.ps-tile-v {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink-1);
+  line-height: 1;
+}
+
+.ps-tile-primary .ps-tile-v {
+  color: var(--cream);
+}
+
+.ps-tile-k {
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  line-height: 1.2;
+}
+
+/* ---------- Footer ---------- */
+.ps-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 9.5px;
+  color: var(--ink-3);
+}
+
+.ps-footer-brand {
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+/* ---------- Print ---------- */
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  .payslip-shell {
+    background: #fff;
+    padding: 0;
+  }
+  .payslip-toolbar {
+    display: none;
+  }
+  .payslip-page {
+    width: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 8mm 12mm 12mm;
+    box-shadow: none;
+  }
+}

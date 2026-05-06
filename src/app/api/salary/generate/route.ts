@@ -6,6 +6,8 @@ import { AdvancePaymentInstallment } from "@/models/models";
 import { hasAttendanceConflicts } from "@/lib/services/attendance-conflicts";
 import { logEntityActivity } from "@/lib/services/activity-log";
 import { ActivityType } from "@prisma/client";
+import { sumRecurringDeductions } from '@/lib/services/recurring-deductions'
+import type { RecurringDeductionEntry } from '@/models/models'
 
 export async function POST(request: Request) {
   try {
@@ -158,6 +160,7 @@ export async function POST(request: Request) {
             halfDays: salaryDetails.halfDays,
             leavesEarned: salaryDetails.leavesEarned,
             leaveSalary: salaryDetails.leaveSalary,
+            recurringDeductions: salaryDetails.recurringDeductions as unknown as object,
             status: 'PENDING'
           }
         })
@@ -309,17 +312,22 @@ export async function PATCH(req: Request) {
           0
         )
 
+        const recurringTotal = sumRecurringDeductions(
+          existingSalary.recurringDeductions as RecurringDeductionEntry[] | null
+        )
+
         // Update salary with final calculations
         await tx.salary.update({
           where: { id: salaryId },
           data: {
             status: 'PROCESSING',
             advanceDeduction: totalApprovedDeductions,
-            netSalary: existingSalary.baseSalary + 
-                      existingSalary.overtimeBonus + 
-                      existingSalary.otherBonuses - 
-                      totalApprovedDeductions - 
-                      existingSalary.deductions
+            netSalary: existingSalary.baseSalary +
+                      existingSalary.overtimeBonus +
+                      existingSalary.otherBonuses -
+                      totalApprovedDeductions -
+                      existingSalary.deductions -
+                      recurringTotal
           }
         })
 
@@ -380,16 +388,21 @@ export async function PATCH(req: Request) {
             0
           )
 
+          const recurringTotal = sumRecurringDeductions(
+            installment.salary.recurringDeductions as RecurringDeductionEntry[] | null
+          )
+
           // Update salary
           await tx.salary.update({
             where: { id: installment.salaryId },
             data: {
               advanceDeduction: totalDeductions,
-              netSalary: installment.salary.baseSalary + 
-                        installment.salary.overtimeBonus + 
-                        installment.salary.otherBonuses - 
-                        totalDeductions - 
-                        installment.salary.deductions
+              netSalary: installment.salary.baseSalary +
+                        installment.salary.overtimeBonus +
+                        installment.salary.otherBonuses -
+                        totalDeductions -
+                        installment.salary.deductions -
+                        recurringTotal
             }
           })
         } else if (installmentAction === 'APPROVE') {
@@ -490,16 +503,21 @@ export async function PATCH(req: Request) {
           0
         )
 
+        const recurringTotalForAdvance = sumRecurringDeductions(
+          existingSalary.recurringDeductions as RecurringDeductionEntry[] | null
+        )
+
         // Update salary
         await tx.salary.update({
           where: { id: salaryId },
           data: {
             advanceDeduction: totalDeductions,
-            netSalary: existingSalary.baseSalary + 
-                      existingSalary.overtimeBonus + 
-                      existingSalary.otherBonuses - 
-                      totalDeductions - 
-                      existingSalary.deductions
+            netSalary: existingSalary.baseSalary +
+                      existingSalary.overtimeBonus +
+                      existingSalary.otherBonuses -
+                      totalDeductions -
+                      existingSalary.deductions -
+                      recurringTotalForAdvance
           }
         })
       })
@@ -579,15 +597,20 @@ export async function PUT(request: Request) {
         0
       )
 
+      const recurringTotal = sumRecurringDeductions(
+        installment.salary.recurringDeductions as RecurringDeductionEntry[] | null
+      )
+
       await tx.salary.update({
         where: { id: installment.salaryId },
         data: {
           advanceDeduction: totalDeductions,
-          netSalary: installment.salary.baseSalary + 
-                     installment.salary.overtimeBonus + 
-                     installment.salary.otherBonuses - 
-                     totalDeductions - 
-                     installment.salary.deductions
+          netSalary: installment.salary.baseSalary +
+                     installment.salary.overtimeBonus +
+                     installment.salary.otherBonuses -
+                     totalDeductions -
+                     installment.salary.deductions -
+                     recurringTotal
         }
       })
     })

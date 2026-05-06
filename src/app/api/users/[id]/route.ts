@@ -89,6 +89,9 @@ export async function PUT(
         hasWeeklyOff: true,
         weeklyOffType: true,
         weeklyOffDay: true,
+        optInPT: true,
+        optInPF: true,
+        optInESI: true,
       },
     });
 
@@ -97,11 +100,11 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { 
-      name, 
-      email, 
-      role, 
-      branchId, 
+    const {
+      name,
+      email,
+      role,
+      branchId,
       password,
       title,
       departmentId,
@@ -119,7 +122,10 @@ export async function PUT(
       hasWeeklyOff,
       weeklyOffType,
       weeklyOffDay,
-      hasWorkFromHome
+      hasWorkFromHome,
+      optInPT,
+      optInPF,
+      optInESI,
     } = body;
 
     // Base update data
@@ -153,6 +159,14 @@ export async function PUT(
       weeklyOffDay: weeklyOffDay !== undefined ? (weeklyOffDay === null || weeklyOffDay === "" ? null : parseInt(weeklyOffDay)) : undefined,
       hasWorkFromHome: hasWorkFromHome !== undefined ? hasWorkFromHome : undefined,
     };
+
+    // Statutory opt-in flags are HR/MANAGEMENT-only — employees cannot toggle
+    // their own PT/PF/ESI enrollment.
+    if (canManageUsers) {
+      updateData.optInPT = optInPT ?? undefined;
+      updateData.optInPF = optInPF ?? undefined;
+      updateData.optInESI = optInESI ?? undefined;
+    }
 
     // Only update role if user has permission
     if (canManageUsers) {
@@ -435,6 +449,33 @@ export async function PUT(
         },
         request
       );
+    }
+
+    // Log statutory opt-in changes (HR/MANAGEMENT-only writes — affect take-home pay)
+    if (canManageUsers && logUserId) {
+      const optInChanges: string[] = [];
+      const optInDiff: Record<string, { from: boolean; to: boolean }> = {};
+      const flags = [
+        ["PT", "optInPT", optInPT, oldUser.optInPT] as const,
+        ["PF", "optInPF", optInPF, oldUser.optInPF] as const,
+        ["ESI", "optInESI", optInESI, oldUser.optInESI] as const,
+      ];
+      for (const [label, key, next, prev] of flags) {
+        if (next !== undefined && next !== null && next !== prev) {
+          optInChanges.push(`${label} ${prev ? "ON" : "OFF"} → ${next ? "ON" : "OFF"}`);
+          optInDiff[key] = { from: !!prev, to: !!next };
+        }
+      }
+      if (optInChanges.length > 0) {
+        await logTargetUserActivity(
+          ActivityType.USER_UPDATED,
+          logUserId,
+          user.id,
+          `Statutory opt-in changed: ${optInChanges.join(", ")}`,
+          { userId: user.id, optInDiff },
+          request
+        );
+      }
     }
 
     return NextResponse.json(user);

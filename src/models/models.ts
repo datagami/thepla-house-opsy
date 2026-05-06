@@ -80,6 +80,9 @@ export interface User {
   joiningFormSignature?: string | null;
   joiningFormAgreement: boolean;
   joiningFormPhoto?: string | null;
+  optInESI?: boolean;
+  optInPF?: boolean;
+  optInPT?: boolean;
   accounts: Account[];
   sessions: Session[];
   branch?: Branch | null;
@@ -280,6 +283,12 @@ export interface Reference {
   updatedAt: Date;
 }
 
+export interface RecurringDeductionEntry {
+  code: string;       // "PT" | "PF" | "ESI" | …
+  name: string;       // Human-readable
+  amount: number;
+}
+
 export interface Salary {
   id: string;
   numId: number;
@@ -305,6 +314,7 @@ export interface Salary {
   user: User;
   installments: AdvancePaymentInstallment[];
   referrals?: Referral[];
+  recurringDeductions?: RecurringDeductionEntry[] | null;
 }
 
 export interface Referral {

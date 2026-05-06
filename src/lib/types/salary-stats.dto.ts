@@ -40,6 +40,7 @@ export interface SalaryStatsDTO {
     leaveSalary: number;
     totalAdvanceDeductions: number;
     totalOtherDeductions: number;
+    totalRecurringDeductions: number;
     totalDeductions: number;
     netSalary: number;
     roundedNetSalary: number;
@@ -51,6 +52,11 @@ export interface SalaryStatsDTO {
     status: string;
     advanceTitle: string;
     approvedAt: Date | null;
+  }>;
+  recurringDeductions: Array<{
+    code: string;
+    name: string;
+    amount: number;
   }>;
 }
 

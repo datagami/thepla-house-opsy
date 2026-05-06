@@ -75,7 +75,7 @@ model Department {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   // Relations
-  users User[]
+  users     User[]
   jobOffers JobOffer[]
 
   @@map("departments")
@@ -145,12 +145,17 @@ model User {
   bankIfscCode        String?
 
   // Weekly Off fields
-  hasWeeklyOff        Boolean  @default(false) @map("has_weekly_off")
-  weeklyOffType      String?  @map("weekly_off_type") // "FIXED" or "FLEXIBLE"
-  weeklyOffDay        Int?     @map("weekly_off_day") // Day of week (0=Sunday, 1=Monday, etc.) for fixed weekly off
+  hasWeeklyOff  Boolean @default(false) @map("has_weekly_off")
+  weeklyOffType String? @map("weekly_off_type") // "FIXED" or "FLEXIBLE"
+  weeklyOffDay  Int?    @map("weekly_off_day") // Day of week (0=Sunday, 1=Monday, etc.) for fixed weekly off
 
   // Work From Home
-  hasWorkFromHome     Boolean  @default(false) @map("has_work_from_home")
+  hasWorkFromHome Boolean @default(false) @map("has_work_from_home")
+
+  // Statutory deduction opt-ins
+  optInPT  Boolean @default(false) @map("opt_in_pt")
+  optInPF  Boolean @default(false) @map("opt_in_pf")
+  optInESI Boolean @default(false) @map("opt_in_esi")
 
   // E-Signature fields
   joiningFormSignedAt  DateTime? @map("joining_form_signed_at")
@@ -211,7 +216,7 @@ model User {
   targetActivities ActivityLog[] @relation("TargetUserActivities")
 
   // --- Appraisal Relations ---
-  appraisals    SalaryAppraisal[] @relation("UserAppraisals")
+  appraisals     SalaryAppraisal[] @relation("UserAppraisals")
   appraisalsMade SalaryAppraisal[] @relation("AppraisalChangedBy")
 
   // --- Job Offer Relations ---
@@ -241,18 +246,18 @@ model WarningType {
 }
 
 model Warning {
-  id            String   @id @default(cuid())
-  numId         Int      @default(autoincrement()) @map("num_id")
-  userId        String   @map("user_id") // Employee against whom warning is registered
-  reportedById  String?  @map("reported_by_id") // Who reported (can be null if reporter user deleted)
-  warningTypeId String?  @map("warning_type_id") // Optional for backward compatibility
-  reason        String   @db.Text
-  photoUrl      String?  @map("photo_url")
-  isArchived    Boolean  @default(false) @map("is_archived")
+  id            String    @id @default(cuid())
+  numId         Int       @default(autoincrement()) @map("num_id")
+  userId        String    @map("user_id") // Employee against whom warning is registered
+  reportedById  String?   @map("reported_by_id") // Who reported (can be null if reporter user deleted)
+  warningTypeId String?   @map("warning_type_id") // Optional for backward compatibility
+  reason        String    @db.Text
+  photoUrl      String?   @map("photo_url")
+  isArchived    Boolean   @default(false) @map("is_archived")
   archivedAt    DateTime? @map("archived_at")
   archivedById  String?   @map("archived_by_id")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
   // Relations
   user        User         @relation("UserWarnings", fields: [userId], references: [id], onDelete: Cascade)
@@ -390,7 +395,7 @@ model Attendance {
   isHalfDay        Boolean          @default(false) @map("is_half_day")
   overtime         Boolean          @default(false)
   isWeeklyOff      Boolean          @default(false) @map("is_weekly_off")
-  isWorkFromHome  Boolean          @default(false) @map("is_work_from_home")
+  isWorkFromHome   Boolean          @default(false) @map("is_work_from_home")
   shift1           Boolean          @default(false) @map("shift_1")
   shift2           Boolean          @default(false) @map("shift_2")
   shift3           Boolean          @default(false) @map("shift_3")
@@ -445,30 +450,31 @@ model Reference {
 }
 
 model Salary {
-  id               String                      @id @default(cuid())
-  numId            Int                         @default(autoincrement())
-  userId           String
-  month            Int
-  year             Int
-  baseSalary       Float
-  advanceDeduction Float                       @default(0)
-  deductions       Float                       @default(0)
-  overtimeBonus    Float                       @default(0)
-  otherBonuses     Float                       @default(0)
-  otherDeductions  Float                       @default(0)
-  netSalary        Float
-  presentDays      Float                       @default(0)
-  overtimeDays     Int                         @default(0)
-  halfDays         Int                         @default(0)
-  leavesEarned     Int                         @default(0)
-  leaveSalary      Float                       @default(0)
-  status           String                      @default("PENDING")
-  paidAt           DateTime?
-  createdAt        DateTime                    @default(now())
-  updatedAt        DateTime                    @updatedAt
-  user             User                        @relation(fields: [userId], references: [id])
-  installments     AdvancePaymentInstallment[]
-  referrals        Referral[]
+  id                  String                      @id @default(cuid())
+  numId               Int                         @default(autoincrement())
+  userId              String
+  month               Int
+  year                Int
+  baseSalary          Float
+  advanceDeduction    Float                       @default(0)
+  deductions          Float                       @default(0)
+  overtimeBonus       Float                       @default(0)
+  otherBonuses        Float                       @default(0)
+  otherDeductions     Float                       @default(0)
+  recurringDeductions Json?                       @map("recurring_deductions")
+  netSalary           Float
+  presentDays         Float                       @default(0)
+  overtimeDays        Int                         @default(0)
+  halfDays            Int                         @default(0)
+  leavesEarned        Int                         @default(0)
+  leaveSalary         Float                       @default(0)
+  status              String                      @default("PENDING")
+  paidAt              DateTime?
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+  user                User                        @relation(fields: [userId], references: [id])
+  installments        AdvancePaymentInstallment[]
+  referrals           Referral[]
 
   @@unique([userId, month, year])
   @@index([userId])
@@ -753,60 +759,60 @@ enum JobOfferStatus {
 }
 
 model JobOffer {
-  id                    String         @id @default(cuid())
-  numId                 Int            @default(autoincrement()) @map("num_id")
-  userId                 String         @unique @map("user_id")
-  
+  id     String @id @default(cuid())
+  numId  Int    @default(autoincrement()) @map("num_id")
+  userId String @unique @map("user_id")
+
   // Basic Information
-  name                  String
-  designation           String
-  departmentId          String?        @map("department_id")
-  
+  name         String
+  designation  String
+  departmentId String? @map("department_id")
+
   // Salary Information
-  totalSalary           Float          @map("total_salary") // Total CTC per annum
-  
+  totalSalary Float @map("total_salary") // Total CTC per annum
+
   // Salary Breakup - JSON array of components
   // Format: [{"name": "Basic", "perAnnum": 102000, "perMonth": 8500}, ...]
-  salaryComponents      Json?          @map("salary_components")
-  
+  salaryComponents Json? @map("salary_components")
+
   // Deductions - JSON array (PF, Professional Tax, etc.)
   // Format: [{"name": "PF", "perAnnum": 12000, "perMonth": 1000}, ...]
-  deductions            Json?          @map("deductions")
-  
+  deductions Json? @map("deductions")
+
   // Legacy fields (kept for backward compatibility, can be removed later)
-  basicPerAnnum         Float?         @map("basic_per_annum")
-  basicPerMonth         Float?         @map("basic_per_month")
-  otherAllowancesPerAnnum Float?       @map("other_allowances_per_annum")
-  otherAllowancesPerMonth Float?       @map("other_allowances_per_month")
-  subtotalPerAnnum      Float?         @map("subtotal_per_annum")
-  subtotalPerMonth      Float?         @map("subtotal_per_month")
-  
+  basicPerAnnum           Float? @map("basic_per_annum")
+  basicPerMonth           Float? @map("basic_per_month")
+  otherAllowancesPerAnnum Float? @map("other_allowances_per_annum")
+  otherAllowancesPerMonth Float? @map("other_allowances_per_month")
+  subtotalPerAnnum        Float? @map("subtotal_per_annum")
+  subtotalPerMonth        Float? @map("subtotal_per_month")
+
   // Dates
-  offerDate             DateTime       @default(now()) @map("offer_date")
-  joiningDate           DateTime?      @map("joining_date")
-  acceptedAt            DateTime?      @map("accepted_at")
-  rejectedAt            DateTime?      @map("rejected_at")
-  expiresAt             DateTime?      @map("expires_at")
-  
+  offerDate   DateTime  @default(now()) @map("offer_date")
+  joiningDate DateTime? @map("joining_date")
+  acceptedAt  DateTime? @map("accepted_at")
+  rejectedAt  DateTime? @map("rejected_at")
+  expiresAt   DateTime? @map("expires_at")
+
   // Status
-  status                JobOfferStatus @default(PENDING)
-  
+  status JobOfferStatus @default(PENDING)
+
   // Benefits
-  foodAndStayProvided   Boolean       @default(false) @map("food_and_stay_provided")
-  halfDays              Int           @default(4) @map("half_days")
-  weekOff               Int           @default(2) @map("week_off")
-  
+  foodAndStayProvided Boolean @default(false) @map("food_and_stay_provided")
+  halfDays            Int     @default(4) @map("half_days")
+  weekOff             Int     @default(2) @map("week_off")
+
   // Additional notes
-  notes                 String?       @db.Text
-  
+  notes String? @db.Text
+
   // Created/Updated
-  createdAt             DateTime       @default(now()) @map("created_at")
-  updatedAt             DateTime       @updatedAt @map("updated_at")
-  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
   // Relations
-  user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  department            Department?    @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
   @@index([userId])
   @@index([departmentId])
   @@index([status])
