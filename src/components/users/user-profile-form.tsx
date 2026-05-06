@@ -890,7 +890,7 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
                     <Checkbox checked={field.value} disabled />
                   </FormControl>
                   <FormLabel className="font-normal text-muted-foreground">
-                    ESI <span className="text-xs">— coming soon</span>
+                    Employee State Insurance (ESI) <span className="text-xs">— coming soon</span>
                   </FormLabel>
                 </FormItem>
               )}
