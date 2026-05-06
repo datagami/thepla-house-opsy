@@ -197,9 +197,22 @@ export function SalaryStatsTable({ salaryId }: SalaryStatsTableProps) {
                   <TableCell></TableCell>
                   <TableCell className="text-destructive">- {formatCurrency(stats.calculation.totalOtherDeductions)}</TableCell>
                 </TableRow>
+                {stats.recurringDeductions && stats.recurringDeductions.length > 0 && (
+                  <>
+                    {stats.recurringDeductions.map((entry, idx) => (
+                      <TableRow key={entry.code} className="text-destructive">
+                        <TableCell>
+                          {idx === 0 ? 'Statutory Deductions (G)' : ''}
+                        </TableCell>
+                        <TableCell>{entry.name}</TableCell>
+                        <TableCell className="text-destructive">- {formatCurrency(entry.amount)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </>
+                )}
                 <TableRow className="bg-muted/50">
                   <TableCell className="font-bold">Total Deductions</TableCell>
-                  <TableCell>E + F</TableCell>
+                  <TableCell>{stats.recurringDeductions && stats.recurringDeductions.length > 0 ? 'E + F + G' : 'E + F'}</TableCell>
                   <TableCell className="font-medium">{formatCurrency(stats.calculation.totalDeductions)}</TableCell>
                 </TableRow>
                 <TableRow className="bg-muted/50">
