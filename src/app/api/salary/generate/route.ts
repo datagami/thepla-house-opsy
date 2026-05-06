@@ -158,6 +158,7 @@ export async function POST(request: Request) {
             halfDays: salaryDetails.halfDays,
             leavesEarned: salaryDetails.leavesEarned,
             leaveSalary: salaryDetails.leaveSalary,
+            recurringDeductions: salaryDetails.recurringDeductions as unknown as object,
             status: 'PENDING'
           }
         })

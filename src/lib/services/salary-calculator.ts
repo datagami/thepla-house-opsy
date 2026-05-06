@@ -291,8 +291,12 @@ export function calculateNetSalaryFromObject(salary: Salary) {
     .reduce((sum, i) => sum + i.amountPaid, 0);
   }
   
-  const totalDeductions = totalAdvanceDeductions + salary.otherDeductions;
-  
+  // Recurring deductions snapshot (PT, future PF/ESI). Stored on Salary as JSON.
+  const recurringEntries = (salary.recurringDeductions as Array<{ amount: number }> | null | undefined) ?? [];
+  const recurringTotal = recurringEntries.reduce((sum, e) => sum + e.amount, 0);
+
+  const totalDeductions = totalAdvanceDeductions + salary.otherDeductions + recurringTotal;
+
   // Calculate net salary
   return Math.round(baseSalaryEarned - totalDeductions);
 } 
