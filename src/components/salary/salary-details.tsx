@@ -206,44 +206,8 @@ export function SalaryDetails({ salary, month, year, canEdit = false, activeWarn
     router.refresh()
   }
 
-  const handleDownloadPayslip = async () => {
-    try {
-      const response = await fetch(`/api/salary/${salary.id}/payslip`)
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null)
-        throw new Error(errorData?.error || 'Failed to download payslip')
-      }
-
-      // Create blob from response
-      const blob = await response.blob()
-      
-      // Create download link
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      
-      // Get filename from Content-Disposition header or use default
-      const contentDisposition = response.headers.get('Content-Disposition')
-      let filename = `payslip-${salary.user.name || `employee-${salary.user.numId}`}-${salary.month}-${salary.year}.pdf`
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="(.+)"/)
-        if (filenameMatch) {
-          filename = filenameMatch[1]
-        }
-      }
-      
-      a.download = filename
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      a.remove()
-
-      toast.success('Payslip downloaded successfully')
-    } catch (error) {
-      console.error('Error downloading payslip:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to download payslip')
-    }
+  const handleDownloadPayslip = () => {
+    window.open(`/users/${salary.userId}/payslips/${salary.id}`, '_blank', 'noopener,noreferrer')
   }
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
