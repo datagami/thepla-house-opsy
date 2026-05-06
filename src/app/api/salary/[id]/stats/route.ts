@@ -120,7 +120,10 @@ export async function GET(
 
     const totalOtherDeductions = salary.otherDeductions
 
-    const totalDeductions = totalAdvanceDeductions + totalOtherDeductions
+    const recurringEntries = (salary.recurringDeductions as Array<{ code: string; name: string; amount: number }> | null) ?? [];
+    const totalRecurringDeductions = recurringEntries.reduce((s, e) => s + e.amount, 0);
+
+    const totalDeductions = totalAdvanceDeductions + totalOtherDeductions + totalRecurringDeductions
     
     // Add a count of approved deductions to the response
     const approvedDeductionsCount = advanceInstallments.filter(i => i.status === 'APPROVED').length
@@ -170,6 +173,7 @@ export async function GET(
         totalDeductions,
         totalAdvanceDeductions,
         totalOtherDeductions,
+        totalRecurringDeductions,
         approvedDeductionsCount,
         netSalary,
         roundedNetSalary
@@ -181,7 +185,8 @@ export async function GET(
         status: i.status,
         advanceTitle: i.advance.reason,
         approvedAt: i.approvedAt
-      }))
+      })),
+      recurringDeductions: recurringEntries
     }
 
     return NextResponse.json(stats)
