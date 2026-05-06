@@ -2,6 +2,11 @@ import {prisma} from '@/lib/prisma'
 import {NextResponse} from 'next/server'
 import {auth} from "@/auth"
 import {hash} from 'bcryptjs'
+import {
+  recordSalaryAppraisal,
+  logSalaryAppraisalActivity,
+  type SalaryAppraisalChange,
+} from "@/lib/services/salary-appraisal"
 
 // Helper function to convert Excel date or DD/MM/YYYY string to Date object
 function parseDate(dateValue: string | number): Date {
@@ -30,6 +35,13 @@ export async function POST(request: Request) {
     }
 
     const {users} = await request.json()
+
+    const logUserId = (session.user as { id?: string }).id
+    if (!logUserId) {
+      return NextResponse.json({error: 'Unauthorized'}, {status: 401})
+    }
+
+    const salaryChanges: SalaryAppraisalChange[] = []
 
     await prisma.$transaction(async (tx) => {
       for (const userData of users) {
@@ -131,6 +143,16 @@ export async function POST(request: Request) {
             data: userCommonData
           });
 
+          // Track salary change → appraisal record + activity log (logged after commit)
+          const change = await recordSalaryAppraisal({
+            tx,
+            userId: existingUser.id,
+            previousSalary: existingUser.salary,
+            newSalary: userCommonData.salary,
+            changedById: logUserId,
+          });
+          if (change) salaryChanges.push(change);
+
           // Delete existing references
           await tx.reference.deleteMany({
             where: { userId: existingUser.id }
@@ -166,7 +188,20 @@ export async function POST(request: Request) {
       maxWait: 10000,
     });
 
-    return NextResponse.json({message: 'Users imported successfully'})
+    // Activity logs are written outside the transaction to keep the tx short
+    for (const change of salaryChanges) {
+      await logSalaryAppraisalActivity({
+        change,
+        changedById: logUserId,
+        source: "bulk import",
+        request,
+      });
+    }
+
+    return NextResponse.json({
+      message: 'Users imported successfully',
+      appraisalsCreated: salaryChanges.length,
+    })
   } catch (error) {
     console.error('Import failed:', error)
     return NextResponse.json(
