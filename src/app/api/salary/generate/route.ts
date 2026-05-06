@@ -325,6 +325,7 @@ export async function PATCH(req: Request) {
             netSalary: existingSalary.baseSalary +
                       existingSalary.overtimeBonus +
                       existingSalary.otherBonuses -
+                      existingSalary.otherDeductions -
                       totalApprovedDeductions -
                       existingSalary.deductions -
                       recurringTotal
@@ -400,6 +401,7 @@ export async function PATCH(req: Request) {
               netSalary: installment.salary.baseSalary +
                         installment.salary.overtimeBonus +
                         installment.salary.otherBonuses -
+                        installment.salary.otherDeductions -
                         totalDeductions -
                         installment.salary.deductions -
                         recurringTotal
@@ -515,6 +517,7 @@ export async function PATCH(req: Request) {
             netSalary: existingSalary.baseSalary +
                       existingSalary.overtimeBonus +
                       existingSalary.otherBonuses -
+                      existingSalary.otherDeductions -
                       totalDeductions -
                       existingSalary.deductions -
                       recurringTotalForAdvance
@@ -608,6 +611,7 @@ export async function PUT(request: Request) {
           netSalary: installment.salary.baseSalary +
                      installment.salary.overtimeBonus +
                      installment.salary.otherBonuses -
+                     installment.salary.otherDeductions -
                      totalDeductions -
                      installment.salary.deductions -
                      recurringTotal
