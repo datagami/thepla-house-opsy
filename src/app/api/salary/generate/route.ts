@@ -6,6 +6,8 @@ import { AdvancePaymentInstallment } from "@/models/models";
 import { hasAttendanceConflicts } from "@/lib/services/attendance-conflicts";
 import { logEntityActivity } from "@/lib/services/activity-log";
 import { ActivityType } from "@prisma/client";
+import { sumRecurringDeductions } from '@/lib/services/recurring-deductions'
+import type { RecurringDeductionEntry } from '@/models/models'
 
 export async function POST(request: Request) {
   try {
@@ -310,8 +312,9 @@ export async function PATCH(req: Request) {
           0
         )
 
-        const recurringEntries = (existingSalary.recurringDeductions as Array<{ amount: number }> | null) ?? []
-        const recurringTotal = recurringEntries.reduce((s, e) => s + e.amount, 0)
+        const recurringTotal = sumRecurringDeductions(
+          existingSalary.recurringDeductions as RecurringDeductionEntry[] | null
+        )
 
         // Update salary with final calculations
         await tx.salary.update({
@@ -385,8 +388,9 @@ export async function PATCH(req: Request) {
             0
           )
 
-          const recurringEntries = (installment.salary.recurringDeductions as Array<{ amount: number }> | null) ?? []
-          const recurringTotal = recurringEntries.reduce((s, e) => s + e.amount, 0)
+          const recurringTotal = sumRecurringDeductions(
+            installment.salary.recurringDeductions as RecurringDeductionEntry[] | null
+          )
 
           // Update salary
           await tx.salary.update({
@@ -499,8 +503,9 @@ export async function PATCH(req: Request) {
           0
         )
 
-        const recurringEntriesForAdvance = (existingSalary.recurringDeductions as Array<{ amount: number }> | null) ?? []
-        const recurringTotalForAdvance = recurringEntriesForAdvance.reduce((s, e) => s + e.amount, 0)
+        const recurringTotalForAdvance = sumRecurringDeductions(
+          existingSalary.recurringDeductions as RecurringDeductionEntry[] | null
+        )
 
         // Update salary
         await tx.salary.update({
@@ -592,8 +597,9 @@ export async function PUT(request: Request) {
         0
       )
 
-      const recurringEntries = (installment.salary.recurringDeductions as Array<{ amount: number }> | null) ?? []
-      const recurringTotal = recurringEntries.reduce((s, e) => s + e.amount, 0)
+      const recurringTotal = sumRecurringDeductions(
+        installment.salary.recurringDeductions as RecurringDeductionEntry[] | null
+      )
 
       await tx.salary.update({
         where: { id: installment.salaryId },

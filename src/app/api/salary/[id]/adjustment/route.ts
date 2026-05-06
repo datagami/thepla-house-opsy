@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
+import { sumRecurringDeductions } from '@/lib/services/recurring-deductions'
+import type { RecurringDeductionEntry } from '@/models/models'
 
 export async function POST(
   req: Request,
@@ -29,8 +31,9 @@ export async function POST(
     }
 
     // Calculate new net salary by replacing the old adjustments with new ones
-    const recurringEntries = (salary.recurringDeductions as Array<{ amount: number }> | null) ?? []
-    const recurringTotal = recurringEntries.reduce((s, e) => s + e.amount, 0)
+    const recurringTotal = sumRecurringDeductions(
+      salary.recurringDeductions as RecurringDeductionEntry[] | null
+    )
 
     const newNetSalary = salary.baseSalary +
                         salary.overtimeBonus +

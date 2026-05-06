@@ -1,7 +1,7 @@
 import { AdvancePayment, Salary } from "@/models/models";
 import { prisma } from '@/lib/prisma'
 import { SalaryStatus } from "@prisma/client";
-import { computeRecurringDeductions } from '@/lib/services/recurring-deductions'
+import { computeRecurringDeductions, sumRecurringDeductions } from '@/lib/services/recurring-deductions'
 import { computeSalaryBreakdown } from '@/lib/services/salary-math'
 import type { RecurringDeductionEntry } from '@/models/models'
 
@@ -292,8 +292,9 @@ export function calculateNetSalaryFromObject(salary: Salary) {
   }
   
   // Recurring deductions snapshot (PT, future PF/ESI). Stored on Salary as JSON.
-  const recurringEntries = (salary.recurringDeductions as Array<{ amount: number }> | null | undefined) ?? [];
-  const recurringTotal = recurringEntries.reduce((sum, e) => sum + e.amount, 0);
+  const recurringTotal = sumRecurringDeductions(
+    salary.recurringDeductions as RecurringDeductionEntry[] | null | undefined
+  );
 
   const totalDeductions = totalAdvanceDeductions + salary.otherDeductions + recurringTotal;
 

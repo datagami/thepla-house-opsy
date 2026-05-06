@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from "@/auth"
+import { sumRecurringDeductions } from '@/lib/services/recurring-deductions'
+import type { RecurringDeductionEntry } from '@/models/models'
 
 export async function GET(
   req: Request,
@@ -120,8 +122,8 @@ export async function GET(
 
     const totalOtherDeductions = salary.otherDeductions
 
-    const recurringEntries = (salary.recurringDeductions as Array<{ code: string; name: string; amount: number }> | null) ?? [];
-    const totalRecurringDeductions = recurringEntries.reduce((s, e) => s + e.amount, 0);
+    const recurringEntries = (salary.recurringDeductions as RecurringDeductionEntry[] | null) ?? [];
+    const totalRecurringDeductions = sumRecurringDeductions(recurringEntries);
 
     const totalDeductions = totalAdvanceDeductions + totalOtherDeductions + totalRecurringDeductions
     
