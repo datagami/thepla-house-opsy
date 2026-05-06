@@ -20,8 +20,18 @@ describe('computeRecurringDeductions — Professional Tax', () => {
       .toEqual([{ code: 'PT', name: 'Professional Tax', amount: 300 }])
   })
 
-  it('does not apply PT when salary < 10000 even if opted in', () => {
-    expect(computeRecurringDeductions(user({ optInPT: true, salary: 9999 }), 1)).toEqual([])
+  it('applies PT ₹175 when opted in and 7500 ≤ salary < 10000', () => {
+    expect(computeRecurringDeductions(user({ optInPT: true, salary: 8000 }), 1))
+      .toEqual([{ code: 'PT', name: 'Professional Tax', amount: 175 }])
+  })
+
+  it('₹175 slab does NOT get a February override', () => {
+    expect(computeRecurringDeductions(user({ optInPT: true, salary: 8000 }), 2))
+      .toEqual([{ code: 'PT', name: 'Professional Tax', amount: 175 }])
+  })
+
+  it('does not apply PT when salary < 7500 even if opted in', () => {
+    expect(computeRecurringDeductions(user({ optInPT: true, salary: 7499 }), 1)).toEqual([])
   })
 
   it('does not apply PT when not opted in regardless of salary', () => {
@@ -32,10 +42,21 @@ describe('computeRecurringDeductions — Professional Tax', () => {
     expect(computeRecurringDeductions(user({ optInPT: true, salary: null }), 1)).toEqual([])
   })
 
-  it('treats threshold as inclusive (salary === 10000 → PT applies)', () => {
+  it('treats slab1 threshold as inclusive (salary === 7500 → ₹175)', () => {
+    const res = computeRecurringDeductions(user({ optInPT: true, salary: 7500 }), 6)
+    expect(res).toHaveLength(1)
+    expect(res[0].amount).toBe(175)
+  })
+
+  it('treats slab2 threshold as inclusive (salary === 10000 → ₹200)', () => {
     const res = computeRecurringDeductions(user({ optInPT: true, salary: 10000 }), 6)
     expect(res).toHaveLength(1)
     expect(res[0].amount).toBe(200)
+  })
+
+  it('salary 9999 (just under slab2) → ₹175 (slab1)', () => {
+    const res = computeRecurringDeductions(user({ optInPT: true, salary: 9999 }), 1)
+    expect(res).toEqual([{ code: 'PT', name: 'Professional Tax', amount: 175 }])
   })
 })
 

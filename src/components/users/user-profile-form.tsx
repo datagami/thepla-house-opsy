@@ -847,8 +847,8 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Statutory Deductions</h3>
           <p className="text-sm text-muted-foreground">
-            Professional Tax is deducted automatically when enabled and base salary ≥ ₹10,000
-            (₹200/month, ₹300 in February).
+            Professional Tax is deducted automatically when enabled, by salary slab (Maharashtra):
+            ₹7,500–₹9,999 → ₹175/month; ≥ ₹10,000 → ₹200/month (₹300 in February).
           </p>
           <div className="space-y-3">
             <FormField
