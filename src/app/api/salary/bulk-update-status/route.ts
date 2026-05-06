@@ -72,7 +72,7 @@ export async function PATCH(request: Request) {
               status: 'PROCESSING',
               paidAt: null,
               advanceDeduction: totalApprovedDeductions,
-              netSalary: salary.baseSalary + salary.overtimeBonus + salary.otherBonuses - totalApprovedDeductions - salary.deductions - recurringTotal
+              netSalary: salary.baseSalary + salary.overtimeBonus + salary.otherBonuses - salary.otherDeductions - totalApprovedDeductions - salary.deductions - recurringTotal
             }
           })
 
