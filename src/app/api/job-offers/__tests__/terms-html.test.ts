@@ -1,6 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { POST } from '@/app/api/job-offers/route'
-import { PUT } from '@/app/api/job-offers/[id]/route'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 
