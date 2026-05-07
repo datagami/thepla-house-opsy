@@ -91,6 +91,7 @@ export async function PUT(
       foodAndStayProvided,
       halfDays,
       weekOff,
+      salaryPayDay,
       notes,
       termsHtml,
     } = body;
@@ -150,6 +151,7 @@ export async function PUT(
         foodAndStayProvided: foodAndStayProvided !== undefined ? foodAndStayProvided : undefined,
         halfDays: halfDays !== undefined ? parseInt(halfDays) : undefined,
         weekOff: weekOff !== undefined ? parseInt(weekOff) : undefined,
+        salaryPayDay: salaryPayDay !== undefined ? parseInt(salaryPayDay) : undefined,
         notes: notes !== undefined ? notes : undefined,
         termsHtml: typeof termsHtml === 'string' ? sanitizeOfferHtml(termsHtml) : undefined,
     };

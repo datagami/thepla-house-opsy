@@ -813,6 +813,7 @@ model JobOffer {
   foodAndStayProvided Boolean @default(false) @map("food_and_stay_provided")
   halfDays            Int     @default(4) @map("half_days")
   weekOff             Int     @default(2) @map("week_off")
+  salaryPayDay        Int     @default(7) @map("salary_pay_day")
 
   // Additional notes
   notes     String? @db.Text

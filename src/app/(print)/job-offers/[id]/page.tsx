@@ -26,6 +26,17 @@ const titlePrefix = (gender?: string | null): string => {
 const formatINR = (n: number) =>
   new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(n)
 
+function ordinalSuffix(n: number): string {
+  const v = n % 100
+  if (v >= 11 && v <= 13) return `${n}th`
+  switch (n % 10) {
+    case 1: return `${n}st`
+    case 2: return `${n}nd`
+    case 3: return `${n}rd`
+    default: return `${n}th`
+  }
+}
+
 export default async function OfferLetterPrintPage({ params }: PageProps) {
   const session = await auth()
   if (!session?.user) redirect('/login')
@@ -153,8 +164,10 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
             <span className="title-hi hi">वेतन एवं भत्ते</span>
           </div>
           <p className="body">
-            Your gross monthly salary shall be <strong>₹{formatINR(grossPerMonth)}/-</strong>, payable on or before the
-            7th of every succeeding month, by direct credit to your bank account. The breakdown is as follows:
+            Your gross monthly salary shall be <strong>₹{formatINR(grossPerMonth)}/-</strong>, payable on or before the{' '}
+            <strong>{ordinalSuffix(jobOffer.salaryPayDay)}</strong> of every succeeding month, by direct credit to your
+            bank account. If the {ordinalSuffix(jobOffer.salaryPayDay)} falls on a bank holiday or non-working day, the
+            salary will be credited on the next working day. The breakdown is as follows:
           </p>
           <table className="comp-table">
             <thead>

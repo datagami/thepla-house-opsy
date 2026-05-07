@@ -63,6 +63,12 @@ const jobOfferFormSchema = z
     }),
     expiresAt: z.date().optional(),
     foodAndStayProvided: z.boolean().default(false),
+    salaryPayDay: z
+      .number()
+      .int()
+      .min(1, 'Pay day must be between 1 and 28')
+      .max(28, 'Pay day must be between 1 and 28')
+      .default(7),
     notes: z.string().optional(),
     termsHtml: z.string().min(1, 'Terms & Policies cannot be empty').default(''),
   })
@@ -142,6 +148,7 @@ export function JobOfferForm({
         ? new Date(jobOffer.expiresAt)
         : undefined,
       foodAndStayProvided: jobOffer?.foodAndStayProvided ?? false,
+      salaryPayDay: jobOffer?.salaryPayDay ?? 7,
       notes: jobOffer?.notes || '',
       termsHtml: jobOffer?.termsHtml ?? '',
     },
@@ -653,6 +660,31 @@ export function JobOfferForm({
                       Check this if food and accommodation will be provided to the employee
                     </FormDescription>
                   </div>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="salaryPayDay"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Salary Pay Day</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={28}
+                      value={field.value}
+                      onChange={(e) =>
+                        field.onChange(parseInt(e.target.value || '7', 10))
+                      }
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Day of the month salary is credited (1–28). If it falls on a bank holiday, payment shifts to the
+                    next working day.
+                  </FormDescription>
+                  <FormMessage />
                 </FormItem>
               )}
             />
