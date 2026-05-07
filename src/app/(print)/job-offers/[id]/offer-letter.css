@@ -71,17 +71,24 @@
     font-weight: 500;
   }
 
-  /* ---------- Page shell ---------- */
+  /* ---------- Page shell ----------
+     Width is locked to A4 so the screen and print rendering stay
+     identical. Height sizes to content — the browser breaks across
+     physical sheets automatically on print, with break-inside rules
+     (see @media print block below) keeping individual clauses whole.
+     We drop the old `min-height: 297mm` because it caused two issues:
+       1. On screen, content fitting in <297mm got cream whitespace below.
+       2. On print, content >297mm anchored the absolute footer to the
+          grown rectangle, landing mid-content visually.
+     `overflow: hidden` is also dropped so content can paginate cleanly. */
   .page {
     width: 210mm;
-    min-height: 297mm;
     margin: 24px auto;
     background: var(--cream);
     padding: 18mm 18mm 16mm;
     position: relative;
     box-shadow: 0 12px 40px rgba(0,0,0,0.10);
     page-break-after: always;
-    overflow: hidden;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -102,11 +109,26 @@
     html, body { background: #fff; }
     .page {
       width: 210mm;
-      min-height: 297mm;
       margin: 0;
       padding: 18mm 18mm 16mm;
       box-shadow: none;
       page-break-after: always;
+    }
+    .page:last-of-type {
+      page-break-after: auto;
+    }
+    /* Keep clause heading stuck to its content; keep individual lists,
+       paragraphs, signature block and Annexure tiles from splitting
+       across physical sheets. Targets both legacy .clause markup and
+       the new semantic .terms HTML. */
+    .clause, .comp-table, .ctc-table, .sign-block, .accept, .ctc-summary,
+    .terms ul, .terms ol, .terms p {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .terms h3 {
+      break-after: avoid;
+      page-break-after: avoid;
     }
   }
 
