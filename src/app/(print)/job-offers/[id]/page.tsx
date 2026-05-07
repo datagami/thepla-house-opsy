@@ -176,7 +176,78 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Pages 2 and Annexure — added in next tasks */}
+      {/* PAGE 2 — Closing + signature + acceptance */}
+      <div className="page">
+        <header className="letterhead" style={{ paddingBottom: 12, marginBottom: 18 }}>
+          <div className="name" style={{ fontSize: 16 }}>Thepla House</div>
+          <div className="tagline" style={{ marginTop: 2, fontSize: 9.5 }}>
+            Offer Letter — continued · Ref. {refNo}
+          </div>
+        </header>
+
+        <p className="body" style={{ marginTop: 22 }}>
+          We look forward to welcoming you to the Thepla House family and trust that your association with us will be
+          long, productive and mutually rewarding. Please sign and return the duplicate copy of this letter in token of
+          your acceptance of the above terms.
+        </p>
+
+        <p className="body" style={{ marginTop: 4 }}>
+          Yours sincerely,
+          <span className="hi" style={{ color: 'var(--ink-3)', fontSize: 11, marginLeft: 6 }}>
+            / भवदीय,
+          </span>
+        </p>
+
+        <div className="sign-block">
+          <div className="col">
+            <div className="role">For Thepla House</div>
+            <div className="line"></div>
+            <div className="nm">Tejal Mehta</div>
+            <div className="desig">
+              Director, Tejal&apos;s Kitchen Pvt. Ltd.
+              <span className="hi">निदेशक</span>
+            </div>
+          </div>
+          <div className="col stamp-col">
+            <div className="stamp" aria-hidden="true">
+              <span className="star">★</span>
+              <span className="top">THEPLA HOUSE</span>
+              <span className="mid">MUMBAI</span>
+              <span className="bot">EST. 2018</span>
+              <span className="star">★</span>
+            </div>
+          </div>
+        </div>
+
+        <section className="accept">
+          <div className="head">
+            Acceptance of Offer
+            <span className="hi">/ प्रस्ताव की स्वीकृति</span>
+          </div>
+          <p>
+            I, <strong>{salutation}</strong>, have read and understood the terms and conditions set out in this letter
+            and the attached Annexure A, and I hereby accept the offer of employment with Thepla House on the terms
+            stated above.
+          </p>
+          <div className="row">
+            <div className="field">
+              <span className="lbl">Signature of Candidate</span>
+              <div className="line"></div>
+            </div>
+            <div className="field">
+              <span className="lbl">Date</span>
+              <div className="line"></div>
+            </div>
+          </div>
+        </section>
+
+        <div className="page-foot">
+          <span>Offer Letter · {jobOffer.name} · Ref. {refNo}</span>
+          <span className="right">Page 2</span>
+        </div>
+      </div>
+
+      {/* Annexure — added in next task */}
     </>
   )
 }
