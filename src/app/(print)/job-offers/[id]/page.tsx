@@ -6,6 +6,7 @@ import {
   buildReferenceNo,
   formatLetterDate,
   sanitizeOfferHtml,
+  computeAnnexureSummary,
   type SalaryComponent,
 } from '@/lib/services/offer-letter'
 import './offer-letter.css'
@@ -53,6 +54,12 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
   const sanitizedTerms = sanitizeOfferHtml(jobOffer.termsHtml ?? '')
 
   const components = (jobOffer.salaryComponents as SalaryComponent[] | null) ?? []
+  const deductions = (jobOffer.deductions as SalaryComponent[] | null) ?? []
+  const annexure = computeAnnexureSummary({
+    salaryComponents: components.length > 0 ? components : null,
+    deductions: deductions.length > 0 ? deductions : null,
+    totalSalary: jobOffer.totalSalary,
+  })
   const grossPerMonth = components.length > 0
     ? components.reduce((s, c) => s + c.perMonth, 0)
     : Math.round(jobOffer.totalSalary / 12)
@@ -247,7 +254,105 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Annexure — added in next task */}
+      {/* ANNEXURE A — Detailed CTC */}
+      <div className="page">
+        <header className="letterhead" style={{ paddingBottom: 12, marginBottom: 22 }}>
+          <div className="name" style={{ fontSize: 16 }}>Thepla House</div>
+          <div className="tagline" style={{ marginTop: 2, fontSize: 9.5 }}>
+            Annexure A · Ref. {refNo}
+          </div>
+        </header>
+
+        <div className="annex-title">
+          <div className="eyebrow">Annexure A</div>
+          <div className="en">Detailed CTC Structure</div>
+          <div className="hi">वेतन संरचना का विवरण</div>
+          <div className="ul"></div>
+        </div>
+
+        <div className="ctc-summary">
+          <div className="tile">
+            <div className="k">Gross / Month</div>
+            <div className="v num">₹{formatINR(annexure.grossPerMonth)}</div>
+          </div>
+          <div className="tile featured">
+            <div className="k">Total CTC / Annum</div>
+            <div className="v num">₹{formatINR(annexure.totalCtcPerAnnum)}</div>
+          </div>
+          <div className="tile">
+            <div className="k">Take-home / Month</div>
+            <div className="v num">₹{formatINR(annexure.takeHomePerMonth)}</div>
+          </div>
+        </div>
+
+        <table className="ctc-table">
+          <thead>
+            <tr>
+              <th style={{ width: '46%' }}>Component</th>
+              <th className="amt-col" style={{ width: '18%' }}>Monthly (₹)</th>
+              <th className="amt-col" style={{ width: '18%' }}>Annual (₹)</th>
+              <th style={{ width: '18%' }}>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="section-head"><td colSpan={4}>A. Fixed Earnings · निश्चित वेतन</td></tr>
+            {components.map((c, i) => (
+              <tr key={i}>
+                <td>{c.name}</td>
+                <td className="amt num">{formatINR(c.perMonth)}</td>
+                <td className="amt num">{formatINR(c.perAnnum)}</td>
+                <td>Monthly</td>
+              </tr>
+            ))}
+            <tr className="subtotal">
+              <td>Subtotal — Gross Monthly Salary</td>
+              <td className="amt num">{formatINR(annexure.grossPerMonth)}</td>
+              <td className="amt num">{formatINR(annexure.grossPerMonth * 12)}</td>
+              <td>—</td>
+            </tr>
+
+            {deductions.length > 0 && (
+              <>
+                <tr className="section-head"><td colSpan={4}>C. Statutory Deductions · वैधानिक कटौती</td></tr>
+                {deductions.map((d, i) => (
+                  <tr key={`d${i}`}>
+                    <td>{d.name}</td>
+                    <td className="amt num">{formatINR(d.perMonth)}</td>
+                    <td className="amt num">{formatINR(d.perAnnum)}</td>
+                    <td>Monthly</td>
+                  </tr>
+                ))}
+                <tr className="subtotal">
+                  <td>Estimated Take-home / Month</td>
+                  <td className="amt num">{formatINR(annexure.takeHomePerMonth)}</td>
+                  <td className="amt num">{formatINR(annexure.takeHomePerMonth * 12)}</td>
+                  <td>Indicative</td>
+                </tr>
+              </>
+            )}
+
+            <tr className="grand">
+              <td>Total Cost to Company (CTC)</td>
+              <td className="amt num">—</td>
+              <td className="amt num">₹{formatINR(annexure.totalCtcPerAnnum)}</td>
+              <td>Per annum</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div className="annex-note">
+          <strong>Notes:</strong> &nbsp;
+          (i) The above structure is indicative and may be revised annually based on Company policy and statutory norms.
+          (ii) PF deductions apply once you complete EPFO on-boarding, generally from the second month of joining.
+          (iii) Bonus is payable in accordance with the Payment of Bonus Act, 1965, subject to statutory thresholds.
+          (iv) Income Tax shall be deducted at source, if applicable.
+        </div>
+
+        <div className="page-foot">
+          <span>Annexure A · CTC Structure · {jobOffer.name}</span>
+          <span className="right">Page A1</span>
+        </div>
+      </div>
     </>
   )
 }
