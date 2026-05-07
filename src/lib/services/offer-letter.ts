@@ -15,6 +15,27 @@ const ALLOWED_ATTR = [
 
 const ALLOWED_URI_REGEXP = /^(?:https?:\/\/|mailto:|tel:|#)/i
 
+function unwrapLegacyClauseShells(html: string): string {
+  // Old snippet format wrapped each clause in <section class="clause"> with a
+  // <div class="clause-head"> for the title. New snippets use plain <h3>.
+  // When HR has pasted both formats over time, the new <h3> can end up nested
+  // inside a stale <div class="clause-head"> — and `.clause-head` is
+  // `display: flex`, producing a broken 2-column layout in the printed letter.
+  //
+  // Strip the legacy wrappers via non-greedy regex. Repeat until stable so
+  // multiple stacked wrappers all unwrap. We do not touch any other <section>
+  // or <div> — only those carrying these specific class attributes.
+  let prev: string
+  let out = html
+  do {
+    prev = out
+    out = out
+      .replace(/<section class="clause">([\s\S]*?)<\/section>/gi, '$1')
+      .replace(/<div class="clause-head">([\s\S]*?)<\/div>/gi, '$1')
+  } while (out !== prev)
+  return out
+}
+
 function stripEmptyContainers(html: string): string {
   // "Empty-ish" content inside a container: whitespace, <br>, &nbsp;, NBSP char,
   // or another empty inline element. Repeated until stable so nested empties
@@ -44,7 +65,7 @@ export function sanitizeOfferHtml(input: string): string {
     FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur'],
     KEEP_CONTENT: true,
   }) as unknown as string
-  return stripEmptyContainers(cleaned)
+  return stripEmptyContainers(unwrapLegacyClauseShells(cleaned))
 }
 
 export function buildReferenceNo(numId: number, offerDate: Date): string {
