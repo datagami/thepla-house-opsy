@@ -9,9 +9,14 @@
      Print-safe; @page set to A4 with the sheet owning padding.
      ============================================================ */
 
+  /* @page margins apply to EVERY physical sheet, including the continuation
+     sheets the browser produces when a single .page div auto-paginates.
+     This is the only way to get consistent top/bottom margins on every
+     sheet — .page's own padding only applies once at the start of the
+     logical element. */
   @page {
     size: A4 portrait;
-    margin: 0;
+    margin: 14mm 14mm 14mm 14mm;
   }
 
   /* Floating "Download PDF" button on screen — hidden when printing so the
@@ -108,14 +113,23 @@
   @media print {
     html, body { background: #fff; }
     .page {
-      width: 210mm;
+      /* @page provides the per-sheet margins (incl. continuation sheets),
+         so .page itself sits flush within the printable area. Width is
+         auto so the gold-stripe gradient stretches the printable width. */
+      width: auto;
       margin: 0;
-      padding: 18mm 18mm 16mm;
+      padding: 0;
       box-shadow: none;
-      page-break-after: always;
-    }
-    .page:last-of-type {
+      /* Use break-before on subsequent .pages instead of break-after on
+         every .page. The latter forced an extra blank physical sheet
+         when a .page's content already filled (or auto-paginated to
+         fill) its sheet exactly. */
       page-break-after: auto;
+      break-after: auto;
+    }
+    .page + .page {
+      page-break-before: always;
+      break-before: page;
     }
     /* Keep clause heading stuck to its content; keep individual lists,
        paragraphs, signature block and Annexure tiles from splitting

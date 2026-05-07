@@ -215,7 +215,6 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
 
         <div className="page-foot">
           <span>Offer Letter · {jobOffer.name} · Ref. {refNo}</span>
-          <span className="right">Page 1</span>
         </div>
       </div>
 
@@ -278,7 +277,6 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
 
         <div className="page-foot">
           <span>Offer Letter · {jobOffer.name} · Ref. {refNo}</span>
-          <span className="right">Page 2</span>
         </div>
       </div>
 
@@ -375,7 +373,6 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
 
         <div className="page-foot">
           <span>Annexure A · CTC Structure · {jobOffer.name}</span>
-          <span className="right">Page A1</span>
         </div>
       </div>
     </>
