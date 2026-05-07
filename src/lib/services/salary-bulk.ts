@@ -69,3 +69,77 @@ export interface ApplyBulkImportInput {
   rows: BulkRowInput[]
   prisma: PrismaClient
 }
+
+type ValidateResult =
+  | { ok: true; value: NormalizedRowEdit }
+  | { ok: false; errors: string[] }
+
+export function validateAndNormalizeRow(row: BulkRowInput): ValidateResult {
+  const errors: string[] = []
+
+  if (!row.salaryId || !row.salaryId.trim()) {
+    errors.push('salaryId column missing or empty')
+  }
+
+  let status: SalaryStatus | undefined
+  if (row.status !== null && row.status !== undefined) {
+    const trimmed = row.status.toString().trim()
+    if (trimmed.length > 0) {
+      if ((SALARY_STATUSES as readonly string[]).includes(trimmed)) {
+        status = trimmed as SalaryStatus
+      } else {
+        errors.push('Invalid status value')
+      }
+    }
+  }
+
+  const otherBonuses = row.otherBonuses ?? 0
+  if (!Number.isFinite(otherBonuses) || otherBonuses < 0) {
+    errors.push('Other Additions must be a non-negative number')
+  }
+
+  const otherDeductions = row.otherDeductions ?? 0
+  if (!Number.isFinite(otherDeductions) || otherDeductions < 0) {
+    errors.push('Other Deductions must be a non-negative number')
+  }
+
+  if (errors.length > 0) {
+    return { ok: false, errors }
+  }
+
+  const value: NormalizedRowEdit = {
+    otherBonuses,
+    otherDeductions,
+  }
+  if (status) value.status = status
+  return { ok: true, value }
+}
+
+export interface CurrentSalaryFields {
+  status: SalaryStatus
+  otherBonuses: number
+  otherDeductions: number
+}
+
+export function computeRowDiff(
+  current: CurrentSalaryFields,
+  normalized: NormalizedRowEdit
+): NormalizedRowEdit {
+  const diff: NormalizedRowEdit = {}
+  if (normalized.status !== undefined && normalized.status !== current.status) {
+    diff.status = normalized.status
+  }
+  if (
+    normalized.otherBonuses !== undefined &&
+    normalized.otherBonuses !== current.otherBonuses
+  ) {
+    diff.otherBonuses = normalized.otherBonuses
+  }
+  if (
+    normalized.otherDeductions !== undefined &&
+    normalized.otherDeductions !== current.otherDeductions
+  ) {
+    diff.otherDeductions = normalized.otherDeductions
+  }
+  return diff
+}
