@@ -76,6 +76,7 @@ export function BulkImportExport({
   const [isExporting, setIsExporting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [isDownloadingReport, setIsDownloadingReport] = useState(false)
+  const [isDownloadingNonPaidReport, setIsDownloadingNonPaidReport] = useState(false)
   const [hasSalaries, setHasSalaries] = useState(false)
   const [summary, setSummary] = useState<BulkImportSummary | null>(null)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
@@ -125,36 +126,39 @@ export function BulkImportExport({
     }
   }
 
-  async function handleDownloadReport() {
+  async function handleDownloadReport(nonPaidOnly = false) {
+    const setBusy = nonPaidOnly ? setIsDownloadingNonPaidReport : setIsDownloadingReport
+    const reportLabel = nonPaidOnly ? 'non-paid salary report' : 'salary report'
+    const filenamePrefix = nonPaidOnly ? 'non-paid-salary-report' : 'salary-report'
     try {
-      setIsDownloadingReport(true)
+      setBusy(true)
       const response = await fetch('/api/salary/generate-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ year, month }),
+        body: JSON.stringify({ year, month, nonPaidOnly }),
       })
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.error || 'Failed to generate salary report')
+        throw new Error(error.error || `Failed to generate ${reportLabel}`)
       }
 
       const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `salary-report-${month}-${year}.xlsx`
+      a.download = `${filenamePrefix}-${month}-${year}.xlsx`
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
       a.remove()
 
-      toast.success('Salary report downloaded successfully')
+      toast.success(`${reportLabel.charAt(0).toUpperCase() + reportLabel.slice(1)} downloaded successfully`)
     } catch (error) {
-      console.error('Error downloading salary report:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to download salary report')
+      console.error(`Error downloading ${reportLabel}:`, error)
+      toast.error(error instanceof Error ? error.message : `Failed to download ${reportLabel}`)
     } finally {
-      setIsDownloadingReport(false)
+      setBusy(false)
     }
   }
 
@@ -224,11 +228,21 @@ export function BulkImportExport({
             disabled={!hasSalaries || isDownloadingReport}
             onSelect={(event) => {
               event.preventDefault()
-              void handleDownloadReport()
+              void handleDownloadReport(false)
             }}
           >
             <Download className="h-4 w-4" />
             {isDownloadingReport ? 'Downloading...' : 'Download Salary Report'}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={!hasSalaries || isDownloadingNonPaidReport}
+            onSelect={(event) => {
+              event.preventDefault()
+              void handleDownloadReport(true)
+            }}
+          >
+            <Download className="h-4 w-4" />
+            {isDownloadingNonPaidReport ? 'Downloading...' : 'Download Non-Paid Salary Report'}
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={isExporting}

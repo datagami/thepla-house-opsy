@@ -4,6 +4,20 @@ import {useCallback, useEffect, useState} from 'react'
 import {Branch, Salary, User} from "@/models/models"
 import {Button} from '@/components/ui/button'
 import {useRouter, useSearchParams} from 'next/navigation'
+
+const SEARCH_DEBOUNCE_MS = 300
+
+function readFilterParams(sp: URLSearchParams) {
+  return {
+    search: sp.get('search') || '',
+    branch: sp.get('branch') || 'all',
+    role: sp.get('role') || 'all',
+    deductions: sp.get('deductions') || 'all',
+    status: sp.get('status') || 'all',
+    userStatus: sp.get('userStatus') || 'all',
+    referralOnly: sp.get('referralOnly') === 'true',
+  }
+}
 import {Checkbox} from "@/components/ui/checkbox"
 import {toast} from "sonner"
 
@@ -44,15 +58,58 @@ export function SalaryList({month, year}: SalaryListProps) {
   const searchParams = useSearchParams()
   const [selectedSalaries, setSelectedSalaries] = useState<string[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
-  const [selectedFilters, setSelectedFilters] = useState({
-    deductions: 'all',
-    status: 'all',
-    search: '',
-    branch: 'all',
-    role: 'all',
-    referralOnly: false,
-    userStatus: 'all',
-  })
+
+  const [search, setSearch] = useState(() => readFilterParams(searchParams).search)
+  const [branch, setBranch] = useState(() => readFilterParams(searchParams).branch)
+  const [role, setRole] = useState(() => readFilterParams(searchParams).role)
+  const [deductions, setDeductions] = useState(() => readFilterParams(searchParams).deductions)
+  const [status, setStatus] = useState(() => readFilterParams(searchParams).status)
+  const [userStatus, setUserStatus] = useState(() => readFilterParams(searchParams).userStatus)
+  const [referralOnly, setReferralOnly] = useState(() => readFilterParams(searchParams).referralOnly)
+  const [initialized, setInitialized] = useState(false)
+
+  // Sync state from URL on subsequent navigations (e.g. browser back)
+  useEffect(() => {
+    if (!initialized) {
+      setInitialized(true)
+      return
+    }
+    const p = readFilterParams(searchParams)
+    setSearch(p.search)
+    setBranch(p.branch)
+    setRole(p.role)
+    setDeductions(p.deductions)
+    setStatus(p.status)
+    setUserStatus(p.userStatus)
+    setReferralOnly(p.referralOnly)
+  }, [searchParams, initialized])
+
+  const updateUrl = useCallback(
+    (updates: Record<string, string | boolean | undefined>) => {
+      const p = new URLSearchParams(searchParams.toString())
+      for (const [key, val] of Object.entries(updates)) {
+        if (val === undefined || val === '' || val === 'all' || val === false) {
+          p.delete(key)
+        } else if (val === true) {
+          p.set(key, 'true')
+        } else {
+          p.set(key, val)
+        }
+      }
+      router.replace(`/salary?${p.toString()}`, { scroll: false })
+    },
+    [router, searchParams]
+  )
+
+  // Debounce search -> URL
+  useEffect(() => {
+    if (!initialized) return
+    const t = setTimeout(() => {
+      updateUrl({ search: search || undefined })
+    }, SEARCH_DEBOUNCE_MS)
+    return () => clearTimeout(t)
+  }, [search, initialized, updateUrl])
+
   // Add state for users without salary
   const [usersWithoutSalary, setUsersWithoutSalary] = useState<User[]>([]);
 
@@ -63,14 +120,10 @@ export function SalaryList({month, year}: SalaryListProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Get current year and month from URL
-  const currentYear = searchParams.get('year')
-  const currentMonth = searchParams.get('month')
-
   const fetchSalaries = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/salary?month=${month}&year=${year}${selectedFilters.referralOnly ? '&referralOnly=true' : ''}`)
+      const response = await fetch(`/api/salary?month=${month}&year=${year}${referralOnly ? '&referralOnly=true' : ''}`)
       if (response.ok) {
         const data = await response.json()
         setSalaries(data)
@@ -80,7 +133,7 @@ export function SalaryList({month, year}: SalaryListProps) {
     } finally {
       setLoading(false)
     }
-  }, [month, year, selectedFilters.referralOnly])
+  }, [month, year, referralOnly])
 
   useEffect(() => {
     if (month && year) {
@@ -92,13 +145,13 @@ export function SalaryList({month, year}: SalaryListProps) {
 
   // Fetch users without salary for selected month/year if filter is selected
   useEffect(() => {
-    if (selectedFilters.status === 'no-salary' && month && year) {
+    if (status === 'no-salary' && month && year) {
       fetchUsersWithoutSalary();
     } else {
       setUsersWithoutSalary([]); // Clear when not in 'no-salary' mode
     }
     // eslint-disable-next-line
-  }, [selectedFilters.status, month, year]);
+  }, [status, month, year]);
 
   const fetchBranches = async () => {
     try {
@@ -150,33 +203,33 @@ export function SalaryList({month, year}: SalaryListProps) {
   const getFilteredSalaries = () => {
     return salaries.filter(salary => {
       // Search filter
-      const matchesSearch = !selectedFilters.search ||
-        salary.user.name?.toLowerCase().includes(selectedFilters.search.toLowerCase()) ||
-        salary.user.email?.toLowerCase().includes(selectedFilters.search.toLowerCase()) ||
-        salary.user.numId?.toString().includes(selectedFilters.search)
+      const matchesSearch = !search ||
+        salary.user.name?.toLowerCase().includes(search.toLowerCase()) ||
+        salary.user.email?.toLowerCase().includes(search.toLowerCase()) ||
+        salary.user.numId?.toString().includes(search)
 
       // Branch filter
-      const matchesBranch = selectedFilters.branch === 'all' ||
-        salary.user.branchId === selectedFilters.branch
+      const matchesBranch = branch === 'all' ||
+        salary.user.branchId === branch
 
       // Role filter
-      const matchesRole = selectedFilters.role === 'all' ||
-        salary.user.role === selectedFilters.role
+      const matchesRole = role === 'all' ||
+        salary.user.role === role
 
       // Deductions filter
       const matchesDeductions =
-        selectedFilters.deductions === 'all' ? true :
-          selectedFilters.deductions === 'with-deductions' ? salary.installments.length > 0 :
-            selectedFilters.deductions === 'without-deductions' ? salary.installments.length === 0 :
+        deductions === 'all' ? true :
+          deductions === 'with-deductions' ? salary.installments.length > 0 :
+            deductions === 'without-deductions' ? salary.installments.length === 0 :
               true
 
       // Status filter
-      const matchesStatus = selectedFilters.status === 'all' ? true :
-        salary.status === selectedFilters.status
+      const matchesStatus = status === 'all' ? true :
+        salary.status === status
 
       // User status filter
-      const matchesUserStatus = selectedFilters.userStatus === 'all' ||
-        salary.user.status === selectedFilters.userStatus
+      const matchesUserStatus = userStatus === 'all' ||
+        salary.user.status === userStatus
 
       return matchesSearch && matchesBranch && matchesRole &&
         matchesDeductions && matchesStatus && matchesUserStatus
@@ -405,11 +458,8 @@ export function SalaryList({month, year}: SalaryListProps) {
   }
 
   const handleViewDetails = (salaryId: string) => {
-    const params = new URLSearchParams()
-    if (currentYear) params.set('year', currentYear)
-    if (currentMonth) params.set('month', currentMonth)
-
-    router.push(`/salary/${salaryId}?${params.toString()}`)
+    const qs = searchParams.toString()
+    router.push(`/salary/${salaryId}${qs ? `?${qs}` : ''}`)
   }
 
   const handleDownloadPayslip = (salaryId: string, userId: string) => {
@@ -543,11 +593,8 @@ export function SalaryList({month, year}: SalaryListProps) {
             <SearchIcon className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground"/>
             <Input
               placeholder="Search by name, email, or employee ID"
-              value={selectedFilters.search}
-              onChange={(e) => setSelectedFilters(prev => ({
-                ...prev,
-                search: e.target.value
-              }))}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               className="pl-8"
             />
           </div>
@@ -555,11 +602,11 @@ export function SalaryList({month, year}: SalaryListProps) {
         <div className="w-[200px]">
           <label className="text-sm font-medium mb-2 block">Branch</label>
           <Select
-            value={selectedFilters.branch}
-            onValueChange={(value) => setSelectedFilters(prev => ({
-              ...prev,
-              branch: value
-            }))}
+            value={branch}
+            onValueChange={(value) => {
+              setBranch(value)
+              updateUrl({ branch: value })
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder="All Branches"/>
@@ -577,11 +624,11 @@ export function SalaryList({month, year}: SalaryListProps) {
         <div className="w-[200px]">
           <label className="text-sm font-medium mb-2 block">Role</label>
           <Select
-            value={selectedFilters.role}
-            onValueChange={(value) => setSelectedFilters(prev => ({
-              ...prev,
-              role: value
-            }))}
+            value={role}
+            onValueChange={(value) => {
+              setRole(value)
+              updateUrl({ role: value })
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder="All Roles"/>
@@ -599,11 +646,11 @@ export function SalaryList({month, year}: SalaryListProps) {
         <div className="w-[200px]">
           <label className="text-sm font-medium mb-2 block">Deductions</label>
           <Select
-            value={selectedFilters.deductions}
-            onValueChange={(value) => setSelectedFilters(prev => ({
-              ...prev,
-              deductions: value
-            }))}
+            value={deductions}
+            onValueChange={(value) => {
+              setDeductions(value)
+              updateUrl({ deductions: value })
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder="Filter by Deductions"/>
@@ -618,11 +665,11 @@ export function SalaryList({month, year}: SalaryListProps) {
         <div className="w-[200px]">
           <label className="text-sm font-medium mb-2 block">Status</label>
           <Select
-            value={selectedFilters.status}
-            onValueChange={(value) => setSelectedFilters(prev => ({
-              ...prev,
-              status: value
-            }))}
+            value={status}
+            onValueChange={(value) => {
+              setStatus(value)
+              updateUrl({ status: value })
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder="Filter by Status"/>
@@ -640,11 +687,11 @@ export function SalaryList({month, year}: SalaryListProps) {
         <div className="w-[200px]">
           <label className="text-sm font-medium mb-2 block">User Status</label>
           <Select
-            value={selectedFilters.userStatus}
-            onValueChange={(value) => setSelectedFilters(prev => ({
-              ...prev,
-              userStatus: value
-            }))}
+            value={userStatus}
+            onValueChange={(value) => {
+              setUserStatus(value)
+              updateUrl({ userStatus: value })
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder="Filter by User Status"/>
@@ -657,24 +704,33 @@ export function SalaryList({month, year}: SalaryListProps) {
             </SelectContent>
           </Select>
         </div>
-        {(selectedFilters.deductions !== 'all' ||
-          selectedFilters.status !== 'all' ||
-          selectedFilters.userStatus !== 'all' ||
-          selectedFilters.search ||
-          selectedFilters.branch ||
-          selectedFilters.role ||
-          selectedFilters.referralOnly) && (
+        {(deductions !== 'all' ||
+          status !== 'all' ||
+          userStatus !== 'all' ||
+          search ||
+          (branch !== 'all') ||
+          (role !== 'all') ||
+          referralOnly) && (
           <Button
             variant="outline"
-            onClick={() => setSelectedFilters({
-              deductions: 'all',
-              status: 'all',
-              search: '',
-              branch: 'all',
-              role: 'all',
-              referralOnly: false,
-              userStatus: 'all',
-            })}
+            onClick={() => {
+              setSearch('')
+              setBranch('all')
+              setRole('all')
+              setDeductions('all')
+              setStatus('all')
+              setUserStatus('all')
+              setReferralOnly(false)
+              updateUrl({
+                search: undefined,
+                branch: undefined,
+                role: undefined,
+                deductions: undefined,
+                status: undefined,
+                userStatus: undefined,
+                referralOnly: undefined,
+              })
+            }}
           >
             Clear Filters
           </Button>
@@ -683,11 +739,11 @@ export function SalaryList({month, year}: SalaryListProps) {
 
       <div className="flex items-center gap-2 -mt-2">
         <Checkbox
-          checked={selectedFilters.referralOnly}
+          checked={referralOnly}
           onCheckedChange={(checked) => {
-            setSelectedFilters(prev => ({ ...prev, referralOnly: !!checked }))
-            // refetch on toggle
-            setTimeout(() => fetchSalaries(), 0)
+            const next = !!checked
+            setReferralOnly(next)
+            updateUrl({ referralOnly: next })
           }}
         />
         <span className="text-sm">Show only salaries with referral bonuses</span>
@@ -772,7 +828,7 @@ export function SalaryList({month, year}: SalaryListProps) {
         )}
       </div>
 
-      {selectedFilters.status === 'no-salary' ? (
+      {status === 'no-salary' ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {usersWithoutSalary.length > 0 ? usersWithoutSalary.map((user) => (
             <Card key={user.id} className="hover:shadow-lg transition-shadow">
