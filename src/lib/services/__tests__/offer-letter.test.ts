@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { sanitizeOfferHtml } from '@/lib/services/offer-letter'
+import {
+  sanitizeOfferHtml,
+  buildReferenceNo,
+  formatLetterDate,
+} from '@/lib/services/offer-letter'
 
 describe('sanitizeOfferHtml', () => {
   it('preserves the clause structure used by the print stylesheet', () => {
@@ -73,5 +77,33 @@ describe('sanitizeOfferHtml', () => {
     expect(out).toContain('<strong>')
     expect(out).toContain('<table>')
     expect(out).toContain('<th>')
+  })
+})
+
+describe('buildReferenceNo', () => {
+  it('zero-pads numId to 4 digits', () => {
+    expect(buildReferenceNo(42, new Date('2026-05-07'))).toBe('TH/HR/2026/0042')
+  })
+
+  it('preserves 4+ digit numIds without truncation', () => {
+    expect(buildReferenceNo(12345, new Date('2026-01-01'))).toBe('TH/HR/2026/12345')
+  })
+
+  it('uses the offerDate year', () => {
+    expect(buildReferenceNo(1, new Date('2024-12-31'))).toBe('TH/HR/2024/0001')
+  })
+})
+
+describe('formatLetterDate', () => {
+  it('formats as en-GB long', () => {
+    expect(formatLetterDate(new Date('2026-05-07'))).toBe('7 May 2026')
+  })
+
+  it('handles single-digit day', () => {
+    expect(formatLetterDate(new Date('2026-01-09'))).toBe('9 January 2026')
+  })
+
+  it('handles double-digit day', () => {
+    expect(formatLetterDate(new Date('2026-12-25'))).toBe('25 December 2026')
   })
 })

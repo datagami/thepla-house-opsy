@@ -27,3 +27,17 @@ export function sanitizeOfferHtml(input: string): string {
   }) as unknown as string
   return cleaned
 }
+
+export function buildReferenceNo(numId: number, offerDate: Date): string {
+  const year = offerDate.getFullYear()
+  const padded = String(numId).padStart(4, '0')
+  return `TH/HR/${year}/${padded}`
+}
+
+export function formatLetterDate(d: Date): string {
+  return d.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
