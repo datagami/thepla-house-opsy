@@ -4,6 +4,7 @@
 //   - applyBulkImport(input): Promise<BulkImportSummary>
 
 import type { PrismaClient, Prisma } from '@prisma/client'
+import ExcelJS from 'exceljs'
 import {
   computeNetFromStoredSalary,
   daysInMonth as daysInMonthFn,
@@ -397,4 +398,141 @@ export async function applyBulkImport(
   }
 
   return summary
+}
+
+interface WorkbookSalary {
+  id: string
+  status: SalaryStatus
+  baseSalary: number
+  presentDays: number
+  otherBonuses: number
+  otherDeductions: number
+  netSalary: number
+  user: {
+    name: string | null
+    numId: number
+    status: string
+    branch: { name: string } | null
+  } | null
+  installments: { status: string; amountPaid: number }[]
+}
+
+const COLUMNS = [
+  { header: 'salaryId',                  key: 'salaryId',         width: 30, locked: true },
+  { header: 'Employee #',                key: 'employeeNumber',   width: 12, locked: true },
+  { header: 'Name',                      key: 'name',             width: 24, locked: true },
+  { header: 'Branch',                    key: 'branch',           width: 18, locked: true },
+  { header: 'Base Salary',               key: 'baseSalary',       width: 14, locked: true },
+  { header: 'Present Days',              key: 'presentDays',      width: 12, locked: true },
+  { header: 'Status',                    key: 'status',           width: 14, locked: false },
+  { header: 'Other Additions',           key: 'otherBonuses',     width: 16, locked: false },
+  { header: 'Other Deductions',          key: 'otherDeductions',  width: 16, locked: false },
+  { header: 'Net Salary (current)',      key: 'netSalary',        width: 18, locked: true },
+  { header: 'Pending Referrals (Total)', key: 'pendingReferrals', width: 22, locked: true },
+  { header: 'Pending Installments (Total)', key: 'pendingInstallments', width: 24, locked: true },
+] as const
+
+function configureSheet(sheet: ExcelJS.Worksheet) {
+  sheet.columns = COLUMNS.map((c) => ({ header: c.header, key: c.key, width: c.width }))
+  sheet.getRow(1).font = { bold: true }
+  sheet.getRow(1).eachCell((cell) => {
+    cell.protection = { locked: true }
+  })
+  // Status dropdown on Column G (rows 2..1000)
+  for (let row = 2; row <= 10000; row += 1) {
+    sheet.getCell(`G${row}`).dataValidation = {
+      type: 'list',
+      allowBlank: true,
+      formulae: ['"PENDING,PROCESSING,PAID,FAILED"'],
+    }
+  }
+  void sheet.protect('', { selectLockedCells: true, selectUnlockedCells: true })
+}
+
+function writeRow(
+  sheet: ExcelJS.Worksheet,
+  s: WorkbookSalary,
+  pendingReferralsTotal: number,
+  pendingInstallmentsTotal: number
+) {
+  const row = sheet.addRow({
+    salaryId: s.id,
+    employeeNumber: s.user?.numId ?? null,
+    name: s.user?.name ?? null,
+    branch: s.user?.branch?.name ?? null,
+    baseSalary: s.baseSalary,
+    presentDays: s.presentDays,
+    status: s.status,
+    otherBonuses: s.otherBonuses,
+    otherDeductions: s.otherDeductions,
+    netSalary: s.netSalary,
+    pendingReferrals: pendingReferralsTotal,
+    pendingInstallments: pendingInstallmentsTotal,
+  })
+  COLUMNS.forEach((c, idx) => {
+    const cell = row.getCell(idx + 1)
+    cell.protection = { locked: c.locked }
+  })
+}
+
+export async function buildBulkWorkbook(
+  prisma: PrismaClient,
+  month: number,
+  year: number
+): Promise<Buffer> {
+  const salaries = await prisma.salary.findMany({
+    where: {
+      month,
+      year,
+      user: { status: { in: ['ACTIVE', 'PARTIAL_INACTIVE'] } },
+    },
+    include: {
+      installments: { select: { status: true, amountPaid: true } },
+      user: {
+        select: {
+          name: true,
+          numId: true,
+          status: true,
+          branch: { select: { name: true } },
+        },
+      },
+    },
+    orderBy: [{ user: { numId: 'asc' } }],
+  })
+
+  // Pre-aggregate pending referrals per user (one query, group in JS).
+  const userIds = salaries.map((s) => s.userId)
+  const currentMonthEnd = new Date(year, month, 0)
+  const referralAgg = await prisma.referral.groupBy({
+    by: ['referrerId'],
+    where: {
+      referrerId: { in: userIds },
+      paidAt: null,
+      archivedAt: null,
+      eligibleAt: { lte: currentMonthEnd },
+    },
+    _sum: { bonusAmount: true },
+  })
+  const referralByUser = new Map(
+    referralAgg.map((r) => [r.referrerId, r._sum.bonusAmount ?? 0])
+  )
+
+  const wb = new ExcelJS.Workbook()
+  const active = wb.addWorksheet(SHEET_ACTIVE)
+  const partial = wb.addWorksheet(SHEET_PARTIAL_ACTIVE)
+  configureSheet(active)
+  configureSheet(partial)
+
+  for (const s of salaries) {
+    const sheet = s.user?.status === 'ACTIVE' ? active : partial
+    const pendingInstallmentsTotal = s.installments
+      .filter((i) => i.status === 'PENDING')
+      .reduce((sum, i) => sum + i.amountPaid, 0)
+    const pendingReferralsTotal = referralByUser.get(s.userId) ?? 0
+
+    writeRow(sheet, s as WorkbookSalary, pendingReferralsTotal, pendingInstallmentsTotal)
+  }
+
+  const buffer = await wb.xlsx.writeBuffer()
+  return Buffer.from(buffer)
 }
