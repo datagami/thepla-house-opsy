@@ -95,13 +95,17 @@
        background so it paints on EVERY physical printed sheet when
        content paginates. (An absolute pseudo-element only renders
        once, at the top of the logical .page rectangle.) */
+    /* The stripe colour is OPAQUE (no alpha) because Chrome can drop
+       alpha-channel gradients from saved PDFs even when the "Print
+       backgrounds" toggle is on. For a 2px stripe the saturated gold
+       reads almost identical to the previously-translucent version. */
     background:
       linear-gradient(
         to right,
         var(--cream) 0,
         var(--cream) 8mm,
-        hsl(38 80% 55% / 0.55) 8mm,
-        hsl(38 80% 55% / 0.55) calc(8mm + 2px),
+        var(--gold) 8mm,
+        var(--gold) calc(8mm + 2px),
         var(--cream) calc(8mm + 2px)
       );
     box-shadow: 0 12px 40px rgba(0,0,0,0.10);
@@ -118,13 +122,21 @@
   .page:last-of-type { page-break-after: auto; }
 
   @media print {
+    /* Force EVERY element to preserve its background/colour in the saved
+       PDF. Chrome drops backgrounds by default unless print-color-adjust
+       is set; even with the dialog's "Print backgrounds" toggle on, the
+       gold gradient stripe was being stripped from saved PDFs without
+       this rule. */
+    *, *::before, *::after {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
     /* Cream the body so the @page margin area (the strip outside the
        printable area) also picks up the brand colour — otherwise the
        printer leaves a white border around every printed sheet. */
     html, body {
       background: var(--cream);
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
     }
     .page {
       /* @page margin is 0 — .page itself provides internal padding so
