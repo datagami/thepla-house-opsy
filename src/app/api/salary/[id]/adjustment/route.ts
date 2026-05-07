@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { sumRecurringDeductions } from '@/lib/services/recurring-deductions'
+import { computeNetFromStoredSalary, daysInMonth } from '@/lib/services/salary-math'
 import type { RecurringDeductionEntry } from '@/models/models'
 
 export async function POST(
@@ -30,19 +31,22 @@ export async function POST(
       return new NextResponse('Can only update adjustments for pending salary', { status: 400 })
     }
 
-    // Calculate new net salary by replacing the old adjustments with new ones.
-    // advanceDeduction holds the planned advance for PENDING (and approved-only for PROCESSING);
-    // it must be subtracted here too — adjustment used to silently drop it.
+    // Recompute via the canonical helper so the stored value matches what ENET pays.
     const recurringTotal = sumRecurringDeductions(
       salary.recurringDeductions as RecurringDeductionEntry[] | null
     )
 
-    const newNetSalary = salary.baseSalary +
-                        salary.overtimeBonus +
-                        (bonusAmount || 0) -
-                        (deductionAmount || 0) -
-                        salary.advanceDeduction -
-                        recurringTotal
+    const newNetSalary = computeNetFromStoredSalary({
+      baseSalary: salary.baseSalary,
+      daysInMonth: daysInMonth(salary.year, salary.month),
+      presentDays: salary.presentDays,
+      overtimeDays: salary.overtimeDays,
+      leavesEarned: salary.leavesEarned,
+      otherBonuses: bonusAmount || 0,
+      otherDeductions: deductionAmount || 0,
+      advanceTotal: salary.advanceDeduction,
+      recurringTotal,
+    })
 
     const updatedSalary = await prisma.salary.update({
       where: { id },

@@ -61,3 +61,49 @@ export function computeSalaryBreakdown(input: SalaryMathInput): SalaryBreakdown 
     netSalary,
   }
 }
+
+export interface StoredSalaryNetInput {
+  baseSalary: number
+  daysInMonth: number
+  presentDays: number
+  overtimeDays: number
+  leavesEarned: number
+  otherBonuses: number
+  otherDeductions: number
+  advanceTotal: number
+  recurringTotal: number
+}
+
+/**
+ * Canonical net-salary calculation used at write time AND for the ENET file.
+ *
+ * Mirrors `calculateNetSalaryFromObject` so that the value stored in
+ * `Salary.netSalary` matches what ENET pays out:
+ *
+ *   net = round(
+ *     presentDays × perDay
+ *     + overtimeDays × 0.5 × perDay
+ *     + leavesEarned × perDay
+ *     + otherBonuses
+ *     − advanceTotal
+ *     − otherDeductions
+ *     − recurringTotal
+ *   )
+ *
+ * Use this everywhere `netSalary` is recomputed (PROCESSING transitions,
+ * adjustments, advance updates) to avoid the historical disparity where
+ * the stored value silently dropped earned leaves and otherDeductions.
+ */
+export function computeNetFromStoredSalary(input: StoredSalaryNetInput): number {
+  const perDaySalary = Math.round((input.baseSalary / input.daysInMonth) * 100) / 100
+  const presentDaysAmount = input.presentDays * perDaySalary
+  const overtimeAmount = input.overtimeDays * 0.5 * perDaySalary
+  const leaveSalary = input.leavesEarned * perDaySalary
+  const grossEarnings = presentDaysAmount + overtimeAmount + leaveSalary + input.otherBonuses
+  const totalDeductions = input.advanceTotal + input.otherDeductions + input.recurringTotal
+  return Math.round(grossEarnings - totalDeductions)
+}
+
+export function daysInMonth(year: number, month: number): number {
+  return new Date(year, month, 0).getDate()
+}

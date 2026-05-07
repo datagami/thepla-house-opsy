@@ -7,6 +7,7 @@ import { hasAttendanceConflicts } from "@/lib/services/attendance-conflicts";
 import { logEntityActivity } from "@/lib/services/activity-log";
 import { ActivityType } from "@prisma/client";
 import { sumRecurringDeductions } from '@/lib/services/recurring-deductions'
+import { computeNetFromStoredSalary, daysInMonth } from '@/lib/services/salary-math'
 import type { RecurringDeductionEntry } from '@/models/models'
 
 export async function POST(request: Request) {
@@ -322,13 +323,17 @@ export async function PATCH(req: Request) {
           data: {
             status: 'PROCESSING',
             advanceDeduction: totalApprovedDeductions,
-            netSalary: existingSalary.baseSalary +
-                      existingSalary.overtimeBonus +
-                      existingSalary.otherBonuses -
-                      existingSalary.otherDeductions -
-                      totalApprovedDeductions -
-                      existingSalary.deductions -
-                      recurringTotal
+            netSalary: computeNetFromStoredSalary({
+              baseSalary: existingSalary.baseSalary,
+              daysInMonth: daysInMonth(existingSalary.year, existingSalary.month),
+              presentDays: existingSalary.presentDays,
+              overtimeDays: existingSalary.overtimeDays,
+              leavesEarned: existingSalary.leavesEarned,
+              otherBonuses: existingSalary.otherBonuses,
+              otherDeductions: existingSalary.otherDeductions,
+              advanceTotal: totalApprovedDeductions + existingSalary.deductions,
+              recurringTotal,
+            }),
           }
         })
 
@@ -398,13 +403,17 @@ export async function PATCH(req: Request) {
             where: { id: installment.salaryId },
             data: {
               advanceDeduction: totalDeductions,
-              netSalary: installment.salary.baseSalary +
-                        installment.salary.overtimeBonus +
-                        installment.salary.otherBonuses -
-                        installment.salary.otherDeductions -
-                        totalDeductions -
-                        installment.salary.deductions -
-                        recurringTotal
+              netSalary: computeNetFromStoredSalary({
+                baseSalary: installment.salary.baseSalary,
+                daysInMonth: daysInMonth(installment.salary.year, installment.salary.month),
+                presentDays: installment.salary.presentDays,
+                overtimeDays: installment.salary.overtimeDays,
+                leavesEarned: installment.salary.leavesEarned,
+                otherBonuses: installment.salary.otherBonuses,
+                otherDeductions: installment.salary.otherDeductions,
+                advanceTotal: totalDeductions + installment.salary.deductions,
+                recurringTotal,
+              }),
             }
           })
         } else if (installmentAction === 'APPROVE') {
@@ -514,13 +523,17 @@ export async function PATCH(req: Request) {
           where: { id: salaryId },
           data: {
             advanceDeduction: totalDeductions,
-            netSalary: existingSalary.baseSalary +
-                      existingSalary.overtimeBonus +
-                      existingSalary.otherBonuses -
-                      existingSalary.otherDeductions -
-                      totalDeductions -
-                      existingSalary.deductions -
-                      recurringTotalForAdvance
+            netSalary: computeNetFromStoredSalary({
+              baseSalary: existingSalary.baseSalary,
+              daysInMonth: daysInMonth(existingSalary.year, existingSalary.month),
+              presentDays: existingSalary.presentDays,
+              overtimeDays: existingSalary.overtimeDays,
+              leavesEarned: existingSalary.leavesEarned,
+              otherBonuses: existingSalary.otherBonuses,
+              otherDeductions: existingSalary.otherDeductions,
+              advanceTotal: totalDeductions + existingSalary.deductions,
+              recurringTotal: recurringTotalForAdvance,
+            }),
           }
         })
       })
@@ -608,13 +621,17 @@ export async function PUT(request: Request) {
         where: { id: installment.salaryId },
         data: {
           advanceDeduction: totalDeductions,
-          netSalary: installment.salary.baseSalary +
-                     installment.salary.overtimeBonus +
-                     installment.salary.otherBonuses -
-                     installment.salary.otherDeductions -
-                     totalDeductions -
-                     installment.salary.deductions -
-                     recurringTotal
+          netSalary: computeNetFromStoredSalary({
+            baseSalary: installment.salary.baseSalary,
+            daysInMonth: daysInMonth(installment.salary.year, installment.salary.month),
+            presentDays: installment.salary.presentDays,
+            overtimeDays: installment.salary.overtimeDays,
+            leavesEarned: installment.salary.leavesEarned,
+            otherBonuses: installment.salary.otherBonuses,
+            otherDeductions: installment.salary.otherDeductions,
+            advanceTotal: totalDeductions + installment.salary.deductions,
+            recurringTotal,
+          }),
         }
       })
     })
