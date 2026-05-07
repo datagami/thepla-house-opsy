@@ -116,8 +116,8 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
           <div className="name">{salutation}</div>
         </div>
 
-        <div className="salutation">Dear {salutation},</div>
         <div className="subject">Subject: Letter of Offer — {jobOffer.designation}</div>
+        <div className="salutation">Dear {salutation},</div>
 
         <p className="body">
           With reference to your application and the subsequent interview, we are pleased to offer you the position of{' '}
