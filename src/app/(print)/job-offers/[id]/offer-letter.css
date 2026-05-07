@@ -95,19 +95,20 @@
        background so it paints on EVERY physical printed sheet when
        content paginates. (An absolute pseudo-element only renders
        once, at the top of the logical .page rectangle.) */
-    /* The stripe colour is OPAQUE (no alpha) because Chrome can drop
-       alpha-channel gradients from saved PDFs even when the "Print
-       backgrounds" toggle is on. For a 2px stripe the saturated gold
-       reads almost identical to the previously-translucent version. */
-    background:
-      linear-gradient(
-        to right,
-        var(--cream) 0,
-        var(--cream) 8mm,
-        var(--gold) 8mm,
-        var(--gold) calc(8mm + 2px),
-        var(--cream) calc(8mm + 2px)
-      );
+    /* Cream sheet + thin gold left stripe.
+       The stripe is rendered as a SEPARATE background-image (a solid
+       2px-wide rectangle of gold positioned 8mm from the left, tiled
+       vertically) instead of a multi-stop linear-gradient. Multi-stop
+       gradients with sub-millimetre colour regions are silently
+       dropped by Chrome's PDF rasterizer; a solid-colour
+       background-image rectangle survives reliably in saved PDFs.
+       Use a 1×1 gold "gradient" as the image so it inherits the
+       --gold custom property cleanly. */
+    background-color: var(--cream);
+    background-image: linear-gradient(var(--gold), var(--gold));
+    background-size: 2px 100%;
+    background-position: 8mm 0;
+    background-repeat: repeat-y;
     box-shadow: 0 12px 40px rgba(0,0,0,0.10);
     page-break-after: always;
     -webkit-print-color-adjust: exact;
