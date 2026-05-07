@@ -14,7 +14,9 @@ const TEST_MONTH = 8
 const TEST_YEAR = 2099
 
 afterEach(async () => {
-  await prisma.salary.deleteMany({ where: { year: TEST_YEAR } })
+  await prisma.salary.deleteMany({
+    where: { user: { email: { contains: '@rt.bulk-import.test' } } },
+  })
   await prisma.user.deleteMany({ where: { email: { contains: '@rt.bulk-import.test' } } })
   vi.resetAllMocks()
 })

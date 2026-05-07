@@ -354,9 +354,11 @@ describe('applyBulkImport (integration)', () => {
   const TEST_YEAR = 2099
 
   afterEach(async () => {
-    await prisma.advancePaymentInstallment.deleteMany({ where: { salary: { year: TEST_YEAR } } })
+    await prisma.advancePaymentInstallment.deleteMany({
+      where: { salary: { user: { email: { contains: '@example.test' } } } },
+    })
     await prisma.advancePayment.deleteMany({ where: { user: { email: { contains: '@example.test' } } } })
-    await prisma.salary.deleteMany({ where: { year: TEST_YEAR } })
+    await prisma.salary.deleteMany({ where: { user: { email: { contains: '@example.test' } } } })
     await prisma.user.deleteMany({ where: { email: { contains: '@example.test' } } })
   })
 
@@ -508,7 +510,7 @@ describe('export → parse round-trip', () => {
   const RT_YEAR = 2099
 
   afterEach(async () => {
-    await prisma.salary.deleteMany({ where: { year: RT_YEAR } })
+    await prisma.salary.deleteMany({ where: { user: { email: { contains: '@rt.test' } } } })
     await prisma.user.deleteMany({ where: { email: { contains: '@rt.test' } } })
   })
 
