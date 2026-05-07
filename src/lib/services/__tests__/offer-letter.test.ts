@@ -7,17 +7,18 @@ import {
 } from '@/lib/services/offer-letter'
 
 describe('sanitizeOfferHtml', () => {
-  it('unwraps legacy <section class="clause"> / <div class="clause-head"> shells', () => {
-    // These wrappers were used by the very first version of the seeded
-    // snippets. They survive in some HR-pasted content. Keep the inner
-    // content; drop the wrappers (which use display: flex and break the
-    // print layout when they leak around the new <h3>-based snippets).
+  it('strips legacy <div class="clause-head"> shells but preserves <section class="clause">', () => {
+    // <div class="clause-head"> was display:flex in the old design and
+    // produced a broken 2-column layout when leftover wrappers leaked
+    // around the new <h3> snippets. We strip it. <section class="clause">
+    // is intentionally PRESERVED — it now wraps each h3+body group so
+    // CSS `break-inside: avoid` keeps the whole clause on one page.
     const html = '<section class="clause"><div class="clause-head">' +
       '<span class="num-mark">03</span>' +
       '<span class="title-en">Working Hours</span>' +
       '</div><p class="body">9 to 6.</p></section>'
     const out = sanitizeOfferHtml(html)
-    expect(out).not.toContain('<section')
+    expect(out).toContain('<section class="clause">')
     expect(out).not.toContain('class="clause-head"')
     expect(out).toContain('<span class="num-mark">')
     expect(out).toContain('Working Hours')
