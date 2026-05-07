@@ -1,8 +1,18 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, type ChangeEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface BulkImportExportProps {
   year: number
@@ -66,12 +76,87 @@ export function BulkImportExport({ year, month, onImported }: BulkImportExportPr
     }
   }
 
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [showConfirm, setShowConfirm] = useState(false)
+
+  const monthLabels = [
+    'January','February','March','April','May','June',
+    'July','August','September','October','November','December',
+  ]
+
+  function handlePickFile(e: ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    if (!f) return
+    setPendingFile(f)
+    setShowConfirm(true)
+    // reset input so the same file can be picked again later
+    e.target.value = ''
+  }
+
+  async function handleConfirmUpload() {
+    if (!pendingFile) return
+    setShowConfirm(false)
+    try {
+      setIsUploading(true)
+      const fd = new FormData()
+      fd.set('file', pendingFile)
+      const res = await fetch(`/api/salary/bulk-import?month=${month}&year=${year}`, {
+        method: 'POST',
+        body: fd,
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok) {
+        toast.error(json?.error ?? 'Upload failed')
+        return
+      }
+      setSummary(json as BulkImportSummary)
+      onImported()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Upload failed')
+    } finally {
+      setIsUploading(false)
+      setPendingFile(null)
+    }
+  }
+
   return (
-    <div className="flex gap-2 items-center">
-      <Button onClick={handleExport} disabled={isExporting} variant="outline">
-        {isExporting ? 'Exporting...' : 'Export Salaries'}
-      </Button>
-      {/* Import button + summary card added in next tasks */}
-    </div>
+    <>
+      <div className="flex gap-2 items-center">
+        <Button onClick={handleExport} disabled={isExporting} variant="outline">
+          {isExporting ? 'Exporting...' : 'Export Salaries'}
+        </Button>
+
+        <input
+          type="file"
+          accept=".xlsx"
+          ref={fileInputRef}
+          onChange={handlePickFile}
+          className="hidden"
+        />
+        <Button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploading}
+          variant="outline"
+        >
+          {isUploading ? 'Uploading...' : 'Import Salaries'}
+        </Button>
+      </div>
+
+      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apply bulk salary changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Upload <span className="font-medium">{pendingFile?.name}</span> and apply
+              changes for {monthLabels[month - 1]} {year}? Paid salaries will be skipped.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingFile(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmUpload}>Upload</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
