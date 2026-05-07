@@ -536,6 +536,7 @@ describe('export → parse round-trip', () => {
 
     expect(parsed.ok).toBe(true)
     expect(parsed.rows).toHaveLength(1)
+    expect(parsed.rows[0].rowNumber).toBe(2)
     expect(parsed.rows[0].salaryId).toBe(s.id)
     expect(parsed.rows[0].sheet).toBe(SHEET_ACTIVE)
     expect(parsed.rows[0].status).toBe('PENDING')

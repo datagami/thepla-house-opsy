@@ -438,14 +438,6 @@ function configureSheet(sheet: ExcelJS.Worksheet) {
   sheet.getRow(1).eachCell((cell) => {
     cell.protection = { locked: true }
   })
-  // Status dropdown on Column G (rows 2..1000)
-  for (let row = 2; row <= 10000; row += 1) {
-    sheet.getCell(`G${row}`).dataValidation = {
-      type: 'list',
-      allowBlank: true,
-      formulae: ['"PENDING,PROCESSING,PAID,FAILED"'],
-    }
-  }
   void sheet.protect('', { selectLockedCells: true, selectUnlockedCells: true })
 }
 
@@ -473,6 +465,11 @@ function writeRow(
     const cell = row.getCell(idx + 1)
     cell.protection = { locked: c.locked }
   })
+  row.getCell(7).dataValidation = {
+    type: 'list',
+    allowBlank: true,
+    formulae: ['"PENDING,PROCESSING,PAID,FAILED"'],
+  }
 }
 
 export async function buildBulkWorkbook(
