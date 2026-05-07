@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -28,6 +29,12 @@ import { DateInput } from '@/components/ui/date-input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Trash2 } from 'lucide-react';
+import { SnippetPanel } from './snippet-panel';
+
+const RichTextEditor = dynamic(
+  () => import('@/components/rich-text-editor/rich-text-editor'),
+  { ssr: false }
+);
 
 const salaryComponentSchema = z.object({
   name: z.string().min(1, 'Component name is required'),
@@ -56,9 +63,8 @@ const jobOfferFormSchema = z
     }),
     expiresAt: z.date().optional(),
     foodAndStayProvided: z.boolean().default(false),
-    halfDays: z.number().int().min(0).default(4),
-    weekOff: z.number().int().min(0).default(2),
     notes: z.string().optional(),
+    termsHtml: z.string().min(1, 'Terms & Policies cannot be empty').default(''),
   })
   .refine(
     (data) => {
@@ -136,9 +142,8 @@ export function JobOfferForm({
         ? new Date(jobOffer.expiresAt)
         : undefined,
       foodAndStayProvided: jobOffer?.foodAndStayProvided ?? false,
-      halfDays: jobOffer?.halfDays ?? 4,
-      weekOff: jobOffer?.weekOff ?? 2,
       notes: jobOffer?.notes || '',
+      termsHtml: jobOffer?.termsHtml ?? '',
     },
   });
 
@@ -652,53 +657,40 @@ export function JobOfferForm({
                 </FormItem>
               )}
             />
+          </CardContent>
+        </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Terms &amp; Policies</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Compose Clauses 03+ here. Click &quot;Copy&quot; on a snippet, then paste into the editor.
+            </p>
+            <div className="grid gap-4 md:grid-cols-[1fr_280px]">
               <FormField
                 control={form.control}
-                name="halfDays"
+                name="termsHtml"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Half Days (per month)</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                      />
+                      <RichTextEditor value={field.value} onChange={field.onChange} />
                     </FormControl>
-                    <FormDescription>
-                      Number of half days allowed per month
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
-              <FormField
-                control={form.control}
-                name="weekOff"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Week Off (per month)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Number of week offs allowed per month
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <SnippetPanel />
             </div>
+          </CardContent>
+        </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle>Additional Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <FormField
               control={form.control}
               name="notes"
