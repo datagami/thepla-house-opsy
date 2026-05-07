@@ -80,9 +80,10 @@ One workbook per month: `salaries-{year}-{month}.xlsx`. Two worksheets: `Active`
 | G | Status | enum | **Yes** | `PENDING` \| `PROCESSING` \| `PAID` \| `FAILED`. Cell carries an Excel data-validation dropdown. |
 | H | Other Additions | number | **Yes** | Maps to `Salary.otherBonuses`. Must be `≥ 0`. |
 | I | Other Deductions | number | **Yes** | Maps to `Salary.otherDeductions`. Must be `≥ 0`. |
-| J | Net Salary (current) | number | No (locked) | Reference; recomputed server-side on import. |
-| K | Pending Referrals (Total) | number | No (locked) | Sum of `bonusAmount` across this user's unpaid, non-archived referrals eligible for this month or earlier. `0` if none. |
-| L | Pending Installments (Total) | number | No (locked) | Sum of `amountPaid` across `PENDING` `AdvancePaymentInstallment` rows attached to this salary. `0` if none. |
+| J | Statutory Deductions | number | No (locked) | Sum of `Salary.recurringDeductions` (PT, PF, ESI, etc.) computed via `sumRecurringDeductions`. Informational — helps HR understand why the net came out where it did. |
+| K | Net Salary (current) | number | No (locked) | Reference; recomputed server-side on import. |
+| L | Pending Referrals (Total) | number | No (locked) | Sum of `bonusAmount` across this user's unpaid, non-archived referrals eligible by **end of the previous month** (referrals are paid one month after eligibility — matches `process-referrals` route). `0` if none. |
+| M | Pending Installments (Total) | number | No (locked) | Sum of `amountPaid` across `PENDING` `AdvancePaymentInstallment` rows attached to this salary. `0` if none. |
 
 ### Sheet split
 

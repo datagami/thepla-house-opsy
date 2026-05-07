@@ -503,15 +503,17 @@ export async function buildBulkWorkbook(
   })
 
   // Pre-aggregate pending referrals per user (one query, group in JS).
+  // Match process-referrals: referrals eligible by end of the PREVIOUS month
+  // are paid out via this month's salary (one-month delay by design).
   const userIds = salaries.map((s) => s.userId)
-  const currentMonthEnd = new Date(year, month, 0)
+  const previousMonthEnd = new Date(year, month - 1, 0)
   const referralAgg = await prisma.referral.groupBy({
     by: ['referrerId'],
     where: {
       referrerId: { in: userIds },
       paidAt: null,
       archivedAt: null,
-      eligibleAt: { lte: currentMonthEnd },
+      eligibleAt: { lte: previousMonthEnd },
     },
     _sum: { bonusAmount: true },
   })
