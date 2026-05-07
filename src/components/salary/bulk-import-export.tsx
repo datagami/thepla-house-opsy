@@ -13,6 +13,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import { X, ChevronDown } from 'lucide-react'
 
 interface BulkImportExportProps {
   year: number
@@ -141,6 +148,57 @@ export function BulkImportExport({ year, month, onImported }: BulkImportExportPr
           {isUploading ? 'Uploading...' : 'Import Salaries'}
         </Button>
       </div>
+
+      {summary && (
+        <Card className="mt-4">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Bulk import complete</CardTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSummary(null)}
+              aria-label="Dismiss"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            {(['Active', 'Partial Active'] as const).map((s) => {
+              const c = summary.perSheet[s]
+              return (
+                <div key={s} className="flex justify-between">
+                  <span className="font-medium">{s} sheet</span>
+                  <span className="text-muted-foreground">
+                    {c.rows} rows · {c.updated} updated · {c.unchanged} unchanged · {c.skipped} skipped
+                  </span>
+                </div>
+              )
+            })}
+
+            {summary.skippedRows.length > 0 && (
+              <Collapsible>
+                <CollapsibleTrigger asChild>
+                  <Button variant="link" className="px-0 h-auto">
+                    <ChevronDown className="h-4 w-4 mr-1" />
+                    View {summary.skippedRows.length} skipped row
+                    {summary.skippedRows.length === 1 ? '' : 's'}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-2">
+                  <ul className="space-y-1 list-disc list-inside text-muted-foreground">
+                    {summary.skippedRows.map((r) => (
+                      <li key={`${r.sheet}-${r.rowNumber}`}>
+                        Row {r.rowNumber} ({r.employeeName ?? 'Unknown'}, {r.sheet}):{' '}
+                        {r.errors.join('; ')}
+                      </li>
+                    ))}
+                  </ul>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
         <AlertDialogContent>
