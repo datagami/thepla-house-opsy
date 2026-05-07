@@ -1,0 +1,666 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Epilogue:wght@600;700;800;900&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
+/* ============================================================
+     Thepla House — Offer of Employment / नियुक्ति पत्र
+     A4 portrait · multi-page · bilingual (EN primary, HI accents)
+     Letter-forward styling: lighter than the payslip — no
+     full-bleed green band, more whitespace, traditional letter
+     hierarchy. Brand cues kept (cream page, deep green ink for
+     headings, gold thin rules) but used sparingly.
+     Print-safe; @page set to A4 with the sheet owning padding.
+     ============================================================ */
+
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  :root {
+    --green:        hsl(147 41% 16%);
+    --green-deep:   hsl(147 45% 12%);
+    --green-soft:   hsl(147 30% 92%);
+    --coral:        hsl(14 86% 57%);
+    --coral-soft:   hsl(14 86% 96%);
+    --cream:        hsl(39 100% 97%);
+    --cream-deep:   hsl(39 60% 92%);
+    --gold:         hsl(38 80% 55%);
+    --gold-soft:    hsl(38 90% 94%);
+
+    --ink-1:        hsl(150 15% 12%);
+    --ink-2:        hsl(150 8%  35%);
+    --ink-3:        hsl(150 6%  52%);
+    --ink-4:        hsl(150 6%  68%);
+
+    --rule:         hsl(150 10% 88%);
+    --rule-strong:  hsl(150 10% 78%);
+
+    --font-body:    'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-display: 'Epilogue', 'Inter', system-ui, sans-serif;
+    --font-hindi:   'Noto Sans Devanagari', 'Inter', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: #e8e6e2;
+    font-family: var(--font-body);
+    color: var(--ink-1);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "ss01", "cv11";
+  }
+
+  .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+  }
+
+  .hi {
+    font-family: var(--font-hindi);
+    font-weight: 500;
+  }
+
+  /* ---------- Page shell ---------- */
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 24px auto;
+    background: var(--cream);
+    padding: 18mm 18mm 16mm;
+    position: relative;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.10);
+    page-break-after: always;
+    overflow: hidden;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .page:last-of-type { page-break-after: auto; }
+
+  /* Subtle full-page edge: thin gold rule running down the left margin
+     — small brand cue without being a heavy band. */
+  .page::before {
+    content: "";
+    position: absolute;
+    left: 8mm; top: 18mm; bottom: 16mm;
+    width: 2px;
+    background: var(--gold);
+    opacity: 0.55;
+  }
+
+  @media print {
+    html, body { background: #fff; }
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0;
+      padding: 18mm 18mm 16mm;
+      box-shadow: none;
+      page-break-after: always;
+    }
+  }
+
+  /* ---------- Letterhead (centered, traditional) ---------- */
+  .letterhead {
+    text-align: center;
+    padding-bottom: 18px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--rule);
+    position: relative;
+  }
+  .letterhead .logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--green);
+    margin: 0 auto 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .letterhead .logo img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .letterhead .name {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.01em;
+    color: var(--green);
+    line-height: 1.1;
+  }
+  .letterhead .tagline {
+    margin-top: 4px;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 500;
+  }
+  .letterhead .addr {
+    margin-top: 10px;
+    font-size: 10px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+  .letterhead .addr .links {
+    display: block;
+    margin-top: 2px;
+    color: var(--ink-3);
+  }
+  .letterhead .addr .links span + span::before {
+    content: " · ";
+    color: var(--ink-4);
+    margin: 0 2px;
+  }
+
+  /* ---------- Reference + date row ---------- */
+  .ref-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 22px;
+    font-size: 11px;
+    color: var(--ink-2);
+  }
+  .ref-row .k {
+    color: var(--ink-3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 9.5px;
+    font-weight: 600;
+    margin-right: 6px;
+  }
+  .ref-row .v {
+    color: var(--ink-1);
+    font-weight: 600;
+  }
+
+  /* ---------- Document title ---------- */
+  .doc-title {
+    text-align: center;
+    margin-bottom: 22px;
+  }
+  .doc-title .en {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--green);
+  }
+  .doc-title .hi {
+    margin-top: 6px;
+    font-size: 14px;
+    color: var(--ink-2);
+    letter-spacing: 0.04em;
+  }
+  .doc-title .underline {
+    display: block;
+    width: 64px;
+    height: 2px;
+    background: var(--gold);
+    margin: 10px auto 0;
+  }
+
+  /* ---------- Recipient ("To:") block ---------- */
+  .to-block {
+    margin-bottom: 20px;
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: var(--ink-1);
+  }
+  .to-block .to-lbl {
+    font-size: 9.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .to-block .name {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 15px;
+    color: var(--ink-1);
+    letter-spacing: -0.005em;
+  }
+
+  /* ---------- Salutation + intro ---------- */
+  .salutation {
+    font-size: 12px;
+    margin-bottom: 12px;
+    color: var(--ink-1);
+  }
+  .salutation .hi {
+    color: var(--ink-3);
+    margin-left: 6px;
+    font-size: 11px;
+  }
+
+  .subject {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 12.5px;
+    color: var(--ink-1);
+    margin-bottom: 14px;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    text-decoration-color: var(--gold);
+    text-decoration-thickness: 1.5px;
+  }
+
+  p.body {
+    font-size: 11.5px;
+    line-height: 1.65;
+    color: var(--ink-1);
+    margin-bottom: 12px;
+    text-align: justify;
+    text-wrap: pretty;
+  }
+  p.body strong {
+    font-weight: 600;
+    color: var(--green-deep);
+  }
+
+  /* ---------- Section heading (numbered clauses) ---------- */
+  .clause {
+    margin-top: 18px;
+    margin-bottom: 4px;
+  }
+  .clause-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .clause-head .num-mark {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 11px;
+    color: var(--gold);
+    letter-spacing: 0.08em;
+    min-width: 22px;
+  }
+  .clause-head .title-en {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 12.5px;
+    color: var(--green-deep);
+    letter-spacing: 0.02em;
+  }
+  .clause-head .title-hi {
+    font-family: var(--font-hindi);
+    font-weight: 500;
+    font-size: 11px;
+    color: var(--ink-3);
+    margin-left: 4px;
+  }
+  .clause-head .title-hi::before { content: " · "; color: var(--ink-4); }
+
+  .clause p.body {
+    margin-left: 32px;
+    margin-bottom: 6px;
+  }
+  .clause ul {
+    margin: 4px 0 4px 50px;
+    padding: 0;
+    list-style: none;
+  }
+  .clause ul li {
+    font-size: 11.5px;
+    line-height: 1.6;
+    color: var(--ink-1);
+    padding-left: 14px;
+    position: relative;
+    margin-bottom: 3px;
+  }
+  .clause ul li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 9px;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--gold);
+  }
+
+  /* Compact compensation table inline in clause 2 */
+  .comp-table {
+    margin: 8px 0 4px 32px;
+    width: calc(100% - 32px);
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+  .comp-table th, .comp-table td {
+    text-align: left;
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .comp-table th {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 9.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    background: var(--cream-deep);
+    border-bottom: 1px solid var(--rule-strong);
+  }
+  .comp-table td.amt {
+    text-align: right;
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--ink-1);
+  }
+  .comp-table tr.total td {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 12px;
+    color: var(--green);
+    border-top: 1.5px solid var(--green);
+    border-bottom: none;
+    padding-top: 9px;
+  }
+  .comp-table tr.total td.amt { font-size: 13px; }
+
+  /* ---------- Signature block ---------- */
+  .sign-block {
+    margin-top: 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+  .sign-block .col .role {
+    font-size: 9.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 600;
+    margin-bottom: 36px;   /* signing space */
+  }
+  .sign-block .col .line {
+    border-top: 1px solid var(--ink-2);
+    margin-bottom: 6px;
+  }
+  .sign-block .col .nm {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 13px;
+    color: var(--ink-1);
+  }
+  .sign-block .col .desig {
+    font-size: 10.5px;
+    color: var(--ink-2);
+    margin-top: 1px;
+  }
+  .sign-block .col .desig .hi {
+    color: var(--ink-3);
+    margin-left: 4px;
+  }
+  .sign-block .col .desig .hi::before { content: " · "; color: var(--ink-4); }
+
+  .sign-block .col.stamp-col {
+    position: relative;
+  }
+  .sign-block .col .stamp {
+    position: absolute;
+    top: -8px;
+    right: 8px;
+    width: 92px;
+    height: 92px;
+    border: 1.5px solid var(--green);
+    border-radius: 50%;
+    color: var(--green);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transform: rotate(-8deg);
+    opacity: 0.55;
+    font-family: var(--font-display);
+  }
+  .sign-block .col .stamp .top {
+    font-size: 8px;
+    letter-spacing: 0.18em;
+    font-weight: 700;
+    margin-top: 8px;
+  }
+  .sign-block .col .stamp .mid {
+    font-size: 11px;
+    font-weight: 800;
+    margin-top: 4px;
+  }
+  .sign-block .col .stamp .bot {
+    font-size: 7.5px;
+    letter-spacing: 0.16em;
+    margin-top: 4px;
+    margin-bottom: 6px;
+  }
+  .sign-block .col .stamp .star {
+    font-size: 9px;
+    color: var(--gold);
+  }
+
+  /* ---------- Acceptance block ---------- */
+  .accept {
+    margin-top: 26px;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.55);
+  }
+  .accept .head {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--green-deep);
+    margin-bottom: 6px;
+  }
+  .accept .head .hi {
+    color: var(--ink-3);
+    margin-left: 6px;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    text-transform: none;
+  }
+  .accept p {
+    font-size: 11px;
+    line-height: 1.6;
+    color: var(--ink-1);
+    margin-bottom: 14px;
+  }
+  .accept .row {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 24px;
+    margin-top: 18px;
+  }
+  .accept .field .lbl {
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 600;
+  }
+  .accept .field .line {
+    margin-top: 28px;
+    border-top: 1px solid var(--ink-2);
+  }
+
+  /* ---------- Page footer (small) ---------- */
+  .page-foot {
+    position: absolute;
+    left: 18mm;
+    right: 18mm;
+    bottom: 8mm;
+    display: flex;
+    justify-content: space-between;
+    font-size: 8.5px;
+    color: var(--ink-3);
+    letter-spacing: 0.02em;
+    border-top: 1px solid var(--rule);
+    padding-top: 6px;
+  }
+  .page-foot .right {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  /* ---------- ANNEXURE page ---------- */
+  .annex-title {
+    text-align: center;
+    margin-bottom: 4px;
+  }
+  .annex-title .eyebrow {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 9.5px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+  .annex-title .en {
+    margin-top: 6px;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: 0.04em;
+    color: var(--green-deep);
+  }
+  .annex-title .hi {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .annex-title .ul {
+    width: 64px;
+    height: 2px;
+    background: var(--gold);
+    margin: 10px auto 22px;
+  }
+
+  .ctc-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+  .ctc-summary .tile {
+    background: #fff;
+    border-radius: 4px;
+    padding: 14px 16px;
+    border: 1px solid var(--rule);
+    text-align: center;
+  }
+  .ctc-summary .tile .k {
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .ctc-summary .tile .v {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 18px;
+    color: var(--green);
+    letter-spacing: -0.01em;
+  }
+  .ctc-summary .tile.featured {
+    background: var(--green);
+  }
+  .ctc-summary .tile.featured .k {
+    color: hsl(147 25% 75%);
+  }
+  .ctc-summary .tile.featured .v { color: #fff; }
+
+  /* Detailed CTC table */
+  .ctc-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+  }
+  .ctc-table thead th {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 9.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    text-align: left;
+    padding: 9px 12px;
+    background: var(--cream-deep);
+    border-bottom: 1px solid var(--rule-strong);
+  }
+  .ctc-table thead th.amt-col {
+    text-align: right;
+  }
+  .ctc-table tbody td {
+    padding: 8px 12px;
+    border-bottom: 1px dashed var(--rule);
+    font-size: 11px;
+    color: var(--ink-1);
+    vertical-align: top;
+  }
+  .ctc-table tbody td .hint {
+    display: block;
+    font-size: 9.5px;
+    color: var(--ink-3);
+    margin-top: 2px;
+  }
+  .ctc-table tbody td.amt {
+    text-align: right;
+    font-family: var(--font-display);
+    font-weight: 600;
+  }
+  .ctc-table tbody tr.section-head td {
+    background: var(--green-soft);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 10px;
+    color: var(--green-deep);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--green);
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .ctc-table tbody tr.subtotal td {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 11px;
+    color: var(--ink-1);
+    background: var(--cream-deep);
+    border-bottom: 1px solid var(--rule-strong);
+  }
+  .ctc-table tbody tr.subtotal td.amt {
+    color: var(--green);
+  }
+  .ctc-table tbody tr.grand td {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 13px;
+    color: var(--green);
+    border-bottom: none;
+    border-top: 2px solid var(--green);
+    padding-top: 12px;
+    background: transparent;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .ctc-table tbody tr.grand td.amt { font-size: 16px; }
+
+  .annex-note {
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: var(--gold-soft);
+    border-left: 3px solid var(--gold);
+    font-size: 10.5px;
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+  .annex-note strong { color: var(--ink-1); font-weight: 600; }
