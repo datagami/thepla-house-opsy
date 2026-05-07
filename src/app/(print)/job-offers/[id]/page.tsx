@@ -46,7 +46,8 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
   const refNo = buildReferenceNo(jobOffer.numId, jobOffer.offerDate)
   const dateStr = formatLetterDate(jobOffer.offerDate)
   const salutation = `${titlePrefix(jobOffer.user?.gender)} ${jobOffer.name}`.trim()
-  const branchName = jobOffer.user?.branch?.name ?? jobOffer.department?.name ?? 'the assigned location'
+  const branchName = jobOffer.user?.branch?.name ?? null
+  const departmentName = jobOffer.department?.name ?? null
   const joining = jobOffer.joiningDate
     ? formatLetterDate(jobOffer.joiningDate)
     : 'the date communicated separately'
@@ -106,12 +107,18 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
         </div>
 
         <div className="salutation">Dear {salutation}, <span className="hi">/ आदरणीय,</span></div>
-        <div className="subject">Subject: Offer of Employment as {jobOffer.designation} — {branchName}</div>
+        <div className="subject">Subject: Letter of Offer — {jobOffer.designation}</div>
 
         <p className="body">
           With reference to your application and the subsequent interview, we are pleased to offer you the position of{' '}
-          <strong>{jobOffer.designation}</strong> at our <strong>{branchName}</strong> branch of Thepla House
-          (a unit of Tejal&apos;s Kitchen Pvt. Ltd.), on the terms and conditions set out below.
+          <strong>{jobOffer.designation}</strong>
+          {departmentName && (
+            <> in the <strong>{departmentName}</strong> department</>
+          )}
+          {branchName && (
+            <> at our <strong>{branchName}</strong> branch</>
+          )}
+          {' '}with Thepla House (a unit of Tejal&apos;s Kitchen Pvt. Ltd.), on the terms and conditions set out below.
         </p>
         <p className="body">
           Your appointment shall be effective from <strong>{joining}</strong> and is subject to your acceptance of this
@@ -126,9 +133,15 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
             <span className="title-hi hi">पद एवं कार्यभार की तिथि</span>
           </div>
           <p className="body">
-            You are appointed as <strong>{jobOffer.designation}</strong> at the <strong>{branchName}</strong> branch.
-            Your date of joining shall be <strong>{joining}</strong>. Failure to join on or before this date — without
-            prior written intimation — shall render this offer null and void.
+            You are appointed to the role of <strong>{jobOffer.designation}</strong>
+            {departmentName && (
+              <>, in the <strong>{departmentName}</strong> department</>
+            )}
+            {branchName && (
+              <>, based at our <strong>{branchName}</strong> branch</>
+            )}
+            . Your date of joining shall be <strong>{joining}</strong>. Failure to join on or before this date —
+            without prior written intimation — shall render this offer null and void.
           </p>
         </section>
 
