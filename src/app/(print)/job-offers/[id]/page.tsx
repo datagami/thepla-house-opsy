@@ -186,8 +186,8 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
             </tbody>
           </table>
           <p className="body" style={{ marginTop: 10 }}>
-            Statutory deductions — Professional Tax and Employee State Insurance — shall be made in accordance with
-            the laws of Maharashtra. A detailed CTC structure is attached as <strong>Annexure A</strong>.
+            Statutory deductions — Professional Tax and Insurance — shall be made monthly. A detailed CTC structure is
+            attached as <strong>Annexure A</strong>.
           </p>
         </section>
 

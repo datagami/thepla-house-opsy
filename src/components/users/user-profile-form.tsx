@@ -887,10 +887,13 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
               render={({field}) => (
                 <FormItem className="flex items-center gap-2 space-y-0">
                   <FormControl>
-                    <Checkbox checked={field.value} disabled />
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
                   </FormControl>
-                  <FormLabel className="font-normal text-muted-foreground">
-                    Employee State Insurance (ESI) <span className="text-xs">— coming soon</span>
+                  <FormLabel className="font-normal">
+                    Insurance <span className="text-xs text-muted-foreground">— ₹500/month</span>
                   </FormLabel>
                 </FormItem>
               )}
