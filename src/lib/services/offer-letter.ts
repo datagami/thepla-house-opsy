@@ -15,6 +15,25 @@ const ALLOWED_ATTR = [
 
 const ALLOWED_URI_REGEXP = /^(?:https?:\/\/|mailto:|tel:|#)/i
 
+function stripEmptyContainers(html: string): string {
+  // "Empty-ish" content inside a container: whitespace, <br>, &nbsp;, NBSP char,
+  // or another empty inline element. Repeated until stable so nested empties
+  // collapse from the inside out.
+  const EMPTYISH = '(?:[\\s\\u00A0]|<br\\s*/?>|&nbsp;|&#160;|&#xa0;|<p>\\s*</p>|<span>\\s*</span>)*'
+  const reLi = new RegExp(`<li[^>]*>${EMPTYISH}<\\/li>`, 'gi')
+  const reP = new RegExp(`<p[^>]*>${EMPTYISH}<\\/p>`, 'gi')
+  const reUl = /<ul[^>]*>\s*<\/ul>/gi
+  const reOl = /<ol[^>]*>\s*<\/ol>/gi
+
+  let prev: string
+  let out = html
+  do {
+    prev = out
+    out = out.replace(reLi, '').replace(reP, '').replace(reUl, '').replace(reOl, '')
+  } while (out !== prev)
+  return out
+}
+
 export function sanitizeOfferHtml(input: string): string {
   if (!input) return ''
   const cleaned = DOMPurify.sanitize(input, {
@@ -25,7 +44,7 @@ export function sanitizeOfferHtml(input: string): string {
     FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur'],
     KEEP_CONTENT: true,
   }) as unknown as string
-  return cleaned
+  return stripEmptyContainers(cleaned)
 }
 
 export function buildReferenceNo(numId: number, offerDate: Date): string {

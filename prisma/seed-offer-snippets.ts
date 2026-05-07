@@ -21,31 +21,31 @@ const SEEDS: Seed[] = [
     title: 'Working Hours & Location',
     category: 'WORKING_HOURS',
     sortOrder: 10,
-    htmlBody: `<section class="clause"><div class="clause-head"><span class="num-mark">03</span><span class="title-en">Working Hours &amp; Location</span></div><ul><li>Place of work: <strong>Thepla House, [Branch] branch</strong>, Mumbai. The Company reserves the right to transfer you to any of its other branches in Mumbai with reasonable notice.</li><li>Working hours: <strong>09:30 to 18:30 hrs</strong>, with one 30-minute meal break and one 15-minute tea break.</li><li>Weekly off: <strong>One day per week</strong>, on rotation, as decided by the Branch Manager.</li><li>You may be required to work additional hours during festivals, special events or business exigencies; overtime shall be compensated as per Company policy.</li></ul></section>`,
+    htmlBody: `<h3>03&nbsp;&nbsp;Working Hours &amp; Location</h3><ul><li>Place of work: <strong>Thepla House, [Branch] branch</strong>, Mumbai. The Company reserves the right to transfer you to any of its other branches in Mumbai with reasonable notice.</li><li>Working hours: <strong>09:30 to 18:30 hrs</strong>, with one 30-minute meal break and one 15-minute tea break.</li><li>Weekly off: <strong>One day per week</strong>, on rotation, as decided by the Branch Manager.</li><li>You may be required to work additional hours during festivals, special events or business exigencies; overtime shall be compensated as per Company policy.</li></ul>`,
   },
   {
     title: 'Probation — 3 months',
     category: 'PROBATION',
     sortOrder: 20,
-    htmlBody: `<section class="clause"><div class="clause-head"><span class="num-mark">04</span><span class="title-en">Probation Period</span></div><p class="body">You shall be on probation for a period of <strong>three (3) months</strong> from the date of joining. During this period, your services may be terminated by either party by giving <strong>seven (7) days' written notice</strong>, without assigning any reason. On satisfactory completion of probation, your appointment shall be confirmed in writing.</p></section>`,
+    htmlBody: `<h3>04&nbsp;&nbsp;Probation Period</h3><p>You shall be on probation for a period of <strong>three (3) months</strong> from the date of joining. During this period, your services may be terminated by either party by giving <strong>seven (7) days' written notice</strong>, without assigning any reason. On satisfactory completion of probation, your appointment shall be confirmed in writing.</p>`,
   },
   {
     title: 'Leave Policy — Standard',
     category: 'LEAVE',
     sortOrder: 30,
-    htmlBody: `<section class="clause"><div class="clause-head"><span class="num-mark">05</span><span class="title-en">Leave Policy</span></div><ul><li><strong>Earned Leave:</strong> 12 days per calendar year, accruing at 1 day per month worked. Encashment as per Company policy.</li><li><strong>Casual / Sick Leave:</strong> 7 days per calendar year. Sick leave beyond 2 consecutive days requires a medical certificate.</li><li><strong>Public Holidays:</strong> Per the Company's published list of 8 holidays for the calendar year.</li><li><strong>Overtime:</strong> Hours worked beyond the prescribed shift, on prior approval of the Branch Manager, shall be compensated at <strong>1.5× the per-hour rate</strong>.</li><li>Leave during the probation period is permitted only on prior written approval and is generally not encouraged.</li></ul></section>`,
+    htmlBody: `<h3>05&nbsp;&nbsp;Leave Policy</h3><ul><li><strong>Earned Leave:</strong> 12 days per calendar year, accruing at 1 day per month worked. Encashment as per Company policy.</li><li><strong>Casual / Sick Leave:</strong> 7 days per calendar year. Sick leave beyond 2 consecutive days requires a medical certificate.</li><li><strong>Public Holidays:</strong> Per the Company's published list of 8 holidays for the calendar year.</li><li><strong>Overtime:</strong> Hours worked beyond the prescribed shift, on prior approval of the Branch Manager, shall be compensated at <strong>1.5× the per-hour rate</strong>.</li><li>Leave during the probation period is permitted only on prior written approval and is generally not encouraged.</li></ul>`,
   },
   {
     title: 'Notice Period — 30 days',
     category: 'NOTICE',
     sortOrder: 40,
-    htmlBody: `<section class="clause"><div class="clause-head"><span class="num-mark">06</span><span class="title-en">Notice Period &amp; Termination</span></div><p class="body">Post confirmation, either party may terminate this employment by giving <strong>thirty (30) days' written notice</strong>, or one month's gross salary in lieu thereof. Notwithstanding the above, the Company reserves the right to terminate your services without notice in cases of misconduct, dishonesty, breach of confidentiality, unauthorised absence exceeding three consecutive working days, or conduct prejudicial to the interests of the Company.</p></section>`,
+    htmlBody: `<h3>06&nbsp;&nbsp;Notice Period &amp; Termination</h3><p>Post confirmation, either party may terminate this employment by giving <strong>thirty (30) days' written notice</strong>, or one month's gross salary in lieu thereof. Notwithstanding the above, the Company reserves the right to terminate your services without notice in cases of misconduct, dishonesty, breach of confidentiality, unauthorised absence exceeding three consecutive working days, or conduct prejudicial to the interests of the Company.</p>`,
   },
   {
     title: 'Documents Required at Joining',
     category: 'DOCUMENTS',
     sortOrder: 50,
-    htmlBody: `<section class="clause"><div class="clause-head"><span class="num-mark">07</span><span class="title-en">Documents Required at Joining</span></div><ul><li>Self-attested copy of Aadhaar Card and PAN Card</li><li>Passport-size photographs (2 nos.)</li><li>Bank account details (cancelled cheque or passbook front page)</li><li>Proof of last drawn salary, if previously employed</li><li>Address proof (utility bill / rent agreement)</li></ul></section>`,
+    htmlBody: `<h3>07&nbsp;&nbsp;Documents Required at Joining</h3><ul><li>Self-attested copy of Aadhaar Card and PAN Card</li><li>Passport-size photographs (2 nos.)</li><li>Bank account details (cancelled cheque or passbook front page)</li><li>Proof of last drawn salary, if previously employed</li><li>Address proof (utility bill / rent agreement)</li></ul>`,
   },
 ]
 

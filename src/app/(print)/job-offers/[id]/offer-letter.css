@@ -670,3 +670,59 @@
     color: var(--ink-2);
   }
   .annex-note strong { color: var(--ink-1); font-weight: 600; }
+
+  /* ---------- HR-authored Terms & Policies (semantic HTML) ---------- */
+  /* These rules style what HR composes in the Jodit editor — plain
+     <h3>, <p>, <ul>, <strong> — so the print page stays branded. */
+  .terms { margin-top: 14px; }
+  .terms h3 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 12.5px;
+    color: var(--green-deep);
+    letter-spacing: 0.02em;
+    margin-top: 18px;
+    margin-bottom: 8px;
+  }
+  .terms p {
+    font-size: 11.5px;
+    line-height: 1.65;
+    color: var(--ink-1);
+    margin-bottom: 12px;
+    text-align: justify;
+    text-wrap: pretty;
+  }
+  .terms p strong, .terms li strong {
+    font-weight: 600;
+    color: var(--green-deep);
+  }
+  .terms ul, .terms ol {
+    margin: 4px 0 12px 32px;
+    padding: 0;
+    list-style: none;
+  }
+  .terms ul li, .terms ol li {
+    font-size: 11.5px;
+    line-height: 1.6;
+    color: var(--ink-1);
+    padding-left: 14px;
+    position: relative;
+    margin-bottom: 4px;
+  }
+  .terms ul li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 9px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--gold);
+  }
+  /* Defensive: hide any empty list/paragraph artifacts the sanitizer missed. */
+  .terms li:empty,
+  .terms p:empty,
+  .terms ul:empty,
+  .terms ol:empty {
+    display: none;
+  }
