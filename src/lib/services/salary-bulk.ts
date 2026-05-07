@@ -407,6 +407,7 @@ interface WorkbookSalary {
   presentDays: number
   otherBonuses: number
   otherDeductions: number
+  recurringDeductions: unknown
   netSalary: number
   user: {
     name: string | null
@@ -427,6 +428,7 @@ const COLUMNS = [
   { header: 'Status',                    key: 'status',           width: 14, locked: false },
   { header: 'Other Additions',           key: 'otherBonuses',     width: 16, locked: false },
   { header: 'Other Deductions',          key: 'otherDeductions',  width: 16, locked: false },
+  { header: 'Statutory Deductions',      key: 'statutoryDeductions', width: 20, locked: true },
   { header: 'Net Salary (current)',      key: 'netSalary',        width: 18, locked: true },
   { header: 'Pending Referrals (Total)', key: 'pendingReferrals', width: 22, locked: true },
   { header: 'Pending Installments (Total)', key: 'pendingInstallments', width: 24, locked: true },
@@ -457,6 +459,9 @@ function writeRow(
     status: s.status,
     otherBonuses: s.otherBonuses,
     otherDeductions: s.otherDeductions,
+    statutoryDeductions: sumRecurringDeductions(
+      s.recurringDeductions as RecurringDeductionEntry[] | null
+    ),
     netSalary: s.netSalary,
     pendingReferrals: pendingReferralsTotal,
     pendingInstallments: pendingInstallmentsTotal,

@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
+import ExcelJS from 'exceljs'
 import {
   validateAndNormalizeRow,
   computeRowDiff,
@@ -505,6 +506,51 @@ describe('applyBulkImport (integration)', () => {
   })
 })
 
+describe('buildBulkWorkbook', () => {
+  const RT_MONTH = 9
+  const RT_YEAR = 2099
+
+  it('exports statutory deductions as a read-only informational total', async () => {
+    const prismaMock = {
+      salary: {
+        findMany: async () => [
+          {
+            id: 'salary-1',
+            userId: 'user-1',
+            status: 'PENDING',
+            baseSalary: 30000,
+            presentDays: 30,
+            otherBonuses: 100,
+            otherDeductions: 50,
+            recurringDeductions: [
+              { code: 'PT', name: 'Professional Tax', amount: 200 },
+            ],
+            netSalary: 29850,
+            installments: [],
+            user: {
+              name: 'RT User',
+              numId: 101,
+              status: 'ACTIVE',
+              branch: { name: 'HQ' },
+            },
+          },
+        ],
+      },
+      referral: {
+        groupBy: async () => [],
+      },
+    } as unknown as typeof prisma
+
+    const buf = await buildBulkWorkbook(prismaMock, RT_MONTH, RT_YEAR)
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buf as unknown as ArrayBuffer)
+    const ws = wb.getWorksheet(SHEET_ACTIVE)
+
+    expect(ws?.getCell('J1').value).toBe('Statutory Deductions')
+    expect(ws?.getCell('J2').value).toBe(200)
+  })
+})
+
 describe('export → parse round-trip', () => {
   const RT_MONTH = 9
   const RT_YEAR = 2099
@@ -528,10 +574,19 @@ describe('export → parse round-trip', () => {
         userId: u.id, month: RT_MONTH, year: RT_YEAR,
         baseSalary: 30000, presentDays: 30, netSalary: 30000,
         otherBonuses: 100, otherDeductions: 50, status: 'PENDING',
+        recurringDeductions: [
+          { code: 'PT', name: 'Professional Tax', amount: 200 },
+        ],
       },
     })
 
     const buf = await buildBulkWorkbook(prisma, RT_MONTH, RT_YEAR)
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buf as unknown as ArrayBuffer)
+    const ws = wb.getWorksheet(SHEET_ACTIVE)
+    expect(ws?.getCell('J1').value).toBe('Statutory Deductions')
+    expect(ws?.getCell('J2').value).toBe(200)
+
     const parsed = await parseBulkWorkbook(buf)
 
     expect(parsed.ok).toBe(true)
