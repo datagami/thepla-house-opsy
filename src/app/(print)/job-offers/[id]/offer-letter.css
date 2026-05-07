@@ -9,14 +9,15 @@
      Print-safe; @page set to A4 with the sheet owning padding.
      ============================================================ */
 
-  /* @page margins apply to EVERY physical sheet, including the continuation
-     sheets the browser produces when a single .page div auto-paginates.
-     This is the only way to get consistent top/bottom margins on every
-     sheet — .page's own padding only applies once at the start of the
-     logical element. */
+  /* @page margin is 0 so the cream sheet (and the gold stripe at 8mm
+     from .page edge) bleed all the way to the paper edge. .page's
+     own padding handles internal margins. The trade-off: continuation
+     sheets from auto-paginated content have no top padding — break-
+     inside: avoid on clauses keeps that from being a problem in
+     practice (content breaks at clause boundaries, not mid-paragraph). */
   @page {
     size: A4 portrait;
-    margin: 14mm 14mm 14mm 14mm;
+    margin: 0;
   }
 
   /* Floating "Download PDF" button on screen — hidden when printing so the
@@ -111,14 +112,21 @@
   .page:last-of-type { page-break-after: auto; }
 
   @media print {
-    html, body { background: #fff; }
+    /* Cream the body so the @page margin area (the strip outside the
+       printable area) also picks up the brand colour — otherwise the
+       printer leaves a white border around every printed sheet. */
+    html, body {
+      background: var(--cream);
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
     .page {
-      /* @page provides the per-sheet margins (incl. continuation sheets),
-         so .page itself sits flush within the printable area. Width is
-         auto so the gold-stripe gradient stretches the printable width. */
-      width: auto;
+      /* @page margin is 0 — .page itself provides internal padding so
+         the cream sheet bleeds to the paper edge and the gold stripe
+         at 8mm sits where it should. */
+      width: 210mm;
       margin: 0;
-      padding: 0;
+      padding: 18mm 18mm 16mm;
       box-shadow: none;
       /* Use break-before on subsequent .pages instead of break-after on
          every .page. The latter forced an extra blank physical sheet
