@@ -92,7 +92,7 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
 
   return (
     <>
-      <div style={{ position: 'fixed', top: 12, right: 12, zIndex: 9999 }}>
+      <div className="print-toolbar">
         <PrintButton />
       </div>
 
@@ -370,9 +370,7 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
         <div className="annex-note">
           <strong>Notes:</strong> &nbsp;
           (i) The above structure is indicative and may be revised annually based on Company policy and statutory norms.
-          (ii) PF deductions apply once you complete EPFO on-boarding, generally from the second month of joining.
-          (iii) Bonus is payable in accordance with the Payment of Bonus Act, 1965, subject to statutory thresholds.
-          (iv) Income Tax shall be deducted at source, if applicable.
+          (ii) Income Tax shall be deducted at source, if applicable.
         </div>
 
         <div className="page-foot">

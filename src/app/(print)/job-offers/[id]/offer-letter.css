@@ -14,6 +14,19 @@
     margin: 0;
   }
 
+  /* Floating "Download PDF" button on screen — hidden when printing so the
+     button doesn't appear in the rendered PDF nor steal vertical layout
+     space on page 1. */
+  .print-toolbar {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 9999;
+  }
+  @media print {
+    .print-toolbar { display: none !important; }
+  }
+
   :root {
     --green:        hsl(147 41% 16%);
     --green-deep:   hsl(147 45% 12%);
