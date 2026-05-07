@@ -20,7 +20,6 @@ import { SalaryList } from './salary-list'
 import { toast } from "sonner";
 import { useRouter } from 'next/navigation'
 import { DownloadENETButton } from './download-enet-button'
-import { DownloadReportButton } from './download-report-button'
 import { BulkImportExport } from './bulk-import-export'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import Link from 'next/link'
@@ -135,6 +134,26 @@ export function SalaryManagement({ initialYear, initialMonth }: SalaryManagement
     }
   }
 
+  const handleProcessReferrals = async () => {
+    try {
+      setIsProcessingReferrals(true)
+      const res = await fetch('/api/salary/process-referrals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ month: selectedMonth, year: selectedYear })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to process referrals')
+      toast.success('Referral bonuses processed')
+      setRefreshKey(prev => prev + 1)
+    } catch (e) {
+      console.error(e)
+      toast.error('Failed to process referrals')
+    } finally {
+      setIsProcessingReferrals(false)
+    }
+  }
+
   return (
     <div className="space-y-6 p-8">
       {conflictWarning && (
@@ -174,7 +193,7 @@ export function SalaryManagement({ initialYear, initialMonth }: SalaryManagement
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <div className="flex gap-4 items-end">
+            <div className="flex flex-wrap gap-4 items-end">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Month</label>
                 <Select
@@ -217,37 +236,7 @@ export function SalaryManagement({ initialYear, initialMonth }: SalaryManagement
                 {isGenerating ? 'Generating...' : 'Generate Salaries'}
               </Button>
 
-              <Button
-                onClick={async () => {
-                  try {
-                    setIsProcessingReferrals(true)
-                    const res = await fetch('/api/salary/process-referrals', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ month: selectedMonth, year: selectedYear })
-                    })
-                    const data = await res.json()
-                    if (!res.ok) throw new Error(data.error || 'Failed to process referrals')
-                    toast.success('Referral bonuses processed')
-                    setRefreshKey(prev => prev + 1)
-                  } catch (e) {
-                    console.error(e)
-                    toast.error('Failed to process referrals')
-                  } finally {
-                    setIsProcessingReferrals(false)
-                  }
-                }}
-                disabled={isProcessingReferrals}
-                variant="outline"
-              >
-                {isProcessingReferrals ? 'Processing...' : 'Process Referral Bonuses'}
-              </Button>
-
               <DownloadENETButton 
-                year={selectedYear}
-                month={selectedMonth}
-              />
-              <DownloadReportButton 
                 year={selectedYear}
                 month={selectedMonth}
               />
@@ -255,6 +244,8 @@ export function SalaryManagement({ initialYear, initialMonth }: SalaryManagement
                 year={selectedYear}
                 month={selectedMonth}
                 onImported={() => setRefreshKey((p) => p + 1)}
+                onProcessReferrals={handleProcessReferrals}
+                isProcessingReferrals={isProcessingReferrals}
               />
             </div>
           </div>
