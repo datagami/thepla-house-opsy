@@ -3,6 +3,7 @@ import {
   validateAndNormalizeRow,
   computeRowDiff,
   checkTransitionGuard,
+  recomputeNetForRow,
   type BulkRowInput,
 } from '@/lib/services/salary-bulk'
 
@@ -214,5 +215,74 @@ describe('checkTransitionGuard', () => {
       diff: { status: 'PENDING' },
     })
     expect(r.ok).toBe(true)
+  })
+})
+
+describe('recomputeNetForRow', () => {
+  // Salary: ₹30 000 base, 30-day month, 30 days present, no extras.
+  // Per-day = 1000. Net before changes = 30000.
+  const baseSalary = {
+    baseSalary: 30000,
+    month: 4,
+    year: 2026,
+    presentDays: 30,
+    overtimeDays: 0,
+    halfDays: 0,
+    leavesEarned: 0,
+    leaveSalary: 0,
+    advanceDeduction: 0,
+    deductions: 0,
+    otherBonuses: 0,
+    otherDeductions: 0,
+    recurringDeductions: null,
+  }
+
+  it('recomputes net when otherBonuses changes', () => {
+    const r = recomputeNetForRow({
+      salary: baseSalary,
+      newStatus: 'PENDING',
+      newOtherBonuses: 500,
+      newOtherDeductions: 0,
+      approvedInstallmentsTotal: 0,
+    })
+    expect(r.netSalary).toBe(30500)
+    expect(r.advanceDeduction).toBe(0)
+  })
+
+  it('recomputes net when otherDeductions changes', () => {
+    const r = recomputeNetForRow({
+      salary: baseSalary,
+      newStatus: 'PENDING',
+      newOtherBonuses: 0,
+      newOtherDeductions: 1000,
+      approvedInstallmentsTotal: 0,
+    })
+    expect(r.netSalary).toBe(29000)
+  })
+
+  it('on transition to PROCESSING, sets advanceDeduction to approved-installments total', () => {
+    const r = recomputeNetForRow({
+      salary: baseSalary,
+      newStatus: 'PROCESSING',
+      newOtherBonuses: 0,
+      newOtherDeductions: 0,
+      approvedInstallmentsTotal: 2000,
+    })
+    // gross 30000 − advance 2000 − misc 0 = 28000
+    expect(r.netSalary).toBe(28000)
+    expect(r.advanceDeduction).toBe(2000)
+  })
+
+  it('non-PROCESSING transitions keep existing advanceDeduction', () => {
+    const r = recomputeNetForRow({
+      salary: { ...baseSalary, advanceDeduction: 1500 },
+      newStatus: 'PENDING',
+      newOtherBonuses: 200,
+      newOtherDeductions: 0,
+      approvedInstallmentsTotal: 0,
+    })
+    // gross 30200 − 1500 = 28700
+    expect(r.netSalary).toBe(28700)
+    expect(r.advanceDeduction).toBe(1500)
   })
 })

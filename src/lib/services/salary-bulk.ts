@@ -4,6 +4,12 @@
 //   - applyBulkImport(input): Promise<BulkImportSummary>
 
 import type { PrismaClient, Prisma } from '@prisma/client'
+import {
+  computeNetFromStoredSalary,
+  daysInMonth as daysInMonthFn,
+} from '@/lib/services/salary-math'
+import { sumRecurringDeductions } from '@/lib/services/recurring-deductions'
+import type { RecurringDeductionEntry } from '@/models/models'
 
 export type SalaryStatus = 'PENDING' | 'PROCESSING' | 'PAID' | 'FAILED'
 
@@ -168,4 +174,58 @@ export function checkTransitionGuard(input: TransitionGuardInput): TransitionGua
   }
 
   return { ok: true }
+}
+
+export interface SalaryRowForRecompute {
+  baseSalary: number
+  month: number
+  year: number
+  presentDays: number
+  overtimeDays: number
+  halfDays: number
+  leavesEarned: number
+  leaveSalary: number
+  advanceDeduction: number
+  deductions: number
+  otherBonuses: number
+  otherDeductions: number
+  recurringDeductions: unknown
+}
+
+export interface RecomputeInput {
+  salary: SalaryRowForRecompute
+  newStatus: SalaryStatus
+  newOtherBonuses: number
+  newOtherDeductions: number
+  approvedInstallmentsTotal: number
+}
+
+export interface RecomputeOutput {
+  netSalary: number
+  advanceDeduction: number
+}
+
+export function recomputeNetForRow(input: RecomputeInput): RecomputeOutput {
+  const advanceDeduction =
+    input.newStatus === 'PROCESSING'
+      ? input.approvedInstallmentsTotal
+      : input.salary.advanceDeduction
+
+  const recurringTotal = sumRecurringDeductions(
+    input.salary.recurringDeductions as RecurringDeductionEntry[] | null
+  )
+
+  const netSalary = computeNetFromStoredSalary({
+    baseSalary: input.salary.baseSalary,
+    daysInMonth: daysInMonthFn(input.salary.year, input.salary.month),
+    presentDays: input.salary.presentDays,
+    overtimeDays: input.salary.overtimeDays,
+    leavesEarned: input.salary.leavesEarned,
+    otherBonuses: input.newOtherBonuses,
+    otherDeductions: input.newOtherDeductions,
+    advanceTotal: advanceDeduction + input.salary.deductions,
+    recurringTotal,
+  })
+
+  return { netSalary, advanceDeduction }
 }
