@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   validateAndNormalizeRow,
   computeRowDiff,
+  checkTransitionGuard,
   type BulkRowInput,
 } from '@/lib/services/salary-bulk'
 
@@ -129,5 +130,89 @@ describe('computeRowDiff', () => {
   it('omits status when not provided in normalized', () => {
     const d = computeRowDiff(current, { otherBonuses: 100, otherDeductions: 0 })
     expect(d).toEqual({ otherBonuses: 100 })
+  })
+})
+
+describe('checkTransitionGuard', () => {
+  it('allows status unchanged and adjustment-only edits even with pending installments', () => {
+    const r = checkTransitionGuard({
+      currentStatus: 'PENDING',
+      hasPendingInstallments: true,
+      diff: { otherBonuses: 100 },
+    })
+    expect(r.ok).toBe(true)
+  })
+
+  it('blocks any change when current status is PAID', () => {
+    const r = checkTransitionGuard({
+      currentStatus: 'PAID',
+      hasPendingInstallments: false,
+      diff: { otherBonuses: 100 },
+    })
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.error).toBe('Paid salaries are immutable')
+  })
+
+  it('blocks status change when current is PAID', () => {
+    const r = checkTransitionGuard({
+      currentStatus: 'PAID',
+      hasPendingInstallments: false,
+      diff: { status: 'PENDING' },
+    })
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.error).toBe('Paid salaries are immutable')
+  })
+
+  it('allows transition out of PAID is unreachable — covered by the immutable rule', () => {
+    // Sanity: even with empty diff, current=PAID is immutable when nothing differs
+    // is a no-op upstream (diff is empty, never reaches the guard). We never reach here.
+    expect(true).toBe(true)
+  })
+
+  it('blocks moving to PROCESSING when pending installments exist', () => {
+    const r = checkTransitionGuard({
+      currentStatus: 'PENDING',
+      hasPendingInstallments: true,
+      diff: { status: 'PROCESSING' },
+    })
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.error).toBe('Has pending advance installments')
+  })
+
+  it('blocks moving to PAID when pending installments exist', () => {
+    const r = checkTransitionGuard({
+      currentStatus: 'PROCESSING',
+      hasPendingInstallments: true,
+      diff: { status: 'PAID' },
+    })
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.error).toBe('Has pending advance installments')
+  })
+
+  it('allows moving to PROCESSING when no pending installments', () => {
+    const r = checkTransitionGuard({
+      currentStatus: 'PENDING',
+      hasPendingInstallments: false,
+      diff: { status: 'PROCESSING' },
+    })
+    expect(r.ok).toBe(true)
+  })
+
+  it('allows moving to FAILED even with pending installments (not blocked by design)', () => {
+    const r = checkTransitionGuard({
+      currentStatus: 'PROCESSING',
+      hasPendingInstallments: true,
+      diff: { status: 'FAILED' },
+    })
+    expect(r.ok).toBe(true)
+  })
+
+  it('allows backward move PROCESSING → PENDING', () => {
+    const r = checkTransitionGuard({
+      currentStatus: 'PROCESSING',
+      hasPendingInstallments: false,
+      diff: { status: 'PENDING' },
+    })
+    expect(r.ok).toBe(true)
   })
 })

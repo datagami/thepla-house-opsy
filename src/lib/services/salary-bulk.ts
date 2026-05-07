@@ -143,3 +143,29 @@ export function computeRowDiff(
   }
   return diff
 }
+
+export interface TransitionGuardInput {
+  currentStatus: SalaryStatus
+  hasPendingInstallments: boolean
+  diff: NormalizedRowEdit
+}
+
+export type TransitionGuardResult = { ok: true } | { ok: false; error: string }
+
+export function checkTransitionGuard(input: TransitionGuardInput): TransitionGuardResult {
+  const hasAnyChange =
+    input.diff.status !== undefined ||
+    input.diff.otherBonuses !== undefined ||
+    input.diff.otherDeductions !== undefined
+
+  if (input.currentStatus === 'PAID' && hasAnyChange) {
+    return { ok: false, error: 'Paid salaries are immutable' }
+  }
+
+  const target = input.diff.status
+  if ((target === 'PROCESSING' || target === 'PAID') && input.hasPendingInstallments) {
+    return { ok: false, error: 'Has pending advance installments' }
+  }
+
+  return { ok: true }
+}
