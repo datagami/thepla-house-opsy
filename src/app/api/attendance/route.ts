@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { logEntityActivity } from "@/lib/services/activity-log";
 import { ActivityType, AttendanceStatus } from "@prisma/client";
+import { computeNetFromStoredSalary, daysInMonth } from "@/lib/services/salary-math";
 
 export async function POST(req: Request) {
   try {
@@ -234,7 +235,17 @@ export async function POST(req: Request) {
           halfDays: salaryDetails.halfDays,
           leavesEarned: salaryDetails.leavesEarned,
           leaveSalary: salaryDetails.leaveSalary,
-          netSalary: salaryDetails.netSalary
+          netSalary: computeNetFromStoredSalary({
+            baseSalary: existingSalary.baseSalary,
+            daysInMonth: daysInMonth(existingSalary.year, existingSalary.month),
+            presentDays: salaryDetails.presentDays,
+            overtimeDays: salaryDetails.overtimeDays,
+            leavesEarned: salaryDetails.leavesEarned,
+            otherBonuses: existingSalary.otherBonuses,
+            otherDeductions: existingSalary.otherDeductions,
+            advanceTotal: salaryDetails.deductions,
+            recurringTotal: salaryDetails.recurringDeductionTotal,
+          }),
         }
       });
     }
@@ -359,7 +370,17 @@ export async function PATCH(req: Request) {
           halfDays: salaryDetails.halfDays,
           leavesEarned: salaryDetails.leavesEarned,
           leaveSalary: salaryDetails.leaveSalary,
-          netSalary: salaryDetails.netSalary
+          netSalary: computeNetFromStoredSalary({
+            baseSalary: existingSalary.baseSalary,
+            daysInMonth: daysInMonth(existingSalary.year, existingSalary.month),
+            presentDays: salaryDetails.presentDays,
+            overtimeDays: salaryDetails.overtimeDays,
+            leavesEarned: salaryDetails.leavesEarned,
+            otherBonuses: existingSalary.otherBonuses,
+            otherDeductions: existingSalary.otherDeductions,
+            advanceTotal: salaryDetails.deductions,
+            recurringTotal: salaryDetails.recurringDeductionTotal,
+          }),
         }
       });
     }

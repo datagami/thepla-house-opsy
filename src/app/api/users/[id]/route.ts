@@ -7,6 +7,7 @@ import {Prisma} from "@prisma/client";
 import { logTargetUserActivity, logUserActivity } from "@/lib/services/activity-log";
 import { ActivityType } from "@prisma/client";
 import { recordSalaryAppraisal, logSalaryAppraisalActivity } from "@/lib/services/salary-appraisal";
+import { computeNetFromStoredSalary, daysInMonth } from "@/lib/services/salary-math";
 
 export async function GET(
   _request: Request,
@@ -334,7 +335,17 @@ export async function PUT(
               halfDays: salaryDetails.halfDays,
               leavesEarned: salaryDetails.leavesEarned,
               leaveSalary: salaryDetails.leaveSalary,
-              netSalary: salaryDetails.netSalary
+              netSalary: computeNetFromStoredSalary({
+                baseSalary: salaryRecord.baseSalary,
+                daysInMonth: daysInMonth(salaryRecord.year, salaryRecord.month),
+                presentDays: salaryDetails.presentDays,
+                overtimeDays: salaryDetails.overtimeDays,
+                leavesEarned: salaryDetails.leavesEarned,
+                otherBonuses: salaryRecord.otherBonuses,
+                otherDeductions: salaryRecord.otherDeductions,
+                advanceTotal: salaryDetails.deductions,
+                recurringTotal: salaryDetails.recurringDeductionTotal,
+              }),
             }
           });
         } catch (error) {

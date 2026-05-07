@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import {Attendance} from "@/models/models";
 import { logEntityActivity } from "@/lib/services/activity-log";
 import { ActivityType } from "@prisma/client";
+import { computeNetFromStoredSalary, daysInMonth } from "@/lib/services/salary-math";
 
 export async function PATCH(
   req: Request,
@@ -432,7 +433,17 @@ export async function PUT(
           halfDays: salaryDetails.halfDays,
           leavesEarned: salaryDetails.leavesEarned,
           leaveSalary: salaryDetails.leaveSalary,
-          netSalary: salaryDetails.netSalary
+          netSalary: computeNetFromStoredSalary({
+            baseSalary: existingSalary.baseSalary,
+            daysInMonth: daysInMonth(existingSalary.year, existingSalary.month),
+            presentDays: salaryDetails.presentDays,
+            overtimeDays: salaryDetails.overtimeDays,
+            leavesEarned: salaryDetails.leavesEarned,
+            otherBonuses: existingSalary.otherBonuses,
+            otherDeductions: existingSalary.otherDeductions,
+            advanceTotal: salaryDetails.deductions,
+            recurringTotal: salaryDetails.recurringDeductionTotal,
+          }),
         }
       });
     }
@@ -526,7 +537,17 @@ export async function DELETE(
           halfDays: salaryDetails.halfDays,
           leavesEarned: salaryDetails.leavesEarned,
           leaveSalary: salaryDetails.leaveSalary,
-          netSalary: salaryDetails.netSalary
+          netSalary: computeNetFromStoredSalary({
+            baseSalary: existingSalary.baseSalary,
+            daysInMonth: daysInMonth(existingSalary.year, existingSalary.month),
+            presentDays: salaryDetails.presentDays,
+            overtimeDays: salaryDetails.overtimeDays,
+            leavesEarned: salaryDetails.leavesEarned,
+            otherBonuses: existingSalary.otherBonuses,
+            otherDeductions: existingSalary.otherDeductions,
+            advanceTotal: salaryDetails.deductions,
+            recurringTotal: salaryDetails.recurringDeductionTotal,
+          }),
         }
       });
     }

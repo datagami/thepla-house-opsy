@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { logEntityActivity } from "@/lib/services/activity-log";
 import { ActivityType, Prisma } from "@prisma/client";
+import { computeNetFromStoredSalary, daysInMonth } from "@/lib/services/salary-math";
 
 export async function POST(req: Request) {
   try {
@@ -107,6 +108,9 @@ export async function POST(req: Request) {
             status: true,
             month: true,
             year: true,
+            baseSalary: true,
+            otherBonuses: true,
+            otherDeductions: true,
           }
         });
         return salaries;
@@ -132,7 +136,7 @@ export async function POST(req: Request) {
       
       for (const salary of salariesToUpdate) {
         const salaryDetails = await calculateSalary(salary.userId, salary.month, salary.year);
-        
+
         await prisma.salary.update({
           where: { id: salary.id },
           data: {
@@ -141,7 +145,17 @@ export async function POST(req: Request) {
             halfDays: salaryDetails.halfDays,
             leavesEarned: salaryDetails.leavesEarned,
             leaveSalary: salaryDetails.leaveSalary,
-            netSalary: salaryDetails.netSalary
+            netSalary: computeNetFromStoredSalary({
+              baseSalary: salary.baseSalary,
+              daysInMonth: daysInMonth(salary.year, salary.month),
+              presentDays: salaryDetails.presentDays,
+              overtimeDays: salaryDetails.overtimeDays,
+              leavesEarned: salaryDetails.leavesEarned,
+              otherBonuses: salary.otherBonuses,
+              otherDeductions: salary.otherDeductions,
+              advanceTotal: salaryDetails.deductions,
+              recurringTotal: salaryDetails.recurringDeductionTotal,
+            }),
           }
         });
       }
