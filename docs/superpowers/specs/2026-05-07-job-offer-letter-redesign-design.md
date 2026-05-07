@@ -24,7 +24,7 @@ into every offer. HR cannot tailor terms per offer (e.g., WFH on Saturdays, Sund
 ## Non-Goals (explicit)
 
 - Auto-numbering clauses at render time.
-- Storing signatory name in DB (hardcoded "Tejal Mehta, Director, Tejal's Kitchen Pvt. Ltd." for v1).
+- Storing signatory name in DB (hardcoded "Tejal Shah, Authorised Signatory" with the existing `public/company/signature.png` image for v1).
 - Recipient address column on `JobOffer` (skipped in v1; the reference design includes it but our `User` model does not store one).
 - Public/tokenized link for candidates.
 - E-signature workflow.

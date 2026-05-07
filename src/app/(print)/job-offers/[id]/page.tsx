@@ -208,22 +208,19 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
         <div className="sign-block">
           <div className="col">
             <div className="role">For Thepla House</div>
-            <div className="line"></div>
-            <div className="nm">Tejal Mehta</div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/company/signature.png"
+              alt="Authorised Signatory"
+              className="signature-img"
+            />
+            <div className="nm">Tejal Shah</div>
             <div className="desig">
-              Director, Tejal&apos;s Kitchen Pvt. Ltd.
-              <span className="hi">निदेशक</span>
+              (Authorised Signatory)
+              <span className="hi">अधिकृत हस्ताक्षरकर्ता</span>
             </div>
           </div>
-          <div className="col stamp-col">
-            <div className="stamp" aria-hidden="true">
-              <span className="star">★</span>
-              <span className="top">THEPLA HOUSE</span>
-              <span className="mid">MUMBAI</span>
-              <span className="bot">EST. 2018</span>
-              <span className="star">★</span>
-            </div>
-          </div>
+          <div className="col" aria-hidden="true"></div>
         </div>
 
         <section className="accept">

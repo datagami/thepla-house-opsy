@@ -1702,10 +1702,10 @@ In `src/app/(print)/job-offers/[id]/page.tsx`, after the closing `</div>` of Pag
     <div className="col">
       <div className="role">For Thepla House</div>
       <div className="line"></div>
-      <div className="nm">Tejal Mehta</div>
+      <div className="nm">Tejal Shah</div>
       <div className="desig">
-        Director, Tejal&apos;s Kitchen Pvt. Ltd.
-        <span className="hi">निदेशक</span>
+        (Authorised Signatory)
+        <span className="hi">अधिकृत हस्ताक्षरकर्ता</span>
       </div>
     </div>
     <div className="col stamp-col">
