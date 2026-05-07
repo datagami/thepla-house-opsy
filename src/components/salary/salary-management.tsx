@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { useRouter } from 'next/navigation'
 import { DownloadENETButton } from './download-enet-button'
 import { DownloadReportButton } from './download-report-button'
+import { BulkImportExport } from './bulk-import-export'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import Link from 'next/link'
 import { formatDateOnly } from '@/lib/utils'
@@ -249,6 +250,11 @@ export function SalaryManagement({ initialYear, initialMonth }: SalaryManagement
               <DownloadReportButton 
                 year={selectedYear}
                 month={selectedMonth}
+              />
+              <BulkImportExport
+                year={selectedYear}
+                month={selectedMonth}
+                onImported={() => setRefreshKey((p) => p + 1)}
               />
             </div>
           </div>
