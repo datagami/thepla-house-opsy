@@ -20,7 +20,6 @@ import { SalaryList } from './salary-list'
 import { toast } from "sonner";
 import { useRouter } from 'next/navigation'
 import { DownloadENETButton } from './download-enet-button'
-import { DownloadReportButton } from './download-report-button'
 import { BulkImportExport } from './bulk-import-export'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import Link from 'next/link'
@@ -237,19 +236,7 @@ export function SalaryManagement({ initialYear, initialMonth }: SalaryManagement
                 {isGenerating ? 'Generating...' : 'Generate Salaries'}
               </Button>
 
-              <Button
-                onClick={handleProcessReferrals}
-                disabled={isProcessingReferrals}
-                variant="outline"
-              >
-                {isProcessingReferrals ? 'Processing...' : 'Process Referral Bonuses'}
-              </Button>
-
               <DownloadENETButton
-                year={selectedYear}
-                month={selectedMonth}
-              />
-              <DownloadReportButton
                 year={selectedYear}
                 month={selectedMonth}
               />
@@ -257,6 +244,8 @@ export function SalaryManagement({ initialYear, initialMonth }: SalaryManagement
                 year={selectedYear}
                 month={selectedMonth}
                 onImported={() => setRefreshKey((p) => p + 1)}
+                onProcessReferrals={handleProcessReferrals}
+                isProcessingReferrals={isProcessingReferrals}
               />
             </div>
           </div>

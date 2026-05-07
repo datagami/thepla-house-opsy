@@ -1,8 +1,14 @@
 'use client'
 
-import { useState, useRef, type ChangeEvent } from 'react'
+import { useEffect, useState, useRef, type ChangeEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,12 +25,14 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import { X, ChevronDown } from 'lucide-react'
+import { X, ChevronDown, Download, MoreHorizontal, Upload, Gift } from 'lucide-react'
 
 interface BulkImportExportProps {
   year: number
   month: number
   onImported: () => void
+  onProcessReferrals: () => void
+  isProcessingReferrals: boolean
 }
 
 interface BulkSheetCounts {
@@ -58,13 +66,40 @@ const monthLabels = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ]
 
-export function BulkImportExport({ year, month, onImported }: BulkImportExportProps) {
+export function BulkImportExport({
+  year,
+  month,
+  onImported,
+  onProcessReferrals,
+  isProcessingReferrals,
+}: BulkImportExportProps) {
   const [isExporting, setIsExporting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [isDownloadingReport, setIsDownloadingReport] = useState(false)
+  const [hasSalaries, setHasSalaries] = useState(false)
   const [summary, setSummary] = useState<BulkImportSummary | null>(null)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [showConfirm, setShowConfirm] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    async function checkSalaries() {
+      try {
+        const response = await fetch(`/api/salary?year=${year}&month=${month}`)
+        if (!response.ok) throw new Error('Failed to fetch salary status')
+        const data = await response.json()
+        if (!cancelled) setHasSalaries(Array.isArray(data) && data.length > 0)
+      } catch (error) {
+        console.error('Error checking salaries:', error)
+        if (!cancelled) setHasSalaries(false)
+      }
+    }
+    checkSalaries()
+    return () => {
+      cancelled = true
+    }
+  }, [year, month])
 
   async function handleExport() {
     try {
@@ -87,6 +122,39 @@ export function BulkImportExport({ year, month, onImported }: BulkImportExportPr
       toast.error(err instanceof Error ? err.message : 'Export failed')
     } finally {
       setIsExporting(false)
+    }
+  }
+
+  async function handleDownloadReport() {
+    try {
+      setIsDownloadingReport(true)
+      const response = await fetch('/api/salary/generate-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ year, month }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to generate salary report')
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `salary-report-${month}-${year}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      a.remove()
+
+      toast.success('Salary report downloaded successfully')
+    } catch (error) {
+      console.error('Error downloading salary report:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to download salary report')
+    } finally {
+      setIsDownloadingReport(false)
     }
   }
 
@@ -134,17 +202,56 @@ export function BulkImportExport({ year, month, onImported }: BulkImportExportPr
         className="hidden"
       />
 
-      <Button onClick={handleExport} disabled={isExporting} variant="outline">
-        {isExporting ? 'Exporting...' : 'Export Salaries'}
-      </Button>
-
-      <Button
-        onClick={() => fileInputRef.current?.click()}
-        disabled={isUploading}
-        variant="outline"
-      >
-        {isUploading ? 'Uploading...' : 'Import Salaries'}
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" className="gap-2">
+            <MoreHorizontal className="h-4 w-4" />
+            More Actions
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            disabled={isProcessingReferrals}
+            onSelect={(event) => {
+              event.preventDefault()
+              onProcessReferrals()
+            }}
+          >
+            <Gift className="h-4 w-4" />
+            {isProcessingReferrals ? 'Processing...' : 'Process Referral Bonuses'}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={!hasSalaries || isDownloadingReport}
+            onSelect={(event) => {
+              event.preventDefault()
+              void handleDownloadReport()
+            }}
+          >
+            <Download className="h-4 w-4" />
+            {isDownloadingReport ? 'Downloading...' : 'Download Salary Report'}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={isExporting}
+            onSelect={(event) => {
+              event.preventDefault()
+              void handleExport()
+            }}
+          >
+            <Download className="h-4 w-4" />
+            {isExporting ? 'Exporting...' : 'Export Salaries'}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={isUploading}
+            onSelect={(event) => {
+              event.preventDefault()
+              fileInputRef.current?.click()
+            }}
+          >
+            <Upload className="h-4 w-4" />
+            {isUploading ? 'Uploading...' : 'Import Salaries'}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {summary && (
         <Card className="mt-4 w-full">
