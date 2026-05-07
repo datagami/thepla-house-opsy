@@ -10,7 +10,7 @@ export async function GET() {
   }
 
   const users = await prisma.user.findMany({
-    where: { status: 'ACTIVE' },
+    where: { status: { in: ['ACTIVE', 'PARTIAL_INACTIVE'] } },
     select: {
       id: true,
       numId: true,
