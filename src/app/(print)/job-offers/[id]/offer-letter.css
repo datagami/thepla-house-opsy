@@ -507,12 +507,15 @@
     border-top: 1px solid var(--ink-2);
   }
 
-  /* ---------- Page footer (small) ---------- */
+  /* ---------- Page footer (small) ----------
+     Lives in normal flow at the end of each .page so it never collides
+     mid-content when the .page grows beyond 297mm and the browser
+     splits it across multiple printed sheets. (Earlier `position:
+     absolute; bottom: 8mm` anchored the footer to the bottom of the
+     GROWN .page element, which the browser rendered mid-content on
+     printed page 1.) */
   .page-foot {
-    position: absolute;
-    left: 18mm;
-    right: 18mm;
-    bottom: 8mm;
+    margin-top: 24px;
     display: flex;
     justify-content: space-between;
     font-size: 8.5px;
