@@ -230,8 +230,7 @@ export function JobOfferForm({
           ? 'Job offer updated successfully'
           : 'Job offer created successfully'
       );
-      router.push('/job-offers');
-      router.refresh();
+      window.location.assign('/job-offers');
     } catch (error) {
       console.error('Error saving job offer:', error);
       toast.error(
