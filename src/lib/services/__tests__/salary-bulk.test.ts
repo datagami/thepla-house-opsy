@@ -5,6 +5,9 @@ import {
   checkTransitionGuard,
   recomputeNetForRow,
   applyBulkImport,
+  buildBulkWorkbook,
+  parseBulkWorkbook,
+  SHEET_ACTIVE,
   type BulkRowInput,
   type SalaryStatus,
 } from '@/lib/services/salary-bulk'
@@ -497,5 +500,72 @@ describe('applyBulkImport (integration)', () => {
     expect(summary.perSheet.Active.updated).toBe(1)
     expect(summary.perSheet.Active.skipped).toBe(1)
     expect(summary.skippedRows[0].errors).toContain('Duplicate salaryId in upload')
+  })
+})
+
+describe('export → parse round-trip', () => {
+  const RT_MONTH = 9
+  const RT_YEAR = 2099
+
+  afterEach(async () => {
+    await prisma.salary.deleteMany({ where: { year: RT_YEAR } })
+    await prisma.user.deleteMany({ where: { email: { contains: '@rt.test' } } })
+  })
+
+  it('export then parse yields the same salary IDs and values', async () => {
+    const u = await prisma.user.create({
+      data: {
+        name: 'RT User',
+        email: `rt+${Date.now()}@rt.test`,
+        role: 'EMPLOYEE',
+        status: 'ACTIVE',
+      },
+    })
+    const s = await prisma.salary.create({
+      data: {
+        userId: u.id, month: RT_MONTH, year: RT_YEAR,
+        baseSalary: 30000, presentDays: 30, netSalary: 30000,
+        otherBonuses: 100, otherDeductions: 50, status: 'PENDING',
+      },
+    })
+
+    const buf = await buildBulkWorkbook(prisma, RT_MONTH, RT_YEAR)
+    const parsed = await parseBulkWorkbook(buf)
+
+    expect(parsed.ok).toBe(true)
+    expect(parsed.rows).toHaveLength(1)
+    expect(parsed.rows[0].salaryId).toBe(s.id)
+    expect(parsed.rows[0].sheet).toBe(SHEET_ACTIVE)
+    expect(parsed.rows[0].status).toBe('PENDING')
+    expect(parsed.rows[0].otherBonuses).toBe(100)
+    expect(parsed.rows[0].otherDeductions).toBe(50)
+  })
+
+  it('round-trip into applyBulkImport reports all rows unchanged', async () => {
+    const u = await prisma.user.create({
+      data: {
+        name: 'RT User 2',
+        email: `rt2+${Date.now()}@rt.test`,
+        role: 'EMPLOYEE',
+        status: 'ACTIVE',
+      },
+    })
+    await prisma.salary.create({
+      data: {
+        userId: u.id, month: RT_MONTH, year: RT_YEAR,
+        baseSalary: 30000, presentDays: 30, netSalary: 30000,
+        otherBonuses: 0, otherDeductions: 0, status: 'PENDING',
+      },
+    })
+
+    const buf = await buildBulkWorkbook(prisma, RT_MONTH, RT_YEAR)
+    const parsed = await parseBulkWorkbook(buf)
+    expect(parsed.ok).toBe(true)
+
+    const summary = await applyBulkImport({
+      month: RT_MONTH, year: RT_YEAR, prisma, rows: parsed.rows,
+    })
+    expect(summary.perSheet.Active.unchanged).toBe(1)
+    expect(summary.perSheet.Active.updated).toBe(0)
   })
 })

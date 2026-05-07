@@ -536,3 +536,94 @@ export async function buildBulkWorkbook(
   const buffer = await wb.xlsx.writeBuffer()
   return Buffer.from(buffer)
 }
+
+export interface ParseResult {
+  ok: boolean
+  fileError?: string
+  rows: BulkRowInput[]
+}
+
+function readCellString(cell: ExcelJS.Cell | undefined): string | null {
+  if (!cell) return null
+  const v = cell.value
+  if (v === null || v === undefined) return null
+  if (typeof v === 'string') return v.trim() || null
+  if (typeof v === 'number') return String(v)
+  if (typeof v === 'object' && 'text' in (v as object)) {
+    const text = (v as { text?: string }).text
+    return text?.trim() || null
+  }
+  return String(v).trim() || null
+}
+
+function readCellNumber(cell: ExcelJS.Cell | undefined): number | null {
+  if (!cell) return null
+  const v = cell.value
+  if (v === null || v === undefined || v === '') return null
+  if (typeof v === 'number') return v
+  if (typeof v === 'string') {
+    const n = Number(v.trim())
+    return Number.isFinite(n) ? n : NaN
+  }
+  if (typeof v === 'object' && 'result' in (v as object)) {
+    const r = (v as { result?: unknown }).result
+    if (typeof r === 'number') return r
+  }
+  return NaN
+}
+
+export async function parseBulkWorkbook(buffer: Buffer): Promise<ParseResult> {
+  const wb = new ExcelJS.Workbook()
+  try {
+    await wb.xlsx.load(buffer as unknown as ArrayBuffer)
+  } catch {
+    return { ok: false, fileError: 'Invalid workbook', rows: [] }
+  }
+
+  const active = wb.getWorksheet(SHEET_ACTIVE)
+  const partial = wb.getWorksheet(SHEET_PARTIAL_ACTIVE)
+  if (!active && !partial) {
+    return { ok: false, fileError: 'No recognized sheets', rows: [] }
+  }
+
+  const rows: BulkRowInput[] = []
+
+  function ingest(sheet: ExcelJS.Worksheet | undefined, sheetName: BulkSheetName) {
+    if (!sheet) return
+    sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+      if (rowNumber === 1) return // header
+      // Column A=salaryId, G=Status (col 7), H=otherBonuses (col 8), I=otherDeductions (col 9)
+      const salaryId = readCellString(row.getCell(1))
+      const status = readCellString(row.getCell(7))
+      const otherBonuses = readCellNumber(row.getCell(8))
+      const otherDeductions = readCellNumber(row.getCell(9))
+
+      // Skip fully-blank rows.
+      if (!salaryId && !status && otherBonuses === null && otherDeductions === null) {
+        return
+      }
+
+      rows.push({
+        rowNumber,
+        sheet: sheetName,
+        salaryId,
+        status,
+        otherBonuses,
+        otherDeductions,
+      })
+    })
+  }
+
+  ingest(active, SHEET_ACTIVE)
+  ingest(partial, SHEET_PARTIAL_ACTIVE)
+
+  if (rows.length > MAX_ROWS_PER_UPLOAD) {
+    return {
+      ok: false,
+      fileError: `Workbook exceeds ${MAX_ROWS_PER_UPLOAD} rows; split and re-upload`,
+      rows: [],
+    }
+  }
+
+  return { ok: true, rows }
+}
