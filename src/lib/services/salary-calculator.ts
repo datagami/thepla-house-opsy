@@ -1,7 +1,7 @@
 import { AdvancePayment, Salary } from "@/models/models";
 import { prisma } from '@/lib/prisma'
 import { computeRecurringDeductions, sumRecurringDeductions } from '@/lib/services/recurring-deductions'
-import { computeSalaryBreakdown } from '@/lib/services/salary-math'
+import { computeSalaryBreakdown, computeNetFromStoredSalary, daysInMonth } from '@/lib/services/salary-math'
 import type { RecurringDeductionEntry } from '@/models/models'
 
 
@@ -158,35 +158,25 @@ export async function calculateSalary(userId: string, month: number, year: numbe
 }
 
 export function calculateNetSalaryFromObject(salary: Salary) {
-  // Calculate present days salary
-  const daysInMonth = new Date(salary.year, salary.month, 0).getDate();
-  const perDaySalary = Math.round((salary.baseSalary / daysInMonth) * 100) / 100;
-  const presentDaysSalary = salary.presentDays * perDaySalary;
-  
-  // Calculate overtime bonus
-  const overtimeSalary = salary.overtimeDays * 0.5 * perDaySalary;
-  
-  // Calculate leave salary
-  const leaveSalary = salary.leavesEarned * perDaySalary;
-  
-  // Calculate base salary earned
-  const baseSalaryEarned = presentDaysSalary + overtimeSalary + salary.otherBonuses + leaveSalary;
-  
-  // Calculate total deductions
-  let totalAdvanceDeductions = 0;
-  if (salary.installments) {
-  totalAdvanceDeductions = salary.installments
-    .filter(i => i.status === 'APPROVED')
-    .reduce((sum, i) => sum + i.amountPaid, 0);
-  }
-  
-  // Recurring deductions snapshot (PT, future PF/ESI). Stored on Salary as JSON.
+  const totalAdvanceDeductions = salary.installments
+    ? salary.installments
+        .filter(i => i.status === 'APPROVED')
+        .reduce((sum, i) => sum + i.amountPaid, 0)
+    : 0;
+
   const recurringTotal = sumRecurringDeductions(
     salary.recurringDeductions as RecurringDeductionEntry[] | null | undefined
   );
 
-  const totalDeductions = totalAdvanceDeductions + salary.otherDeductions + recurringTotal;
-
-  // Calculate net salary
-  return Math.round(baseSalaryEarned - totalDeductions);
+  return computeNetFromStoredSalary({
+    baseSalary: salary.baseSalary,
+    daysInMonth: daysInMonth(salary.year, salary.month),
+    presentDays: salary.presentDays,
+    overtimeDays: salary.overtimeDays,
+    leavesEarned: salary.leavesEarned,
+    otherBonuses: salary.otherBonuses,
+    otherDeductions: salary.otherDeductions,
+    advanceTotal: totalAdvanceDeductions,
+    recurringTotal,
+  });
 } 

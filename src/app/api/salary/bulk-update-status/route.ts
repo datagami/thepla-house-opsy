@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 import { auth } from "@/auth"
 import { sumRecurringDeductions } from '@/lib/services/recurring-deductions'
+import { computeNetFromStoredSalary, daysInMonth } from '@/lib/services/salary-math'
 import type { RecurringDeductionEntry } from '@/models/models'
 
 export async function PATCH(request: Request) {
@@ -72,7 +73,17 @@ export async function PATCH(request: Request) {
               status: 'PROCESSING',
               paidAt: null,
               advanceDeduction: totalApprovedDeductions,
-              netSalary: salary.baseSalary + salary.overtimeBonus + salary.otherBonuses - salary.otherDeductions - totalApprovedDeductions - salary.deductions - recurringTotal
+              netSalary: computeNetFromStoredSalary({
+                baseSalary: salary.baseSalary,
+                daysInMonth: daysInMonth(salary.year, salary.month),
+                presentDays: salary.presentDays,
+                overtimeDays: salary.overtimeDays,
+                leavesEarned: salary.leavesEarned,
+                otherBonuses: salary.otherBonuses,
+                otherDeductions: salary.otherDeductions,
+                advanceTotal: totalApprovedDeductions + salary.deductions,
+                recurringTotal,
+              }),
             }
           })
 
