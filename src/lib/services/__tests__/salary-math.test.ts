@@ -197,6 +197,119 @@ describe('computeNetFromStoredSalary — canonical net (must match ENET)', () =>
   })
 })
 
+/**
+ * These scenarios cover the bug fixed in the attendance / user-update
+ * recompute paths: when attendance changes (or weekly-off changes), the
+ * recompute MUST preserve any HR adjustment already applied to the salary
+ * (otherBonuses / otherDeductions). The fix passes the existing salary's
+ * adjustment fields into computeNetFromStoredSalary alongside the fresh
+ * attendance counts. These tests pin the merged behavior.
+ */
+describe('attendance / user-update recompute scenarios — merge existing adjustments', () => {
+  const baseRow = {
+    baseSalary: 30000,
+    daysInMonth: 30,
+    advanceTotal: 0,
+    recurringTotal: 0,
+  }
+
+  it('attendance edit: 25 → 28 days present, ₹500 deduction stays subtracted', () => {
+    // perDay 1000. Before edit: 25 × 1000 - 500 = 24500. After: 28 × 1000 - 500 = 27500.
+    const before = computeNetFromStoredSalary({
+      ...baseRow, presentDays: 25, overtimeDays: 0, leavesEarned: 0,
+      otherBonuses: 0, otherDeductions: 500,
+    })
+    const after = computeNetFromStoredSalary({
+      ...baseRow, presentDays: 28, overtimeDays: 0, leavesEarned: 0,
+      otherBonuses: 0, otherDeductions: 500,
+    })
+    expect(before).toBe(24500)
+    expect(after).toBe(27500)
+    expect(after - before).toBe(3000) // exactly 3 days × ₹1000, deduction preserved
+  })
+
+  it('attendance edit: ₹1000 bonus stays added when presentDays changes', () => {
+    const before = computeNetFromStoredSalary({
+      ...baseRow, presentDays: 20, overtimeDays: 0, leavesEarned: 0,
+      otherBonuses: 1000, otherDeductions: 0,
+    })
+    const after = computeNetFromStoredSalary({
+      ...baseRow, presentDays: 25, overtimeDays: 0, leavesEarned: 0,
+      otherBonuses: 1000, otherDeductions: 0,
+    })
+    expect(before).toBe(21000) // 20 × 1000 + 1000
+    expect(after).toBe(26000)  // 25 × 1000 + 1000
+  })
+
+  it('attendance edit: both bonus AND deduction preserved', () => {
+    // 28 days × 1000 + 1000 bonus - 500 deduction = 28500
+    expect(computeNetFromStoredSalary({
+      ...baseRow, presentDays: 28, overtimeDays: 0, leavesEarned: 0,
+      otherBonuses: 1000, otherDeductions: 500,
+    })).toBe(28500)
+  })
+
+  it('attendance delete reduces presentDays but does not undo HR adjustments', () => {
+    // Was 30 days × 1000 + 0 - 500 = 29500.
+    // After deleting 1 attendance day → 29 × 1000 - 500 = 28500.
+    expect(computeNetFromStoredSalary({
+      ...baseRow, presentDays: 29, overtimeDays: 0, leavesEarned: 0,
+      otherBonuses: 0, otherDeductions: 500,
+    })).toBe(28500)
+  })
+
+  it('weekly-off change adds earned leaves but keeps existing deduction subtracted', () => {
+    // Same presentDays (28), gains 2 earned leaves after weekly-off enabled.
+    // 28 × 1000 + 2 × 1000 - 500 = 29500
+    expect(computeNetFromStoredSalary({
+      ...baseRow, presentDays: 28, overtimeDays: 0, leavesEarned: 2,
+      otherBonuses: 0, otherDeductions: 500,
+    })).toBe(29500)
+  })
+
+  it('full-absence edge case: 0 days present, ₹500 deduction → net is negative', () => {
+    // 0 × 1000 - 500 = -500. Caller is responsible for clamping/handling.
+    expect(computeNetFromStoredSalary({
+      ...baseRow, presentDays: 0, overtimeDays: 0, leavesEarned: 0,
+      otherBonuses: 0, otherDeductions: 500,
+    })).toBe(-500)
+  })
+
+  it('attendance recompute with PT recurring + adjustment: all stack', () => {
+    // 28 days × 1000 + 1000 bonus - 200 deduction - 200 PT - 3000 advance = 25600
+    expect(computeNetFromStoredSalary({
+      ...baseRow, presentDays: 28, overtimeDays: 2, leavesEarned: 1,
+      otherBonuses: 1000, otherDeductions: 200,
+      advanceTotal: 3000, recurringTotal: 200,
+    })).toBe(
+      // 28 × 1000 + 2 × 0.5 × 1000 + 1 × 1000 + 1000 - 200 - 3000 - 200
+      // = 28000 + 1000 + 1000 + 1000 - 200 - 3000 - 200 = 27600
+      27600
+    )
+  })
+
+  it('user-PATCH weekly-off-changed scenario: adjustment from prior PENDING preserved', () => {
+    // Before user toggle: was 25 days, 0 leaves, ₹500 ded → 24500.
+    // After toggle (hasWeeklyOff true → leaves now earnable): 25 days, 2 leaves, ₹500 ded.
+    // 25 × 1000 + 2 × 1000 - 500 = 26500.
+    expect(computeNetFromStoredSalary({
+      ...baseRow, presentDays: 25, overtimeDays: 0, leavesEarned: 2,
+      otherBonuses: 0, otherDeductions: 500,
+    })).toBe(26500)
+  })
+
+  it('partial-month employee (20 days) with adjustment matches what ENET pays', () => {
+    // base 30000, 30 days month, presentDays 20, otherDeductions 1500.
+    // ENET: 20 × 1000 + 0 - 1500 = 18500.
+    // Before fix, stored net would have been baseSalary (30000) on PROCESSING — wrong by 11500.
+    // After fix, stored = ENET = 18500.
+    expect(computeNetFromStoredSalary({
+      ...baseRow, presentDays: 20, overtimeDays: 0, leavesEarned: 0,
+      otherBonuses: 0, otherDeductions: 1500,
+    })).toBe(18500)
+  })
+})
+
 describe('daysInMonth', () => {
   it('returns days for non-leap February', () => {
     expect(daysInMonth(2025, 2)).toBe(28)
