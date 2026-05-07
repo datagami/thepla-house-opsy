@@ -11,9 +11,15 @@ const PT_AMOUNT_SLAB2_REGULAR = 200
 const PT_AMOUNT_SLAB2_FEBRUARY = 300
 const FEBRUARY = 2
 
+// Private group insurance (not statutory ESI). Flat per-employee premium.
+// The user-facing label is "Insurance"; the DB flag is still optInESI for
+// historical reasons.
+const INSURANCE_AMOUNT = 500
+
 export interface RecurringDeductionUserInput {
   optInPT: boolean
   optInPF: boolean
+  /** DB flag is named optInESI but the deduction is private group insurance. */
   optInESI: boolean
   salary: number | null
 }
@@ -21,7 +27,7 @@ export interface RecurringDeductionUserInput {
 /**
  * Pure: decides which recurring deductions apply for a user in a given month.
  * Maharashtra PT slabs (see constants above). Flat (not pro-rated).
- * PF/ESI flags exist on the user but are intentionally ignored — logic ships later.
+ * PF flag exists on the user but is intentionally ignored — logic ships later.
  */
 export function computeRecurringDeductions(
   user: RecurringDeductionUserInput,
@@ -39,6 +45,10 @@ export function computeRecurringDeductions(
     if (amount !== null) {
       entries.push({ code: 'PT', name: 'Professional Tax', amount })
     }
+  }
+
+  if (user.optInESI) {
+    entries.push({ code: 'INSURANCE', name: 'Insurance', amount: INSURANCE_AMOUNT })
   }
 
   return entries

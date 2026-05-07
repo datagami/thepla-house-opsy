@@ -50,6 +50,11 @@ export function JobOfferActions({
     window.open(`/api/job-offers/${jobOffer.id}/offer-letter`, '_blank');
   };
 
+  const handleOpenNewLetter = () => {
+    // Adjust the path if Task 12 placed the print route under /print/...
+    window.open(`/job-offers/${jobOffer.id}`, '_blank');
+  };
+
   const handleAccept = async () => {
     setIsLoading(true);
     try {
@@ -112,9 +117,13 @@ export function JobOfferActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={handleOpenNewLetter}>
+            <FileText className="mr-2 h-4 w-4" />
+            Open Letter (New Design)
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={handleDownloadOfferLetter}>
             <FileText className="mr-2 h-4 w-4" />
-            Download Offer Letter
+            Download Offer Letter (PDF)
           </DropdownMenuItem>
           {jobOffer.status === 'PENDING' && (
             <>

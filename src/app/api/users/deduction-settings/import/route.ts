@@ -64,7 +64,9 @@ export async function POST(req: Request) {
     }
     const pt = parseFlag(row['PT*'] ?? row.PT ?? row.optInPT)
     const pf = parseFlag(row['PF*'] ?? row.PF ?? row.optInPF)
-    const esi = parseFlag(row['ESI*'] ?? row.ESI ?? row.optInESI)
+    // Accept the new "Insurance*" column name as well as the legacy "ESI*"
+    // header so older exported files still import cleanly.
+    const esi = parseFlag(row['Insurance*'] ?? row.Insurance ?? row['ESI*'] ?? row.ESI ?? row.optInESI)
     if (pt === null) {
       errors.push({ rowIndex: i, uid, error: 'PT must be Y/N or TRUE/FALSE' })
       return
@@ -74,7 +76,7 @@ export async function POST(req: Request) {
       return
     }
     if (esi === null) {
-      errors.push({ rowIndex: i, uid, error: 'ESI must be Y/N or TRUE/FALSE' })
+      errors.push({ rowIndex: i, uid, error: 'Insurance must be Y/N or TRUE/FALSE' })
       return
     }
     parsed.push({ uid, optInPT: pt, optInPF: pf, optInESI: esi })
@@ -116,7 +118,7 @@ export async function POST(req: Request) {
         diff.optInPF = { from: prev.optInPF, to: p.optInPF }
       }
       if (prev.optInESI !== p.optInESI) {
-        changes.push(`ESI ${prev.optInESI ? 'ON' : 'OFF'} → ${p.optInESI ? 'ON' : 'OFF'}`)
+        changes.push(`Insurance ${prev.optInESI ? 'ON' : 'OFF'} → ${p.optInESI ? 'ON' : 'OFF'}`)
         diff.optInESI = { from: prev.optInESI, to: p.optInESI }
       }
       if (changes.length === 0) continue

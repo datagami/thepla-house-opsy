@@ -163,7 +163,7 @@ export async function PUT(
     };
 
     // Statutory opt-in flags are HR/MANAGEMENT-only — employees cannot toggle
-    // their own PT/PF/ESI enrollment.
+    // their own PT/PF/Insurance enrollment.
     if (canManageUsers) {
       updateData.optInPT = optInPT ?? undefined;
       updateData.optInPF = optInPF ?? undefined;
@@ -448,7 +448,7 @@ export async function PUT(
       const flags = [
         ["PT", "optInPT", optInPT, oldUser.optInPT] as const,
         ["PF", "optInPF", optInPF, oldUser.optInPF] as const,
-        ["ESI", "optInESI", optInESI, oldUser.optInESI] as const,
+        ["Insurance", "optInESI", optInESI, oldUser.optInESI] as const,
       ];
       for (const [label, key, next, prev] of flags) {
         if (next !== undefined && next !== null && next !== prev) {

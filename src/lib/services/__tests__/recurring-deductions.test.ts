@@ -60,11 +60,37 @@ describe('computeRecurringDeductions — Professional Tax', () => {
   })
 })
 
-describe('computeRecurringDeductions — PF/ESI dormant', () => {
-  it('ignores PF and ESI flags entirely (no logic yet)', () => {
+describe('computeRecurringDeductions — PF dormant', () => {
+  it('ignores the PF flag entirely (no logic yet)', () => {
     expect(computeRecurringDeductions(
-      user({ optInPF: true, optInESI: true, salary: 50000 }), 1,
+      user({ optInPF: true, salary: 50000 }), 1,
     )).toEqual([])
+  })
+})
+
+describe('computeRecurringDeductions — Insurance (private group)', () => {
+  it('emits a flat ₹500 entry when optInESI is true', () => {
+    expect(computeRecurringDeductions(user({ optInESI: true }), 1))
+      .toEqual([{ code: 'INSURANCE', name: 'Insurance', amount: 500 }])
+  })
+
+  it('does not depend on month', () => {
+    expect(computeRecurringDeductions(user({ optInESI: true }), 2))
+      .toEqual([{ code: 'INSURANCE', name: 'Insurance', amount: 500 }])
+  })
+
+  it('does not depend on salary', () => {
+    expect(computeRecurringDeductions(user({ optInESI: true, salary: null }), 1))
+      .toEqual([{ code: 'INSURANCE', name: 'Insurance', amount: 500 }])
+  })
+
+  it('emits both PT and Insurance when both opted in', () => {
+    expect(computeRecurringDeductions(
+      user({ optInPT: true, optInESI: true, salary: 12000 }), 1,
+    )).toEqual([
+      { code: 'PT', name: 'Professional Tax', amount: 200 },
+      { code: 'INSURANCE', name: 'Insurance', amount: 500 },
+    ])
   })
 })
 

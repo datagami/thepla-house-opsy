@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { JobOfferStatus } from '@prisma/client';
+import { sanitizeOfferHtml } from '@/lib/services/offer-letter';
 
 interface SalaryComponent {
   name: string;
@@ -91,7 +92,9 @@ export async function POST(request: NextRequest) {
       foodAndStayProvided,
       halfDays,
       weekOff,
+      salaryPayDay,
       notes,
+      termsHtml,
     } = body;
 
     // Validate required fields
@@ -166,7 +169,9 @@ export async function POST(request: NextRequest) {
         foodAndStayProvided: foodAndStayProvided ?? false,
         halfDays: halfDays !== undefined ? parseInt(halfDays) : 4,
         weekOff: weekOff !== undefined ? parseInt(weekOff) : 2,
+        salaryPayDay: salaryPayDay !== undefined ? parseInt(salaryPayDay) : 7,
         notes: notes || null,
+        termsHtml: typeof termsHtml === 'string' ? sanitizeOfferHtml(termsHtml) : null,
       },
       include: {
         user: {

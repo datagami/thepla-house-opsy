@@ -60,7 +60,7 @@ export function DeductionSettingsPage() {
       'Salary': r.salary ?? '',
       'PT*': r.optInPT ? 'Y' : 'N',
       'PF*': r.optInPF ? 'Y' : 'N',
-      'ESI*': r.optInESI ? 'Y' : 'N',
+      'Insurance*': r.optInESI ? 'Y' : 'N',
     }))
     const sheet = XLSX.utils.json_to_sheet(data)
     sheet['!cols'] = [
@@ -111,8 +111,8 @@ export function DeductionSettingsPage() {
         <div>
           <h1 className="text-2xl font-semibold">Statutory Deduction Settings</h1>
           <p className="text-sm text-muted-foreground">
-            Per-employee opt-ins for Professional Tax (PT), Provident Fund (PF), and ESI.
-            PF and ESI are not yet active.
+            Per-employee opt-ins for Professional Tax (PT), Provident Fund (PF), and Insurance.
+            PF is not yet active.
           </p>
         </div>
         <div className="flex gap-2">
@@ -145,7 +145,7 @@ export function DeductionSettingsPage() {
               <TableHead>Salary</TableHead>
               <TableHead>PT</TableHead>
               <TableHead>PF</TableHead>
-              <TableHead>ESI</TableHead>
+              <TableHead>Insurance</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

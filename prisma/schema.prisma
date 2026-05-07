@@ -221,6 +221,8 @@ model User {
 
   // --- Job Offer Relations ---
   jobOffer JobOffer?
+  offerLetterSnippetsCreated OfferLetterSnippet[] @relation("OfferLetterSnippetCreatedBy")
+  offerLetterSnippetsUpdated OfferLetterSnippet[] @relation("OfferLetterSnippetUpdatedBy")
 
   @@index([branchId])
   @@index([managedBranchId])
@@ -758,6 +760,16 @@ enum JobOfferStatus {
   EXPIRED
 }
 
+enum OfferLetterSnippetCategory {
+  WORKING_HOURS
+  PROBATION
+  LEAVE
+  NOTICE
+  DOCUMENTS
+  CONFIDENTIALITY
+  OTHER
+}
+
 model JobOffer {
   id     String @id @default(cuid())
   numId  Int    @default(autoincrement()) @map("num_id")
@@ -801,9 +813,11 @@ model JobOffer {
   foodAndStayProvided Boolean @default(false) @map("food_and_stay_provided")
   halfDays            Int     @default(4) @map("half_days")
   weekOff             Int     @default(2) @map("week_off")
+  salaryPayDay        Int     @default(7) @map("salary_pay_day")
 
   // Additional notes
-  notes String? @db.Text
+  notes     String? @db.Text
+  termsHtml String? @db.Text @map("terms_html")
 
   // Created/Updated
   createdAt DateTime @default(now()) @map("created_at")
@@ -818,4 +832,25 @@ model JobOffer {
   @@index([status])
   @@index([offerDate])
   @@map("job_offers")
+}
+
+model OfferLetterSnippet {
+  id        String                     @id @default(cuid())
+  numId     Int                        @default(autoincrement()) @map("num_id")
+  title     String
+  category  OfferLetterSnippetCategory @default(OTHER)
+  htmlBody  String                     @db.Text @map("html_body")
+  isActive  Boolean                    @default(true) @map("is_active")
+  sortOrder Int                        @default(0) @map("sort_order")
+
+  createdById String?  @map("created_by_id")
+  updatedById String?  @map("updated_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  createdBy User? @relation("OfferLetterSnippetCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy User? @relation("OfferLetterSnippetUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([isActive, sortOrder])
+  @@map("offer_letter_snippets")
 }
