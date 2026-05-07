@@ -1,0 +1,29 @@
+import DOMPurify from 'isomorphic-dompurify'
+
+const ALLOWED_TAGS = [
+  'section', 'div', 'span', 'p', 'br', 'hr',
+  'ul', 'ol', 'li',
+  'strong', 'b', 'em', 'i', 'u',
+  'h3', 'h4', 'h5',
+  'table', 'thead', 'tbody', 'tr', 'th', 'td',
+  'a',
+]
+
+const ALLOWED_ATTR = [
+  'class', 'style', 'href', 'colspan', 'rowspan', 'align',
+]
+
+const ALLOWED_URI_REGEXP = /^(?:https?:\/\/|mailto:|tel:|#)/i
+
+export function sanitizeOfferHtml(input: string): string {
+  if (!input) return ''
+  const cleaned = DOMPurify.sanitize(input, {
+    ALLOWED_TAGS,
+    ALLOWED_ATTR,
+    ALLOWED_URI_REGEXP,
+    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'style', 'link', 'meta'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur'],
+    KEEP_CONTENT: true,
+  }) as unknown as string
+  return cleaned
+}
