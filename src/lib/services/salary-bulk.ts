@@ -229,3 +229,172 @@ export function recomputeNetForRow(input: RecomputeInput): RecomputeOutput {
 
   return { netSalary, advanceDeduction }
 }
+
+export async function applyBulkImport(
+  input: ApplyBulkImportInput
+): Promise<BulkImportSummary> {
+  const summary: BulkImportSummary = {
+    ok: true,
+    month: input.month,
+    year: input.year,
+    perSheet: {
+      [SHEET_ACTIVE]: { rows: 0, updated: 0, unchanged: 0, skipped: 0 },
+      [SHEET_PARTIAL_ACTIVE]: { rows: 0, updated: 0, unchanged: 0, skipped: 0 },
+    },
+    skippedRows: [],
+  }
+
+  const seenIds = new Set<string>()
+
+  for (const row of input.rows) {
+    summary.perSheet[row.sheet].rows += 1
+
+    const fail = (errors: string[], salaryId: string | null, employeeName: string | null) => {
+      summary.perSheet[row.sheet].skipped += 1
+      summary.skippedRows.push({
+        rowNumber: row.rowNumber,
+        sheet: row.sheet,
+        salaryId,
+        employeeName,
+        errors,
+      })
+    }
+
+    // 1. Validate the row's raw values.
+    const validation = validateAndNormalizeRow(row)
+    if (!validation.ok) {
+      fail(validation.errors, row.salaryId, null)
+      continue
+    }
+
+    // 2. Duplicate detection (post-validation, so we have a salaryId).
+    const salaryId = row.salaryId as string
+    if (seenIds.has(salaryId)) {
+      fail(['Duplicate salaryId in upload'], salaryId, null)
+      continue
+    }
+    seenIds.add(salaryId)
+
+    // 3. Per-row transaction.
+    try {
+      await input.prisma.$transaction(async (tx) => {
+        const salary = await tx.salary.findUnique({
+          where: { id: salaryId },
+          include: { installments: true, user: { select: { name: true } } },
+        })
+
+        if (!salary) {
+          fail(['Salary not found'], salaryId, null)
+          return
+        }
+
+        const employeeName = salary.user?.name ?? null
+
+        if (salary.month !== input.month || salary.year !== input.year) {
+          fail(['Salary belongs to a different month'], salaryId, employeeName)
+          return
+        }
+
+        // 4. Diff against DB.
+        const current: CurrentSalaryFields = {
+          status: salary.status as SalaryStatus,
+          otherBonuses: salary.otherBonuses,
+          otherDeductions: salary.otherDeductions,
+        }
+        const diff = computeRowDiff(current, validation.value)
+        if (Object.keys(diff).length === 0) {
+          summary.perSheet[row.sheet].unchanged += 1
+          return
+        }
+
+        // 5. Transition guard.
+        const hasPendingInstallments = salary.installments.some(
+          (i) => i.status === 'PENDING'
+        )
+        const guard = checkTransitionGuard({
+          currentStatus: current.status,
+          hasPendingInstallments,
+          diff,
+        })
+        if (!guard.ok) {
+          fail([guard.error], salaryId, employeeName)
+          return
+        }
+
+        // 6. Recompute net.
+        const newStatus = (diff.status ?? current.status) as SalaryStatus
+        const newOtherBonuses = diff.otherBonuses ?? current.otherBonuses
+        const newOtherDeductions = diff.otherDeductions ?? current.otherDeductions
+
+        const approvedInstallmentsTotal = salary.installments
+          .filter((i) => i.status === 'APPROVED')
+          .reduce((s, i) => s + i.amountPaid, 0)
+
+        const recomputed = recomputeNetForRow({
+          salary: {
+            baseSalary: salary.baseSalary,
+            month: salary.month,
+            year: salary.year,
+            presentDays: salary.presentDays,
+            overtimeDays: salary.overtimeDays,
+            halfDays: salary.halfDays,
+            leavesEarned: salary.leavesEarned,
+            leaveSalary: salary.leaveSalary,
+            advanceDeduction: salary.advanceDeduction,
+            deductions: salary.deductions,
+            otherBonuses: salary.otherBonuses,
+            otherDeductions: salary.otherDeductions,
+            recurringDeductions: salary.recurringDeductions,
+          },
+          newStatus,
+          newOtherBonuses,
+          newOtherDeductions,
+          approvedInstallmentsTotal,
+        })
+
+        // 7. Build update payload.
+        const data: Prisma.SalaryUpdateInput = {
+          netSalary: recomputed.netSalary,
+          advanceDeduction: recomputed.advanceDeduction,
+        }
+        if (diff.status !== undefined) {
+          data.status = diff.status
+          if (diff.status === 'PAID') {
+            data.paidAt = new Date()
+          } else if (current.status === 'PAID') {
+            // Defensive: unreachable due to immutability rule.
+            data.paidAt = null
+          } else {
+            data.paidAt = null
+          }
+        }
+        if (diff.otherBonuses !== undefined) data.otherBonuses = diff.otherBonuses
+        if (diff.otherDeductions !== undefined) data.otherDeductions = diff.otherDeductions
+
+        // 8. Write + cleanup pending installments on PROCESSING transition.
+        await tx.salary.update({ where: { id: salaryId }, data })
+
+        if (diff.status === 'PROCESSING') {
+          await tx.advancePaymentInstallment.deleteMany({
+            where: { salaryId, status: 'PENDING' },
+          })
+        }
+
+        summary.perSheet[row.sheet].updated += 1
+      })
+    } catch (err) {
+      // Unexpected DB error — record as skipped with a generic message.
+      const msg = err instanceof Error ? err.message : 'Unexpected error'
+      summary.perSheet[row.sheet].skipped += 1
+      summary.skippedRows.push({
+        rowNumber: row.rowNumber,
+        sheet: row.sheet,
+        salaryId,
+        employeeName: null,
+        errors: [`Database error: ${msg}`],
+      })
+    }
+  }
+
+  return summary
+}

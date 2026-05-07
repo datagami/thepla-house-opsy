@@ -1,11 +1,14 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import {
   validateAndNormalizeRow,
   computeRowDiff,
   checkTransitionGuard,
   recomputeNetForRow,
+  applyBulkImport,
   type BulkRowInput,
+  type SalaryStatus,
 } from '@/lib/services/salary-bulk'
+import { prisma } from '@/lib/prisma'
 
 function row(overrides: Partial<BulkRowInput> = {}): BulkRowInput {
   return {
@@ -284,5 +287,215 @@ describe('recomputeNetForRow', () => {
     // gross 30200 − 1500 = 28700
     expect(r.netSalary).toBe(28700)
     expect(r.advanceDeduction).toBe(1500)
+  })
+})
+
+describe('applyBulkImport (integration)', () => {
+  // Helper: make a fresh user + active salary for tests, return ids.
+  // Each test uses a unique month to avoid the @@unique(userId, month, year) clash.
+  async function seed(opts: {
+    month: number
+    year: number
+    status?: SalaryStatus
+    otherBonuses?: number
+    otherDeductions?: number
+    userStatus?: 'ACTIVE' | 'PARTIAL_INACTIVE'
+    pendingInstallment?: boolean
+  }) {
+    const user = await prisma.user.create({
+      data: {
+        name: `Test User ${Date.now()}-${Math.random()}`,
+        email: `t+${Date.now()}-${Math.random()}@example.test`,
+        role: 'EMPLOYEE',
+        status: opts.userStatus ?? 'ACTIVE',
+      },
+    })
+    const salary = await prisma.salary.create({
+      data: {
+        userId: user.id,
+        month: opts.month,
+        year: opts.year,
+        baseSalary: 30000,
+        presentDays: 30,
+        netSalary: 30000,
+        otherBonuses: opts.otherBonuses ?? 0,
+        otherDeductions: opts.otherDeductions ?? 0,
+        status: opts.status ?? 'PENDING',
+      },
+    })
+    if (opts.pendingInstallment) {
+      const advance = await prisma.advancePayment.create({
+        data: {
+          userId: user.id,
+          amount: 5000,
+          emiAmount: 1000,
+          remainingAmount: 5000,
+          status: 'APPROVED',
+        },
+      })
+      await prisma.advancePaymentInstallment.create({
+        data: {
+          advanceId: advance.id,
+          salaryId: salary.id,
+          userId: user.id,
+          amountPaid: 1000,
+          status: 'PENDING',
+        },
+      })
+    }
+    return { user, salary }
+  }
+
+  // Use a far-future month so we don't collide with real data.
+  const TEST_MONTH = 11
+  const TEST_YEAR = 2099
+
+  afterEach(async () => {
+    await prisma.advancePaymentInstallment.deleteMany({ where: { salary: { year: TEST_YEAR } } })
+    await prisma.advancePayment.deleteMany({ where: { user: { email: { contains: '@example.test' } } } })
+    await prisma.salary.deleteMany({ where: { year: TEST_YEAR } })
+    await prisma.user.deleteMany({ where: { email: { contains: '@example.test' } } })
+  })
+
+  it('updates a clean status transition', async () => {
+    const { salary } = await seed({ month: TEST_MONTH, year: TEST_YEAR })
+
+    const summary = await applyBulkImport({
+      month: TEST_MONTH,
+      year: TEST_YEAR,
+      prisma,
+      rows: [
+        {
+          rowNumber: 2,
+          sheet: 'Active',
+          salaryId: salary.id,
+          status: 'PROCESSING',
+          otherBonuses: 0,
+          otherDeductions: 0,
+        },
+      ],
+    })
+
+    expect(summary.perSheet.Active).toEqual({ rows: 1, updated: 1, unchanged: 0, skipped: 0 })
+    const after = await prisma.salary.findUnique({ where: { id: salary.id } })
+    expect(after?.status).toBe('PROCESSING')
+  })
+
+  it('marks no-op rows as unchanged', async () => {
+    const { salary } = await seed({
+      month: TEST_MONTH, year: TEST_YEAR,
+      status: 'PENDING', otherBonuses: 0, otherDeductions: 0,
+    })
+
+    const summary = await applyBulkImport({
+      month: TEST_MONTH, year: TEST_YEAR, prisma,
+      rows: [{
+        rowNumber: 2, sheet: 'Active', salaryId: salary.id,
+        status: 'PENDING', otherBonuses: 0, otherDeductions: 0,
+      }],
+    })
+
+    expect(summary.perSheet.Active.unchanged).toBe(1)
+    expect(summary.perSheet.Active.updated).toBe(0)
+  })
+
+  it('blocks PAID salaries from any change with row error', async () => {
+    const { salary } = await seed({
+      month: TEST_MONTH, year: TEST_YEAR, status: 'PAID',
+    })
+
+    const summary = await applyBulkImport({
+      month: TEST_MONTH, year: TEST_YEAR, prisma,
+      rows: [{
+        rowNumber: 5, sheet: 'Active', salaryId: salary.id,
+        status: 'PENDING', otherBonuses: 0, otherDeductions: 0,
+      }],
+    })
+
+    expect(summary.perSheet.Active.skipped).toBe(1)
+    expect(summary.skippedRows[0].errors).toContain('Paid salaries are immutable')
+    const after = await prisma.salary.findUnique({ where: { id: salary.id } })
+    expect(after?.status).toBe('PAID')
+  })
+
+  it('blocks PROCESSING transition when pending installment exists', async () => {
+    const { salary } = await seed({
+      month: TEST_MONTH, year: TEST_YEAR,
+      pendingInstallment: true,
+    })
+
+    const summary = await applyBulkImport({
+      month: TEST_MONTH, year: TEST_YEAR, prisma,
+      rows: [{
+        rowNumber: 3, sheet: 'Active', salaryId: salary.id,
+        status: 'PROCESSING', otherBonuses: 0, otherDeductions: 0,
+      }],
+    })
+
+    expect(summary.skippedRows[0].errors).toContain('Has pending advance installments')
+  })
+
+  it('allows adjustment-only edits when pending installments exist', async () => {
+    const { salary } = await seed({
+      month: TEST_MONTH, year: TEST_YEAR,
+      pendingInstallment: true,
+    })
+
+    const summary = await applyBulkImport({
+      month: TEST_MONTH, year: TEST_YEAR, prisma,
+      rows: [{
+        rowNumber: 3, sheet: 'Active', salaryId: salary.id,
+        status: null, otherBonuses: 500, otherDeductions: 0,
+      }],
+    })
+
+    expect(summary.perSheet.Active.updated).toBe(1)
+    const after = await prisma.salary.findUnique({ where: { id: salary.id } })
+    expect(after?.otherBonuses).toBe(500)
+  })
+
+  it('returns Salary not found for unknown salaryId', async () => {
+    const summary = await applyBulkImport({
+      month: TEST_MONTH, year: TEST_YEAR, prisma,
+      rows: [{
+        rowNumber: 7, sheet: 'Active', salaryId: 'does-not-exist',
+        status: 'PROCESSING', otherBonuses: 0, otherDeductions: 0,
+      }],
+    })
+    expect(summary.skippedRows[0].errors).toContain('Salary not found')
+  })
+
+  it('rejects rows from a different month', async () => {
+    const { salary } = await seed({ month: 10, year: TEST_YEAR })
+
+    const summary = await applyBulkImport({
+      month: TEST_MONTH, year: TEST_YEAR, prisma,
+      rows: [{
+        rowNumber: 4, sheet: 'Active', salaryId: salary.id,
+        status: 'PROCESSING', otherBonuses: 0, otherDeductions: 0,
+      }],
+    })
+    expect(summary.skippedRows[0].errors).toContain('Salary belongs to a different month')
+
+    // Cleanup the off-month salary
+    await prisma.salary.delete({ where: { id: salary.id } })
+  })
+
+  it('flags duplicate salaryId rows after the first', async () => {
+    const { salary } = await seed({ month: TEST_MONTH, year: TEST_YEAR })
+
+    const summary = await applyBulkImport({
+      month: TEST_MONTH, year: TEST_YEAR, prisma,
+      rows: [
+        { rowNumber: 2, sheet: 'Active', salaryId: salary.id,
+          status: 'PROCESSING', otherBonuses: 0, otherDeductions: 0 },
+        { rowNumber: 3, sheet: 'Active', salaryId: salary.id,
+          status: 'PAID', otherBonuses: 0, otherDeductions: 0 },
+      ],
+    })
+
+    expect(summary.perSheet.Active.updated).toBe(1)
+    expect(summary.perSheet.Active.skipped).toBe(1)
+    expect(summary.skippedRows[0].errors).toContain('Duplicate salaryId in upload')
   })
 })
