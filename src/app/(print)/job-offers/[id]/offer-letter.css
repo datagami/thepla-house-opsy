@@ -108,6 +108,12 @@
     page-break-after: always;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    /* When .page auto-paginates across multiple physical sheets, repeat
+       the padding + gradient background on EVERY fragment instead of
+       only on the first. Without this, continuation sheets had content
+       abutting the top of the paper with no padding. */
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
   }
   .page:last-of-type { page-break-after: auto; }
 
