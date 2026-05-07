@@ -11,12 +11,11 @@ describe('sanitizeOfferHtml', () => {
     const html = '<section class="clause"><div class="clause-head">' +
       '<span class="num-mark">03</span>' +
       '<span class="title-en">Working Hours</span>' +
-      '<span class="title-hi hi">कार्य समय</span>' +
       '</div><p class="body">9 to 6.</p></section>'
     const out = sanitizeOfferHtml(html)
     expect(out).toContain('<section class="clause">')
     expect(out).toContain('<span class="num-mark">')
-    expect(out).toContain('कार्य समय')
+    expect(out).toContain('Working Hours')
     expect(out).toContain('<p class="body">')
   })
 

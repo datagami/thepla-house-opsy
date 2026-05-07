@@ -108,16 +108,15 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
 
         <div className="doc-title">
           <div className="en">Offer of Employment</div>
-          <div className="hi">नियुक्ति का प्रस्ताव पत्र</div>
           <span className="underline"></span>
         </div>
 
         <div className="to-block">
-          <div className="to-lbl">To / सेवा में</div>
+          <div className="to-lbl">To</div>
           <div className="name">{salutation}</div>
         </div>
 
-        <div className="salutation">Dear {salutation}, <span className="hi">/ आदरणीय,</span></div>
+        <div className="salutation">Dear {salutation},</div>
         <div className="subject">Subject: Letter of Offer — {jobOffer.designation}</div>
 
         <p className="body">
@@ -141,7 +140,6 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
           <div className="clause-head">
             <span className="num-mark">01</span>
             <span className="title-en">Position &amp; Date of Joining</span>
-            <span className="title-hi hi">पद एवं कार्यभार की तिथि</span>
           </div>
           <p className="body">
             You are appointed to the role of <strong>{jobOffer.designation}</strong>
@@ -161,7 +159,6 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
           <div className="clause-head">
             <span className="num-mark">02</span>
             <span className="title-en">Compensation</span>
-            <span className="title-hi hi">वेतन एवं भत्ते</span>
           </div>
           <p className="body">
             Your gross monthly salary shall be <strong>₹{formatINR(grossPerMonth)}/-</strong>, payable on or before the{' '}
@@ -226,9 +223,6 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
 
         <p className="body" style={{ marginTop: 4 }}>
           Yours sincerely,
-          <span className="hi" style={{ color: 'var(--ink-3)', fontSize: 11, marginLeft: 6 }}>
-            / भवदीय,
-          </span>
         </p>
 
         <div className="sign-block">
@@ -243,7 +237,6 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
             <div className="nm">Tejal Shah</div>
             <div className="desig">
               (Authorised Signatory)
-              <span className="hi">अधिकृत हस्ताक्षरकर्ता</span>
             </div>
           </div>
           <div className="col" aria-hidden="true"></div>
@@ -252,7 +245,6 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
         <section className="accept">
           <div className="head">
             Acceptance of Offer
-            <span className="hi">/ प्रस्ताव की स्वीकृति</span>
           </div>
           <p>
             I, <strong>{salutation}</strong>, have read and understood the terms and conditions set out in this letter
@@ -289,7 +281,6 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
         <div className="annex-title">
           <div className="eyebrow">Annexure A</div>
           <div className="en">Detailed CTC Structure</div>
-          <div className="hi">वेतन संरचना का विवरण</div>
           <div className="ul"></div>
         </div>
 
@@ -318,7 +309,7 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
             </tr>
           </thead>
           <tbody>
-            <tr className="section-head"><td colSpan={4}>A. Fixed Earnings · निश्चित वेतन</td></tr>
+            <tr className="section-head"><td colSpan={4}>A. Fixed Earnings</td></tr>
             {components.map((c, i) => (
               <tr key={i}>
                 <td>{c.name}</td>
@@ -336,7 +327,7 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
 
             {deductions.length > 0 && (
               <>
-                <tr className="section-head"><td colSpan={4}>C. Statutory Deductions · वैधानिक कटौती</td></tr>
+                <tr className="section-head"><td colSpan={4}>C. Statutory Deductions</td></tr>
                 {deductions.map((d, i) => (
                   <tr key={`d${i}`}>
                     <td>{d.name}</td>

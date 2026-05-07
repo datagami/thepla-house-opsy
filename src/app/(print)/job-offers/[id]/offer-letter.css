@@ -1,7 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Epilogue:wght@600;700;800;900&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Epilogue:wght@600;700;800;900&display=swap');
 /* ============================================================
-     Thepla House — Offer of Employment / नियुक्ति पत्र
-     A4 portrait · multi-page · bilingual (EN primary, HI accents)
+     Thepla House — Offer of Employment
+     A4 portrait · multi-page (English).
      Letter-forward styling: lighter than the payslip — no
      full-bleed green band, more whitespace, traditional letter
      hierarchy. Brand cues kept (cream page, deep green ink for
@@ -35,7 +35,6 @@
 
     --font-body:    'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
     --font-display: 'Epilogue', 'Inter', system-ui, sans-serif;
-    --font-hindi:   'Noto Sans Devanagari', 'Inter', sans-serif;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
