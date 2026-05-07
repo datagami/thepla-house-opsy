@@ -84,26 +84,26 @@
   .page {
     width: 210mm;
     margin: 24px auto;
-    background: var(--cream);
     padding: 18mm 18mm 16mm;
-    position: relative;
+    /* Cream sheet + thin gold left stripe encoded as a linear-gradient
+       background so it paints on EVERY physical printed sheet when
+       content paginates. (An absolute pseudo-element only renders
+       once, at the top of the logical .page rectangle.) */
+    background:
+      linear-gradient(
+        to right,
+        var(--cream) 0,
+        var(--cream) 8mm,
+        hsl(38 80% 55% / 0.55) 8mm,
+        hsl(38 80% 55% / 0.55) calc(8mm + 2px),
+        var(--cream) calc(8mm + 2px)
+      );
     box-shadow: 0 12px 40px rgba(0,0,0,0.10);
     page-break-after: always;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
   .page:last-of-type { page-break-after: auto; }
-
-  /* Subtle full-page edge: thin gold rule running down the left margin
-     — small brand cue without being a heavy band. */
-  .page::before {
-    content: "";
-    position: absolute;
-    left: 8mm; top: 18mm; bottom: 16mm;
-    width: 2px;
-    background: var(--gold);
-    opacity: 0.55;
-  }
 
   @media print {
     html, body { background: #fff; }

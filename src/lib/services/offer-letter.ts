@@ -1,7 +1,7 @@
 import DOMPurify from 'isomorphic-dompurify'
 
 const ALLOWED_TAGS = [
-  'div', 'span', 'p', 'br', 'hr',
+  'section', 'div', 'span', 'p', 'br', 'hr',
   'ul', 'ol', 'li',
   'strong', 'b', 'em', 'i', 'u',
   'h3', 'h4', 'h5',
@@ -16,22 +16,19 @@ const ALLOWED_ATTR = [
 const ALLOWED_URI_REGEXP = /^(?:https?:\/\/|mailto:|tel:|#)/i
 
 function unwrapLegacyClauseShells(html: string): string {
-  // Old snippet format wrapped each clause in <section class="clause"> with a
-  // <div class="clause-head"> for the title. New snippets use plain <h3>.
-  // When HR has pasted both formats over time, the new <h3> can end up nested
-  // inside a stale <div class="clause-head"> — and `.clause-head` is
-  // `display: flex`, producing a broken 2-column layout in the printed letter.
+  // Strip the legacy <div class="clause-head"> wrapper — the old snippet
+  // format used `display: flex` on it, which produced a broken 2-column
+  // layout when leftover wrappers leaked around the new <h3> snippets.
   //
-  // Strip the legacy wrappers via non-greedy regex. Repeat until stable so
-  // multiple stacked wrappers all unwrap. We do not touch any other <section>
-  // or <div> — only those carrying these specific class attributes.
+  // Note: <section class="clause"> is intentionally PRESERVED — it now
+  // wraps each h3+body group so CSS `break-inside: avoid` can keep the
+  // whole clause on one printed page. (Earlier we stripped this too,
+  // but that caused random heading-orphan-from-content breaks.)
   let prev: string
   let out = html
   do {
     prev = out
-    out = out
-      .replace(/<section class="clause">([\s\S]*?)<\/section>/gi, '$1')
-      .replace(/<div class="clause-head">([\s\S]*?)<\/div>/gi, '$1')
+    out = out.replace(/<div class="clause-head">([\s\S]*?)<\/div>/gi, '$1')
   } while (out !== prev)
   return out
 }
