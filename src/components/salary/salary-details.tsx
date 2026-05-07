@@ -31,13 +31,11 @@ import Link from "next/link"
 
 interface SalaryDetailsProps {
   salary: Salary;
-  month?: string;
-  year?: string;
   canEdit?: boolean;
   activeWarningCount?: number;
 }
 
-export function SalaryDetails({ salary, month, year, canEdit = false, activeWarningCount = 0 }: SalaryDetailsProps) {
+export function SalaryDetails({ salary, canEdit = false, activeWarningCount = 0 }: SalaryDetailsProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isUpdating, setIsUpdating] = useState(false)
@@ -159,11 +157,7 @@ export function SalaryDetails({ salary, month, year, canEdit = false, activeWarn
 
   const handleBack = () => {
     // Preserve all filters (year, month, search, branch, role, status, etc.) when going back
-    const params = new URLSearchParams(searchParams.toString())
-    if (year && !params.has('year')) params.set('year', year)
-    if (month && !params.has('month')) params.set('month', month)
-
-    const queryString = params.toString()
+    const queryString = searchParams.toString()
     router.push(`/salary${queryString ? `?${queryString}` : ''}`)
   }
 

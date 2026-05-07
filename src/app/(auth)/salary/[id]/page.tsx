@@ -48,14 +48,11 @@ async function getSalaryDetails(id: string) {
 
 export default async function SalaryDetailsPage({
   params,
-  searchParams
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ month?: string; year?: string }>
 }) {
   const {id} = await params;
-  const {month, year} = await searchParams;
   const {salary, canEdit, activeWarningCount} = await getSalaryDetails(id);
 
-  return <SalaryDetails salary={salary} month={month} year={year} canEdit={canEdit} activeWarningCount={activeWarningCount} />
-} 
+  return <SalaryDetails salary={salary} canEdit={canEdit} activeWarningCount={activeWarningCount} />
+}

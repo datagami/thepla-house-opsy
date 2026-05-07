@@ -4,23 +4,8 @@ import {useCallback, useEffect, useState} from 'react'
 import {Branch, Salary, User} from "@/models/models"
 import {Button} from '@/components/ui/button'
 import {useRouter, useSearchParams} from 'next/navigation'
-
-const SEARCH_DEBOUNCE_MS = 300
-
-function readFilterParams(sp: URLSearchParams) {
-  return {
-    search: sp.get('search') || '',
-    branch: sp.get('branch') || 'all',
-    role: sp.get('role') || 'all',
-    deductions: sp.get('deductions') || 'all',
-    status: sp.get('status') || 'all',
-    userStatus: sp.get('userStatus') || 'all',
-    referralOnly: sp.get('referralOnly') === 'true',
-  }
-}
 import {Checkbox} from "@/components/ui/checkbox"
 import {toast} from "sonner"
-
 import {SearchIcon} from 'lucide-react'
 import {Input} from "@/components/ui/input"
 import {
@@ -42,6 +27,20 @@ import {CalendarDays, Clock, CalendarOff, CalendarCheck, Download} from 'lucide-
 import {Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter} from "@/components/ui/card"
 import {Badge} from "@/components/ui/badge"
 import {calculateNetSalaryFromObject} from '@/lib/services/salary-calculator'
+
+const SEARCH_DEBOUNCE_MS = 300
+
+function readFilterParams(sp: URLSearchParams) {
+  return {
+    search: sp.get('search') || '',
+    branch: sp.get('branch') || 'all',
+    role: sp.get('role') || 'all',
+    deductions: sp.get('deductions') || 'all',
+    status: sp.get('status') || 'all',
+    userStatus: sp.get('userStatus') || 'all',
+    referralOnly: sp.get('referralOnly') === 'true',
+  }
+}
 
 interface SalaryListProps {
   month: number
@@ -721,8 +720,8 @@ export function SalaryList({month, year}: SalaryListProps) {
               setStatus('all')
               setUserStatus('all')
               setReferralOnly(false)
+              // search clears via the debounce effect; clear the rest imperatively
               updateUrl({
-                search: undefined,
                 branch: undefined,
                 role: undefined,
                 deductions: undefined,

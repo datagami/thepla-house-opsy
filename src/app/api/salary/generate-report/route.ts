@@ -22,11 +22,12 @@ export async function POST(req: Request) {
 
     // Get salaries for the given month and year. When nonPaidOnly is true, restrict to
     // PENDING and PROCESSING (the second payday on the 10th covers these).
+    // paidAt: null is belt-and-suspenders against any future drift between status and paidAt.
     const salaries = await prisma.salary.findMany({
       where: {
         month,
         year,
-        ...(nonPaidOnly ? { status: { in: ['PENDING', 'PROCESSING'] } } : {}),
+        ...(nonPaidOnly ? { status: { in: ['PENDING', 'PROCESSING'] }, paidAt: null } : {}),
       },
       include: {
         user: {

@@ -74,7 +74,7 @@ export function SalaryManagement({ initialYear, initialMonth }: SalaryManagement
     const params = new URLSearchParams(searchParams.toString())
     params.set('year', year.toString())
     params.set('month', month.toString())
-    router.replace(`/salary?${params.toString()}`, { scroll: false })
+    router.push(`/salary?${params.toString()}`, { scroll: false })
   }, [router, searchParams])
 
   // Handle year change
