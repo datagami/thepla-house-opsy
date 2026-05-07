@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { sanitizeOfferHtml } from '@/lib/services/offer-letter'
 
 const RichTextEditor = dynamic(
   () => import('@/components/rich-text-editor/rich-text-editor'),
@@ -113,7 +114,7 @@ export function SnippetForm({ snippet }: SnippetFormProps) {
         <Label>Preview</Label>
         <div
           className="border rounded p-4 mt-1 bg-[hsl(39_100%_97%)] text-sm"
-          dangerouslySetInnerHTML={{ __html: htmlBody }}
+          dangerouslySetInnerHTML={{ __html: sanitizeOfferHtml(htmlBody) }}
         />
       </div>
     </div>

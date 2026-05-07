@@ -1,7 +1,7 @@
 import DOMPurify from 'isomorphic-dompurify'
 
 const ALLOWED_TAGS = [
-  'section', 'div', 'span', 'p', 'br', 'hr',
+  'div', 'span', 'p', 'br', 'hr',
   'ul', 'ol', 'li',
   'strong', 'b', 'em', 'i', 'u',
   'h3', 'h4', 'h5',
@@ -68,18 +68,27 @@ export function sanitizeOfferHtml(input: string): string {
   return stripEmptyContainers(unwrapLegacyClauseShells(cleaned))
 }
 
+// All offer-letter dates are interpreted in IST regardless of where the server
+// runs. Using getFullYear() / toLocaleDateString without an explicit timezone
+// can flip near year/day boundaries when the server runs in UTC.
+const LETTER_TZ = 'Asia/Kolkata'
+
 export function buildReferenceNo(numId: number, offerDate: Date): string {
-  const year = offerDate.getFullYear()
+  const year = new Intl.DateTimeFormat('en-GB', {
+    year: 'numeric',
+    timeZone: LETTER_TZ,
+  }).format(offerDate)
   const padded = String(numId).padStart(4, '0')
   return `TH/HR/${year}/${padded}`
 }
 
 export function formatLetterDate(d: Date): string {
-  return d.toLocaleDateString('en-GB', {
+  return new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
-  })
+    timeZone: LETTER_TZ,
+  }).format(d)
 }
 
 export interface SalaryComponent {

@@ -38,10 +38,11 @@ function ordinalSuffix(n: number): string {
 }
 
 export default async function OfferLetterPrintPage({ params }: PageProps) {
+  // The (print) route group's layout.tsx already redirects unauthenticated
+  // users to /login. We only need the role gate here.
   const session = await auth()
-  if (!session?.user) redirect('/login')
   // @ts-expect-error - role is not in the User type
-  const role = session.user.role as string
+  const role = (session?.user?.role ?? '') as string
   if (!['HR', 'MANAGEMENT'].includes(role)) redirect('/dashboard')
 
   const { id } = await params
@@ -66,7 +67,20 @@ export default async function OfferLetterPrintPage({ params }: PageProps) {
   const sanitizedTerms = sanitizeOfferHtml(jobOffer.termsHtml ?? '')
 
   const components = (jobOffer.salaryComponents as SalaryComponent[] | null) ?? []
-  const deductions = (jobOffer.deductions as SalaryComponent[] | null) ?? []
+  const storedDeductions = (jobOffer.deductions as SalaryComponent[] | null) ?? []
+
+  // Insurance is computed dynamically by recurring-deductions.ts when the
+  // user opts in. Surface it on the offer letter too — otherwise the candidate
+  // would see "PT and Insurance" in Clause 02 prose but no Insurance row in
+  // Annexure A's CTC table.
+  const hasInsurance = jobOffer.user?.optInESI === true
+  const alreadyHasInsurance = storedDeductions.some(
+    (d) => /^insurance$/i.test(d.name)
+  )
+  const deductions: SalaryComponent[] = hasInsurance && !alreadyHasInsurance
+    ? [...storedDeductions, { name: 'Insurance', perMonth: 500, perAnnum: 6000 }]
+    : storedDeductions
+
   const annexure = computeAnnexureSummary({
     salaryComponents: components.length > 0 ? components : null,
     deductions: deductions.length > 0 ? deductions : null,
