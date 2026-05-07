@@ -3,6 +3,7 @@ import {
   sanitizeOfferHtml,
   buildReferenceNo,
   formatLetterDate,
+  computeAnnexureSummary,
 } from '@/lib/services/offer-letter'
 
 describe('sanitizeOfferHtml', () => {
@@ -105,5 +106,47 @@ describe('formatLetterDate', () => {
 
   it('handles double-digit day', () => {
     expect(formatLetterDate(new Date('2026-12-25'))).toBe('25 December 2026')
+  })
+})
+
+describe('computeAnnexureSummary', () => {
+  it('computes gross/CTC/take-home from components and deductions', () => {
+    const r = computeAnnexureSummary({
+      salaryComponents: [
+        { name: 'Basic',     perAnnum: 129600, perMonth: 10800 },
+        { name: 'HRA',       perAnnum:  51840, perMonth:  4320 },
+        { name: 'Conveyance',perAnnum:  19200, perMonth:  1600 },
+        { name: 'Special',   perAnnum:  15360, perMonth:  1280 },
+      ],
+      deductions: [
+        { name: 'PF (Employee)',     perAnnum: 15552, perMonth: 1296 },
+        { name: 'Professional Tax',  perAnnum:  2500, perMonth:  200 },
+      ],
+      totalSalary: 229176,
+    })
+
+    expect(r.grossPerMonth).toBe(18000)
+    expect(r.totalCtcPerAnnum).toBe(229176)
+    expect(r.takeHomePerMonth).toBe(16504) // 18000 - 1296 - 200
+  })
+
+  it('handles null/empty deductions (take-home = gross)', () => {
+    const r = computeAnnexureSummary({
+      salaryComponents: [{ name: 'Gross', perAnnum: 240000, perMonth: 20000 }],
+      deductions: null,
+      totalSalary: 240000,
+    })
+    expect(r.grossPerMonth).toBe(20000)
+    expect(r.takeHomePerMonth).toBe(20000)
+  })
+
+  it('falls back to totalSalary/12 when no salaryComponents', () => {
+    const r = computeAnnexureSummary({
+      salaryComponents: null,
+      deductions: null,
+      totalSalary: 240000,
+    })
+    expect(r.grossPerMonth).toBe(20000)
+    expect(r.totalCtcPerAnnum).toBe(240000)
   })
 })

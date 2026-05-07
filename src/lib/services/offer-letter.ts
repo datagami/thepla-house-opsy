@@ -41,3 +41,40 @@ export function formatLetterDate(d: Date): string {
     year: 'numeric',
   })
 }
+
+export interface SalaryComponent {
+  name: string
+  perAnnum: number
+  perMonth: number
+}
+
+export interface AnnexureInput {
+  salaryComponents: SalaryComponent[] | null
+  deductions: SalaryComponent[] | null
+  totalSalary: number
+}
+
+export interface AnnexureSummary {
+  grossPerMonth: number
+  totalCtcPerAnnum: number
+  takeHomePerMonth: number
+}
+
+export function computeAnnexureSummary(input: AnnexureInput): AnnexureSummary {
+  const components = input.salaryComponents ?? []
+  const deductions = input.deductions ?? []
+
+  const grossPerMonth = components.length > 0
+    ? Math.round(components.reduce((s, c) => s + c.perMonth, 0))
+    : Math.round(input.totalSalary / 12)
+
+  const monthlyDeductions = Math.round(
+    deductions.reduce((s, d) => s + d.perMonth, 0)
+  )
+
+  return {
+    grossPerMonth,
+    totalCtcPerAnnum: Math.round(input.totalSalary),
+    takeHomePerMonth: grossPerMonth - monthlyDeductions,
+  }
+}
