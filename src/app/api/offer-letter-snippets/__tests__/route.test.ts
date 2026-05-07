@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { GET, POST } from '@/app/api/offer-letter-snippets/route'
+import { PATCH, DELETE } from '@/app/api/offer-letter-snippets/[id]/route'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 
@@ -105,5 +106,75 @@ describe('POST /api/offer-letter-snippets', () => {
       }),
     }))
     expect(res.status).toBe(400)
+  })
+})
+
+describe('PATCH /api/offer-letter-snippets/[id]', () => {
+  it('returns 401 for non-HR', async () => {
+    asEmployee()
+    const res = await PATCH(
+      new Request('http://localhost/api/offer-letter-snippets/x', {
+        method: 'PATCH',
+        body: JSON.stringify({ title: 'new' }),
+      }),
+      { params: Promise.resolve({ id: 'x' }) }
+    )
+    expect(res.status).toBe(401)
+  })
+
+  it('updates fields and re-sanitizes htmlBody', async () => {
+    await asHR()
+    const created = await prisma.offerLetterSnippet.create({
+      data: { title: '__test_patch', category: 'OTHER', htmlBody: '<p>old</p>', isActive: true },
+    })
+    const res = await PATCH(
+      new Request(`http://localhost/api/offer-letter-snippets/${created.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ htmlBody: '<p>new</p><script>x</script>' }),
+      }),
+      { params: Promise.resolve({ id: created.id }) }
+    )
+    expect(res.status).toBe(200)
+    const j = await res.json()
+    expect(j.snippet.htmlBody).toContain('<p>new</p>')
+    expect(j.snippet.htmlBody).not.toContain('<script>')
+  })
+
+  it('returns 404 for nonexistent id', async () => {
+    await asHR()
+    const res = await PATCH(
+      new Request('http://localhost/api/offer-letter-snippets/no-such', {
+        method: 'PATCH',
+        body: JSON.stringify({ title: 'x' }),
+      }),
+      { params: Promise.resolve({ id: 'no-such-id' }) }
+    )
+    expect(res.status).toBe(404)
+  })
+})
+
+describe('DELETE /api/offer-letter-snippets/[id]', () => {
+  it('returns 401 for non-HR', async () => {
+    asEmployee()
+    const res = await DELETE(
+      new Request('http://localhost/api/offer-letter-snippets/x', { method: 'DELETE' }),
+      { params: Promise.resolve({ id: 'x' }) }
+    )
+    expect(res.status).toBe(401)
+  })
+
+  it('hard-deletes the row', async () => {
+    await asHR()
+    const created = await prisma.offerLetterSnippet.create({
+      data: { title: '__test_delete', category: 'OTHER', htmlBody: '<p>x</p>', isActive: true },
+    })
+    const res = await DELETE(
+      new Request(`http://localhost/api/offer-letter-snippets/${created.id}`, { method: 'DELETE' }),
+      { params: Promise.resolve({ id: created.id }) }
+    )
+    expect(res.status).toBe(204)
+    const after = await prisma.offerLetterSnippet.findUnique({ where: { id: created.id } })
+    expect(after).toBeNull()
   })
 })
