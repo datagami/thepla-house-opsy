@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { sanitizeOfferHtml } from '@/lib/services/offer-letter';
 
 export async function GET(
   request: NextRequest,
@@ -91,6 +92,7 @@ export async function PUT(
       halfDays,
       weekOff,
       notes,
+      termsHtml,
     } = body;
 
     // Calculate totals from components if provided
@@ -149,6 +151,7 @@ export async function PUT(
         halfDays: halfDays !== undefined ? parseInt(halfDays) : undefined,
         weekOff: weekOff !== undefined ? parseInt(weekOff) : undefined,
         notes: notes !== undefined ? notes : undefined,
+        termsHtml: typeof termsHtml === 'string' ? sanitizeOfferHtml(termsHtml) : undefined,
     };
 
     // Handle department update using relation syntax
