@@ -14,17 +14,20 @@ export async function POST(req: Request) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const { year, month } = await req.json();
+    const { year, month, nonPaidOnly } = await req.json();
 
     if (!year || !month) {
       return NextResponse.json({ error: 'Year and month are required' }, { status: 400 });
     }
 
-    // Get all salaries for the given month and year (all statuses)
+    // Get salaries for the given month and year. When nonPaidOnly is true, restrict to
+    // PENDING and PROCESSING (the second payday on the 10th covers these).
+    // paidAt: null is belt-and-suspenders against any future drift between status and paidAt.
     const salaries = await prisma.salary.findMany({
       where: {
         month,
         year,
+        ...(nonPaidOnly ? { status: { in: ['PENDING', 'PROCESSING'] }, paidAt: null } : {}),
       },
       include: {
         user: {
@@ -43,7 +46,7 @@ export async function POST(req: Request) {
 
     if (salaries.length === 0) {
       return NextResponse.json(
-        { error: 'No salaries found for the given month' },
+        { error: nonPaidOnly ? 'No pending or processing salaries for the given month' : 'No salaries found for the given month' },
         { status: 404 }
       );
     }
@@ -225,7 +228,8 @@ export async function POST(req: Request) {
     // Create response with Excel file
     const response = new NextResponse(excelBuffer);
     response.headers.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    response.headers.set('Content-Disposition', `attachment; filename=salary-report-${month}-${year}.xlsx`);
+    const filenamePrefix = nonPaidOnly ? 'non-paid-salary-report' : 'salary-report';
+    response.headers.set('Content-Disposition', `attachment; filename=${filenamePrefix}-${month}-${year}.xlsx`);
 
     return response;
   } catch (error) {

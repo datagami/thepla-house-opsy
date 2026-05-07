@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Badge } from '@/components/ui/badge'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { AlertCircle, CheckCircle, DollarSign, ArrowLeft, Download, Trash2 } from 'lucide-react'
 import { AdvancePaymentInstallment, Salary } from "@/models/models"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -31,14 +31,13 @@ import Link from "next/link"
 
 interface SalaryDetailsProps {
   salary: Salary;
-  month?: string;
-  year?: string;
   canEdit?: boolean;
   activeWarningCount?: number;
 }
 
-export function SalaryDetails({ salary, month, year, canEdit = false, activeWarningCount = 0 }: SalaryDetailsProps) {
+export function SalaryDetails({ salary, canEdit = false, activeWarningCount = 0 }: SalaryDetailsProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isUpdating, setIsUpdating] = useState(false)
   const [, setAdvanceDeductions] = useState<Array<{
     advanceId: string;
@@ -157,12 +156,8 @@ export function SalaryDetails({ salary, month, year, canEdit = false, activeWarn
   }
 
   const handleBack = () => {
-    // Preserve the year and month when going back
-    const params = new URLSearchParams()
-    if (year) params.set('year', year)
-    if (month) params.set('month', month)
-    
-    const queryString = params.toString()
+    // Preserve all filters (year, month, search, branch, role, status, etc.) when going back
+    const queryString = searchParams.toString()
     router.push(`/salary${queryString ? `?${queryString}` : ''}`)
   }
 

@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select'
 import { SalaryList } from './salary-list'
 import { toast } from "sonner";
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { DownloadENETButton } from './download-enet-button'
 import { BulkImportExport } from './bulk-import-export'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -43,6 +43,7 @@ type ConflictWarning = {
 
 export function SalaryManagement({ initialYear, initialMonth }: SalaryManagementProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [selectedYear, setSelectedYear] = useState(initialYear || new Date().getFullYear())
   const [selectedMonth, setSelectedMonth] = useState(initialMonth || new Date().getMonth() + 1)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -68,13 +69,13 @@ export function SalaryManagement({ initialYear, initialMonth }: SalaryManagement
     { value: '12', label: 'December' },
   ]
 
-  // Update URL when selection changes
+  // Update URL when selection changes (preserve other filter params)
   const updateUrlParams = useCallback((year: number, month: number) => {
-    const params = new URLSearchParams()
+    const params = new URLSearchParams(searchParams.toString())
     params.set('year', year.toString())
     params.set('month', month.toString())
     router.push(`/salary?${params.toString()}`, { scroll: false })
-  }, [router])
+  }, [router, searchParams])
 
   // Handle year change
   const handleYearChange = (year: number) => {
