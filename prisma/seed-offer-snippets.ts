@@ -30,6 +30,12 @@ const SEEDS: Seed[] = [
     htmlBody: `<section class="clause"><h3><span class="num-mark">04</span>Weekly Off</h3><ul><li><strong>Sunday</strong> will be the fixed weekly off.</li><li><strong>Saturday</strong> will be a half-day work-from-home working day.</li><li>You may be required to work additional hours during festivals, special events or business exigencies; overtime shall be compensated as per Company policy.</li></ul></section>`,
   },
   {
+    title: 'Weekly Off — Labour',
+    category: 'WORKING_HOURS',
+    sortOrder: 16,
+    htmlBody: `<section class="clause"><h3><span class="num-mark">04</span>Weekly Off</h3><p>This role requires availability on all seven days of the week. There is <strong>no fixed weekly off</strong>. Time off may be availed only as per the Leave Policy below, with prior written approval of the Branch Manager.</p><ul><li>You may be required to work on festivals, special events or business exigencies; overtime shall be compensated as per Company policy.</li></ul></section>`,
+  },
+  {
     title: 'Probation — 6 months',
     category: 'PROBATION',
     sortOrder: 20,
@@ -40,6 +46,12 @@ const SEEDS: Seed[] = [
     category: 'LEAVE',
     sortOrder: 30,
     htmlBody: `<section class="clause"><h3><span class="num-mark">06</span>Leave Policy</h3><ul><li><strong>Earned Leave:</strong> 18 days per calendar year, accruing at 1.5 days per month worked. No encashment; 5 leaves can be carry-forwarded to the next year.</li><li><strong>Casual / Sick Leave:</strong> Sick leave beyond 2 consecutive days requires a medical certificate.</li><li><strong>Public Holidays:</strong> Per the Company's published list of holidays for the calendar year.</li></ul></section>`,
+  },
+  {
+    title: 'Leave Policy — Labour',
+    category: 'LEAVE',
+    sortOrder: 31,
+    htmlBody: `<section class="clause"><h3><span class="num-mark">06</span>Leave Policy</h3><ul><li><strong>Earned Leave:</strong> Earned on attendance — <strong>1 day</strong> for the calendar month if you have at least <strong>15 approved present days</strong>; <strong>2 days</strong> if you have at least <strong>25 approved present days</strong>. Half-days do not apply to this role.</li><li><strong>Casual / Sick Leave:</strong> Sick leave beyond 2 consecutive days requires a medical certificate.</li><li><strong>Public Holidays:</strong> Per the Company's published list of holidays for the calendar year.</li></ul></section>`,
   },
   {
     title: 'Notice Period — 30 days',
