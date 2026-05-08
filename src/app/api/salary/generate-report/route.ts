@@ -4,7 +4,8 @@ import { auth } from '@/auth';
 import * as XLSX from 'xlsx';
 import { calculateNetSalaryFromObject } from '@/lib/services/salary-calculator';
 import { sortBranchesForReport } from '@/lib/branch-order';
-import { Salary } from '@/models/models';
+import { Salary, RecurringDeductionEntry } from '@/models/models';
+import { sumRecurringDeductions } from '@/lib/services/recurring-deductions';
 
 export async function POST(req: Request) {
   try {
@@ -78,7 +79,7 @@ export async function POST(req: Request) {
       const reportData = branchSalaries.map((salary) => {
         // Use calculateNetSalaryFromObject for uniformity
         const netSalary = calculateNetSalaryFromObject(salary);
-        
+
         // Calculate individual components for the report
         const perDaySalary = Math.round((salary.baseSalary / daysInMonth) * 100) / 100;
         const overtimeSalary = salary.overtimeDays * 0.5 * perDaySalary;
@@ -86,7 +87,12 @@ export async function POST(req: Request) {
         const totalAdvanceDeductions = salary.installments
           ?.filter(i => i.status === 'APPROVED')
           .reduce((sum, i) => sum + i.amountPaid, 0) || 0;
-
+        const pendingInstallmentsTotal = salary.installments
+          ?.filter(i => i.status === 'PENDING')
+          .reduce((sum, i) => sum + i.amountPaid, 0) || 0;
+        const statutoryDeductions = sumRecurringDeductions(
+          salary.recurringDeductions as RecurringDeductionEntry[] | null
+        );
 
         return {
           "EMP ID": salary.user.numId,
@@ -101,7 +107,11 @@ export async function POST(req: Request) {
           "Advance": totalAdvanceDeductions,
           "leave salary": leaveSalary,
           "OT salary": overtimeSalary,
+          "Other Additions": salary.otherBonuses ?? 0,
+          "Other Deductions": salary.otherDeductions ?? 0,
+          "Statutory Deductions": statutoryDeductions,
           "Net salary": netSalary,
+          "Pending Installments (Total)": pendingInstallmentsTotal,
           "Status": (salary.paidAt || salary.status?.toUpperCase() === "PAID") ? "Paid" : "Unpaid",
           "Remark": salary.status
         };
@@ -127,8 +137,12 @@ export async function POST(req: Request) {
       "Advance": 0,
       "leave salary": 0,
       "OT salary": 0,
+      "Other Additions": 0,
+      "Other Deductions": 0,
+      "Statutory Deductions": 0,
       "salary": 0,
       "total salary": 0,
+      "Pending Installments (Total)": 0,
       "Paid Salary": 0,
       "Unpaid Salary": 0,
       "Status": "",
@@ -152,8 +166,12 @@ export async function POST(req: Request) {
         "Advance": 0,
         "leave salary": 0,
         "OT salary": 0,
+        "Other Additions": 0,
+        "Other Deductions": 0,
+        "Statutory Deductions": 0,
         "salary": 0,
         "total salary": 0,
+        "Pending Installments (Total)": 0,
         "Paid Salary": 0,
         "Unpaid Salary": 0,
         "Status": "",
@@ -163,7 +181,7 @@ export async function POST(req: Request) {
       branchSalaries.forEach((salary) => {
         // Use calculateNetSalaryFromObject for uniformity
         const netSalary = calculateNetSalaryFromObject(salary);
-        
+
         // Calculate individual components for the report
         const perDaySalary = Math.round((salary.baseSalary / daysInMonth) * 100) / 100;
         const presentDaysSalary = salary.presentDays * perDaySalary;
@@ -172,6 +190,14 @@ export async function POST(req: Request) {
         const totalAdvanceDeductions = salary.installments
           ?.filter(i => i.status === 'APPROVED')
           .reduce((sum, i) => sum + i.amountPaid, 0) || 0;
+        const pendingInstallmentsTotal = salary.installments
+          ?.filter(i => i.status === 'PENDING')
+          .reduce((sum, i) => sum + i.amountPaid, 0) || 0;
+        const statutoryDeductions = sumRecurringDeductions(
+          salary.recurringDeductions as RecurringDeductionEntry[] | null
+        );
+        const otherAdditions = salary.otherBonuses ?? 0;
+        const otherDeductions = salary.otherDeductions ?? 0;
 
         // Check if salary is paid
         const isPaid = salary.paidAt !== null || salary.status?.toUpperCase() === "PAID";
@@ -183,8 +209,12 @@ export async function POST(req: Request) {
         branchTotals["Advance"] += totalAdvanceDeductions;
         branchTotals["leave salary"] += leaveSalary;
         branchTotals["OT salary"] += overtimeSalary;
+        branchTotals["Other Additions"] += otherAdditions;
+        branchTotals["Other Deductions"] += otherDeductions;
+        branchTotals["Statutory Deductions"] += statutoryDeductions;
         branchTotals["salary"] += presentDaysSalary + overtimeSalary + leaveSalary;
         branchTotals["total salary"] += netSalary;
+        branchTotals["Pending Installments (Total)"] += pendingInstallmentsTotal;
 
         // Add to paid/unpaid totals for branch
         if (isPaid) {
@@ -201,8 +231,12 @@ export async function POST(req: Request) {
         grandTotals["Advance"] += totalAdvanceDeductions;
         grandTotals["leave salary"] += leaveSalary;
         grandTotals["OT salary"] += overtimeSalary;
+        grandTotals["Other Additions"] += otherAdditions;
+        grandTotals["Other Deductions"] += otherDeductions;
+        grandTotals["Statutory Deductions"] += statutoryDeductions;
         grandTotals["salary"] += presentDaysSalary + overtimeSalary + leaveSalary;
         grandTotals["total salary"] += netSalary;
+        grandTotals["Pending Installments (Total)"] += pendingInstallmentsTotal;
 
         // Add to paid/unpaid totals for grand totals
         if (isPaid) {
