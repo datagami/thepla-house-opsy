@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,6 +30,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Trash2 } from 'lucide-react';
 import { SnippetPanel } from './snippet-panel';
+import { OFFER_HTML_EDITOR_CONFIG } from '@/components/rich-text-editor/configs';
 
 const RichTextEditor = dynamic(
   () => import('@/components/rich-text-editor/rich-text-editor'),
@@ -103,6 +104,7 @@ export function JobOfferForm({
 }: JobOfferFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const editorConfig = useMemo(() => OFFER_HTML_EDITOR_CONFIG, []);
 
   const form = useForm<z.infer<typeof jobOfferFormSchema>>({
     resolver: zodResolver(jobOfferFormSchema),
@@ -696,8 +698,15 @@ export function JobOfferForm({
             <CardTitle>Terms &amp; Policies</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-muted-foreground mb-2">
               Compose Clauses 03+ here. Click &quot;Copy&quot; on a snippet, then paste into the editor.
+            </p>
+            <p className="text-xs text-muted-foreground mb-4">
+              Use the <strong>Source</strong> toolbar button to paste raw clause HTML.
+              For numbered headings to render in gold, the heading must be
+              <code className="mx-1 px-1 py-0.5 bg-muted rounded text-[11px]">{`<h3><span class="num-mark">NN</span>Title</h3>`}</code>
+              and each clause wrapped in
+              <code className="mx-1 px-1 py-0.5 bg-muted rounded text-[11px]">{`<section class="clause">…</section>`}</code>.
             </p>
             <div className="grid gap-4 md:grid-cols-[1fr_280px]">
               <FormField
@@ -706,7 +715,7 @@ export function JobOfferForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
-                      <RichTextEditor value={field.value} onChange={field.onChange} />
+                      <RichTextEditor value={field.value} onChange={field.onChange} config={editorConfig} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
