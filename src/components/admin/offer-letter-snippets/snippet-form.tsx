@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -17,6 +17,33 @@ const RichTextEditor = dynamic(
   () => import('@/components/rich-text-editor/rich-text-editor'),
   { ssr: false }
 )
+
+// Snippet editor needs the Jodit "source" button so HR can paste the
+// exact <section class="clause"><h3><span class="num-mark">NN</span>…</h3>
+// structure that the print CSS targets. Plain WYSIWYG can't insert
+// class="num-mark", so the visual numbering won't match.
+const SNIPPET_EDITOR_CONFIG = {
+  readonly: false,
+  height: 570,
+  toolbarSticky: false,
+  toolbarAdaptive: false,
+  showCharsCounter: false,
+  showWordsCounter: false,
+  showXPathInStatusbar: false,
+  askBeforePasteHTML: false,
+  askBeforePasteFromWord: false,
+  buttons: [
+    'source', '|',
+    'bold', 'italic', 'underline', 'strikethrough', '|',
+    'ul', 'ol', '|',
+    'outdent', 'indent', '|',
+    'font', 'fontsize', 'brush', 'paragraph', '|',
+    'image', 'table', 'link', '|',
+    'align', 'undo', 'redo', '|',
+    'hr', 'eraser', 'copyformat', '|',
+    'fullsize',
+  ],
+}
 
 interface SnippetFormProps {
   snippet?: {
@@ -41,6 +68,7 @@ export function SnippetForm({ snippet }: SnippetFormProps) {
   const [isActive, setIsActive] = useState(snippet?.isActive ?? true)
   const [sortOrder, setSortOrder] = useState(snippet?.sortOrder ?? 0)
   const [saving, setSaving] = useState(false)
+  const editorConfig = useMemo(() => SNIPPET_EDITOR_CONFIG, [])
 
   async function save() {
     if (!title.trim()) {
@@ -102,7 +130,14 @@ export function SnippetForm({ snippet }: SnippetFormProps) {
         </div>
         <div className="space-y-1.5">
           <Label>HTML body</Label>
-          <RichTextEditor value={htmlBody} onChange={setHtmlBody} />
+          <p className="text-xs text-muted-foreground">
+            Use the <strong>Source</strong> toolbar button to paste the full clause structure.
+            For numbered headings to render in gold like the seeded snippets, the heading must be
+            <code className="mx-1 px-1 py-0.5 bg-muted rounded text-[11px]">{`<h3><span class="num-mark">NN</span>Title</h3>`}</code>
+            and the whole clause wrapped in
+            <code className="mx-1 px-1 py-0.5 bg-muted rounded text-[11px]">{`<section class="clause">…</section>`}</code>.
+          </p>
+          <RichTextEditor value={htmlBody} onChange={setHtmlBody} config={editorConfig} />
         </div>
         <div className="flex gap-2 pt-2">
           <Button onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
