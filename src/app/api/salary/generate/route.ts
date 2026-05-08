@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { calculateSalary } from '@/lib/services/salary-calculator'
+import { buildSalaryCreateData } from '@/lib/services/salary-create'
 import { auth } from "@/auth"
 import { AdvancePaymentInstallment } from "@/models/models";
 import { hasAttendanceConflicts } from "@/lib/services/attendance-conflicts";
@@ -146,24 +147,12 @@ export async function POST(request: Request) {
       return await prisma.$transaction(async (tx) => {
         // Create the salary record
         const salary = await tx.salary.create({
-          data: {
+          data: buildSalaryCreateData({
             userId: user.id,
             month,
             year,
-            baseSalary: salaryDetails.baseSalary,
-            advanceDeduction: 0, // Will be updated when installments are approved
-            overtimeBonus: salaryDetails.overtimeAmount,
-            otherBonuses: salaryDetails.otherBonuses,
-            deductions: 0,
-            netSalary: salaryDetails.netSalary,
-            presentDays: salaryDetails.presentDays,
-            overtimeDays: salaryDetails.overtimeDays,
-            halfDays: salaryDetails.halfDays,
-            leavesEarned: salaryDetails.leavesEarned,
-            leaveSalary: salaryDetails.leaveSalary,
-            recurringDeductions: salaryDetails.recurringDeductions as unknown as object,
-            status: 'PENDING'
-          }
+            salaryDetails,
+          }),
         })
 
         // Referral bonuses are processed explicitly via /api/salary/process-referrals.

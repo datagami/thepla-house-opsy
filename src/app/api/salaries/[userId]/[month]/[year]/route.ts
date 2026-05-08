@@ -2,6 +2,7 @@ import {NextResponse} from "next/server";
 import {auth} from "@/auth";
 import {prisma} from "@/lib/prisma";
 import {calculateSalary} from "@/lib/services/salary-calculator";
+import { buildSalaryCreateData } from "@/lib/services/salary-create";
 import { logEntityActivity } from "@/lib/services/activity-log";
 import { ActivityType } from "@prisma/client";
 import { format } from "date-fns";
@@ -89,24 +90,12 @@ export async function POST(
     const salary = await prisma.$transaction(async (tx) => {
       // Create the salary record
       const salary = await tx.salary.create({
-        data: {
+        data: buildSalaryCreateData({
           userId,
           month: monthNum,
           year: yearNum,
-          baseSalary: salaryDetails.baseSalary,
-          advanceDeduction: 0, // Will be updated when installments are approved
-          overtimeBonus: salaryDetails.overtimeAmount,
-          otherBonuses: salaryDetails.otherBonuses,
-          deductions: 0,
-          netSalary: salaryDetails.netSalary,
-          presentDays: salaryDetails.presentDays,
-          overtimeDays: salaryDetails.overtimeDays,
-          halfDays: salaryDetails.halfDays,
-          leavesEarned: salaryDetails.leavesEarned,
-          leaveSalary: salaryDetails.leaveSalary,
-          recurringDeductions: salaryDetails.recurringDeductions as unknown as object,
-          status: 'PENDING'
-        }
+          salaryDetails,
+        }),
       });
 
       // Create pending installments for each suggested deduction
