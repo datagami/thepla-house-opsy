@@ -30,7 +30,7 @@ const SEEDS: Seed[] = [
     htmlBody: `<section class="clause"><h3><span class="num-mark">04</span>Weekly Off</h3><ul><li><strong>Sunday</strong> will be the fixed weekly off.</li><li><strong>Saturday</strong> will be a half-day work-from-home working day.</li><li>You may be required to work additional hours during festivals, special events or business exigencies; overtime shall be compensated as per Company policy.</li></ul></section>`,
   },
   {
-    title: 'Probation Period',
+    title: 'Probation — 6 months',
     category: 'PROBATION',
     sortOrder: 20,
     htmlBody: `<section class="clause"><h3><span class="num-mark">05</span>Probation Period</h3><p>You shall be on probation for a period of <strong>six (6) months</strong> from the date of joining. During this period, your services may be terminated by either party by giving <strong>five (5) days' written notice</strong>, without assigning any reason. On satisfactory completion of probation, your appointment shall be confirmed in writing.</p></section>`,
@@ -42,7 +42,7 @@ const SEEDS: Seed[] = [
     htmlBody: `<section class="clause"><h3><span class="num-mark">06</span>Leave Policy</h3><ul><li><strong>Earned Leave:</strong> 18 days per calendar year, accruing at 1.5 days per month worked. No encashment; 5 leaves can be carry-forwarded to the next year.</li><li><strong>Casual / Sick Leave:</strong> Sick leave beyond 2 consecutive days requires a medical certificate.</li><li><strong>Public Holidays:</strong> Per the Company's published list of holidays for the calendar year.</li></ul></section>`,
   },
   {
-    title: 'Notice Period & Termination',
+    title: 'Notice Period — 30 days',
     category: 'NOTICE',
     sortOrder: 40,
     htmlBody: `<section class="clause"><h3><span class="num-mark">07</span>Notice Period &amp; Termination</h3><ul><li><strong>During probation (company side):</strong> 5 days' written notice or 5 days' salary in lieu.</li><li><strong>After probation (company side):</strong> 30 days' notice or 30 days' salary in lieu.</li><li><strong>Employee side (at all times including probation):</strong> 30 days' written notice; failure results in 30 days' salary deduction.</li><li>Company may terminate <strong>immediately without notice</strong> for: breach of agreement, disobedience, misconduct, fraud/dishonesty, violation of business conduct policy, habitual neglect, conduct bringing disrepute, or any other ground permitted by law.</li><li>Company may also suspend without pay in these cases.</li></ul><p>You will be given your letter of Appointment enumerating terms and conditions within the same or a few days of joining.</p></section>`,
@@ -61,13 +61,12 @@ const SEEDS: Seed[] = [
   },
 ]
 
-// Legacy titles to delete on re-seed. These were renamed in this revision so
-// the seed's find-or-update (matched on title) won't update them — they'd be
-// orphaned. Snippets are NOT FK-linked from JobOffer (terms are copied into
-// JobOffer.termsHtml at use), so deleting old rows is safe.
+// Legacy titles to delete on re-seed. These were renamed in earlier revisions
+// so the seed's find-or-update (matched on title) won't update them — they'd
+// be orphaned. Snippets are NOT FK-linked from JobOffer (terms are copied
+// into JobOffer.termsHtml at use), so deleting old rows is safe.
 const LEGACY_TITLES_TO_DELETE = [
   'Probation — 3 months',
-  'Notice Period — 30 days',
 ]
 
 async function main() {
