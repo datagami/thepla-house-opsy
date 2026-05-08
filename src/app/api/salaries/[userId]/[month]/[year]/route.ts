@@ -104,6 +104,7 @@ export async function POST(
           halfDays: salaryDetails.halfDays,
           leavesEarned: salaryDetails.leavesEarned,
           leaveSalary: salaryDetails.leaveSalary,
+          recurringDeductions: salaryDetails.recurringDeductions as unknown as object,
           status: 'PENDING'
         }
       });
