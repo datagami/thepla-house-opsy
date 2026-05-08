@@ -57,7 +57,10 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
       
       const users = await response.json();
 
-      // Format data for Excel with date formatting
+      // Format data for Excel with date formatting. The 'Status*' column
+      // captures the row's actual user status so import can preserve it
+      // (PARTIAL_INACTIVE used to silently get demoted to INACTIVE because
+      // the importer only knew "Active Users" vs anything-else sheet names).
       const formatUserData = (user: User) => ({
         'UID': user.id || '',
         'Employee Number': Number(user.numId) || '',
@@ -80,16 +83,23 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
         'Reference 1 Contact*': user.references?.[0]?.contactNo || '',
         'Reference 2 Name': user.references?.[1]?.name || '',
         'Reference 2 Contact': user.references?.[1]?.contactNo || '',
+        'Status*': user.status || 'ACTIVE',
       });
 
       const workbook = XLSX.utils.book_new();
 
-      // Create sheets for active and non-active users
+      // Split into three sheets so HR can spot each cohort visually. The
+      // import path also reads each row's Status* column (sheet name is now
+      // a fallback only).
       const activeUsers = users.filter((user: User) => user.status === 'ACTIVE');
-      const nonActiveUsers = users.filter((user: User) => user.status !== 'ACTIVE');
+      const partialInactiveUsers = users.filter((user: User) => user.status === 'PARTIAL_INACTIVE');
+      const inactiveUsers = users.filter(
+        (user: User) => user.status !== 'ACTIVE' && user.status !== 'PARTIAL_INACTIVE'
+      );
 
       const activeSheet = XLSX.utils.json_to_sheet(activeUsers.map(formatUserData));
-      const nonActiveSheet = XLSX.utils.json_to_sheet(nonActiveUsers.map(formatUserData));
+      const partialInactiveSheet = XLSX.utils.json_to_sheet(partialInactiveUsers.map(formatUserData));
+      const nonActiveSheet = XLSX.utils.json_to_sheet(inactiveUsers.map(formatUserData));
 
       // Set column width and format
       const columnWidths = [
@@ -117,9 +127,11 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
       ];
 
       activeSheet['!cols'] = columnWidths;
+      partialInactiveSheet['!cols'] = columnWidths;
       nonActiveSheet['!cols'] = columnWidths;
 
       XLSX.utils.book_append_sheet(workbook, activeSheet, 'Active Users');
+      XLSX.utils.book_append_sheet(workbook, partialInactiveSheet, 'Partial Inactive Users');
       XLSX.utils.book_append_sheet(workbook, nonActiveSheet, 'Non Active Users');
       XLSX.writeFile(workbook, `users-data-${new Date().toLocaleDateString('en-GB')}.xlsx`);
     } catch (error) {
@@ -188,6 +200,15 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
           const sheets = workbook.SheetNames;
           const allUserData: ExcelObject[] = [];
 
+          // Map sheet name to a fallback status, in case the row has no Status*
+          // column (legacy XLSX files exported by older versions of this UI).
+          const sheetFallbackStatus = (name: string): 'ACTIVE' | 'PARTIAL_INACTIVE' | 'INACTIVE' => {
+            if (name === 'Active Users') return 'ACTIVE'
+            if (name === 'Partial Inactive Users') return 'PARTIAL_INACTIVE'
+            return 'INACTIVE'
+          }
+          const VALID_STATUSES = new Set(['ACTIVE', 'PARTIAL_INACTIVE', 'INACTIVE', 'PENDING', 'JOB_OFFER'])
+
           sheets.forEach(sheetName => {
             const sheet = workbook.Sheets[sheetName];
             const jsonData = XLSX.utils.sheet_to_json<ExcelObject>(sheet, {
@@ -195,23 +216,33 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
               dateNF: 'dd/mm/yyyy',
             });
 
-            // Process the data before validation
-            const processedData = jsonData.map(row => ({
-              ...row,
-              // Remove any leading single quotes from dates
-              'DOB*': row['DOB*']?.replace(/^'/, ''),
-              'DOJ*': row['DOJ*']?.replace(/^'/, ''),
-              // Convert number values to strings where needed
-              'Mobile No*': row['Mobile No*']?.toString(),
-              'Aadhar No*': row['Aadhar No*']?.toString(),
-              'Bank Account No*': row['Bank Account No*']?.toString(),
-              'Reference 1 Contact*': row['Reference 1 Contact*']?.toString(),
-              'Reference 2 Contact': row['Reference 2 Contact']?.toString(),
-              // Handle UID and Employee Number
-              'id': row['UID']?.toString() || '',
-              'numId': row['Employee Number']?.toString() || '',
-              'status': sheetName === 'Active Users' ? 'ACTIVE' : 'INACTIVE',
-            }));
+            // Process the data before validation. Prefer the row's own Status*
+            // value; fall back to a heuristic based on the sheet name only if
+            // the row didn't carry one (legacy XLSX). Either way, the chosen
+            // status must be a known enum value — otherwise we leave it
+            // undefined and let the server preserve the existing user's status.
+            const processedData = jsonData.map(row => {
+              const rawStatus = (row as ExcelObject & { 'Status*'?: string; 'Status'?: string })['Status*']
+                ?? (row as ExcelObject & { 'Status*'?: string; 'Status'?: string })['Status']
+              const normalized = (typeof rawStatus === 'string' ? rawStatus.trim().toUpperCase() : '')
+              const status = VALID_STATUSES.has(normalized) ? normalized : sheetFallbackStatus(sheetName)
+              return {
+                ...row,
+                // Remove any leading single quotes from dates
+                'DOB*': row['DOB*']?.replace(/^'/, ''),
+                'DOJ*': row['DOJ*']?.replace(/^'/, ''),
+                // Convert number values to strings where needed
+                'Mobile No*': row['Mobile No*']?.toString(),
+                'Aadhar No*': row['Aadhar No*']?.toString(),
+                'Bank Account No*': row['Bank Account No*']?.toString(),
+                'Reference 1 Contact*': row['Reference 1 Contact*']?.toString(),
+                'Reference 2 Contact': row['Reference 2 Contact']?.toString(),
+                // Handle UID and Employee Number
+                'id': row['UID']?.toString() || '',
+                'numId': row['Employee Number']?.toString() || '',
+                'status': status,
+              }
+            });
 
             allUserData.push(...processedData);
           });

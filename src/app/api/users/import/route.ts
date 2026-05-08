@@ -8,6 +8,17 @@ import {
   type SalaryAppraisalChange,
 } from "@/lib/services/salary-appraisal"
 
+const ALLOWED_STATUSES = ['ACTIVE', 'PARTIAL_INACTIVE', 'INACTIVE', 'PENDING', 'JOB_OFFER'] as const
+type AllowedStatus = (typeof ALLOWED_STATUSES)[number]
+
+function normalizeStatus(value: unknown): AllowedStatus | null {
+  if (typeof value !== 'string') return null
+  const normalized = value.trim().toUpperCase()
+  return (ALLOWED_STATUSES as readonly string[]).includes(normalized)
+    ? (normalized as AllowedStatus)
+    : null
+}
+
 // Helper function to convert Excel date or DD/MM/YYYY string to Date object
 function parseDate(dateValue: string | number): Date {
   // If it's a number (Excel date serial number)
@@ -114,6 +125,20 @@ export async function POST(request: Request) {
           }
         }
 
+        // Resolve the status the import wants to apply. The client now sends
+        // the row's actual Status (ACTIVE / PARTIAL_INACTIVE / INACTIVE / …);
+        // older clients only sent ACTIVE/INACTIVE based on the sheet name.
+        //
+        // - If the supplied value is one of the allowed statuses, use it.
+        // - Otherwise: for existing users, KEEP their current status (don't
+        //   silently demote a PARTIAL_INACTIVE user to ACTIVE/INACTIVE just
+        //   because the import didn't include a valid status).
+        // - For new users (no existing record), default to ACTIVE.
+        const requestedStatus = normalizeStatus(userData.status)
+        const resolvedStatus: AllowedStatus =
+          requestedStatus
+            ?? (existingUser ? (existingUser.status as AllowedStatus) : 'ACTIVE')
+
         // Common user data
         const userCommonData = {
           name: userData['Name*'],
@@ -132,7 +157,7 @@ export async function POST(request: Request) {
           bankAccountNo: userData['Bank Account No*'].toString(),
           bankIfscCode: userData['Bank IFSC Code*'].toString(),
           branchId: branchId,
-          status: userData.status || 'ACTIVE',
+          status: resolvedStatus,
           managedBranchId: managedBranchId,
         };
 
