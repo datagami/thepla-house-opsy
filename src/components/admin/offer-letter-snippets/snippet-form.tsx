@@ -12,38 +12,12 @@ import {
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { sanitizeOfferHtml } from '@/lib/services/offer-letter'
+import { OFFER_HTML_EDITOR_CONFIG } from '@/components/rich-text-editor/configs'
 
 const RichTextEditor = dynamic(
   () => import('@/components/rich-text-editor/rich-text-editor'),
   { ssr: false }
 )
-
-// Snippet editor needs the Jodit "source" button so HR can paste the
-// exact <section class="clause"><h3><span class="num-mark">NN</span>…</h3>
-// structure that the print CSS targets. Plain WYSIWYG can't insert
-// class="num-mark", so the visual numbering won't match.
-const SNIPPET_EDITOR_CONFIG = {
-  readonly: false,
-  height: 570,
-  toolbarSticky: false,
-  toolbarAdaptive: false,
-  showCharsCounter: false,
-  showWordsCounter: false,
-  showXPathInStatusbar: false,
-  askBeforePasteHTML: false,
-  askBeforePasteFromWord: false,
-  buttons: [
-    'source', '|',
-    'bold', 'italic', 'underline', 'strikethrough', '|',
-    'ul', 'ol', '|',
-    'outdent', 'indent', '|',
-    'font', 'fontsize', 'brush', 'paragraph', '|',
-    'image', 'table', 'link', '|',
-    'align', 'undo', 'redo', '|',
-    'hr', 'eraser', 'copyformat', '|',
-    'fullsize',
-  ],
-}
 
 interface SnippetFormProps {
   snippet?: {
@@ -68,7 +42,7 @@ export function SnippetForm({ snippet }: SnippetFormProps) {
   const [isActive, setIsActive] = useState(snippet?.isActive ?? true)
   const [sortOrder, setSortOrder] = useState(snippet?.sortOrder ?? 0)
   const [saving, setSaving] = useState(false)
-  const editorConfig = useMemo(() => SNIPPET_EDITOR_CONFIG, [])
+  const editorConfig = useMemo(() => OFFER_HTML_EDITOR_CONFIG, [])
 
   async function save() {
     if (!title.trim()) {
