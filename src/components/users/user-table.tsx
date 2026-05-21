@@ -161,7 +161,7 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
     const matchesSearch =
       user.name?.toLowerCase().includes(search.toLowerCase()) ||
       user.email?.toLowerCase().includes(search.toLowerCase()) ||
-      user.numId?.toString().toLowerCase().includes(search.toLowerCase());
+      String(user.numId ?? '').includes(search);
 
     const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
     const matchesBranch = branchFilter === "ALL" || user.branch?.id === branchFilter;

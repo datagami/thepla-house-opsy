@@ -60,12 +60,13 @@ export async function GET(req: Request) {
       };
     }
 
-    // Search filter (name or numId)
+    // Search filter (name, email, or numId)
     if (search && isHROrManagement) {
       where.user = {
         ...where.user,
         OR: [
           { name: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
           { numId: isNaN(parseInt(search)) ? undefined : parseInt(search) },
         ].filter(Boolean),
       };

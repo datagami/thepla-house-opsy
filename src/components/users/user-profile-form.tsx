@@ -90,7 +90,7 @@ interface Department {
 export function UserProfileForm({user, branches, canEdit = true}: UserProfileFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [employees, setEmployees] = useState<Array<{ id: string; name: string; email?: string | null }>>([]);
+  const [employees, setEmployees] = useState<Array<{ id: string; name: string; email?: string | null; numId?: number | null }>>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [referrerOpen, setReferrerOpen] = useState(false);
   const [referrerQuery, setReferrerQuery] = useState("");
@@ -530,7 +530,8 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
                 const selected = employees.find(e => e.id === field.value);
                 const filtered = referrerQuery
                   ? employees.filter(e =>
-                      (e.name + " " + (e.email || "")).toLowerCase().includes(referrerQuery.toLowerCase())
+                      (e.name + " " + (e.email || "")).toLowerCase().includes(referrerQuery.toLowerCase()) ||
+                      String(e.numId ?? '').includes(referrerQuery)
                     )
                   : employees;
                 return (

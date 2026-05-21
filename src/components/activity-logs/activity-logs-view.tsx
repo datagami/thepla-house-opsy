@@ -170,8 +170,10 @@ export function ActivityLogsView() {
       log.description.toLowerCase().includes(searchLower) ||
       log.user?.name?.toLowerCase().includes(searchLower) ||
       log.user?.email?.toLowerCase().includes(searchLower) ||
+      String(log.user?.numId ?? '').includes(search) ||
       log.targetUser?.name?.toLowerCase().includes(searchLower) ||
-      log.targetUser?.email?.toLowerCase().includes(searchLower)
+      log.targetUser?.email?.toLowerCase().includes(searchLower) ||
+      String(log.targetUser?.numId ?? '').includes(search)
     );
   });
 

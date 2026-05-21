@@ -286,7 +286,8 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
                   ) : (
                     allUsers
                       .filter(user =>
-                        user.name?.toLowerCase().includes(userSearch.toLowerCase())
+                        user.name?.toLowerCase().includes(userSearch.toLowerCase()) ||
+                        String(user.numId ?? '').includes(userSearch)
                       )
                       .map(user => (
                         <label key={user.id} className="flex items-center gap-2">
