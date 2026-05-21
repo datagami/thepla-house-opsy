@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { BranchAttendanceSubmissions } from "@/components/attendance/branch-attendance-submissions";
 import { Suspense } from "react";
+import { userIdentitySelect } from "@/lib/select-presets";
 
 export const metadata: Metadata = {
   title: "Branch Attendance Submissions - HRMS",
@@ -129,8 +130,7 @@ export default async function BranchAttendancePage({
           status: "ACTIVE",
         },
         select: {
-          id: true,
-          name: true,
+          ...userIdentitySelect,
           department: {
             select: {
               id: true,

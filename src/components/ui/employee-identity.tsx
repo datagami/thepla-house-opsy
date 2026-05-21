@@ -45,7 +45,7 @@ export function EmployeeIdentity({
     ? { backgroundColor: `hsl(${hue} 60% 50%)`, color: "white" }
     : { backgroundColor: "hsl(0 0% 80%)", color: "white" };
 
-  const idLine = subtitle ?? (user.numId !== null ? `#${user.numId}` : null);
+  const idLine = subtitle ?? (user.numId != null ? `#${user.numId}` : null);
 
   const inner = (
     <div

@@ -459,7 +459,7 @@ export interface JobOffer {
 
 export type EmployeeIdentityUser = {
   id: string;
-  name: string | null;
-  numId: number | null;
-  image: string | null;
+  name?: string | null;
+  numId?: number | null;
+  image?: string | null;
 };

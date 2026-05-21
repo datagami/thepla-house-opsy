@@ -19,6 +19,7 @@ import { AttendanceBranchFilter } from "./attendance-branch-filter";
 import { Attendance } from "@/models/models";
 import { AttendanceForm } from "./attendance-form";
 import { getShiftDisplay } from "@/lib/utils/shift-display";
+import { EmployeeIdentity } from "@/components/ui/employee-identity";
 
 
 interface AttendanceVerificationTableProps {
@@ -135,7 +136,9 @@ export function AttendanceVerificationTable({
                 onClick={() => setSelectedRecord(record)}
               >
                 <TableCell>{format(new Date(record.date), "PPP")}</TableCell>
-                <TableCell>{record.user.name}</TableCell>
+                <TableCell>
+                  <EmployeeIdentity user={record.user} size="md" />
+                </TableCell>
                 <TableCell>{record.user.branch?.name || "-"}</TableCell>
                 <TableCell>{record.user.department?.name || "-"}</TableCell>
                 <TableCell>{getAttendanceStatus(record)}</TableCell>

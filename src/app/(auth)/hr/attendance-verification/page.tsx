@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { userIdentitySelect } from "@/lib/select-presets";
 import { AttendanceVerificationTable } from "@/components/attendance/attendance-verification-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Suspense } from "react";
@@ -92,7 +93,7 @@ export default async function AttendanceVerificationPage({
     include: {
       user: {
         select: {
-          name: true,
+          ...userIdentitySelect,
           branch: {
             select: {
               name: true,

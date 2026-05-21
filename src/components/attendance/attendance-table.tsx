@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { AttendanceForm } from "./attendance-form";
 import {User} from "@/models/models";
 import { getShiftDisplay } from "@/lib/utils/shift-display";
+import { EmployeeIdentity } from "@/components/ui/employee-identity";
 
 
 interface AttendanceTableProps {
@@ -68,7 +69,9 @@ export function AttendanceTable({ users, date, viewOnly = false }: AttendanceTab
                 className="cursor-pointer hover:bg-muted/50"
                 onClick={() => setSelectedUser(user)}
               >
-                <TableCell>{user.name}</TableCell>
+                <TableCell>
+                  <EmployeeIdentity user={user} size="md" />
+                </TableCell>
                 <TableCell>
                   {user.department?.name || 'N/A'}
                 </TableCell>
