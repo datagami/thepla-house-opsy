@@ -15,6 +15,7 @@ import { AdvanceRow } from "./advance-row";
 import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { EmployeeIdentity } from "@/components/ui/employee-identity";
 
 interface Advance {
   id: string;
@@ -26,6 +27,7 @@ interface AdvanceData {
   userId: string;
   userName: string;
   userNumId: number;
+  userImage: string | null;
   userBranch: string;
   totalAdvanceAmount: number;
   totalRemainingAmount: number;
@@ -130,9 +132,17 @@ export function AdvancesTable({ advances }: AdvancesTableProps) {
                   </TableCell>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{userAdvance.userName}</div>
-                      <div className="text-sm text-muted-foreground">
-                        #{userAdvance.userNumId} • {userAdvance.userBranch}
+                      <EmployeeIdentity
+                        user={{
+                          id: userAdvance.userId,
+                          name: userAdvance.userName,
+                          numId: userAdvance.userNumId,
+                          image: userAdvance.userImage ?? null,
+                        }}
+                        size="md"
+                      />
+                      <div className="text-sm text-muted-foreground mt-0.5">
+                        {userAdvance.userBranch}
                       </div>
                     </div>
                   </TableCell>

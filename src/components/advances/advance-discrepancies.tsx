@@ -66,6 +66,7 @@ interface UserDiscrepancy {
   userId: string;
   userName: string;
   userNumId: number;
+  userImage: string | null;
   userBranch: string;
   totalDiscrepancy: number;
   deletedSalaryMonths: DeletedSalaryMonth[];
@@ -278,7 +279,7 @@ export function AdvanceDiscrepancies() {
                     )}
                     <div>
                       <EmployeeIdentity
-                        user={{ id: user.userId, name: user.userName, numId: user.userNumId }}
+                        user={{ id: user.userId, name: user.userName, numId: user.userNumId, image: user.userImage ?? null }}
                         size="md"
                       />
                       <div className="text-sm text-muted-foreground mt-0.5">

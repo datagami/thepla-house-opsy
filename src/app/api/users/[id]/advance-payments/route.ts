@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import {auth} from "@/auth";
+import { userIdentitySelect } from "@/lib/select-presets";
 
 const advancePaymentSchema = z.object({
   amount: z.number().positive(),
@@ -95,7 +96,7 @@ export async function GET(
       include: {
         approvedBy: {
           select: {
-            name: true,
+            ...userIdentitySelect,
           }
         }
       },

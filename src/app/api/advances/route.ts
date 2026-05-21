@@ -122,6 +122,7 @@ export async function GET(req: Request) {
         userId: string;
         userName: string;
         userNumId: number;
+        userImage: string | null;
         userBranch: string;
         totalAdvanceAmount: number;
         totalRemainingAmount: number;
@@ -139,6 +140,7 @@ export async function GET(req: Request) {
           userId,
           userName: advance.user.name ?? "Unknown",
           userNumId: advance.user.numId,
+          userImage: advance.user.image ?? null,
           userBranch: advance.user.branch?.name ?? "N/A",
           totalAdvanceAmount: 0,
           totalRemainingAmount: 0,

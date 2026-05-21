@@ -94,6 +94,7 @@ export async function GET() {
         userId: string;
         userName: string;
         userNumId: number;
+        userImage: string | null;
         userBranch: string;
         totalDiscrepancy: number;
         deletedSalaryMonths: Array<{ month: number; year: number; deletedAt: Date }>;
@@ -142,6 +143,7 @@ export async function GET() {
           userId: advance.userId,
           userName: advance.user.name ?? "Unknown",
           userNumId: advance.user.numId,
+          userImage: advance.user.image ?? null,
           userBranch: advance.user.branch?.name ?? "N/A",
           totalDiscrepancy: 0,
           deletedSalaryMonths: deletionsByUser.get(advance.userId) ?? [],
