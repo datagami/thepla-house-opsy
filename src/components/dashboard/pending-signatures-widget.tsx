@@ -42,7 +42,13 @@ export function PendingSignaturesWidget({ pendingUsers, currentUserRole }: Pendi
                 <EmployeeIdentity
                   user={user}
                   size="sm"
-                  subtitle={`${user.role} • ${user.department?.name || 'N/A'}`}
+                  subtitle={
+                    <>
+                      {user.numId !== null && user.numId !== undefined ? `#${user.numId} · ` : ''}
+                      {user.role}
+                      {user.department?.name ? ` · ${user.department.name}` : ''}
+                    </>
+                  }
                 />
               </div>
               <Button
