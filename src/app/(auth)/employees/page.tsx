@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { EmployeeTable } from "@/components/employees/employee-table";
 import { Branch } from "@/models/models";
+import { userIdentitySelect } from "@/lib/select-presets";
 
 export const metadata: Metadata = {
   title: "Employees - HRMS",
@@ -26,8 +27,7 @@ export default async function EmployeesPage() {
       status: "ACTIVE",
     },
     select: {
-      id: true,
-      name: true,
+      ...userIdentitySelect,
       email: true,
       status: true,
       branch: {

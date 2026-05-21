@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { hasAccess } from "@/lib/access-control";
 import { WarningsPage } from "@/components/users/warnings-page";
+import { userIdentitySelect } from "@/lib/select-presets";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -25,7 +26,7 @@ export default async function UserWarningsPage({ params }: Props) {
   // Fetch user first to check branch access for branch managers
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, name: true, branchId: true, branch: { select: { id: true } } },
+    select: { ...userIdentitySelect, branchId: true, branch: { select: { id: true } } },
   });
 
   if (!user) {
