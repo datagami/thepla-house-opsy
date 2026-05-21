@@ -33,6 +33,8 @@ export default async function SelfAttendancePage({ searchParams }: Props) {
     id: string;
     name: string;
     role: string;
+    numId?: number | null;
+    image?: string | null;
   };
 
   if (!user.role || !user.id || !user.name) {
@@ -199,6 +201,8 @@ export default async function SelfAttendancePage({ searchParams }: Props) {
                 <SelfAttendanceFormWrapper
                   userId={user.id}
                   userName={user.name}
+                  userNumId={user.numId}
+                  userImage={user.image}
                   userRole={user.role}
                   date={selectedDate}
                   department={user.role}
@@ -209,6 +213,8 @@ export default async function SelfAttendancePage({ searchParams }: Props) {
               <SelfAttendanceFormWrapper
                 userId={user.id}
                 userName={user.name}
+                userNumId={user.numId}
+                userImage={user.image}
                 userRole={user.role}
                 date={selectedDate}
                 department={user.role}
@@ -222,6 +228,8 @@ export default async function SelfAttendancePage({ searchParams }: Props) {
                 <SelfAttendanceFormWrapper
                   userId={user.id}
                   userName={user.name}
+                  userNumId={user.numId}
+                  userImage={user.image}
                   userRole={user.role}
                   date={selectedDate}
                   department={user.role}

@@ -12,15 +12,19 @@ interface DetailedAttendanceCalendarProps {
   month: Date;
   userId: string;
   userName: string;
+  userNumId?: number | null;
+  userImage?: string | null;
   userRole: string;
   department: string;
 }
 
-export function DetailedAttendanceCalendar({ 
-  attendance, 
+export function DetailedAttendanceCalendar({
+  attendance,
   month,
   userId,
   userName,
+  userNumId,
+  userImage,
   userRole,
   department
 }: DetailedAttendanceCalendarProps) {
@@ -223,8 +227,10 @@ export function DetailedAttendanceCalendar({
         <AttendanceForm
           userId={userId}
           userName={userName}
+          userNumId={userNumId}
+          userImage={userImage}
           date={selectedDate}
-          department={department} 
+          department={department}
           currentAttendance={selectedAttendance || undefined}
           isOpen={!!selectedDate}
           onCloseAction={() => {

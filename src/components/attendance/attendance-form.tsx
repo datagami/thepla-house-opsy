@@ -15,10 +15,13 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { AttendanceFormProps, AttendanceFormData } from "@/models/attendance";
+import { EmployeeIdentity } from "@/components/ui/employee-identity";
 
 export function AttendanceForm({
   userId,
   userName,
+  userNumId,
+  userImage,
   date,
   currentAttendance,
   isOpen,
@@ -349,13 +352,25 @@ export function AttendanceForm({
   return (
     <Dialog open={isOpen} onOpenChange={onCloseAction}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
-        <DialogHeader>
-          <DialogTitle className="text-base sm:text-lg pr-8">
+        <DialogHeader className="pr-8">
+          <DialogTitle className="text-base sm:text-lg">
             {showApproveReject ? "Review Attendance" : "Mark Attendance"}
-            <span className="block text-sm font-normal text-muted-foreground mt-0.5">
-              {userName}{department ? ` · ${department}` : ""}
-            </span>
           </DialogTitle>
+          <EmployeeIdentity
+            user={{
+              id: userId ?? "",
+              name: userName ?? null,
+              numId: userNumId ?? null,
+              image: userImage ?? null,
+            }}
+            size="sm"
+            subtitle={
+              <>
+                {userNumId !== null && userNumId !== undefined ? `#${userNumId}` : null}
+                {department ? `${userNumId !== null && userNumId !== undefined ? " · " : ""}${department}` : null}
+              </>
+            }
+          />
         </DialogHeader>
         <div className="space-y-4">
           <div className="flex items-center justify-between">

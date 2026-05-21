@@ -273,11 +273,13 @@ export default async function EmployeeAttendancePage({
       <div className="space-y-4">
         <div className="rounded-md border bg-card">
           <div className="p-6">
-            <DetailedAttendanceCalendar 
+            <DetailedAttendanceCalendar
               attendance={attendance}
               month={startDate}
               userId={employee.id}
               userName={employee.name || ""}
+              userNumId={employee.numId}
+              userImage={employee.image}
               userRole={role}
               department={employee.department?.name || ''}
             />

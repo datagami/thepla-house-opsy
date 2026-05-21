@@ -160,6 +160,8 @@ export function SharedAttendanceTable({
         <AttendanceForm
           userId={selectedUser.id}
           userName={selectedUser.name || ""}
+          userNumId={selectedUser.numId}
+          userImage={selectedUser.image}
           date={date}
           currentAttendance={selectedUser.attendance?.[0]}
           isOpen={!!selectedUser}

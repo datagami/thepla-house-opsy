@@ -138,6 +138,8 @@ export function AttendanceTable({ users, date, viewOnly = false }: AttendanceTab
         <AttendanceForm
           userId={selectedUser.id}
           userName={selectedUser.name}
+          userNumId={selectedUser.numId}
+          userImage={selectedUser.image}
           userRole={selectedUser.role}
           department={selectedUser.department?.name || ''}
           date={date}

@@ -162,6 +162,8 @@ export function AttendanceVerificationTable({
         <AttendanceForm
           userId={selectedRecord.userId}
           userName={selectedRecord.user.name}
+          userNumId={selectedRecord.user.numId}
+          userImage={selectedRecord.user.image}
           date={new Date(selectedRecord.date)}
           currentAttendance={selectedRecord}
           isOpen={!!selectedRecord}
