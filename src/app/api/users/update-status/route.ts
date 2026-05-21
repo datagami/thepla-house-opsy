@@ -96,27 +96,54 @@ export async function POST(request: Request) {
       }
     }
 
-    // Update user's status
-    const updatedUser = await prisma.user.update({
+    // Fetch the user's current status before updating.
+    const existingUser = await prisma.user.findUnique({
       where: { id: userId },
-      data: {
-        status: status as UserStatus,
-        updatedAt: new Date(),
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        status: true,
-        branch: {
-          select: {
-            id: true,
-            name: true,
-          }
-        }
-      }
+      select: { status: true },
     });
+    if (!existingUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    const oldStatus = existingUser.status;
+
+    // Update user + record status transition in a single transaction.
+    const updatedUser = await prisma.$transaction(async (tx) => {
+      const u = await tx.user.update({
+        where: { id: userId },
+        data: { status: status as UserStatus, updatedAt: new Date() },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          status: true,
+          branch: { select: { id: true, name: true } },
+        },
+      });
+
+      await tx.userStatusHistory.create({
+        data: {
+          userId,
+          fromStatus: oldStatus,
+          toStatus: status as UserStatus,
+          changedById: currentUser.id,
+          reason: null,
+        },
+      });
+
+      return u;
+    });
+
+    // Activity log lives outside the transaction (has its own error handling).
+    await logEntityActivity(
+      ActivityType.USER_STATUS_CHANGED,
+      currentUser.id,
+      'User',
+      userId,
+      `Status changed from ${oldStatus} to ${status}`,
+      { fromStatus: oldStatus, toStatus: status },
+      request,
+    );
 
     return NextResponse.json({
       ...updatedUser,
