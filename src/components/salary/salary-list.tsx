@@ -3,6 +3,7 @@
 import {useCallback, useEffect, useState} from 'react'
 import {Branch, Salary, User} from "@/models/models"
 import {Button} from '@/components/ui/button'
+import { EmployeeIdentity } from "@/components/ui/employee-identity"
 import {useRouter, useSearchParams} from 'next/navigation'
 import {Checkbox} from "@/components/ui/checkbox"
 import {toast} from "sonner"
@@ -529,7 +530,7 @@ export function SalaryList({month, year}: SalaryListProps) {
           <div className="space-y-2">
             {deactivateCandidates.map((c) => (
               <div key={c.userId} className="text-sm">
-                {c.name || 'Employee'}{c.numId ? ` (Emp #${c.numId})` : ''}
+                <EmployeeIdentity user={{ id: c.userId, name: c.name, numId: c.numId, image: null }} size="sm" />
               </div>
             ))}
           </div>
@@ -863,7 +864,9 @@ export function SalaryList({month, year}: SalaryListProps) {
                       />
                     )}
                     <div>
-                      <CardTitle>{salary.user.name}</CardTitle>
+                      <CardTitle>
+                        <EmployeeIdentity user={salary.user} size="md" />
+                      </CardTitle>
                       <CardDescription>
                         {new Date(salary.year, salary.month - 1).toLocaleString('default', {
                           month: 'long',

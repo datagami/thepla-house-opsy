@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { formatDateOnly } from '@/lib/utils'
+import { EmployeeIdentity } from "@/components/ui/employee-identity"
 
 interface SalaryStatsTableProps {
   salaryId: string
@@ -80,7 +81,8 @@ export function SalaryStatsTable({ salaryId }: SalaryStatsTableProps) {
       <CardHeader>
         <CardTitle>Salary Calculation Details</CardTitle>
         <CardDescription>
-          Detailed breakdown of salary calculation for {stats.employee.name} - 
+          Detailed breakdown of salary calculation for{' '}
+          <EmployeeIdentity user={stats.employee} size="sm" />{' '}—{' '}
           {new Date(stats.salary.year, stats.salary.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}
         </CardDescription>
       </CardHeader>
@@ -92,16 +94,16 @@ export function SalaryStatsTable({ salaryId }: SalaryStatsTableProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Employee ID</TableHead>
-                  <TableHead>Name</TableHead>
+                  <TableHead>Employee</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Base Salary</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 <TableRow>
-                  <TableCell>{stats.employee.id}</TableCell>
-                  <TableCell>{stats.employee.name}</TableCell>
+                  <TableCell>
+                    <EmployeeIdentity user={stats.employee} size="md" />
+                  </TableCell>
                   <TableCell>{stats.employee.email}</TableCell>
                   <TableCell>{formatCurrency(stats.salary.baseSalary)}</TableCell>
                 </TableRow>
