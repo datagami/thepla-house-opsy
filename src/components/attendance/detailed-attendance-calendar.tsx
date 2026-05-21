@@ -3,7 +3,7 @@
 import { eachDayOfInterval, endOfMonth, format, getDay, startOfMonth } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Attendance } from "@/models/models";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { AttendanceForm } from "./attendance-form";
 import { Badge } from "@/components/ui/badge";
 
@@ -16,6 +16,7 @@ interface DetailedAttendanceCalendarProps {
   userImage?: string | null;
   userRole: string;
   department: string;
+  inactiveDateKeys?: string[];
 }
 
 export function DetailedAttendanceCalendar({
@@ -26,10 +27,16 @@ export function DetailedAttendanceCalendar({
   userNumId,
   userImage,
   userRole,
-  department
+  department,
+  inactiveDateKeys,
 }: DetailedAttendanceCalendarProps) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedAttendance, setSelectedAttendance] = useState<Attendance | null>(null);
+
+  const inactiveSet = useMemo(
+    () => new Set(inactiveDateKeys ?? []),
+    [inactiveDateKeys],
+  );
 
   const days = eachDayOfInterval({
     start: startOfMonth(month),
@@ -48,6 +55,7 @@ export function DetailedAttendanceCalendar({
 
   const handleDateClick = (date: Date) => {
     const dateKey = format(date, "yyyy-MM-dd");
+    if (inactiveSet.has(dateKey)) return;
     const existingAttendance = attendanceMap.get(dateKey);
     
     const today = new Date();
@@ -76,6 +84,7 @@ export function DetailedAttendanceCalendar({
 
   const getAttendanceStatus = (date: Date) => {
     const dateKey = format(date, "yyyy-MM-dd");
+    if (inactiveSet.has(dateKey)) return "INACTIVE";
     const record = attendanceMap.get(dateKey);
     if (!record) return "PENDING";
     if (record.status === "PENDING_VERIFICATION") {
@@ -97,6 +106,7 @@ export function DetailedAttendanceCalendar({
     WORK_FROM_HOME: "bg-teal-100 text-teal-800",
     PENDING_PRESENT: "bg-green-100 text-green-800",
     PENDING_ABSENT: "bg-red-100 text-red-800",
+    INACTIVE: "bg-gray-100 text-gray-400",
   } as const;
 
   return (
