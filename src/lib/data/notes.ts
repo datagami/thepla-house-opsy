@@ -30,7 +30,11 @@ export async function getNote(id: string): Promise<Note | null> {
       sharedWith: {
         include: {
           user: {
-            select: userIdentitySelect
+            select: {
+              ...userIdentitySelect,
+              role: true,
+              branch: { select: { id: true, name: true } },
+            },
           }
         }
       },

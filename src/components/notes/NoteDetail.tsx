@@ -2,6 +2,20 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {Note, NoteComment, NoteEditHistory, NoteShare, User} from "@/models/models";
+
+interface NoteShareWithUser {
+  id: string;
+  noteId: string;
+  userId: string;
+  user: {
+    id: string;
+    name: string | null;
+    numId: number | null;
+    image: string | null;
+    role: string;
+    branch: { id: string; name: string } | null;
+  };
+}
 import {Textarea} from "@/components/ui/textarea";
 import {
   Dialog,
@@ -106,15 +120,6 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
         .catch(() => setAllUsers([]));
     }
   }, [shareModalOpen]);
-
-  useEffect(() => {
-    if (tab === 'shared' && allUsers.length === 0) {
-      fetch('/api/users')
-        .then(res => res.json())
-        .then(data => setAllUsers(data))
-        .catch(() => setAllUsers([]));
-    }
-  }, [tab, allUsers.length]);
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
@@ -439,14 +444,22 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
             <div>
               <div className="space-y-2">
                 {note.sharedWith && note.sharedWith.length > 0 ? (
-                  note.sharedWith.map((share, idx) => (
+                  (note.sharedWith as unknown as NoteShareWithUser[]).map((share, idx) => (
                     <div key={share.id || idx} className="border rounded p-2 flex items-center gap-2">
-                      {share.user && <EmployeeIdentity user={share.user} size="sm" />}
-                      <span className="text-xs text-muted-foreground">
-                        ({allUsers.find(u => u.id === share.userId)?.branch?.name || 'No Branch'}
-                        {allUsers.find(u => u.id === share.userId)?.role ? `, ${allUsers.find(u => u.id === share.userId)?.role}` : ''}
-                        {share.userId === note.ownerId ? ', Owner' : ''})
-                      </span>
+                      {share.user && (
+                        <EmployeeIdentity
+                          user={share.user}
+                          size="sm"
+                          subtitle={
+                            <>
+                              {share.user.numId !== null ? `#${share.user.numId}` : ''}
+                              {share.user.branch?.name ? ` · ${share.user.branch.name}` : ''}
+                              {share.user.role ? ` · ${share.user.role}` : ''}
+                              {share.userId === note.ownerId ? ' · Owner' : ''}
+                            </>
+                          }
+                        />
+                      )}
                     </div>
                   ))
                 ) : (
