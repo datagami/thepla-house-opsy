@@ -224,6 +224,10 @@ model User {
   offerLetterSnippetsCreated OfferLetterSnippet[] @relation("OfferLetterSnippetCreatedBy")
   offerLetterSnippetsUpdated OfferLetterSnippet[] @relation("OfferLetterSnippetUpdatedBy")
 
+  // --- Status History Relations ---
+  statusHistory        UserStatusHistory[] @relation("UserStatusHistoryUser")
+  statusHistoryChanges UserStatusHistory[] @relation("UserStatusHistoryChangedBy")
+
   @@index([branchId])
   @@index([managedBranchId])
   @@index([selectedBranchId])
@@ -274,6 +278,22 @@ model Warning {
   @@index([isArchived])
   @@index([createdAt])
   @@map("warnings")
+}
+
+model UserStatusHistory {
+  id          String      @id @default(cuid())
+  userId      String      @map("user_id")
+  fromStatus  UserStatus? @map("from_status")
+  toStatus    UserStatus  @map("to_status")
+  changedAt   DateTime    @default(now()) @map("changed_at")
+  changedById String?     @map("changed_by_id")
+  reason      String?
+
+  user      User  @relation("UserStatusHistoryUser", fields: [userId], references: [id], onDelete: Cascade)
+  changedBy User? @relation("UserStatusHistoryChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
+
+  @@index([userId, changedAt])
+  @@map("user_status_history")
 }
 
 model VerificationToken {
