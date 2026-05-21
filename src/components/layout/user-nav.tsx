@@ -1,6 +1,5 @@
 "use client";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,22 +13,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut, Building2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import {User} from "@/models/models";
+import { EmployeeIdentity } from "@/components/ui/employee-identity";
+import type { EmployeeIdentityUser } from "@/models/models";
 
 interface UserNavProps {
-  user: User;
+  user: EmployeeIdentityUser & { email?: string | null; role?: string | null };
   branchName: string;
 }
 
 export function UserNav({ user, branchName }: UserNavProps) {
   const router = useRouter();
-  const initials = user.name
-    ? user.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-    : "U";
 
   const handleSignOut = async () => {
     try {
@@ -45,10 +38,8 @@ export function UserNav({ user, branchName }: UserNavProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
+        <Button variant="ghost" className="relative h-auto rounded-full px-2 py-1">
+          <EmployeeIdentity user={user} size="sm" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>

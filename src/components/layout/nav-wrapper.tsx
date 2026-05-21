@@ -3,10 +3,10 @@
 import { MainNav } from "./main-nav";
 import { UserNav } from "./user-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
-import {User} from "@/models/models";
+import type { EmployeeIdentityUser } from "@/models/models";
 
 interface NavWrapperProps {
-  user: User;
+  user: EmployeeIdentityUser & { email?: string | null; role?: string | null };
   branchName: string;
   userRole: string;
 }
@@ -23,4 +23,4 @@ export function NavWrapper({ user, branchName, userRole }: NavWrapperProps) {
       </div>
     </div>
   );
-} 
+}
