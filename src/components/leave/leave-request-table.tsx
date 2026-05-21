@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn, stringToHue } from "@/lib/utils";
+import { EmployeeIdentity } from "@/components/ui/employee-identity";
 import {
   addMonths,
   eachDayOfInterval,
@@ -417,7 +418,9 @@ export function LeaveRequestTable({
           <TableBody>
             {filteredRequests.map((request) => (
               <TableRow key={request.id}>
-                <TableCell>{request.user?.name ?? "-"}</TableCell>
+                <TableCell>
+                  {request.user ? <EmployeeIdentity user={request.user} size="md" /> : "-"}
+                </TableCell>
                 {showBranch && (
                   <TableCell>{request.user?.branch?.name || "-"}</TableCell>
                 )}

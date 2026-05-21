@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { userIdentitySelect } from "@/lib/select-presets";
 import { LeaveRequestTable } from "@/components/leave/leave-request-table";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -26,7 +27,7 @@ export default async function LeaveRequestsPage() {
     include: {
       user: {
         select: {
-          name: true,
+          ...userIdentitySelect,
           branch: {
             select: {
               id: true,
