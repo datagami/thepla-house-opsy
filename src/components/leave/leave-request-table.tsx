@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
+import { cn, stringToHue } from "@/lib/utils";
 import {
   addMonths,
   eachDayOfInterval,
@@ -69,14 +69,6 @@ function toDate(value: unknown): Date {
 
 function getDepartmentName(request: LeaveRequest) {
   return request.user?.department?.name ?? "-";
-}
-
-function stringToHue(input: string) {
-  let hash = 0;
-  for (let i = 0; i < input.length; i++) {
-    hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
-  }
-  return hash % 360;
 }
 
 function DepartmentPill({ name }: { name: string }) {

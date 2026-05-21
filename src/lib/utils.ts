@@ -53,6 +53,18 @@ export function formatCurrency(amount: number): string {
 }
 
 /**
+ * Hash a string into a hue value [0, 360). Used to give each person/department
+ * a stable color (e.g. for avatar fallback backgrounds, department pills).
+ */
+export function stringToHue(input: string): number {
+  let hash = 0;
+  for (let i = 0; i < input.length; i++) {
+    hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
+  }
+  return hash % 360;
+}
+
+/**
  * Generates a predictable password: first 3 letters of name + special symbol + 4 random digits
  * Format: abc@1234
  */
