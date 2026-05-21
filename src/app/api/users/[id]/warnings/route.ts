@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { AzureStorageService } from "@/lib/azure-storage";
 import { logEntityActivity } from "@/lib/services/activity-log";
+import { userIdentitySelect } from "@/lib/select-presets";
 import { ActivityType } from "@prisma/client";
 
 const WARNING_PHOTOS_FOLDER = "warnings/photos";
@@ -113,7 +114,7 @@ export async function POST(
         isArchived: false,
       },
       include: {
-        reportedBy: { select: { id: true, name: true } },
+        reportedBy: { select: { ...userIdentitySelect } },
         warningType: { select: { id: true, name: true, description: true } },
       },
     });
@@ -181,8 +182,8 @@ export async function GET(
     const warnings = await prisma.warning.findMany({
       where: includeArchived ? { userId } : { userId, isArchived },
       include: {
-        reportedBy: { select: { id: true, name: true } },
-        archivedBy: { select: { id: true, name: true } },
+        reportedBy: { select: { ...userIdentitySelect } },
+        archivedBy: { select: { ...userIdentitySelect } },
         warningType: { select: { id: true, name: true, description: true } },
       },
       orderBy: { createdAt: "desc" },

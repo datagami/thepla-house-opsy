@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { userIdentitySelect } from "@/lib/select-presets";
 
 // GET: Fetch warning statistics (HR/MANAGEMENT/BRANCH_MANAGER only)
 export async function GET(req: Request) {

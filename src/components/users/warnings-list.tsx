@@ -12,9 +12,9 @@ interface WarningItem {
   photoUrl?: string | null;
   isArchived?: boolean;
   archivedAt?: string | null;
-  archivedBy?: { id: string; name: string | null } | null;
+  archivedBy?: { id: string; name?: string | null; numId?: number | null; image?: string | null } | null;
   createdAt: string;
-  reportedBy?: { id: string; name: string | null } | null;
+  reportedBy?: { id: string; name?: string | null; numId?: number | null; image?: string | null } | null;
   warningType?: { id: string; name: string; description?: string | null } | null;
 }
 
