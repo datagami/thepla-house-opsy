@@ -6,6 +6,13 @@ import type { EmployeeIdentityUser } from "@/models/models";
 
 type Size = "sm" | "md" | "lg";
 
+/**
+ * Identity display for an employee: avatar + name + #numId.
+ *
+ * The default subtitle line shows `#numId`. Passing `subtitle` REPLACES
+ * the #numId line entirely. To keep both, render numId in your subtitle:
+ * `subtitle={<>#{user.numId} · {user.role}</>}`.
+ */
 interface EmployeeIdentityProps {
   user: EmployeeIdentityUser;
   size?: Size;
@@ -66,10 +73,10 @@ export function EmployeeIdentity({
       </Avatar>
 
       {size === "sm" ? (
-        <div className="min-w-0 truncate">
-          <span className={NAME_TEXT[size]}>{user.name ?? "Unnamed"}</span>
+        <div className="flex min-w-0 items-baseline gap-1.5">
+          <span className={cn(NAME_TEXT[size], "truncate")}>{user.name ?? "Unnamed"}</span>
           {idLine !== null && (
-            <span className={cn("ml-1.5", ID_TEXT[size])}>· {idLine}</span>
+            <span className={cn(ID_TEXT[size], "shrink-0")}>· {idLine}</span>
           )}
         </div>
       ) : (
