@@ -1,19 +1,23 @@
 'use client';
 
 import {useState, useRef} from 'react';
+import {useSession} from 'next-auth/react';
 import {Button} from '@/components/ui/button';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
-import {Dialog, DialogContent} from '@/components/ui/dialog';
+import {Dialog, DialogContent, DialogTitle} from '@/components/ui/dialog';
 import {Camera, Loader2} from 'lucide-react';
 import {toast} from 'sonner';
+import {getInitials} from '@/lib/utils';
 
 interface UserImageUploadProps {
   userId: string;
   currentImage?: string | null;
   onImageUpdate?: (imageUrl: string) => void;
+  userName?: string | null;
 }
 
-export function UserImageUpload({userId, currentImage, onImageUpdate}: UserImageUploadProps) {
+export function UserImageUpload({userId, currentImage, onImageUpdate, userName}: UserImageUploadProps) {
+  const {update: updateSession} = useSession();
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImage || null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
@@ -60,6 +64,7 @@ export function UserImageUpload({userId, currentImage, onImageUpdate}: UserImage
 
       const data = await response.json();
       onImageUpdate?.(data.imageUrl);
+      await updateSession();
       toast.success('Profile image updated successfully');
     } catch (error) {
       console.error('Error uploading image:', error);
@@ -92,7 +97,7 @@ export function UserImageUpload({userId, currentImage, onImageUpdate}: UserImage
           <Avatar className="h-32 w-32">
             <AvatarImage src={previewUrl || ''} alt="Profile image"/>
             <AvatarFallback>
-              {currentImage ? '...' : userId.slice(0, 2).toUpperCase()}
+              {currentImage ? '...' : getInitials(userName)}
             </AvatarFallback>
           </Avatar>
         </button>
@@ -124,6 +129,7 @@ export function UserImageUpload({userId, currentImage, onImageUpdate}: UserImage
 
       <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
         <DialogContent className="max-w-3xl p-2 bg-black/90 border-0 [&>button]:text-white [&>button]:bg-white/10 [&>button]:hover:bg-white/20 [&>button]:rounded-full [&>button]:p-1 [&>button]:opacity-100">
+          <DialogTitle className="sr-only">Profile image</DialogTitle>
           {previewUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img

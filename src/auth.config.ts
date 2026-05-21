@@ -47,14 +47,10 @@ export default {
         if (user.status !== "ACTIVE") {
           throw new Error("Account is not active");
         }
-        console.log(user.password)
-        console.log(credentials.password)
-
         const isPasswordValid = await compare(
           credentials.password as string,
           user.password
         );
-        console.log(isPasswordValid);
 
         if (!isPasswordValid) {
           return null;
@@ -75,7 +71,7 @@ export default {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         // @ts-expect-error - role is not in the User type
         token.role = user.role;
@@ -89,6 +85,18 @@ export default {
       }
       // Refresh numId/image from DB if absent (e.g. existing sessions)
       if (token.sub && (token.numId === undefined || token.image === undefined)) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.sub },
+          select: userIdentitySelect,
+        });
+        if (dbUser) {
+          token.numId = dbUser.numId;
+          token.image = dbUser.image;
+          token.name = dbUser.name;
+        }
+      }
+      // Re-fetch identity from DB when session.update() is called (e.g. after profile picture upload)
+      if (trigger === 'update' && token.sub) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.sub },
           select: userIdentitySelect,

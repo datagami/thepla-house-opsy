@@ -301,6 +301,7 @@ export function UserProfileForm({user, branches, canEdit = true}: UserProfileFor
         <UserImageUpload
           userId={user?.id || ''}
           currentImage={user?.image}
+          userName={user?.name}
           onImageUpdate={(imageUrl) => {
             if (user) {
               user.image = imageUrl;
