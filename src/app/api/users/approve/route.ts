@@ -66,31 +66,49 @@ export async function POST(req: Request) {
       };
     }
 
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: updateData,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        status: true,
-        branchId: true,
-        branch: {
-          select: {
-            id: true,
-            name: true,
-            city: true,
+    const oldStatus = userToUpdate.status;
+
+    const updatedUser = await prisma.$transaction(async (tx) => {
+      const u = await tx.user.update({
+        where: { id: userId },
+        data: updateData,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          status: true,
+          branchId: true,
+          branch: {
+            select: {
+              id: true,
+              name: true,
+              city: true,
+            },
           },
-        },
-        approvedBy: {
-          select: {
-            id: true,
-            name: true,
+          approvedBy: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
+          createdAt: true,
         },
-        createdAt: true,
-      },
+      });
+
+      if (nextStatus) {
+        await tx.userStatusHistory.create({
+          data: {
+            userId,
+            fromStatus: oldStatus,
+            toStatus: nextStatus as UserStatus,
+            changedById: approver.id,
+            reason: nextStatus === 'ACTIVE' ? 'approved' : 'status_change',
+          },
+        });
+      }
+
+      return u;
     });
 
     // Log user approval/status change
