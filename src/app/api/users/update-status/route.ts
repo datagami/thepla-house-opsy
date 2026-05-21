@@ -106,11 +106,30 @@ export async function POST(request: Request) {
     }
     const oldStatus = existingUser.status;
 
+    // No-op transition: same status → don't record history or activity.
+    if (oldStatus === status) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          status: true,
+          branch: { select: { id: true, name: true } },
+        },
+      });
+      return NextResponse.json({
+        ...user,
+        ...(referralReversal && { referralReversal }),
+      });
+    }
+
     // Update user + record status transition in a single transaction.
     const updatedUser = await prisma.$transaction(async (tx) => {
       const u = await tx.user.update({
         where: { id: userId },
-        data: { status: status as UserStatus, updatedAt: new Date() },
+        data: { status: status as UserStatus },
         select: {
           id: true,
           name: true,

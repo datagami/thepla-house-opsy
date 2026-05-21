@@ -68,6 +68,11 @@ export async function POST(req: Request) {
 
     const oldStatus = userToUpdate.status;
 
+    // No-op transition: same status → don't record history or log activity.
+    if (nextStatus && oldStatus === nextStatus) {
+      return NextResponse.json({ ...userToUpdate });
+    }
+
     const updatedUser = await prisma.$transaction(async (tx) => {
       const u = await tx.user.update({
         where: { id: userId },

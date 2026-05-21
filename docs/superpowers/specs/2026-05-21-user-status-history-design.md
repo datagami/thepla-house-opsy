@@ -98,7 +98,7 @@ export async function getInactiveDateKeysInRange(
 
 `resolveStatusOnDate` is a pure function — walks the sorted history and returns the status that was effective at `date`. Returns `null` if the user didn't exist yet (date < earliest `changedAt`).
 
-`getInactiveDateKeysInRange` is the DB-touching helper. It loads the user's history (`where: { userId, changedAt: { lte: endDate } }, orderBy: { changedAt: 'asc' }`), iterates each day in `[startDate, endDate]`, computes the effective status, and returns a Set of `yyyy-MM-dd` keys for days where the status is in `NOT_WORKING_STATUSES`.
+`getInactiveDateKeysInRange` is the DB-touching helper. It loads the user's history (`where: { userId, changedAt: { lte: endDate } }, orderBy: { changedAt: 'asc' }`), iterates each day in `[startDate, endDate]`, computes the effective status, and returns a Set of `yyyy-MM-dd` keys for days where the status is in `NOT_WORKING_STATUSES`. Internally, each day in the range is evaluated at `endOfDay(day)` so that a status change happening any time during a day correctly classifies that calendar tile.
 
 Returns an empty Set if there is no history (defensive — pre-backfill users won't crash the calendar).
 
