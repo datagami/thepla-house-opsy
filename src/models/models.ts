@@ -456,3 +456,10 @@ export interface JobOffer {
   user: User;
   department?: Department | null;
 }
+
+export type EmployeeIdentityUser = {
+  id: string;
+  name: string | null;
+  numId: number | null;
+  image: string | null;
+};
