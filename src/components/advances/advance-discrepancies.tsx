@@ -28,6 +28,7 @@ import { formatCurrency } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { EmployeeIdentity } from "@/components/ui/employee-identity";
 
 interface Installment {
   id: string;
@@ -276,11 +277,12 @@ export function AdvanceDiscrepancies() {
                       <ChevronRight className="h-5 w-5 text-muted-foreground" />
                     )}
                     <div>
-                      <div className="font-semibold text-lg">
-                        {user.userName}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        #{user.userNumId} &bull; {user.userBranch} &bull;{" "}
+                      <EmployeeIdentity
+                        user={{ id: user.userId, name: user.userName, numId: user.userNumId }}
+                        size="md"
+                      />
+                      <div className="text-sm text-muted-foreground mt-0.5">
+                        {user.userBranch} &bull;{" "}
                         {user.advances.length} advance(s)
                       </div>
                     </div>

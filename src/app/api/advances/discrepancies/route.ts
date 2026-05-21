@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { userIdentitySelect } from "@/lib/select-presets";
 
 export async function GET() {
   try {
@@ -23,9 +24,7 @@ export async function GET() {
       include: {
         user: {
           select: {
-            id: true,
-            name: true,
-            numId: true,
+            ...userIdentitySelect,
             branch: { select: { name: true } },
           },
         },
@@ -35,7 +34,7 @@ export async function GET() {
               select: { month: true, year: true, status: true },
             },
             approvedBy: {
-              select: { name: true, numId: true },
+              select: { ...userIdentitySelect },
             },
           },
           orderBy: { approvedAt: "desc" },
