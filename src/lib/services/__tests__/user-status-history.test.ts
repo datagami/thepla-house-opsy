@@ -58,3 +58,18 @@ describe('resolveStatusOnDate', () => {
     expect(resolveStatusOnDate([], new Date('2026-01-01'))).toBeNull();
   });
 });
+
+describe('resolveStatusOnDate — wall-clock changedAt', () => {
+  const history = [
+    mkRow(UserStatus.ACTIVE, '2026-01-01T00:00:00Z'),
+    mkRow(UserStatus.INACTIVE, '2026-02-15T14:00:00Z', UserStatus.ACTIVE),
+  ];
+
+  it('returns ACTIVE for midnight of the change day (caller should use end-of-day)', () => {
+    expect(resolveStatusOnDate(history, new Date('2026-02-15T00:00:00Z'))).toBe(UserStatus.ACTIVE);
+  });
+
+  it('returns INACTIVE for end-of-day on the change day', () => {
+    expect(resolveStatusOnDate(history, new Date('2026-02-15T23:59:59Z'))).toBe(UserStatus.INACTIVE);
+  });
+});

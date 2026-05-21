@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { UserStatus, type UserStatusHistory } from '@prisma/client';
-import { eachDayOfInterval, format } from 'date-fns';
+import { eachDayOfInterval, endOfDay, format } from 'date-fns';
 
 export const NOT_WORKING_STATUSES: ReadonlySet<UserStatus> = new Set<UserStatus>([
   UserStatus.INACTIVE,
@@ -50,7 +50,9 @@ export async function getInactiveDateKeysInRange(
 
   const days = eachDayOfInterval({ start: startDate, end: endDate });
   for (const day of days) {
-    const status = resolveStatusOnDate(history, day);
+    // Evaluate at end-of-day so any status change happening during the day
+    // (or earlier) counts toward that day's classification.
+    const status = resolveStatusOnDate(history, endOfDay(day));
     if (status !== null && NOT_WORKING_STATUSES.has(status)) {
       keys.add(format(day, 'yyyy-MM-dd'));
     }
