@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import RichTextEditor from "@/components/rich-text-editor/rich-text-editor";
 import { useRouter } from "next/navigation";
+import { EmployeeIdentity } from "@/components/ui/employee-identity";
 
 export default function NoteDetail({ note, user }: { note: Note, user: User }) {
 
@@ -231,6 +232,11 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
           value={title}
           onChange={e => setTitle(e.target.value)}
         />
+        {note.owner && (
+          <div className="text-xs text-muted-foreground mb-2">
+            Owner: <EmployeeIdentity user={note.owner} size="sm" className="inline-flex" />
+          </div>
+        )}
         <RichTextEditor value={content} onChange={setContent} />
         <div className="flex gap-2 mt-2">
           <Button onClick={handleSave} disabled={saving}>
@@ -388,7 +394,10 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
                     ) : (
                       comments.map((comment, idx) => (
                         <div key={comment.id || idx} className="border rounded p-2">
-                          <div className="text-sm text-muted-foreground mb-1">{comment.author?.name || 'User'} • {comment.createdAt ? new Date(comment.createdAt).toLocaleString() : ''}</div>
+                          <div className="flex items-center gap-2 mb-1">
+                            {comment.author && <EmployeeIdentity user={comment.author} size="sm" />}
+                            <span className="text-xs text-muted-foreground">• {comment.createdAt ? new Date(comment.createdAt).toLocaleString() : ''}</span>
+                          </div>
                           <div>{comment.content}</div>
                         </div>
                       ))
@@ -411,8 +420,10 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
                     <div key={h.id || idx} className="border rounded p-2 bg-muted/30">
                       <div className="flex flex-col gap-2">
                         <div>
-                          <div className="text-xs text-muted-foreground mb-1">
-                            Edited by: {h.editor?.name || 'User'} • {h.editedAt ? new Date(h.editedAt).toLocaleString() : ''}
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs text-muted-foreground">Edited by:</span>
+                            {h.editor && <EmployeeIdentity user={h.editor} size="sm" />}
+                            <span className="text-xs text-muted-foreground">• {h.editedAt ? new Date(h.editedAt).toLocaleString() : ''}</span>
                           </div>
                           <div className="prose prose-sm min-h-[2rem]"
                                 dangerouslySetInnerHTML={{ __html: h.content || "<span class='italic text-muted-foreground'>(empty)</span>" }}/>
@@ -427,22 +438,16 @@ export default function NoteDetail({ note, user }: { note: Note, user: User }) {
             <div>
               <div className="space-y-2">
                 {note.sharedWith && note.sharedWith.length > 0 ? (
-                  allUsers.length === 0 ? (
-                    <div>Loading users...</div>
-                  ) : (
-                    allUsers
-                      .filter(u => note.sharedWith.some(s => s.userId === u.id))
-                      .map((user, idx) => (
-                        <div key={user.id || idx} className="border rounded p-2 flex items-center gap-2">
-                          <span className="font-medium">{user.name || 'User'}</span>
-                          <span className="text-xs text-muted-foreground">
-                            ({user.branch?.name || 'No Branch'}
-                            {user.role ? `, ${user.role}` : ''}
-                            {user.id === note.ownerId ? ', Owner' : ''})
-                          </span>
-                        </div>
-                      ))
-                  )
+                  note.sharedWith.map((share, idx) => (
+                    <div key={share.id || idx} className="border rounded p-2 flex items-center gap-2">
+                      {share.user && <EmployeeIdentity user={share.user} size="sm" />}
+                      <span className="text-xs text-muted-foreground">
+                        ({allUsers.find(u => u.id === share.userId)?.branch?.name || 'No Branch'}
+                        {allUsers.find(u => u.id === share.userId)?.role ? `, ${allUsers.find(u => u.id === share.userId)?.role}` : ''}
+                        {share.userId === note.ownerId ? ', Owner' : ''})
+                      </span>
+                    </div>
+                  ))
                 ) : (
                   <div className="text-muted-foreground">Not shared with anyone.</div>
                 )}

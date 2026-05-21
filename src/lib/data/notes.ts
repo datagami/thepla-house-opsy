@@ -1,6 +1,7 @@
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { Note } from '@/models/models';
+import { userIdentitySelect } from '@/lib/select-presets';
 
 class NoteNotFoundError extends Error {
   constructor(message = 'Note not found') {
@@ -25,7 +26,18 @@ export async function getNote(id: string): Promise<Note | null> {
 
   const note = await prisma.note.findUnique({
     where: { id: id },
-    include: { sharedWith: true, owner: true },
+    include: {
+      sharedWith: {
+        include: {
+          user: {
+            select: userIdentitySelect
+          }
+        }
+      },
+      owner: {
+        select: userIdentitySelect
+      }
+    },
   });
 
   if (!note || note.isDeleted) {
