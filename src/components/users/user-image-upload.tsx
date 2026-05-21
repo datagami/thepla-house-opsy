@@ -3,6 +3,7 @@
 import {useState, useRef} from 'react';
 import {Button} from '@/components/ui/button';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
+import {Dialog, DialogContent} from '@/components/ui/dialog';
 import {Camera, Loader2} from 'lucide-react';
 import {toast} from 'sonner';
 
@@ -15,6 +16,7 @@ interface UserImageUploadProps {
 export function UserImageUpload({userId, currentImage, onImageUpdate}: UserImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImage || null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,15 +75,27 @@ export function UserImageUpload({userId, currentImage, onImageUpdate}: UserImage
     fileInputRef.current?.click();
   };
 
+  const handleAvatarClick = () => {
+    if (previewUrl) setIsViewerOpen(true);
+  };
+
   return (
     <div className="flex flex-col items-center gap-4">
       <div className="relative">
-        <Avatar className="h-32 w-32">
-          <AvatarImage src={previewUrl || ''} alt="Profile image"/>
-          <AvatarFallback>
-            {currentImage ? '...' : userId.slice(0, 2).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+        <button
+          type="button"
+          onClick={handleAvatarClick}
+          disabled={!previewUrl}
+          className="block rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-default"
+          aria-label={previewUrl ? "View profile image" : "No profile image"}
+        >
+          <Avatar className="h-32 w-32">
+            <AvatarImage src={previewUrl || ''} alt="Profile image"/>
+            <AvatarFallback>
+              {currentImage ? '...' : userId.slice(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        </button>
         <Button
           size="icon"
           variant="secondary"
@@ -107,6 +121,19 @@ export function UserImageUpload({userId, currentImage, onImageUpdate}: UserImage
       <p className="text-sm text-muted-foreground">
         Supported formats: JPG, PNG, GIF. Max size: 5MB
       </p>
+
+      <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
+        <DialogContent className="max-w-3xl p-2 bg-black/90 border-0">
+          {previewUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={previewUrl}
+              alt="Profile image"
+              className="w-full h-auto max-h-[80vh] object-contain rounded"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 
