@@ -17,25 +17,53 @@ async function main() {
       continue;
     }
 
-    // Always insert an initial-state row at user.createdAt assuming ACTIVE.
-    await prisma.userStatusHistory.create({
-      data: {
-        userId: user.id,
-        fromStatus: null,
-        toStatus: UserStatus.ACTIVE,
-        changedAt: user.createdAt,
-        reason: 'backfill: initial state',
-      },
-    });
+    if (user.status === UserStatus.PENDING) {
+      // Never approved; initial state IS PENDING.
+      await prisma.userStatusHistory.create({
+        data: {
+          userId: user.id,
+          fromStatus: null,
+          toStatus: UserStatus.PENDING,
+          changedAt: user.createdAt,
+          reason: 'backfill: initial state (pending)',
+        },
+      });
+    } else if (user.status === UserStatus.ACTIVE) {
+      // Single initial-state row at createdAt.
+      await prisma.userStatusHistory.create({
+        data: {
+          userId: user.id,
+          fromStatus: null,
+          toStatus: UserStatus.ACTIVE,
+          changedAt: user.createdAt,
+          reason: 'backfill: initial state',
+        },
+      });
+    } else {
+      // INACTIVE or PARTIAL_INACTIVE: assume created ACTIVE then transitioned.
+      // Use updatedAt for the transition row; if updatedAt === createdAt, bump by 1ms
+      // so the two rows sort deterministically.
+      const transitionAt =
+        user.updatedAt.getTime() > user.createdAt.getTime()
+          ? user.updatedAt
+          : new Date(user.createdAt.getTime() + 1);
 
-    // If current status isn't ACTIVE, insert a transition row at updatedAt.
-    if (user.status !== UserStatus.ACTIVE && user.updatedAt > user.createdAt) {
+      await prisma.userStatusHistory.create({
+        data: {
+          userId: user.id,
+          fromStatus: null,
+          toStatus: UserStatus.ACTIVE,
+          changedAt: user.createdAt,
+          reason: 'backfill: initial state',
+        },
+      });
+
       await prisma.userStatusHistory.create({
         data: {
           userId: user.id,
           fromStatus: UserStatus.ACTIVE,
           toStatus: user.status,
-          changedAt: user.updatedAt,
+          changedAt: transitionAt,
           reason: 'backfill: current state from updatedAt',
         },
       });
