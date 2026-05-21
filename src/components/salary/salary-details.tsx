@@ -84,7 +84,10 @@ export function SalaryDetails({ salary, canEdit = false, activeWarningCount = 0 
     bonusAmount?: number;
     referredUserId?: string;
     referredUser?: {
+      id: string;
       name?: string | null;
+      numId?: number | null;
+      image?: string | null;
       status: string;
       doj?: Date | string | null;
     } | null;
@@ -580,9 +583,9 @@ export function SalaryDetails({ salary, canEdit = false, activeWarningCount = 0 
                   {referrals.map((r) => (
                     <div key={r.id} className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
-                        <span>Referred: {r.referredUser?.name || r.referredUserId}</span>
                         {r.referredUser && (
                           <>
+                            <EmployeeIdentity user={r.referredUser} size="sm" subtitle="Referred" />
                             <Badge
                               variant={
                                 r.referredUser.status === 'ACTIVE'
