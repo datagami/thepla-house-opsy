@@ -15,6 +15,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { EmployeeIdentity } from "@/components/ui/employee-identity";
 
 interface Installment {
   id: string;
@@ -28,8 +29,10 @@ interface Installment {
     year: number;
   } | null;
   approvedBy?: {
+    id: string;
     name: string;
     numId: number;
+    image?: string | null;
   } | null;
 }
 
@@ -45,8 +48,10 @@ interface Advance {
   approvedAt?: Date | null;
   isSettled: boolean;
   approvedBy?: {
+    id: string;
     name: string;
     numId: number;
+    image?: string | null;
   } | null;
   installments?: Installment[];
 }
@@ -178,9 +183,11 @@ export function AdvanceRow({ advance }: AdvanceRowProps) {
                   Approved By
                 </div>
                 <div className="text-sm">
-                  {advance.approvedBy
-                    ? `${advance.approvedBy.name} (#${advance.approvedBy.numId})`
-                    : "N/A"}
+                  {advance.approvedBy ? (
+                    <EmployeeIdentity user={advance.approvedBy} size="sm" />
+                  ) : (
+                    "N/A"
+                  )}
                 </div>
               </div>
 
@@ -264,9 +271,11 @@ export function AdvanceRow({ advance }: AdvanceRowProps) {
                               : "N/A"}
                           </TableCell>
                           <TableCell>
-                            {installment.approvedBy
-                              ? `${installment.approvedBy.name} (#${installment.approvedBy.numId})`
-                              : "N/A"}
+                            {installment.approvedBy ? (
+                              <EmployeeIdentity user={installment.approvedBy} size="sm" />
+                            ) : (
+                              "N/A"
+                            )}
                           </TableCell>
                           <TableCell>
                             {installment.approvedAt
