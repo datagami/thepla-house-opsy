@@ -66,34 +66,56 @@ export async function POST(req: Request) {
       };
     }
 
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: updateData,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        status: true,
-        branchId: true,
-        branch: {
-          select: {
-            id: true,
-            name: true,
-            city: true,
+    const oldStatus = userToUpdate.status;
+
+    // statusChanged is true only when nextStatus is provided and differs from current.
+    const statusChanged = Boolean(nextStatus && oldStatus !== nextStatus);
+
+    const updatedUser = await prisma.$transaction(async (tx) => {
+      const u = await tx.user.update({
+        where: { id: userId },
+        data: updateData,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          status: true,
+          branchId: true,
+          branch: {
+            select: {
+              id: true,
+              name: true,
+              city: true,
+            },
           },
-        },
-        approvedBy: {
-          select: {
-            id: true,
-            name: true,
+          approvedBy: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
+          createdAt: true,
         },
-        createdAt: true,
-      },
+      });
+
+      // Only record status history when the status actually changes.
+      if (statusChanged) {
+        await tx.userStatusHistory.create({
+          data: {
+            userId,
+            fromStatus: oldStatus,
+            toStatus: nextStatus as UserStatus,
+            changedById: approver.id,
+            reason: nextStatus === 'ACTIVE' ? 'approved' : 'status_change',
+          },
+        });
+      }
+
+      return u;
     });
 
-    // Log user approval/status change
+    // Log user approval/status change — only when status actually changed.
     const approverId = (session.user as { id?: string }).id;
     if (!approverId) {
       return NextResponse.json(updatedUser);
@@ -103,7 +125,7 @@ export async function POST(req: Request) {
     if (nextStatus) changes.push(`status: ${nextStatus}`);
     if (branchId) changes.push(`branchId: ${branchId}`);
 
-    if (nextStatus === 'ACTIVE') {
+    if (statusChanged && nextStatus === 'ACTIVE') {
       await logTargetUserActivity(
         ActivityType.USER_APPROVED,
         approverId,
@@ -118,7 +140,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (nextStatus && nextStatus !== 'ACTIVE') {
+    if (statusChanged && nextStatus && nextStatus !== 'ACTIVE') {
       await logTargetUserActivity(
         ActivityType.USER_STATUS_CHANGED,
         approverId,

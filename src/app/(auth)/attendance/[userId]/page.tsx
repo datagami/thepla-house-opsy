@@ -12,6 +12,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { DetailedAttendanceCalendar } from "@/components/attendance/detailed-attendance-calendar";
 import { SalaryActions } from "@/components/salary/salary-actions";
+import { getInactiveDateKeysInRange } from "@/lib/services/user-status-history";
 
 export const metadata: Metadata = {
   title: "Employee Attendance - HRMS",
@@ -134,6 +135,11 @@ export default async function EmployeeAttendancePage({
       date: "asc",
     },
   }) as Attendance[];
+
+  // Get inactive date keys for the selected month
+  const inactiveDateKeys = Array.from(
+    await getInactiveDateKeysInRange(userId, startDate, endDate)
+  );
 
   // Get salary for the selected month
   const salary = await prisma.salary.findFirst({
@@ -282,6 +288,7 @@ export default async function EmployeeAttendancePage({
               userImage={employee.image}
               userRole={role}
               department={employee.department?.name || ''}
+              inactiveDateKeys={inactiveDateKeys}
             />
           </div>
         </div>
