@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { ActivityType, Prisma } from "@prisma/client";
+import { userIdentitySelect } from "@/lib/select-presets";
 
 export interface ActivityLogInput {
   activityType: ActivityType;
@@ -167,16 +168,14 @@ export async function getActivityLogs(options: {
       include: {
         user: {
           select: {
-            id: true,
-            name: true,
+            ...userIdentitySelect,
             email: true,
             role: true,
           },
         },
         targetUser: {
           select: {
-            id: true,
-            name: true,
+            ...userIdentitySelect,
             email: true,
             role: true,
           },
