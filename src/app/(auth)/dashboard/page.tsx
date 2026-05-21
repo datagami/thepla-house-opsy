@@ -6,6 +6,7 @@ import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Clock, CalendarCheck, Users, AlertCircle, UserCheck, AlertTriangle, FileClock} from "lucide-react";
 import Link from "next/link";
 import {Attendance, User} from "@/models/models";
+import { userIdentitySelect } from "@/lib/select-presets";
 import { PendingSignaturesWidget } from "@/components/dashboard/pending-signatures-widget";
 import { JoiningFormCard } from "@/components/dashboard/joining-form-card";
 import { DocumentExpiryWidget } from "@/components/dashboard/document-expiry-widget";
@@ -79,8 +80,7 @@ export default async function DashboardPage() {
         status: "ACTIVE",
       },
       select: {
-        id: true,
-        name: true,
+        ...userIdentitySelect,
         role: true,
         department: {
           select: {

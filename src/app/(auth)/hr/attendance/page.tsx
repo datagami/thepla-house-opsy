@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { userIdentitySelect } from "@/lib/select-presets";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileClock, AlertTriangle } from "lucide-react";
 import { SharedAttendanceTable } from "@/components/attendance/shared-attendance-table";
@@ -38,8 +39,7 @@ export default async function HRAttendancePage({
       status: "ACTIVE",
     },
     select: {
-      id: true,
-      name: true,
+      ...userIdentitySelect,
       department: true,
       managedBranch: {
         select: {
