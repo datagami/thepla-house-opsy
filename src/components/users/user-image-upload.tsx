@@ -123,7 +123,7 @@ export function UserImageUpload({userId, currentImage, onImageUpdate}: UserImage
       </p>
 
       <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
-        <DialogContent className="max-w-3xl p-2 bg-black/90 border-0">
+        <DialogContent className="max-w-3xl p-2 bg-black/90 border-0 [&>button]:text-white [&>button]:bg-white/10 [&>button]:hover:bg-white/20 [&>button]:rounded-full [&>button]:p-1 [&>button]:opacity-100">
           {previewUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
