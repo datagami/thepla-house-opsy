@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
+import { EmployeeIdentity } from "@/components/ui/employee-identity";
 
 interface ReferralWithRelations {
   id: string;
@@ -25,11 +26,15 @@ interface ReferralWithRelations {
   referrer: {
     id: string;
     name: string | null;
+    numId?: number | null;
+    image?: string | null;
     email: string | null;
   };
   referredUser: {
     id: string;
     name: string | null;
+    numId?: number | null;
+    image?: string | null;
     email: string | null;
     doj: Date | null;
   };
@@ -92,16 +97,16 @@ export function ReferralsTable({ referrals }: ReferralsTableProps) {
             return (
               <TableRow key={referral.id}>
                 <TableCell>
-                  <div>
-                    <div className="font-medium">{referral.referrer.name || "-"}</div>
+                  <div className="space-y-1">
+                    <EmployeeIdentity user={referral.referrer} size="md" />
                     <div className="text-sm text-muted-foreground">
                       {referral.referrer.email || "-"}
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div>
-                    <div className="font-medium">{referral.referredUser.name || "-"}</div>
+                  <div className="space-y-1">
+                    <EmployeeIdentity user={referral.referredUser} size="md" />
                     <div className="text-sm text-muted-foreground">
                       {referral.referredUser.email || "-"}
                     </div>

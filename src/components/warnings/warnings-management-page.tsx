@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { EmployeeIdentity } from "@/components/ui/employee-identity";
 import {
   Select,
   SelectContent,
@@ -45,12 +46,13 @@ interface Warning {
   user: {
     id: string;
     name: string | null;
-    numId: number;
+    numId?: number | null;
+    image?: string | null;
     email: string | null;
     branch: { id: string; name: string } | null;
   };
-  reportedBy: { id: string; name: string | null } | null;
-  archivedBy: { id: string; name: string | null } | null;
+  reportedBy: { id: string; name?: string | null; numId?: number | null; image?: string | null } | null;
+  archivedBy: { id: string; name?: string | null; numId?: number | null; image?: string | null } | null;
   warningType: { id: string; name: string; description: string | null } | null;
 }
 
@@ -138,7 +140,7 @@ export function WarningsManagementPage({ branches, warningTypes, userRole }: War
     const rows = filteredWarnings.map(w => [
       formatDateOnly(w.createdAt),
       w.user.name || "",
-      w.user.numId || "",
+      w.user.numId?.toString() || "",
       w.user.branch?.name || "",
       w.warningType?.name || "",
       w.reason || "",
@@ -392,10 +394,7 @@ export function WarningsManagementPage({ branches, warningTypes, userRole }: War
                     <TableRow key={warning.id}>
                       <TableCell>{formatDateOnly(warning.createdAt)}</TableCell>
                       <TableCell>
-                        <div>
-                          <div className="font-medium">{warning.user.name}</div>
-                          <div className="text-sm text-muted-foreground">#{warning.user.numId}</div>
-                        </div>
+                        <EmployeeIdentity user={warning.user} size="md" />
                       </TableCell>
                       <TableCell>{warning.user.branch?.name || "-"}</TableCell>
                       <TableCell>
@@ -408,7 +407,13 @@ export function WarningsManagementPage({ branches, warningTypes, userRole }: War
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{warning.reportedBy?.name || "-"}</TableCell>
+                      <TableCell>
+                        {warning.reportedBy ? (
+                          <EmployeeIdentity user={warning.reportedBy} size="sm" />
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Badge variant={warning.isArchived ? "secondary" : "default"}>
                           {warning.isArchived ? "Archived" : "Active"}

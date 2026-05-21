@@ -2,6 +2,7 @@ import {NextAuthConfig} from "next-auth";
 import {prisma} from "@/prisma";
 import Credentials from "next-auth/providers/credentials";
 import {compare} from "bcryptjs";
+import { userIdentitySelect } from "@/lib/select-presets";
 
 
 export default {
@@ -34,6 +35,8 @@ export default {
             status: true,
             branchId: true,
             managedBranchId: true,
+            numId: true,
+            image: true,
           },
         });
 
@@ -44,14 +47,10 @@ export default {
         if (user.status !== "ACTIVE") {
           throw new Error("Account is not active");
         }
-        console.log(user.password)
-        console.log(credentials.password)
-
         const isPasswordValid = await compare(
           credentials.password as string,
           user.password
         );
-        console.log(isPasswordValid);
 
         if (!isPasswordValid) {
           return null;
@@ -65,12 +64,14 @@ export default {
           status: user.status,
           branchId: user.branchId,
           managedBranchId: user.managedBranchId,
+          numId: user.numId,
+          image: user.image,
         };
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         // @ts-expect-error - role is not in the User type
         token.role = user.role;
@@ -78,6 +79,33 @@ export default {
         token.branchId = user.branchId;
         // @ts-expect-error - managedBranchId is not in the
         token.managedBranchId = user.managedBranchId;
+        // @ts-expect-error - numId is not in the User type
+        token.numId = user.numId;
+        token.image = user.image;
+      }
+      // Refresh numId/image from DB if absent (e.g. existing sessions)
+      if (token.sub && (token.numId === undefined || token.image === undefined)) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.sub },
+          select: userIdentitySelect,
+        });
+        if (dbUser) {
+          token.numId = dbUser.numId;
+          token.image = dbUser.image;
+          token.name = dbUser.name;
+        }
+      }
+      // Re-fetch identity from DB when session.update() is called (e.g. after profile picture upload)
+      if (trigger === 'update' && token.sub) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.sub },
+          select: userIdentitySelect,
+        });
+        if (dbUser) {
+          token.numId = dbUser.numId;
+          token.image = dbUser.image;
+          token.name = dbUser.name;
+        }
       }
       return token;
     },
@@ -90,6 +118,9 @@ export default {
         session.user.branchId = token.branchId as string | null;
         // @ts-expect-error - managedBranchId is not in the
         session.user.managedBranchId = token.managedBranchId as string | null;
+        // @ts-expect-error - numId is not in the User type
+        session.user.numId = token.numId as number | null;
+        session.user.image = token.image as string | null;
       }
       return session;
     },

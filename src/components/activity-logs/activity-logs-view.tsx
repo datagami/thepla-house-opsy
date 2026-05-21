@@ -13,6 +13,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { CalendarIcon, X, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EmployeeIdentity } from "@/components/ui/employee-identity";
+import type { EmployeeIdentityUser } from "@/models/models";
 
 interface ActivityLog {
   id: string;
@@ -26,18 +28,14 @@ interface ActivityLog {
   ipAddress: string | null;
   userAgent: string | null;
   createdAt: string;
-  user: {
-    id: string;
-    name: string | null;
+  user: (EmployeeIdentityUser & {
     email: string | null;
     role: string;
-  } | null;
-  targetUser: {
-    id: string;
-    name: string | null;
+  }) | null;
+  targetUser: (EmployeeIdentityUser & {
     email: string | null;
     role: string;
-  } | null;
+  }) | null;
 }
 
 interface ActivityLogsResponse {
@@ -172,8 +170,10 @@ export function ActivityLogsView() {
       log.description.toLowerCase().includes(searchLower) ||
       log.user?.name?.toLowerCase().includes(searchLower) ||
       log.user?.email?.toLowerCase().includes(searchLower) ||
+      String(log.user?.numId ?? '').includes(search) ||
       log.targetUser?.name?.toLowerCase().includes(searchLower) ||
-      log.targetUser?.email?.toLowerCase().includes(searchLower)
+      log.targetUser?.email?.toLowerCase().includes(searchLower) ||
+      String(log.targetUser?.numId ?? '').includes(search)
     );
   });
 
@@ -374,8 +374,8 @@ export function ActivityLogsView() {
                         </TableCell>
                         <TableCell>
                           {log.user ? (
-                            <div>
-                              <div className="font-medium">{log.user.name || "Unknown"}</div>
+                            <div className="flex flex-col gap-1">
+                              <EmployeeIdentity user={log.user} size="sm" />
                               <div className="text-xs text-muted-foreground">{log.user.email}</div>
                             </div>
                           ) : (
@@ -384,8 +384,8 @@ export function ActivityLogsView() {
                         </TableCell>
                         <TableCell>
                           {log.targetUser ? (
-                            <div>
-                              <div className="font-medium">{log.targetUser.name || "Unknown"}</div>
+                            <div className="flex flex-col gap-1">
+                              <EmployeeIdentity user={log.targetUser} size="sm" />
                               <div className="text-xs text-muted-foreground">{log.targetUser.email}</div>
                             </div>
                           ) : log.targetId ? (

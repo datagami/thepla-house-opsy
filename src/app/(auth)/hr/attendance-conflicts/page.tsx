@@ -33,6 +33,8 @@ export default async function AttendanceConflictsPage({ searchParams }: PageProp
 
   const serializedConflicts: SerializedAttendanceConflict[] = conflicts.map((conflict) => ({
     ...conflict,
+    userNumId: conflict.userNumId ?? null,
+    userImage: conflict.userImage ?? null,
     entries: conflict.entries.map((entry) => ({
       ...entry,
       createdAt: entry.createdAt.toISOString(),

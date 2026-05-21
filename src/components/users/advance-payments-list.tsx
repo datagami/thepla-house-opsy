@@ -29,6 +29,7 @@ import { formatDate } from "@/lib/utils";
 import { AdvancePayment } from "@/models/models";
 import { Receipt, Trash2, AlertTriangle, Loader2, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
+import { EmployeeIdentity } from "@/components/ui/employee-identity";
 
 interface AdvancePaymentsListProps {
   userId: string;
@@ -189,7 +190,13 @@ export function AdvancePaymentsList({ userId, refreshKey = 0 }: AdvancePaymentsL
                     {payment.isSettled ? "Settled" : payment.status}
                   </Badge>
                 </TableCell>
-                <TableCell>{payment.approvedBy?.name || "-"}</TableCell>
+                <TableCell>
+                  {payment.approvedBy ? (
+                    <EmployeeIdentity user={payment.approvedBy} size="sm" />
+                  ) : (
+                    "-"
+                  )}
+                </TableCell>
                 <TableCell>{formatDate(payment.createdAt)}</TableCell>
                 <TableCell>
                   <div className="flex gap-2">

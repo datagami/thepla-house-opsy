@@ -24,10 +24,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
 import { getShiftDisplay } from "@/lib/utils/shift-display";
+import { EmployeeIdentity } from "@/components/ui/employee-identity";
 
 interface EmployeeAttendance {
   id: string;
   name: string | null;
+  numId: number;
+  image?: string | null;
   department: { id: string; name: string } | null;
   attendance: Array<{
     id: string;
@@ -395,7 +398,7 @@ export function BranchAttendanceSubmissions({
                                 {serialNumber}
                               </TableCell>
                             <TableCell className="font-medium">
-                              {employee.name?.toUpperCase() || "N/A"}
+                              <EmployeeIdentity user={employee} size="sm" />
                             </TableCell>
                             <TableCell>
                               <span className="text-foreground">
@@ -462,9 +465,7 @@ export function BranchAttendanceSubmissions({
                                       <span className="text-[10px] font-medium text-muted-foreground">
                                         {serialNumber}.
                                       </span>
-                                      <h4 className="font-semibold text-xs break-words">
-                                        {employee.name?.toUpperCase() || "N/A"}
-                                      </h4>
+                                      <EmployeeIdentity user={employee} size="sm" />
                                       <span className="text-[10px] text-muted-foreground">•</span>
                                       <span className="text-[10px] text-foreground">{timing}</span>
                                       {badges.map((badge, idx) => (

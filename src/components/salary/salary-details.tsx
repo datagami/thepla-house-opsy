@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { EmployeeIdentity } from "@/components/ui/employee-identity"
 import {
   Dialog,
   DialogContent,
@@ -83,7 +84,10 @@ export function SalaryDetails({ salary, canEdit = false, activeWarningCount = 0 
     bonusAmount?: number;
     referredUserId?: string;
     referredUser?: {
+      id: string;
       name?: string | null;
+      numId?: number | null;
+      image?: string | null;
       status: string;
       doj?: Date | string | null;
     } | null;
@@ -524,7 +528,14 @@ export function SalaryDetails({ salary, canEdit = false, activeWarningCount = 0 
       </Dialog>
       <Card>
         <CardHeader>
-          {salary.user && salary.user.name && <CardTitle>Salary Details - {salary.user.name}</CardTitle>}
+          {salary.user && (
+            <CardTitle>
+              <div className="flex items-center gap-3">
+                <span>Salary Details</span>
+                <EmployeeIdentity user={salary.user} size="lg" />
+              </div>
+            </CardTitle>
+          )}
           <CardDescription>
             For {new Date(salary.year + '-' + salary.month + '-' + '15').toLocaleString('default', { month: 'long', year: 'numeric' })}
           </CardDescription>
@@ -572,9 +583,9 @@ export function SalaryDetails({ salary, canEdit = false, activeWarningCount = 0 
                   {referrals.map((r) => (
                     <div key={r.id} className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
-                        <span>Referred: {r.referredUser?.name || r.referredUserId}</span>
                         {r.referredUser && (
                           <>
+                            <EmployeeIdentity user={r.referredUser} size="sm" subtitle="Referred" />
                             <Badge
                               variant={
                                 r.referredUser.status === 'ACTIVE'

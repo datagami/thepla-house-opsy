@@ -53,6 +53,33 @@ export function formatCurrency(amount: number): string {
 }
 
 /**
+ * Hash a string into a hue value [0, 360). Used to give each person/department
+ * a stable color (e.g. for avatar fallback backgrounds, department pills).
+ */
+export function stringToHue(input: string): number {
+  let hash = 0;
+  for (let i = 0; i < input.length; i++) {
+    hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
+  }
+  return hash % 360;
+}
+
+/**
+ * Extract up to two initials from a person's name:
+ * first letter of first token + first letter of last token, uppercased.
+ * Returns "?" for null/empty input.
+ */
+export function getInitials(name: string | null | undefined): string {
+  if (!name) return '?';
+  const tokens = name.trim().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return '?';
+  if (tokens.length === 1) return tokens[0].charAt(0).toUpperCase();
+  const first = tokens[0].charAt(0);
+  const last = tokens[tokens.length - 1].charAt(0);
+  return (first + last).toUpperCase();
+}
+
+/**
  * Generates a predictable password: first 3 letters of name + special symbol + 4 random digits
  * Format: abc@1234
  */

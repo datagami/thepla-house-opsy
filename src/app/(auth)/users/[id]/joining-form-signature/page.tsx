@@ -5,7 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { JoiningFormESignature } from "@/components/users/joining-form-esignature";
 import { hasAccess } from "@/lib/access-control";
 import { notFound } from "next/navigation";
-import {User} from "@/models/models";
+import { User } from "@/models/models";
+import { userIdentitySelect } from "@/lib/select-presets";
+import { EmployeeIdentity } from "@/components/ui/employee-identity";
 
 export const metadata: Metadata = {
   title: "Appointment Letter E-Signature - HRMS",
@@ -29,7 +31,8 @@ export default async function JoiningFormSignaturePage({ params }: JoiningFormSi
   // Get the user to be signed
   const user = await prisma.user.findUnique({
     where: { id: id },
-    include: {
+    select: {
+      ...userIdentitySelect,
       branch: true,
       department: {
         select: {
@@ -37,6 +40,7 @@ export default async function JoiningFormSignaturePage({ params }: JoiningFormSi
           name: true,
         },
       },
+      joiningFormSignedAt: true,
     },
   });
 
@@ -61,9 +65,14 @@ export default async function JoiningFormSignaturePage({ params }: JoiningFormSi
   return (
     <div className="flex-1 space-y-8 p-8 pt-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">
-          {isOwnForm ? "Sign Your Appointment Letter" : `Sign Appointment Letter - ${user.name}`}
-        </h2>
+        {isOwnForm ? (
+          <h2 className="text-3xl font-bold tracking-tight">Sign Your Appointment Letter</h2>
+        ) : (
+          <div className="space-y-2">
+            <h2 className="text-3xl font-bold tracking-tight">Sign Appointment Letter</h2>
+            <EmployeeIdentity user={user} size="md" />
+          </div>
+        )}
       </div>
 
       <JoiningFormESignature user={user as unknown as User} />

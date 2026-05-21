@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { userIdentitySelect } from "@/lib/select-presets";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Users, CalendarCheck, CalendarClock } from "lucide-react";
 import { SharedAttendanceTable } from "@/components/attendance/shared-attendance-table";
@@ -95,10 +96,8 @@ export default async function HRManageAttendancePage({
   const users = (await prisma.user.findMany({
     where,
     select: {
-      id: true,
-      name: true,
+      ...userIdentitySelect,
       email: true,
-      numId: true,
       role: true,
       hasWeeklyOff: true,
       weeklyOffType: true,

@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { userIdentitySelect } from "@/lib/select-presets";
 import { startOfMonth, endOfMonth, format, addMonths, subMonths } from "date-fns";
 import { AttendanceStats } from "@/components/attendance/attendance-stats";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -91,8 +92,7 @@ export default async function EmployeeAttendancePage({
   const employee = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      id: true,
-      name: true,
+      ...userIdentitySelect,
       email: true,
       department: {
         select: {
@@ -273,11 +273,13 @@ export default async function EmployeeAttendancePage({
       <div className="space-y-4">
         <div className="rounded-md border bg-card">
           <div className="p-6">
-            <DetailedAttendanceCalendar 
+            <DetailedAttendanceCalendar
               attendance={attendance}
               month={startDate}
               userId={employee.id}
               userName={employee.name || ""}
+              userNumId={employee.numId}
+              userImage={employee.image}
               userRole={role}
               department={employee.department?.name || ''}
             />

@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { User } from '@/models/models';
-import { FileSignature, Users, ArrowRight } from 'lucide-react';
+import { FileSignature, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { EmployeeIdentity } from '@/components/ui/employee-identity';
 
 interface PendingSignaturesWidgetProps {
   pendingUsers: User[];
@@ -38,15 +39,17 @@ export function PendingSignaturesWidget({ pendingUsers, currentUserRole }: Pendi
               className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                  <Users className="h-4 w-4 text-gray-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-sm">{user.name}</p>
-                  <p className="text-xs text-gray-500">
-                    {user.role} • {user.department?.name || 'N/A'}
-                  </p>
-                </div>
+                <EmployeeIdentity
+                  user={user}
+                  size="sm"
+                  subtitle={
+                    <>
+                      {user.numId !== null && user.numId !== undefined ? `#${user.numId} · ` : ''}
+                      {user.role}
+                      {user.department?.name ? ` · ${user.department.name}` : ''}
+                    </>
+                  }
+                />
               </div>
               <Button
                 size="sm"

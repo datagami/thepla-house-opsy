@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
+import { userIdentitySelect } from '@/lib/select-presets';
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest) {
     orderBy: { updatedAt: 'desc' },
     include: {
       owner: {
-        select: { id: true, name: true }
+        select: userIdentitySelect
       }
     }
   });

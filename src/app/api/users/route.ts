@@ -6,6 +6,7 @@ import { hasAccess } from "@/lib/access-control";
 import { logTargetUserActivity } from "@/lib/services/activity-log";
 import { ActivityType } from "@prisma/client";
 import { generatePassword } from "@/lib/utils";
+import { userIdentitySelect } from "@/lib/select-presets";
 
 export async function POST(request: Request) {
   try {
@@ -215,9 +216,8 @@ export async function GET(request: Request) {
         } : {})
       },
       select: {
-        id: true,
+        ...userIdentitySelect,
         email: true,
-        name: true,
         role: true,
         status: true,
         createdAt: true,

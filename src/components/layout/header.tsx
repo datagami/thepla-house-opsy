@@ -1,7 +1,6 @@
 import { auth } from "@/auth";
 import { NavWrapper } from "./nav-wrapper";
 import { prisma } from "@/lib/prisma";
-import {User} from "@/models/models";
 
 export async function Header() {
   const session = await auth();
@@ -11,7 +10,10 @@ export async function Header() {
   // @ts-expect-error - We check for role
   const role = session.user.role;
   // @ts-expect-error - We check for branchId
-  const branchId = session.user.branchId
+  const branchId = session.user.branchId;
+  // @ts-expect-error - numId from session
+  const numId = session.user.numId as number | null | undefined;
+  const image = session.user.image as string | null | undefined;
 
   let branchName = null;
   if (session.user) {
@@ -37,14 +39,17 @@ export async function Header() {
   }
 
   return (
-    <NavWrapper 
+    <NavWrapper
       user={{
-        role: role,
+        id: session.user.id ?? "",
         name: session.user.name,
         email: session.user.email,
-      } as User}
+        role: role,
+        numId: numId ?? null,
+        image: image ?? null,
+      }}
       branchName={branchName || ""}
       userRole={role}
     />
   );
-} 
+}

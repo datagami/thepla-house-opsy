@@ -18,10 +18,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import AssignBranchModal from "../users/assign-branch-modal";
 import { Branch } from "@/models/models";
+import { EmployeeIdentity } from "@/components/ui/employee-identity";
 
 interface Employee {
   id: string;
   name: string | null;
+  numId?: number | null;
+  image?: string | null;
   email: string | null;
   status: string;
   branch?: {
@@ -93,7 +96,9 @@ export function EmployeeTable({ employees, branches, onEmployeeUpdate }: Employe
         <TableBody>
           {employees.map((employee) => (
             <TableRow key={employee.id}>
-              <TableCell>{employee.name}</TableCell>
+              <TableCell>
+                <EmployeeIdentity user={employee} size="md" href={`/users/${employee.id}`} />
+              </TableCell>
               <TableCell>{employee.email}</TableCell>
               <TableCell>{employee._count.attendance}</TableCell>
               <TableCell>{employee._count.leaveRequests}</TableCell>

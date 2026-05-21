@@ -6,6 +6,7 @@ import { AttendanceTable } from "@/components/attendance/attendance-table";
 import { DailyAttendanceView } from "@/components/attendance/daily-attendance-view";
 import { User } from "@/models/models";
 import { DateSwitcher } from "@/components/attendance/date-switcher";
+import { userIdentitySelect } from "@/lib/select-presets";
 
 export const metadata: Metadata = {
   title: "Attendance Management - HRMS",
@@ -42,8 +43,7 @@ export default async function AttendancePage({ searchParams }: Props) {
       status: "ACTIVE",
     },
     select: {
-      id: true,
-      name: true,
+      ...userIdentitySelect,
       department: {
         select: {
           id: true,

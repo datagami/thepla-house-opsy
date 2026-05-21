@@ -1,5 +1,6 @@
 import { SalaryDetails } from '@/components/salary/salary-details'
 import { prisma } from '@/lib/prisma'
+import { userIdentitySelect } from "@/lib/select-presets";
 import {Salary} from "@/models/models";
 import { auth } from '@/auth'
 
@@ -24,9 +25,18 @@ async function getSalaryDetails(id: string) {
         }
       },
       referrals: {
-        include: {
-          referredUser: true,
-        }
+        select: {
+          id: true,
+          bonusAmount: true,
+          referredUserId: true,
+          referredUser: {
+            select: {
+              ...userIdentitySelect,
+              status: true,
+              doj: true,
+            },
+          },
+        },
       }
     }
   }) as unknown as Salary;

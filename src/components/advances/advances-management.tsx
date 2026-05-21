@@ -27,6 +27,7 @@ export interface AdvanceData {
   userId: string;
   userName: string;
   userNumId: number;
+  userImage: string | null;
   userBranch: string;
   totalAdvanceAmount: number;
   totalRemainingAmount: number;

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import {auth} from "@/auth";
+import { userIdentitySelect } from "@/lib/select-presets";
 
 export async function GET(req: Request) {
   try {
@@ -31,13 +32,58 @@ export async function GET(req: Request) {
           }
         } : {})
       },
-      include: {
-        user: true,
+      select: {
+        id: true,
+        numId: true,
+        userId: true,
+        month: true,
+        year: true,
+        baseSalary: true,
+        advanceDeduction: true,
+        deductions: true,
+        overtimeBonus: true,
+        otherBonuses: true,
+        otherDeductions: true,
+        netSalary: true,
+        presentDays: true,
+        overtimeDays: true,
+        halfDays: true,
+        leavesEarned: true,
+        leaveSalary: true,
+        status: true,
+        paidAt: true,
+        createdAt: true,
+        updatedAt: true,
+        recurringDeductions: true,
+        user: {
+          select: {
+            ...userIdentitySelect,
+            email: true,
+            role: true,
+            status: true,
+            branchId: true,
+          },
+        },
         installments: true,
         referrals: {
-          include: {
-            referredUser: true,
-          }
+          select: {
+            id: true,
+            numId: true,
+            referrerId: true,
+            referredUserId: true,
+            bonusAmount: true,
+            eligibleAt: true,
+            paidAt: true,
+            salaryId: true,
+            archivedAt: true,
+            referredUser: {
+              select: {
+                ...userIdentitySelect,
+                status: true,
+                doj: true,
+              },
+            },
+          },
         },
       },
       orderBy: {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
+import { userIdentitySelect } from '@/lib/select-presets';
 
 export async function GET(req: NextRequest, {params}: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -22,7 +23,11 @@ export async function GET(req: NextRequest, {params}: { params: Promise<{ id: st
   const comments = await prisma.noteComment.findMany({
     where: { noteId: note.id },
     orderBy: { createdAt: 'asc' },
-    include: { author: true },
+    include: {
+      author: {
+        select: userIdentitySelect
+      }
+    },
   });
   return NextResponse.json(comments);
 }
@@ -54,7 +59,11 @@ export async function POST(req: NextRequest, {params}: { params: Promise<{ id: s
       authorId: userId as string,
       content,
     },
-    include: { author: true },
+    include: {
+      author: {
+        select: userIdentitySelect
+      }
+    },
   });
   return NextResponse.json(comment, { status: 201 });
 } 

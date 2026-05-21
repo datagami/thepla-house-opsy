@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { auth } from "@/auth"
 import { sumRecurringDeductions } from '@/lib/services/recurring-deductions'
 import type { RecurringDeductionEntry } from '@/models/models'
+import { userIdentitySelect } from "@/lib/select-presets"
 
 export async function GET(
   req: Request,
@@ -20,8 +21,7 @@ export async function GET(
       include: {
         user: {
           select: {
-            id: true,
-            name: true,
+            ...userIdentitySelect,
             email: true,
             hasWeeklyOff: true,
           }
@@ -152,6 +152,8 @@ export async function GET(
       employee: {
         id: salary.userId,
         name: salary.user.name,
+        numId: salary.user.numId,
+        image: salary.user.image,
         email: salary.user.email
       },
       attendance: {

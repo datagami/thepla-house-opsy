@@ -15,10 +15,13 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { AttendanceFormProps, AttendanceFormData } from "@/models/attendance";
+import { EmployeeIdentity } from "@/components/ui/employee-identity";
 
 export function AttendanceForm({
   userId,
   userName,
+  userNumId,
+  userImage,
   date,
   currentAttendance,
   isOpen,
@@ -348,25 +351,40 @@ export function AttendanceForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onCloseAction}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            {showApproveReject ? "Review Attendance" : "Mark Attendance"} for {userName} ({department})
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+        <DialogHeader className="pr-8">
+          <DialogTitle className="text-base sm:text-lg">
+            {showApproveReject ? "Review Attendance" : "Mark Attendance"}
           </DialogTitle>
+          <EmployeeIdentity
+            user={{
+              id: userId ?? "",
+              name: userName ?? null,
+              numId: userNumId ?? null,
+              image: userImage ?? null,
+            }}
+            size="sm"
+            subtitle={
+              <>
+                {userNumId !== null && userNumId !== undefined ? `#${userNumId}` : null}
+                {department ? `${userNumId !== null && userNumId !== undefined ? " · " : ""}${department}` : null}
+              </>
+            }
+          />
         </DialogHeader>
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Label htmlFor="isPresent">Present</Label>
-            <Switch 
-              id="isPresent" 
+            <Switch
+              id="isPresent"
               checked={isPresent}
               onCheckedChange={handlePresentChange}
             />
           </div>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="checkIn">Check In Time</Label>
+              <Label htmlFor="checkIn" className="text-sm">Check In</Label>
               <Input
                 id="checkIn"
                 type="time"
@@ -377,7 +395,7 @@ export function AttendanceForm({
               />
             </div>
             <div>
-              <Label htmlFor="checkOut">Check Out Time</Label>
+              <Label htmlFor="checkOut" className="text-sm">Check Out</Label>
               <Input
                 id="checkOut"
                 type="time"
@@ -389,10 +407,11 @@ export function AttendanceForm({
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-2.5 rounded-md border bg-muted/30 p-3">
+            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Shifts</div>
             <div className="flex items-center justify-between">
-              <Label htmlFor="shift1">7 AM to 11 AM</Label>
-              <Switch 
+              <Label htmlFor="shift1" className="text-sm font-normal">7 AM – 11 AM</Label>
+              <Switch
                 id="shift1"
                 checked={shift1}
                 onCheckedChange={setShift1}
@@ -400,8 +419,8 @@ export function AttendanceForm({
               />
             </div>
             <div className="flex items-center justify-between">
-              <Label htmlFor="shift2">11 AM to 7 PM</Label>
-              <Switch 
+              <Label htmlFor="shift2" className="text-sm font-normal">11 AM – 7 PM</Label>
+              <Switch
                 id="shift2"
                 checked={shift2}
                 onCheckedChange={setShift2}
@@ -409,8 +428,8 @@ export function AttendanceForm({
               />
             </div>
             <div className="flex items-center justify-between">
-              <Label htmlFor="shift3">7 PM to 11 PM</Label>
-              <Switch 
+              <Label htmlFor="shift3" className="text-sm font-normal">7 PM – 11 PM</Label>
+              <Switch
                 id="shift3"
                 checked={shift3}
                 onCheckedChange={setShift3}
@@ -419,43 +438,42 @@ export function AttendanceForm({
             </div>
           </div>
 
-          {userWeeklyOffConfig?.hasWeeklyOff && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="isWeeklyOff">
-                  Weekly Off
-                  {isFixedWeeklyOffDay && (
-                    <span className="ml-2 text-xs text-muted-foreground">(Fixed weekly off day)</span>
-                  )}
-                </Label>
-                <Switch 
-                  id="isWeeklyOff" 
-                  checked={isWeeklyOff}
-                  onCheckedChange={handleWeeklyOffChange}
-                  disabled={!canOverrideWeeklyOff && userWeeklyOffConfig.weeklyOffType === "FIXED" && !isFixedWeeklyOffDay}
-                />
-              </div>
+          {(userWeeklyOffConfig?.hasWeeklyOff || userWeeklyOffConfig?.hasWorkFromHome) && (
+            <div className="space-y-2.5">
+              {userWeeklyOffConfig?.hasWeeklyOff && (
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="isWeeklyOff">
+                    Weekly Off
+                    {isFixedWeeklyOffDay && (
+                      <span className="ml-1.5 text-xs text-muted-foreground">(fixed)</span>
+                    )}
+                  </Label>
+                  <Switch
+                    id="isWeeklyOff"
+                    checked={isWeeklyOff}
+                    onCheckedChange={handleWeeklyOffChange}
+                    disabled={!canOverrideWeeklyOff && userWeeklyOffConfig.weeklyOffType === "FIXED" && !isFixedWeeklyOffDay}
+                  />
+                </div>
+              )}
+              {userWeeklyOffConfig?.hasWorkFromHome && (
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="isWorkFromHome">Work From Home</Label>
+                  <Switch
+                    id="isWorkFromHome"
+                    checked={isWorkFromHome}
+                    onCheckedChange={handleWorkFromHomeChange}
+                  />
+                </div>
+              )}
             </div>
           )}
 
-          {userWeeklyOffConfig?.hasWorkFromHome && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="isWorkFromHome">Work From Home</Label>
-                <Switch 
-                  id="isWorkFromHome" 
-                  checked={isWorkFromHome}
-                  onCheckedChange={handleWorkFromHomeChange}
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
             <div className="flex items-center justify-between">
               <Label htmlFor="isHalfDay">Half Day</Label>
-              <Switch 
-                id="isHalfDay" 
+              <Switch
+                id="isHalfDay"
                 checked={isHalfDay}
                 onCheckedChange={setIsHalfDay}
                 disabled={!isPresent || isOvertime || isWeeklyOff || isWorkFromHome}
@@ -463,8 +481,8 @@ export function AttendanceForm({
             </div>
             <div className="flex items-center justify-between">
               <Label htmlFor="overtime">Overtime</Label>
-              <Switch 
-                id="overtime" 
+              <Switch
+                id="overtime"
                 checked={isOvertime}
                 onCheckedChange={setIsOvertime}
                 disabled={!isPresent || isHalfDay || isWeeklyOff || isWorkFromHome}
@@ -473,20 +491,20 @@ export function AttendanceForm({
           </div>
 
           <div>
-            <Label htmlFor="notes">Notes (Optional)</Label>
+            <Label htmlFor="notes" className="text-sm">Notes (optional)</Label>
             <Textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add any additional notes..."
               className="mt-1"
-              rows={3}
+              rows={2}
             />
           </div>
 
           {showApproveReject && (
             <div>
-              <Label htmlFor="verificationNote">Verification Note (Optional)</Label>
+              <Label htmlFor="verificationNote" className="text-sm">Verification Note (optional)</Label>
               <Textarea
                 id="verificationNote"
                 value={verificationNote}
@@ -499,26 +517,26 @@ export function AttendanceForm({
           )}
 
           {showApproveReject ? (
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleReject} 
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white" 
+            <div className="flex gap-2 pt-1">
+              <Button
+                onClick={handleReject}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
                 disabled={isLoading}
               >
                 {isLoading ? "Processing..." : "Reject"}
               </Button>
-              <Button 
-                onClick={handleApprove} 
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white" 
+              <Button
+                onClick={handleApprove}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                 disabled={isLoading}
               >
                 {isLoading ? "Processing..." : "Approve"}
               </Button>
             </div>
           ) : (
-            <Button 
-              onClick={handleSubmit} 
-              className="w-full" 
+            <Button
+              onClick={handleSubmit}
+              className="w-full"
               disabled={isLoading}
             >
               {isLoading ? "Saving..." : "Save Attendance"}

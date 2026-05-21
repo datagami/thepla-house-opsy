@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
+import { userIdentitySelect } from '@/lib/select-presets';
 
 export async function GET(req: NextRequest, {params}: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -22,7 +23,11 @@ export async function GET(req: NextRequest, {params}: { params: Promise<{ id: st
   const history = await prisma.noteEditHistory.findMany({
     where: { noteId: note.id },
     orderBy: { editedAt: 'desc' },
-    include: { editor: true },
+    include: {
+      editor: {
+        select: userIdentitySelect
+      }
+    },
   });
   return NextResponse.json(history);
 } 

@@ -25,6 +25,7 @@ import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDateOnly } from "@/lib/utils";
 import { MultiSelect } from "@/components/ui/multi-select";
+import { EmployeeIdentity } from "@/components/ui/employee-identity";
 
 interface UserTableProps {
   users: User[];
@@ -160,7 +161,7 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
     const matchesSearch =
       user.name?.toLowerCase().includes(search.toLowerCase()) ||
       user.email?.toLowerCase().includes(search.toLowerCase()) ||
-      user.numId?.toString().toLowerCase().includes(search.toLowerCase());
+      String(user.numId ?? '').includes(search);
 
     const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
     const matchesBranch = branchFilter === "ALL" || user.branch?.id === branchFilter;
@@ -313,7 +314,9 @@ export function  UserTable({ users, branches, currentUserRole }: UserTableProps)
             {sortedUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>{user.numId || "-"}</TableCell>
-                <TableCell>{user.name}</TableCell>
+                <TableCell>
+                  <EmployeeIdentity user={user} size="md" href={`/users/${user.id}`} />
+                </TableCell>
                 <TableCell>{user.salary}</TableCell>
                 <TableCell>
                   <Badge variant="secondary" className={roleColors[user.role as keyof typeof roleColors]}>

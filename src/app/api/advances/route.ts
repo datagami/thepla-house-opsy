@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { userIdentitySelect } from "@/lib/select-presets";
 
 export async function GET(req: Request) {
   try {
@@ -59,12 +60,13 @@ export async function GET(req: Request) {
       };
     }
 
-    // Search filter (name or numId)
+    // Search filter (name, email, or numId)
     if (search && isHROrManagement) {
       where.user = {
         ...where.user,
         OR: [
           { name: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
           { numId: isNaN(parseInt(search)) ? undefined : parseInt(search) },
         ].filter(Boolean),
       };
@@ -76,9 +78,7 @@ export async function GET(req: Request) {
       include: {
         user: {
           select: {
-            id: true,
-            name: true,
-            numId: true,
+            ...userIdentitySelect,
             branch: {
               select: {
                 id: true,
@@ -89,8 +89,7 @@ export async function GET(req: Request) {
         },
         approvedBy: {
           select: {
-            name: true,
-            numId: true,
+            ...userIdentitySelect,
           },
         },
         installments: {
@@ -103,8 +102,7 @@ export async function GET(req: Request) {
             },
             approvedBy: {
               select: {
-                name: true,
-                numId: true,
+                ...userIdentitySelect,
               },
             },
           },
@@ -125,6 +123,7 @@ export async function GET(req: Request) {
         userId: string;
         userName: string;
         userNumId: number;
+        userImage: string | null;
         userBranch: string;
         totalAdvanceAmount: number;
         totalRemainingAmount: number;
@@ -142,6 +141,7 @@ export async function GET(req: Request) {
           userId,
           userName: advance.user.name ?? "Unknown",
           userNumId: advance.user.numId,
+          userImage: advance.user.image ?? null,
           userBranch: advance.user.branch?.name ?? "N/A",
           totalAdvanceAmount: 0,
           totalRemainingAmount: 0,

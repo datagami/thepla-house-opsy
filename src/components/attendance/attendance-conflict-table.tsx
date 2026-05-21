@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmployeeIdentity } from "@/components/ui/employee-identity";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +39,8 @@ export type SerializedAttendanceConflictEntry = {
 export type SerializedAttendanceConflict = {
   userId: string;
   userName: string | null;
+  userNumId: number | null;
+  userImage: string | null;
   department: string | null;
   branchName: string | null;
   date: string;
@@ -136,7 +139,10 @@ export function AttendanceConflictTable({ conflicts }: AttendanceConflictTablePr
             <CardHeader className="flex flex-row items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-base">
-                  {conflict.userName ?? "Unknown user"}
+                  <EmployeeIdentity
+                    user={{ id: conflict.userId, name: conflict.userName, numId: conflict.userNumId, image: conflict.userImage }}
+                    size="md"
+                  />
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
                   {conflict.department ? `${conflict.department} • ` : ""}

@@ -6,6 +6,7 @@ import { calculateNetSalaryFromObject } from '@/lib/services/salary-calculator';
 import { sortBranchesForReport } from '@/lib/branch-order';
 import { Salary, RecurringDeductionEntry } from '@/models/models';
 import { sumRecurringDeductions } from '@/lib/services/recurring-deductions';
+import { userIdentitySelect } from "@/lib/select-presets";
 
 export async function POST(req: Request) {
   try {
@@ -33,9 +34,7 @@ export async function POST(req: Request) {
       include: {
         user: {
           select: {
-            id: true,
-            name: true,
-            numId: true,
+            ...userIdentitySelect,
             title: true,
             branch: true,
             role: true

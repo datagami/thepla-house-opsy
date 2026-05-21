@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { userIdentitySelect } from "@/lib/select-presets";
 
 export async function GET() {
   try {
@@ -23,9 +24,7 @@ export async function GET() {
       include: {
         user: {
           select: {
-            id: true,
-            name: true,
-            numId: true,
+            ...userIdentitySelect,
             branch: { select: { name: true } },
           },
         },
@@ -35,7 +34,7 @@ export async function GET() {
               select: { month: true, year: true, status: true },
             },
             approvedBy: {
-              select: { name: true, numId: true },
+              select: { ...userIdentitySelect },
             },
           },
           orderBy: { approvedAt: "desc" },
@@ -95,6 +94,7 @@ export async function GET() {
         userId: string;
         userName: string;
         userNumId: number;
+        userImage: string | null;
         userBranch: string;
         totalDiscrepancy: number;
         deletedSalaryMonths: Array<{ month: number; year: number; deletedAt: Date }>;
@@ -143,6 +143,7 @@ export async function GET() {
           userId: advance.userId,
           userName: advance.user.name ?? "Unknown",
           userNumId: advance.user.numId,
+          userImage: advance.user.image ?? null,
           userBranch: advance.user.branch?.name ?? "N/A",
           totalDiscrepancy: 0,
           deletedSalaryMonths: deletionsByUser.get(advance.userId) ?? [],

@@ -17,6 +17,8 @@ export interface SalaryStatsDTO {
   employee: {
     id: string;
     name: string | null;
+    numId?: number | null;
+    image?: string | null;
     email: string | null;
   };
   attendance: {

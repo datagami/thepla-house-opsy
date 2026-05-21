@@ -4,6 +4,8 @@ import {Attendance} from "@/models/models";
 export interface AttendanceFormProps {
   userId?: string;
   userName?: string | null;
+  userNumId?: number | null;
+  userImage?: string | null;
   date?: Date;
   currentAttendance?: Attendance;
   isOpen?: boolean;

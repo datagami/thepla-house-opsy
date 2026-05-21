@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { userIdentitySelect } from "@/lib/select-presets";
 
 // GET: Fetch all warnings with filters (HR/MANAGEMENT/BRANCH_MANAGER only)
 export async function GET(req: Request) {
@@ -81,15 +82,13 @@ export async function GET(req: Request) {
       include: {
         user: {
           select: {
-            id: true,
-            name: true,
-            numId: true,
+            ...userIdentitySelect,
             email: true,
             branch: { select: { id: true, name: true } },
           },
         },
-        reportedBy: { select: { id: true, name: true } },
-        archivedBy: { select: { id: true, name: true } },
+        reportedBy: { select: { ...userIdentitySelect } },
+        archivedBy: { select: { ...userIdentitySelect } },
         warningType: { select: { id: true, name: true, description: true } },
       },
       orderBy: { createdAt: "desc" },

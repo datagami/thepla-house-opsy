@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { logEntityActivity } from "@/lib/services/activity-log";
+import { userIdentitySelect } from "@/lib/select-presets";
 import { ActivityType } from "@prisma/client";
 
 const patchSchema = z.object({
@@ -88,8 +89,8 @@ export async function PATCH(
             archivedById: null,
           },
       include: {
-        reportedBy: { select: { id: true, name: true } },
-        archivedBy: { select: { id: true, name: true } },
+        reportedBy: { select: { ...userIdentitySelect } },
+        archivedBy: { select: { ...userIdentitySelect } },
       },
     });
 

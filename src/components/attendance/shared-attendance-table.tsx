@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { AttendanceForm } from "./attendance-form";
 import {User} from "@/models/models";
 import { getShiftDisplay } from "@/lib/utils/shift-display";
+import { EmployeeIdentity } from "@/components/ui/employee-identity";
 
 
 interface SharedAttendanceTableProps {
@@ -96,7 +97,9 @@ export function SharedAttendanceTable({
                 className="cursor-pointer hover:bg-muted/50"
                 onClick={() => setSelectedUser(user)}
               >
-                <TableCell>{user.name}</TableCell>
+                <TableCell>
+                  <EmployeeIdentity user={user} size="md" />
+                </TableCell>
                 {showRole && (
                   <TableCell>
                     <Badge variant="secondary" className={roleColors[user.role as keyof typeof roleColors]}>
@@ -157,6 +160,8 @@ export function SharedAttendanceTable({
         <AttendanceForm
           userId={selectedUser.id}
           userName={selectedUser.name || ""}
+          userNumId={selectedUser.numId}
+          userImage={selectedUser.image}
           date={date}
           currentAttendance={selectedUser.attendance?.[0]}
           isOpen={!!selectedUser}

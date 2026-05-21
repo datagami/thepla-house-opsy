@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { userIdentitySelect } from "@/lib/select-presets";
 import { UserProfileForm } from "@/components/users/user-profile-form";
 import { hasAccess } from "@/lib/access-control";
 import {Branch, User} from "@/models/models";
@@ -13,6 +14,7 @@ import { UniformsList } from "@/components/users/uniforms-list";
 import { UserDocumentUpload } from "@/components/users/user-document-upload";
 import { UserDocumentsList } from "@/components/users/user-documents-list";
 import { AppraisalHistory } from "@/components/users/appraisal-history";
+import { EmployeeIdentity } from "@/components/ui/employee-identity";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -82,14 +84,23 @@ export default async function UserProfilePage({ params }: Props) {
       approvedAdvances: true,
       approvedInstallments: true,
       referralsMade: {
-        include: {
-          referredUser: true,
-        }
+        select: {
+          id: true,
+          eligibleAt: true,
+          paidAt: true,
+          referredUser: {
+            select: userIdentitySelect,
+          },
+        },
       },
       referralsReceived: {
-        include: {
-          referrer: true,
-        }
+        select: {
+          id: true,
+          referrerId: true,
+          referrer: {
+            select: userIdentitySelect,
+          },
+        },
       }
     },
   }) as unknown as User & {
@@ -97,12 +108,12 @@ export default async function UserProfilePage({ params }: Props) {
       id: string;
       eligibleAt: Date;
       paidAt?: Date | null;
-      referredUser?: { id: string; name?: string | null } | null;
+      referredUser?: { id: string; name?: string | null; numId?: number | null; image?: string | null } | null;
     }>;
     referralsReceived?: Array<{
       id: string;
       referrerId: string;
-      referrer?: { id: string; name?: string | null } | null;
+      referrer?: { id: string; name?: string | null; numId?: number | null; image?: string | null } | null;
     }>;
   };
 
@@ -160,9 +171,13 @@ export default async function UserProfilePage({ params }: Props) {
         {user.referralsReceived?.length ? (
           <div className="p-4 border rounded-md">
             <h3 className="text-lg font-medium mb-2">Referred By</h3>
-            {(user.referralsReceived || []).map((r) => (
-              <div key={r.id} className="text-sm">{r.referrer?.name || r.referrerId}</div>
-            ))}
+            <div className="space-y-2">
+              {(user.referralsReceived || []).map((r) => (
+                r.referrer && (
+                  <EmployeeIdentity key={r.id} user={r.referrer} size="sm" />
+                )
+              ))}
+            </div>
           </div>
         ) : null}
 
@@ -172,7 +187,7 @@ export default async function UserProfilePage({ params }: Props) {
             <div className="space-y-2">
               {(user.referralsMade || []).map((r) => (
                 <div key={r.id} className="flex items-center justify-between text-sm">
-                  <span>{r.referredUser?.name || ''}</span>
+                  {r.referredUser && <EmployeeIdentity user={r.referredUser} size="sm" />}
                   <span>
                     Eligible: {new Date(r.eligibleAt).toLocaleDateString()} {r.paidAt ? `· Paid: ${new Date(r.paidAt).toLocaleDateString()}` : ''}
                   </span>

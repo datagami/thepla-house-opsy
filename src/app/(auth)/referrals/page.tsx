@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { userIdentitySelect } from "@/lib/select-presets";
 import { ReferralsManagement } from "@/components/referrals/referrals-management";
 
 export const metadata: Metadata = {
@@ -24,15 +25,13 @@ export default async function ReferralsPage() {
     include: {
       referrer: {
         select: {
-          id: true,
-          name: true,
+          ...userIdentitySelect,
           email: true,
         },
       },
       referredUser: {
         select: {
-          id: true,
-          name: true,
+          ...userIdentitySelect,
           email: true,
           doj: true,
         },

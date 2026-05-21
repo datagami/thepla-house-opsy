@@ -24,11 +24,15 @@ interface ReferralWithRelations {
   referrer: {
     id: string;
     name: string | null;
+    numId?: number | null;
+    image?: string | null;
     email: string | null;
   };
   referredUser: {
     id: string;
     name: string | null;
+    numId?: number | null;
+    image?: string | null;
     email: string | null;
     doj: Date | null;
   };

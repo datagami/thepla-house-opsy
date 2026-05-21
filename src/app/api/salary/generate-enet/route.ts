@@ -7,6 +7,7 @@ import { calculateNetSalaryFromObject } from '@/lib/services/salary-calculator';
 import { SalaryStatus, ActivityType } from '@prisma/client';
 import { Salary } from '@/models/models';
 import { logEntityActivity } from '@/lib/services/activity-log';
+import { userIdentitySelect } from "@/lib/select-presets";
 export async function POST(req: Request) {
   try {
     const session = await auth();
@@ -32,9 +33,7 @@ export async function POST(req: Request) {
       include: {
         user: {
           select: {
-            id: true,
-            name: true,
-            numId: true,
+            ...userIdentitySelect,
             bankAccountNo: true,
             bankIfscCode: true,
             email: true,

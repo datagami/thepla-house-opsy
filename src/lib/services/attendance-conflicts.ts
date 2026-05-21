@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { endOfMonth, startOfMonth } from "date-fns";
+import { userIdentitySelect } from "@/lib/select-presets";
 
 const ATTENDANCE_TIMEZONE_OFFSET_MINUTES = Number(
   process.env.ATTENDANCE_TIMEZONE_OFFSET_MINUTES ?? 330 // Default to IST (+5:30)
@@ -29,6 +30,8 @@ type AttendanceConflictEntry = {
 export type AttendanceConflictGroup = {
   userId: string;
   userName: string | null;
+  userNumId: number | null;
+  userImage: string | null;
   department: string | null;
   branchName: string | null;
   date: string;
@@ -68,8 +71,7 @@ export async function getAttendanceConflicts(month: number, year: number) {
     include: {
       user: {
         select: {
-          id: true,
-          name: true,
+          ...userIdentitySelect,
           department: {
             select: {
               id: true,
@@ -106,6 +108,8 @@ export async function getAttendanceConflicts(month: number, year: number) {
       grouped.set(mapKey, {
         userId: record.userId,
         userName: record.user?.name ?? null,
+        userNumId: record.user?.numId ?? null,
+        userImage: record.user?.image ?? null,
         department: record.user?.department?.name ?? null,
         branchName: record.user?.branch?.name ?? null,
         date: dayKey,
