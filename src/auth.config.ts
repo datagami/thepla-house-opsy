@@ -83,28 +83,40 @@ export default {
         token.numId = user.numId;
         token.image = user.image;
       }
-      // Refresh numId/image from DB if absent (e.g. existing sessions)
+      // Refresh numId/image from DB if absent (e.g. existing sessions).
+      // Wrapped in try/catch so a transient DB error (pool exhaustion, timeout)
+      // doesn't throw out of the jwt callback and invalidate the session.
+      // Worst case on failure: token stays un-enriched and we retry next request.
       if (token.sub && (token.numId === undefined || token.image === undefined)) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.sub },
-          select: userIdentitySelect,
-        });
-        if (dbUser) {
-          token.numId = dbUser.numId;
-          token.image = dbUser.image;
-          token.name = dbUser.name;
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.sub },
+            select: userIdentitySelect,
+          });
+          if (dbUser) {
+            token.numId = dbUser.numId;
+            token.image = dbUser.image;
+            token.name = dbUser.name;
+          }
+        } catch (err) {
+          console.error('[auth.jwt] bootstrap fetch failed (non-fatal):', err);
         }
       }
-      // Re-fetch identity from DB when session.update() is called (e.g. after profile picture upload)
+      // Re-fetch identity from DB when session.update() is called (e.g. after profile picture upload).
+      // Same try/catch protection.
       if (trigger === 'update' && token.sub) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.sub },
-          select: userIdentitySelect,
-        });
-        if (dbUser) {
-          token.numId = dbUser.numId;
-          token.image = dbUser.image;
-          token.name = dbUser.name;
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.sub },
+            select: userIdentitySelect,
+          });
+          if (dbUser) {
+            token.numId = dbUser.numId;
+            token.image = dbUser.image;
+            token.name = dbUser.name;
+          }
+        } catch (err) {
+          console.error('[auth.jwt] update fetch failed (non-fatal):', err);
         }
       }
       return token;
