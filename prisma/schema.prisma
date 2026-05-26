@@ -65,6 +65,23 @@ enum UniformStatus {
   DAMAGED
 }
 
+enum PunchDirection {
+  IN
+  OUT
+}
+
+enum PunchOutcome {
+  RECORDED
+  BLOCKED_WRONG_OUTLET
+}
+
+enum GroomingCheckStatus {
+  PASS
+  FAIL
+  PENDING
+  ERROR
+}
+
 model Department {
   id          String   @id @default(cuid())
   numId       Int      @default(autoincrement()) @map("num_id")
@@ -220,13 +237,17 @@ model User {
   appraisalsMade SalaryAppraisal[] @relation("AppraisalChangedBy")
 
   // --- Job Offer Relations ---
-  jobOffer JobOffer?
+  jobOffer                   JobOffer?
   offerLetterSnippetsCreated OfferLetterSnippet[] @relation("OfferLetterSnippetCreatedBy")
   offerLetterSnippetsUpdated OfferLetterSnippet[] @relation("OfferLetterSnippetUpdatedBy")
 
   // --- Status History Relations ---
   statusHistory        UserStatusHistory[] @relation("UserStatusHistoryUser")
   statusHistoryChanges UserStatusHistory[] @relation("UserStatusHistoryChangedBy")
+
+  // --- Kiosk biometric attendance ---
+  fingerprintEnrollments FingerprintEnrollment[]
+  punchEvents            PunchEvent[]
 
   @@index([branchId])
   @@index([managedBranchId])
@@ -322,6 +343,11 @@ model Branch {
   selectedByUsers User[]           @relation("SelectedBranch")
   attendances     Attendance[]
   documents       BranchDocument[]
+
+  // --- Kiosk biometric attendance ---
+  kioskDevices KioskDevice[]
+  shifts       Shift[]
+  punchEvents  PunchEvent[]  @relation("PunchEventBranch")
 
   @@map("branches")
 }
@@ -430,12 +456,14 @@ model Attendance {
   updatedAt        DateTime         @updatedAt @map("updated_at")
 
   // Relations
-  user       User   @relation("UserAttendance", fields: [userId], references: [id])
-  verifiedBy User?  @relation("AttendanceVerifications", fields: [verifiedById], references: [id])
-  branchId   String
-  branch     Branch @relation(fields: [branchId], references: [id])
+  user        User         @relation("UserAttendance", fields: [userId], references: [id])
+  verifiedBy  User?        @relation("AttendanceVerifications", fields: [verifiedById], references: [id])
+  branchId    String
+  branch      Branch       @relation(fields: [branchId], references: [id])
+  punchEvents PunchEvent[]
 
   @@unique([id, date])
+  @@unique([userId, date], name: "userId_date")
   @@index([verifiedById])
   @@index([branchId])
   @@map("attendance")
@@ -742,6 +770,12 @@ enum ActivityType {
   PASSWORD_CHANGED
   DAILY_ATTENDANCE_REPORT
   OTHER
+  PUNCH_IN
+  PUNCH_OUT
+  PUNCH_BLOCKED_WRONG_OUTLET
+  GROOMING_CHECK_FAILED
+  FINGERPRINT_ENROLLED
+  KIOSK_DEVICE_CREATED
 }
 
 model ActivityLog {
@@ -837,7 +871,7 @@ model JobOffer {
 
   // Additional notes
   notes     String? @db.Text
-  termsHtml String? @db.Text @map("terms_html")
+  termsHtml String? @map("terms_html") @db.Text
 
   // Created/Updated
   createdAt DateTime @default(now()) @map("created_at")
@@ -859,7 +893,7 @@ model OfferLetterSnippet {
   numId     Int                        @default(autoincrement()) @map("num_id")
   title     String
   category  OfferLetterSnippetCategory @default(OTHER)
-  htmlBody  String                     @db.Text @map("html_body")
+  htmlBody  String                     @map("html_body") @db.Text
   isActive  Boolean                    @default(true) @map("is_active")
   sortOrder Int                        @default(0) @map("sort_order")
 
@@ -873,4 +907,121 @@ model OfferLetterSnippet {
 
   @@index([isActive, sortOrder])
   @@map("offer_letter_snippets")
+}
+
+// ───────────────────────────── Kiosk biometric attendance ─────────────────────────────
+
+model KioskDevice {
+  id         String    @id @default(cuid())
+  numId      Int       @default(autoincrement()) @map("num_id")
+  name       String
+  branchId   String    @map("branch_id")
+  tokenHash  String    @unique @map("token_hash") // SHA-256 hex of the one-time provisioning secret
+  isActive   Boolean   @default(true) @map("is_active")
+  lastSeenAt DateTime? @map("last_seen_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  branch      Branch                  @relation(fields: [branchId], references: [id])
+  punchEvents PunchEvent[]
+  enrollments FingerprintEnrollment[] @relation("EnrolledByDevice")
+
+  @@index([branchId])
+  @@index([isActive])
+  @@map("kiosk_devices")
+}
+
+model FingerprintEnrollment {
+  id                 String   @id @default(cuid())
+  numId              Int      @default(autoincrement()) @map("num_id")
+  userId             String   @map("user_id")
+  templateData       String   @map("template_data") @db.Text // base64 ISO 19794-2 minutiae template
+  fingerIndex        Int      @map("finger_index") // 0..9 (e.g. 0=right thumb, 1=right index, etc.)
+  enrolledByDeviceId String?  @map("enrolled_by_device_id")
+  isActive           Boolean  @default(true) @map("is_active")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrolledByDevice KioskDevice? @relation("EnrolledByDevice", fields: [enrolledByDeviceId], references: [id])
+
+  @@unique([userId, fingerIndex])
+  @@index([userId])
+  @@index([isActive])
+  @@index([updatedAt])
+  @@map("fingerprint_enrollments")
+}
+
+model Shift {
+  id        String   @id @default(cuid())
+  numId     Int      @default(autoincrement()) @map("num_id")
+  name      String
+  branchId  String?  @map("branch_id") // null = all branches
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  branch      Branch?        @relation(fields: [branchId], references: [id])
+  segments    ShiftSegment[]
+  punchEvents PunchEvent[]
+
+  @@unique([name, branchId])
+  @@index([branchId])
+  @@index([isActive])
+  @@map("shifts")
+}
+
+model ShiftSegment {
+  id        String   @id @default(cuid())
+  shiftId   String   @map("shift_id")
+  startTime String   @map("start_time") // "HH:mm" branch-local
+  endTime   String   @map("end_time") // "HH:mm" branch-local
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  shift Shift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  @@index([shiftId])
+  @@map("shift_segments")
+}
+
+model PunchEvent {
+  id               String         @id @default(cuid())
+  numId            Int            @default(autoincrement()) @map("num_id")
+  userId           String         @map("user_id")
+  attendanceId     String?        @map("attendance_id") // null for BLOCKED_WRONG_OUTLET
+  shiftId          String?        @map("shift_id") // null for blocked attempts
+  kioskDeviceId    String?        @map("kiosk_device_id")
+  branchId         String         @map("branch_id") // the kiosk's outlet (where the punch was attempted)
+  assignedBranchId String?        @map("assigned_branch_id") // snapshot of employee's outlet at attempt time
+  direction        PunchDirection
+  punchedAt        DateTime       @map("punched_at") // UTC, authoritative
+  outcome          PunchOutcome   @default(RECORDED)
+
+  // Grooming
+  uniformPhotoUrl    String?              @map("uniform_photo_url")
+  nailsPhotoUrl      String?              @map("nails_photo_url")
+  uniformCheckStatus GroomingCheckStatus? @map("uniform_check_status")
+  nailsCheckStatus   GroomingCheckStatus? @map("nails_check_status")
+  uniformCheckReason String?              @map("uniform_check_reason") @db.Text
+  nailsCheckReason   String?              @map("nails_check_reason") @db.Text
+  uniformConfidence  Float?               @map("uniform_confidence")
+  nailsConfidence    Float?               @map("nails_confidence")
+  aiRawResponse      String?              @map("ai_raw_response") @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attendance  Attendance?  @relation(fields: [attendanceId], references: [id])
+  shift       Shift?       @relation(fields: [shiftId], references: [id])
+  kioskDevice KioskDevice? @relation(fields: [kioskDeviceId], references: [id])
+  branch      Branch       @relation("PunchEventBranch", fields: [branchId], references: [id])
+
+  @@index([userId, punchedAt])
+  @@index([attendanceId])
+  @@index([branchId])
+  @@index([outcome])
+  @@index([punchedAt])
+  @@map("punch_events")
 }
