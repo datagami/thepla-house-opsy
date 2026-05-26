@@ -18,6 +18,11 @@ The kiosk only *records* punches. Everything HR does today (edit times, overtime
 recalc) must keep working unchanged. The system must support **multiple punch-ins per day** for break
 shifts. Grooming may later expand to oral health / shoes — out of scope for now.
 
+Employees are **moved between outlets** frequently (decided before the shift). Each employee has one current
+outlet (`User.branchId`); a move is recorded by **updating that outlet in the web app**. A kiosk only lets an
+employee punch at the outlet they're currently assigned to — punching elsewhere is rejected with a clear
+message and the fix is a web outlet-update. This keeps "where everyone is today" accurate without a roster.
+
 ## Decisions
 
 | Area | Decision |
@@ -25,8 +30,9 @@ shifts. Grooming may later expand to oral health / shoes — out of scope for no
 | Kiosk app | **.NET / WPF (C#)** — native Mantra MFS500 SDK + webcam |
 | AI checks | **Backend-mediated, synchronous** — kiosk uploads photos, server analyzes, returns verdict in the same response |
 | Fingerprint match | **Local 1:N on the kiosk** — templates synced from server (Mantra matcher is a native Windows lib) |
-| Cross-branch mobility | Employees are moved between outlets (decided **before** the shift). **All** active templates sync to **every** kiosk; any employee can punch at any outlet; no cross-branch rejection |
-| Branch attribution | The day's `Attendance` is attributed to the **worked outlet** (the kiosk's branch where they punch in); that outlet's manager verifies it. `PunchEvent.branchId` records the same |
+| Outlet assignment | Each employee is assigned to **one current outlet** = existing `User.branchId`. Moving someone = **update their outlet in the web app** (a deliberate, recorded action) |
+| Cross-branch mobility | Identification is **global** (all templates sync to every kiosk, so any kiosk can *recognize* anyone), but a **punch is gated**: allowed only when `employee.branchId == kiosk.branchId`. Mismatch → punch rejected (with assigned-outlet name) + the attempt logged; resolved by updating the outlet on the web. **The only thing that blocks a punch is wrong-outlet** |
+| Branch attribution | A successful punch implies assigned outlet == kiosk outlet, so the day's `Attendance.branchId` is unambiguous; that outlet's manager verifies it |
 | AI provider | **Azure AI Foundry**, vision deployment (default GPT-4o-class; provider-agnostic service so a Claude vision model is swappable) |
 | Punch storage | **New `PunchEvent` table**; daily `Attendance` row derived from it |
 | Shifts | **Configurable `Shift` + `ShiftSegment` tables** (supports split/break shifts) |
@@ -58,11 +64,14 @@ End-to-end flow:
 
 ```
 Finger on MFS500 → kiosk matches LOCALLY (templates synced from server) → identifies employee
-  → shift dialog (GET /api/kiosk/shifts) + IN/OUT
+  → OUTLET CHECK: is employee assigned to THIS outlet?
+       → NO  → show "You're assigned to <outlet> — ask HR to update your outlet", log attempt → idle
+       → YES → shift dialog (GET /api/kiosk/shifts) + IN/OUT
   → camera captures 2 photos (uniform, nails)
   → POST /api/kiosk/punch { userId, shiftId, direction, uniformPhoto, nailsPhoto, punchedAt }
-       → server: store photos (Azure Blob) → Azure AI Foundry verdicts → write PunchEvent
-                 → upsert daily Attendance row → salary-recalc guard → activity log
+       → server re-validates outlet (authoritative) → store photos (Azure Blob)
+                 → Azure AI Foundry verdicts → write PunchEvent → upsert daily Attendance row
+                 → salary-recalc guard → activity log
        → returns grooming verdicts synchronously
   → kiosk shows green/red result screen → idle
 ```
@@ -81,10 +90,10 @@ conventions (`@id @default(cuid())`, `numId Int @default(autoincrement()) @map("
 - **`FingerprintEnrollment`** — `userId`, `templateData` (`@db.Text`, base64 ISO 19794-2 template), `fingerIndex` (0–9; multiple fingers/user), `enrolledByDeviceId?`, `isActive`.
 - **`Shift`** — `name`, `branchId?` (null = all branches), `isActive`, `sortOrder`. Times live in segments.
 - **`ShiftSegment`** — `shiftId`, `startTime`/`endTime` (`"HH:mm"` branch-local), `sortOrder`. One row for a normal shift, two+ for a split/break shift.
-- **`PunchEvent`** — `userId`, `attendanceId?` (backlink), `shiftId?`, `kioskDeviceId?`, `branchId` (the **worked outlet** = the kiosk's branch, which may differ from the user's home branch), `direction` (`PunchDirection`), `punchedAt` (UTC `DateTime`, authoritative). Grooming: `uniformPhotoUrl`/`nailsPhotoUrl`, `uniformCheckStatus`/`nailsCheckStatus` (`GroomingCheckStatus`), `uniformCheckReason`/`nailsCheckReason` (`@db.Text`), `uniformConfidence`/`nailsConfidence` (Float), `aiRawResponse` (`@db.Text`, audit).
-- Enums: `PunchDirection { IN, OUT }`, `GroomingCheckStatus { PASS, FAIL, PENDING, ERROR }`.
+- **`PunchEvent`** — `userId`, `attendanceId?` (backlink; null for a blocked attempt), `shiftId?`, `kioskDeviceId?`, `branchId` (the kiosk's outlet where the punch was attempted), `direction` (`PunchDirection`), `punchedAt` (UTC `DateTime`, authoritative), `outcome` (`PunchOutcome`, default `RECORDED`), `assignedBranchId?` (snapshot of the employee's outlet at attempt time — equals `branchId` when `RECORDED`, differs when `BLOCKED_WRONG_OUTLET`). Grooming: `uniformPhotoUrl`/`nailsPhotoUrl`, `uniformCheckStatus`/`nailsCheckStatus` (`GroomingCheckStatus`), `uniformCheckReason`/`nailsCheckReason` (`@db.Text`), `uniformConfidence`/`nailsConfidence` (Float), `aiRawResponse` (`@db.Text`, audit). A `BLOCKED_WRONG_OUTLET` row has no photos/grooming and no `attendanceId` — it exists purely as the audit signal for an attempt at an unassigned outlet.
+- Enums: `PunchDirection { IN, OUT }`, `GroomingCheckStatus { PASS, FAIL, PENDING, ERROR }`, `PunchOutcome { RECORDED, BLOCKED_WRONG_OUTLET }`.
 - Back-links: `User` ← `punchEvents`, `fingerprintEnrollments`; `Attendance` ← `punchEvents`; `Branch` ← `kioskDevices`, `shifts`, `punchEvents`.
-- `ActivityType`: add `PUNCH_IN`, `PUNCH_OUT`, `GROOMING_CHECK_FAILED`, `FINGERPRINT_ENROLLED`, `KIOSK_DEVICE_CREATED`.
+- `ActivityType`: add `PUNCH_IN`, `PUNCH_OUT`, `PUNCH_BLOCKED_WRONG_OUTLET`, `GROOMING_CHECK_FAILED`, `FINGERPRINT_ENROLLED`, `KIOSK_DEVICE_CREATED`.
 - Add `@@unique([userId, date])` to `Attendance` so the punch `upsert` is safe (current `@@unique([id, date])` is a no-op). **Verify no existing `userId+date` duplicates before migrating** — a `create-duplicate-attendance` seed script exists, so check data first.
 
 ### A2. Services
@@ -99,9 +108,9 @@ Photo folders: `kiosk-punches/uniform/{userId}/{YYYY-MM-DD}/{punchEventId}-unifo
 
 ### A3. API endpoints (`src/app/api/kiosk/...`)
 
-All use `authenticateKiosk()` except device provisioning (NextAuth). Endpoints are **not** branch-filtered —
-templates are global and any employee may punch at any outlet (mobility). The punch simply records the
-kiosk's branch as the worked outlet.
+All use `authenticateKiosk()` except device provisioning (NextAuth). **Template sync is global** (every kiosk
+can *identify* anyone), but the **punch is outlet-gated**: it succeeds only when the employee's assigned
+`branchId` equals the kiosk's `branchId`. A mismatch is rejected and logged (see the punch sequence).
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -115,7 +124,9 @@ kiosk's branch as the worked outlet.
 **Fingerprint sync semantics (mobility-critical):** "active" means the enrollment's `isActive` is true **and**
 the owning user's status is `ACTIVE`. The `GET /api/kiosk/fingerprints` delta response returns each enrollment
 changed since `updatedSince` with its effective active flag — additions/re-enrollments **and tombstones**
-(for leavers, deactivated users, or a removed finger). The kiosk applies additions and **deletes** tombstoned
+(for leavers, deactivated users, or a removed finger). Each returned enrollment also carries the owner's
+**current `branchId`** so the kiosk can do the outlet pre-check locally (and a web-side outlet change shows
+up as a normal delta-sync update). The kiosk applies additions and **deletes** tombstoned
 templates from its local cache. A **transfer between outlets is not a sync event** — the employee is already
 on every kiosk. A kiosk also does a **full reconcile** (no `updatedSince`) on launch and once daily to
 self-heal missed deltas (and to catch hard-deleted users whose enrollment rows cascade away). Because matching is local and there
@@ -124,15 +135,16 @@ minutiae (a few hundred bytes each), encrypted at rest on the device; the device
 all-templates-everywhere footprint is an accepted tradeoff of local matching + a mobile workforce.
 
 **`POST /api/kiosk/punch` sequence** (synchronous, one handler):
-1. `authenticateKiosk`; resolve the employee (no branch check — any employee may punch here). The worked outlet = `device.branchId`.
-2. Upload uniform + nails photos (failures → URLs null, status `ERROR`, continue).
-3. `checkGrooming(...)` (8s timeout each, parallel).
-4. Create `PunchEvent` with `branchId = device.branchId`.
-5. Upsert daily `Attendance` (`where userId_date`): on create set `isPresent=true`, `checkIn`, `branchId = device.branchId` (worked outlet), `status=PENDING_VERIFICATION`; on IN set `checkIn` if empty; on OUT set `checkOut`. Map `shiftId`→legacy `shift1/2/3` by segment overlap (best-effort; truth lives on `PunchEvent.shiftId`). Edge case: if a later punch arrives from a *different* outlet the same day (rare — moves happen pre-shift), keep the first outlet's `branchId` and continue.
-6. Write `attendanceId` back onto the `PunchEvent`.
-7. Salary-recalc guard (A4).
-8. `logEntityActivity` PUNCH_IN/PUNCH_OUT (+ GROOMING_CHECK_FAILED when relevant).
-9. Return `{ punchEventId, attendanceId, direction, punchedAt, grooming: { uniform, nails }, overallGroomingPass }`.
+1. `authenticateKiosk`; resolve the employee.
+2. **Outlet gate (authoritative):** if `employee.branchId != device.branchId` → write a `PunchEvent` with `outcome=BLOCKED_WRONG_OUTLET`, `assignedBranchId=employee.branchId`, no photos/grooming, no `attendanceId`; `logEntityActivity` `PUNCH_BLOCKED_WRONG_OUTLET`; return `403 { blocked: true, reason: "WRONG_OUTLET", assignedBranch: { id, name } }`. **Stop** — no salary touch, no Attendance. (The kiosk normally pre-checks this client-side, so reaching here usually means a same-moment race; the server is the source of truth.)
+3. (authorized) Upload uniform + nails photos (failures → URLs null, status `ERROR`, continue).
+4. `checkGrooming(...)` (8s timeout each, parallel).
+5. Create `PunchEvent` with `outcome=RECORDED`, `branchId = device.branchId`, `assignedBranchId = employee.branchId`.
+6. Upsert daily `Attendance` (`where userId_date`): on create set `isPresent=true`, `checkIn`, `branchId = device.branchId`, `status=PENDING_VERIFICATION`; on IN set `checkIn` if empty; on OUT set `checkOut`. Map `shiftId`→legacy `shift1/2/3` by segment overlap (best-effort; truth lives on `PunchEvent.shiftId`).
+7. Write `attendanceId` back onto the `PunchEvent`.
+8. Salary-recalc guard (A4).
+9. `logEntityActivity` PUNCH_IN/PUNCH_OUT (+ GROOMING_CHECK_FAILED when relevant).
+10. Return `{ punchEventId, attendanceId, direction, punchedAt, grooming: { uniform, nails }, overallGroomingPass }`.
 
 Raise the route body-size limit (~10 MB; two base64 JPEGs); the kiosk compresses photos to ≤1024px first.
 
@@ -178,7 +190,7 @@ keeping the text verdicts on `PunchEvent` for the record.
 
 Single Windows app, two modes:
 
-- **Punch mode (default):** idle → finger scan → local 1:N match against synced templates (Mantra MFS500 SDK) → on match, shift dialog (`GET /api/kiosk/shifts`) + IN/OUT → capture 2 photos → `POST /api/kiosk/punch` → green/red verdict screen with reasons → idle. **Offline:** queue punches locally and sync on reconnect (photos held; grooming marked PENDING).
+- **Punch mode (default):** idle → finger scan → local 1:N match against synced templates (Mantra MFS500 SDK) → on match, **outlet pre-check**: the synced template carries the employee's current `branchId`; if it ≠ this kiosk's branch, do a quick delta sync (in case they were just moved on the web) and re-check — still mismatched → show *"You're assigned to &lt;outlet&gt; — ask HR to update your outlet"* and log the attempt; matched → shift dialog (`GET /api/kiosk/shifts`) + IN/OUT → capture 2 photos → `POST /api/kiosk/punch` → green/red verdict screen with reasons → idle. **Offline:** queue punches locally and sync on reconnect (photos held; grooming marked PENDING).
 - **Enroll mode (HR, PIN-gated):** search employee by name/`#numId` → scan finger(s) (≥2 recommended: index + thumb) → `POST /api/kiosk/fingerprints/enroll`.
 - **Template cache:** holds **all** active employees' templates (encrypted at rest) so anyone can punch here. On launch and once daily it does a **full reconcile** (`GET /api/kiosk/fingerprints` with no `updatedSince`, following `cursor` pages); in between it polls **delta** syncs (`?updatedSince=`), applying additions and **purging tombstoned (`isActive:false`)** templates.
 - Stores its device token in the Windows credential store; uses handshake server time to bound clock skew.
@@ -196,8 +208,8 @@ Phases 1–2 are this repo and testable via `curl`/Postman before the WPF app ex
 
 ## Verification
 
-- **Unit/integration (vitest):** `punch-service` attendance upsert (create vs IN vs OUT); shift→legacy-flag mapping incl. split shift; IST conversion of `punchedAt`; salary guard (PENDING recalc vs PROCESSING skip vs no-row); `authenticateKiosk` (valid/invalid/inactive/wrong-branch). Mock grooming for timeout→PENDING and error→ERROR.
-- **Endpoint smoke (curl/Postman):** provision device (NextAuth) → handshake → seed/list shifts → enroll template → sync templates → punch with two sample base64 JPEGs; assert a `PunchEvent`, an upserted `Attendance`, photos in Azure Blob, synchronous verdicts. Re-punch same user/day → `checkOut` set, no duplicate `Attendance`.
+- **Unit/integration (vitest):** outlet gate (`BLOCKED_WRONG_OUTLET` + no Attendance when `employee.branchId != device.branchId`; `RECORDED` when equal); `punch-service` attendance upsert (create vs IN vs OUT); shift→legacy-flag mapping incl. split shift; IST conversion of `punchedAt`; salary guard (PENDING recalc vs PROCESSING skip vs no-row); `authenticateKiosk` (valid/invalid/inactive). Mock grooming for timeout→PENDING and error→ERROR.
+- **Endpoint smoke (curl/Postman):** provision device (NextAuth) → handshake → seed/list shifts → enroll template → sync templates → **punch at the wrong outlet → assert `403`, a `BLOCKED_WRONG_OUTLET` PunchEvent, and no Attendance** → update the employee's outlet via the web → punch with two sample base64 JPEGs; assert a `RECORDED` `PunchEvent`, an upserted `Attendance`, photos in Azure Blob, synchronous verdicts. Re-punch same user/day → `checkOut` set, no duplicate `Attendance`.
 - **Manual:** HR can still edit times / mark overtime / verify the kiosk-created `Attendance` row in the existing UI; a kiosk punch during salary `PROCESSING` records without error and skips recalc.
 - After build/merge, restart `next dev` so the running app reflects changes.
 
