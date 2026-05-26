@@ -1756,6 +1756,7 @@ Create `src/lib/services/punch-service.ts`:
 import {
   ActivityType,
   GroomingCheckStatus,
+  Prisma,
   PunchDirection,
   PunchOutcome,
 } from "@prisma/client";
@@ -1969,6 +1970,35 @@ describe('recordPunch — authorized path', () => {
     await prisma.shiftSegment.deleteMany({ where: { shiftId: breakOne.id } });
     await prisma.shift.delete({ where: { id: breakOne.id } });
   });
+
+  it('handles concurrent IN punches for the same user/day (P2002 retry)', async () => {
+    // Two parallel IN punches with the same userId+date
+    const [r1, r2] = await Promise.all([
+      recordPunch({
+        device: { id: device.id, branchId: branchA.id },
+        userId: user.id, shiftId: shift.id, direction: 'IN',
+        punchedAt: new Date('2026-05-26T03:30:00Z'),
+        uniformPhotoBase64: 'A', nailsPhotoBase64: 'B',
+      }),
+      recordPunch({
+        device: { id: device.id, branchId: branchA.id },
+        userId: user.id, shiftId: shift.id, direction: 'IN',
+        punchedAt: new Date('2026-05-26T03:30:00Z'),
+        uniformPhotoBase64: 'A', nailsPhotoBase64: 'B',
+      }),
+    ]);
+    // Both succeed; both reference the same Attendance row
+    expect(r1.outcome).toBe('RECORDED');
+    expect(r2.outcome).toBe('RECORDED');
+    expect(r1.attendanceId).toBe(r2.attendanceId);
+    // Exactly one Attendance row exists
+    const atts = await prisma.attendance.findMany({ where: { userId: user.id } });
+    expect(atts).toHaveLength(1);
+    // Two PunchEvents exist, both referencing it
+    const events = await prisma.punchEvent.findMany({ where: { userId: user.id } });
+    expect(events).toHaveLength(2);
+    expect(events.every(e => e.attendanceId === r1.attendanceId)).toBe(true);
+  });
 });
 ```
 
@@ -2037,7 +2067,11 @@ In `src/lib/services/punch-service.ts`, replace the final `throw new Error("NOT_
   });
   const legacyFlag = pickLegacyShiftFlag(shiftRow?.segments ?? [], istHHmm);
 
-  const attendance = await prisma.attendance.upsert({
+  // Race handling (P2002 on simultaneous upsert): Prisma's `upsert` is not atomic
+  // across processes — two concurrent IN punches for the same (userId, date) can
+  // both enter the create branch and one will throw P2002. The retry below
+  // re-attempts; on the second pass the row exists so it becomes a pure update.
+  const attendance = await upsertAttendanceWithRetry({
     where: { userId_date: { userId: employee.id, date: istDate } },
     create: {
       userId: employee.id,
@@ -2160,6 +2194,32 @@ function withinWindow(start: string, end: string, now: string): boolean {
 // Stub — implemented in Task 13
 async function maybeRecalcSalary(_userId: string, _punchedAt: Date, _req?: Request): Promise<void> {
   // intentional no-op until Task 13
+}
+
+/**
+ * Wrap Prisma's upsert with a single retry for P2002 races. Two concurrent
+ * IN punches for the same (userId, date) can both enter the create branch
+ * and one will throw `Prisma.PrismaClientKnownRequestError` with code 'P2002'.
+ * On retry, the row exists, so the upsert collapses to a pure update.
+ */
+async function upsertAttendanceWithRetry(
+  args: Parameters<typeof prisma.attendance.upsert>[0],
+  attempts = 2
+): Promise<Awaited<ReturnType<typeof prisma.attendance.upsert>>> {
+  try {
+    return await prisma.attendance.upsert(args);
+  } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2002" &&
+      attempts > 1
+    ) {
+      // The other request won the create race — re-attempt; this time the
+      // row exists, so it'll go through the update branch.
+      return upsertAttendanceWithRetry(args, attempts - 1);
+    }
+    throw e;
+  }
 }
 ```
 
