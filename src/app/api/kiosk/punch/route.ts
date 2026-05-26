@@ -55,9 +55,28 @@ export async function POST(req: Request) {
   if (direction !== "IN" && direction !== "OUT") {
     return NextResponse.json({ error: 'direction must be "IN" or "OUT"' }, { status: 400 });
   }
+  // Require explicit UTC or numeric offset. A bare "2026-05-26T03:30:00" parses
+  // as server-local time and lands on the wrong IST day near midnight; the spec
+  // is explicit that the kiosk sends UTC.
+  if (!/(Z|[+-]\d{2}:?\d{2})$/.test(punchedAt)) {
+    return NextResponse.json(
+      { error: "punchedAt must be a timezone-explicit ISO string (end with Z or ±HH:MM)" },
+      { status: 400 }
+    );
+  }
   const punchedAtDate = new Date(punchedAt);
   if (isNaN(punchedAtDate.getTime())) {
     return NextResponse.json({ error: "punchedAt must be a valid ISO date" }, { status: 400 });
+  }
+  // Reject oversized photos before they touch Azure or grooming. ~7.5MB of
+  // base64 ≈ 5.6MB of raw image — far above the 1024px JPEG the kiosk produces
+  // (~150-300KB), but well below Vercel's 4.5MB sync body limit when summed.
+  const MAX_BASE64 = 7_500_000;
+  if (uniformPhoto.length > MAX_BASE64 || nailsPhoto.length > MAX_BASE64) {
+    return NextResponse.json(
+      { error: `Photo too large (max ${MAX_BASE64} base64 chars per photo)` },
+      { status: 413 }
+    );
   }
 
   try {

@@ -16,6 +16,25 @@ function reqWith(headers: Record<string, string>): Request {
   return new Request('http://localhost/api/kiosk/handshake', { headers });
 }
 
+// Helper: builds a complete KioskDevice for mocking findUnique. The production
+// code only `select`s a subset, but vi.mocked types the return as the full
+// model — so we fill in defaults for the un-touched fields.
+function mockDevice(overrides: {
+  id: string;
+  branchId: string;
+  name: string;
+  tokenHash: string;
+  isActive: boolean;
+}) {
+  return {
+    numId: 1,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    lastSeenAt: null,
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -52,13 +71,13 @@ describe('authenticateKiosk', () => {
   });
 
   it('returns null when device is inactive', async () => {
-    vi.mocked(prisma.kioskDevice.findUnique).mockResolvedValueOnce({
+    vi.mocked(prisma.kioskDevice.findUnique).mockResolvedValueOnce(mockDevice({
       id: 'dev_1',
       branchId: 'b1',
       name: 'Smoke Kiosk',
       tokenHash: hashKioskToken('correct-token'),
       isActive: false,
-    });
+    }));
     const result = await authenticateKiosk(
       reqWith({ Authorization: 'Bearer correct-token', 'X-Kiosk-Device-Id': 'dev_1' })
     );
@@ -66,13 +85,13 @@ describe('authenticateKiosk', () => {
   });
 
   it('returns null when token hash mismatches', async () => {
-    vi.mocked(prisma.kioskDevice.findUnique).mockResolvedValueOnce({
+    vi.mocked(prisma.kioskDevice.findUnique).mockResolvedValueOnce(mockDevice({
       id: 'dev_1',
       branchId: 'b1',
       name: 'Smoke Kiosk',
       tokenHash: hashKioskToken('correct-token'),
       isActive: true,
-    });
+    }));
     const result = await authenticateKiosk(
       reqWith({ Authorization: 'Bearer WRONG', 'X-Kiosk-Device-Id': 'dev_1' })
     );
@@ -80,13 +99,13 @@ describe('authenticateKiosk', () => {
   });
 
   it('returns { device } on a valid match and fires lastSeenAt update', async () => {
-    vi.mocked(prisma.kioskDevice.findUnique).mockResolvedValueOnce({
+    vi.mocked(prisma.kioskDevice.findUnique).mockResolvedValueOnce(mockDevice({
       id: 'dev_1',
       branchId: 'b1',
       name: 'Smoke Kiosk',
       tokenHash: hashKioskToken('correct-token'),
       isActive: true,
-    });
+    }));
     const result = await authenticateKiosk(
       reqWith({ Authorization: 'Bearer correct-token', 'X-Kiosk-Device-Id': 'dev_1' })
     );
@@ -99,13 +118,13 @@ describe('authenticateKiosk', () => {
   });
 
   it('uses timing-safe compare (different hash lengths return null)', async () => {
-    vi.mocked(prisma.kioskDevice.findUnique).mockResolvedValueOnce({
+    vi.mocked(prisma.kioskDevice.findUnique).mockResolvedValueOnce(mockDevice({
       id: 'dev_1',
       branchId: 'b1',
       name: 'Smoke Kiosk',
       tokenHash: 'short',
       isActive: true,
-    });
+    }));
     const result = await authenticateKiosk(
       reqWith({ Authorization: 'Bearer anything', 'X-Kiosk-Device-Id': 'dev_1' })
     );
