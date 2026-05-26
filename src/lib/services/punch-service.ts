@@ -159,6 +159,7 @@ export async function recordPunch(input: RecordPunchInput): Promise<RecordPunchR
       shift1: legacyFlag === 1,
       shift2: legacyFlag === 2,
       shift3: legacyFlag === 3,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any,
     update: {
       isPresent: true,
@@ -200,7 +201,7 @@ export async function recordPunch(input: RecordPunchInput): Promise<RecordPunchR
   });
 
   // 5. Salary recalc guard — implemented in Task 13
-  await maybeRecalcSalary(employee.id, punchedAt, request);
+  await maybeRecalcSalary(employee.id, punchedAt);
 
   // 6. Activity logs
   await logEntityActivity(
@@ -274,7 +275,7 @@ function withinWindow(start: string, end: string, now: string): boolean {
  *  - PENDING → recalc via calculateSalary() and update the Salary row, mirroring
  *    src/app/api/attendance/[id]/route.ts (lines 420-449).
  */
-async function maybeRecalcSalary(userId: string, punchedAt: Date, _req?: Request): Promise<void> {
+async function maybeRecalcSalary(userId: string, punchedAt: Date): Promise<void> {
   // The Salary key is (userId, month, year) in the punch's IST month.
   const istYMD = toISTDate(punchedAt).toISOString().slice(0, 10); // "YYYY-MM-DD"
   const [yearStr, monthStr] = istYMD.split("-");

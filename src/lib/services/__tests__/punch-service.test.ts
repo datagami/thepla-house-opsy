@@ -42,6 +42,7 @@ beforeEach(async () => {
       email: `punch${suffix}@test.local`,
       branchId: branchA.id,
       status: 'ACTIVE',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any,
   });
   shift = await prisma.shift.create({
@@ -270,6 +271,7 @@ describe('recordPunch — salary recalc guard', () => {
         status: 'PROCESSING',
         baseSalary: 0,
         netSalary: 0,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any,
     });
     const r = await recordPunch({
@@ -297,6 +299,7 @@ describe('recordPunch — salary recalc guard', () => {
         status: 'PENDING',
         baseSalary: 0,
         netSalary: 0,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any,
     });
     // We can't easily assert calculateSalary was called without mocking the module,

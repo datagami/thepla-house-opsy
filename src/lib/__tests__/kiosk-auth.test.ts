@@ -44,7 +44,7 @@ describe('authenticateKiosk', () => {
   });
 
   it('returns null when device not found', async () => {
-    (prisma.kioskDevice.findUnique as any).mockResolvedValueOnce(null);
+    vi.mocked(prisma.kioskDevice.findUnique).mockResolvedValueOnce(null);
     const result = await authenticateKiosk(
       reqWith({ Authorization: 'Bearer abc', 'X-Kiosk-Device-Id': 'dev_x' })
     );
@@ -52,7 +52,7 @@ describe('authenticateKiosk', () => {
   });
 
   it('returns null when device is inactive', async () => {
-    (prisma.kioskDevice.findUnique as any).mockResolvedValueOnce({
+    vi.mocked(prisma.kioskDevice.findUnique).mockResolvedValueOnce({
       id: 'dev_1',
       branchId: 'b1',
       name: 'Smoke Kiosk',
@@ -66,7 +66,7 @@ describe('authenticateKiosk', () => {
   });
 
   it('returns null when token hash mismatches', async () => {
-    (prisma.kioskDevice.findUnique as any).mockResolvedValueOnce({
+    vi.mocked(prisma.kioskDevice.findUnique).mockResolvedValueOnce({
       id: 'dev_1',
       branchId: 'b1',
       name: 'Smoke Kiosk',
@@ -80,7 +80,7 @@ describe('authenticateKiosk', () => {
   });
 
   it('returns { device } on a valid match and fires lastSeenAt update', async () => {
-    (prisma.kioskDevice.findUnique as any).mockResolvedValueOnce({
+    vi.mocked(prisma.kioskDevice.findUnique).mockResolvedValueOnce({
       id: 'dev_1',
       branchId: 'b1',
       name: 'Smoke Kiosk',
@@ -99,7 +99,7 @@ describe('authenticateKiosk', () => {
   });
 
   it('uses timing-safe compare (different hash lengths return null)', async () => {
-    (prisma.kioskDevice.findUnique as any).mockResolvedValueOnce({
+    vi.mocked(prisma.kioskDevice.findUnique).mockResolvedValueOnce({
       id: 'dev_1',
       branchId: 'b1',
       name: 'Smoke Kiosk',
