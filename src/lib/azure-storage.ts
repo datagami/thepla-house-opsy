@@ -7,7 +7,6 @@ export class AzureStorageService {
   constructor() {
     const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING!;
     this.containerName = process.env.AZURE_STORAGE_CONTAINER_NAME!;
-    console.log(connectionString, this.containerName);
     this.blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
   }
 
