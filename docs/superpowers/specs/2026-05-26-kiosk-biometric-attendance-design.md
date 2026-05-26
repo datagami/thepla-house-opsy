@@ -33,7 +33,7 @@ message and the fix is a web outlet-update. This keeps "where everyone is today"
 | Outlet assignment | Each employee is assigned to **one current outlet** = existing `User.branchId`. Moving someone = **update their outlet in the web app** (a deliberate, recorded action) |
 | Cross-branch mobility | Identification is **global** (all templates sync to every kiosk, so any kiosk can *recognize* anyone), but a **punch is gated**: allowed only when `employee.branchId == kiosk.branchId`. Mismatch → punch rejected (with assigned-outlet name) + the attempt logged; resolved by updating the outlet on the web. **The only thing that blocks a punch is wrong-outlet** |
 | Branch attribution | A successful punch implies assigned outlet == kiosk outlet, so the day's `Attendance.branchId` is unambiguous; that outlet's manager verifies it |
-| AI provider | **Azure AI Foundry**, vision deployment (default GPT-4o-class; provider-agnostic service so a Claude vision model is swappable) |
+| AI provider | **Azure AI Foundry**, **GPT-4o vision deployment** (confirmed). Wrapped behind a provider-agnostic `checkGrooming()` service so the model is swappable later (e.g. Claude vision) via env var without route changes. |
 | Punch storage | **New `PunchEvent` table**; daily `Attendance` row derived from it |
 | Shifts | **Configurable `Shift` + `ShiftSegment` tables** (supports split/break shifts) |
 | On grooming failure | **Record + flag + notify on-screen** — never block the punch |
@@ -215,5 +215,5 @@ Phases 1–2 are this repo and testable via `curl`/Postman before the WPF app ex
 
 ## Open items
 
-- Confirm Foundry model choice (default: GPT-4o-class vision; Claude vision is a drop-in alternative).
-- The WPF app gets its own spec + plan at Phase 3.
+- ~~Confirm Foundry model choice~~ → **GPT-4o** (2026-05-26). Service stays provider-agnostic so a switch to Claude vision is a single env-var + adapter change.
+- The kiosk app (Windows tablet client) gets its own spec + plan at Phase 3.
