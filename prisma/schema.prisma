@@ -254,6 +254,7 @@ model User {
   @@index([selectedBranchId])
   @@index([approvedById])
   @@index([departmentId])
+  @@index([updatedAt])
   @@map("users1")
 }
 
@@ -926,6 +927,7 @@ model KioskDevice {
   punchEvents PunchEvent[]
   enrollments FingerprintEnrollment[] @relation("EnrolledByDevice")
 
+  @@unique([name, branchId])
   @@index([branchId])
   @@index([isActive])
   @@map("kiosk_devices")
@@ -942,7 +944,7 @@ model FingerprintEnrollment {
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
-  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user             User         @relation(fields: [userId], references: [id], onDelete: Restrict)
   enrolledByDevice KioskDevice? @relation("EnrolledByDevice", fields: [enrolledByDeviceId], references: [id])
 
   @@unique([userId, fingerIndex])
@@ -1012,7 +1014,7 @@ model PunchEvent {
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Restrict)
   attendance  Attendance?  @relation(fields: [attendanceId], references: [id])
   shift       Shift?       @relation(fields: [shiftId], references: [id])
   kioskDevice KioskDevice? @relation(fields: [kioskDeviceId], references: [id])

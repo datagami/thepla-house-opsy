@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ActivityType } from "@prisma/client";
+import { ActivityType, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import {
@@ -45,10 +45,21 @@ export async function POST(req: Request) {
   const rawToken = generateKioskToken();
   const tokenHash = hashKioskToken(rawToken);
 
-  const device = await prisma.kioskDevice.create({
-    data: { name, branchId, tokenHash, isActive: true },
-    select: { id: true, name: true, branchId: true, isActive: true, createdAt: true },
-  });
+  let device;
+  try {
+    device = await prisma.kioskDevice.create({
+      data: { name, branchId, tokenHash, isActive: true },
+      select: { id: true, name: true, branchId: true, isActive: true, createdAt: true },
+    });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      return NextResponse.json(
+        { error: "A kiosk device with this name already exists at this branch" },
+        { status: 409 }
+      );
+    }
+    throw e;
+  }
 
   await logEntityActivity(
     ActivityType.KIOSK_DEVICE_CREATED,
