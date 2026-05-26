@@ -266,9 +266,45 @@ function withinWindow(start: string, end: string, now: string): boolean {
   return now >= start || now <= end;
 }
 
-// Stub — implemented in Task 13
-async function maybeRecalcSalary(_userId: string, _punchedAt: Date, _req?: Request): Promise<void> {
-  // intentional no-op until Task 13
+/**
+ * Kiosk salary-guard: NEVER block the punch.
+ *  - No salary row for (userId, month, year) → do nothing.
+ *  - PROCESSING → skip recalc, log "skipped" (the existing HR routes BLOCK in this case;
+ *    kiosk diverges deliberately because we can't refuse a clock-in over a salary state).
+ *  - PENDING → recalc via calculateSalary() and update the Salary row, mirroring
+ *    src/app/api/attendance/[id]/route.ts (lines 420-449).
+ */
+async function maybeRecalcSalary(userId: string, punchedAt: Date, _req?: Request): Promise<void> {
+  // The Salary key is (userId, month, year) in the punch's IST month.
+  const istYMD = toISTDate(punchedAt).toISOString().slice(0, 10); // "YYYY-MM-DD"
+  const [yearStr, monthStr] = istYMD.split("-");
+  const month = parseInt(monthStr, 10);
+  const year = parseInt(yearStr, 10);
+
+  const sal = await prisma.salary.findFirst({
+    where: { userId, month, year, status: { in: ["PENDING", "PROCESSING"] } },
+  });
+  if (!sal) return;
+
+  if (sal.status === "PROCESSING") {
+    console.warn(`[kiosk] Skipping salary recalc for user=${userId} ${month}/${year} (status=PROCESSING)`);
+    return;
+  }
+
+  // PENDING — recalc and update
+  const { calculateSalary } = await import("@/lib/services/salary-calculator");
+  const details = await calculateSalary(userId, month, year);
+  await prisma.salary.update({
+    where: { id: sal.id },
+    data: {
+      presentDays: details.presentDays,
+      overtimeDays: details.overtimeDays,
+      halfDays: details.halfDays,
+      leavesEarned: details.leavesEarned,
+      leaveSalary: details.leaveSalary,
+      netSalary: details.netSalary,
+    },
+  });
 }
 
 /**

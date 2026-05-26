@@ -60,6 +60,7 @@ afterEach(async () => {
   await prisma.punchEvent.deleteMany({ where: { OR: [{ branchId: branchA.id }, { branchId: branchB.id }] } });
   await prisma.attendance.deleteMany({ where: { userId: user.id } });
   await prisma.fingerprintEnrollment.deleteMany({ where: { userId: user.id } });
+  await prisma.salary.deleteMany({ where: { userId: user.id } });
   await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
   await prisma.shiftSegment.deleteMany({ where: { shiftId: shift.id } });
   await prisma.shift.delete({ where: { id: shift.id } }).catch(() => {});
@@ -244,5 +245,72 @@ describe('recordPunch — authorized path', () => {
     const events = await prisma.punchEvent.findMany({ where: { userId: user.id } });
     expect(events).toHaveLength(2);
     expect(events.every(e => e.attendanceId === r1.attendanceId)).toBe(true);
+  });
+});
+
+describe('recordPunch — salary recalc guard', () => {
+  it('no salary row → no recalc, punch succeeds', async () => {
+    const r = await recordPunch({
+      device: { id: device.id, branchId: branchA.id },
+      userId: user.id, shiftId: shift.id, direction: 'IN',
+      punchedAt: new Date('2026-05-26T03:30:00Z'),
+      uniformPhotoBase64: 'A', nailsPhotoBase64: 'B',
+    });
+    expect(r.outcome).toBe('RECORDED');
+    // No throw, no salary row — nothing to assert beyond the punch succeeding
+  });
+
+  it('PROCESSING salary → punch succeeds, recalc SKIPPED (status preserved)', async () => {
+    const punchAt = new Date('2026-05-26T03:30:00Z');
+    const sal = await prisma.salary.create({
+      data: {
+        userId: user.id,
+        month: 5, // May in IST
+        year: 2026,
+        status: 'PROCESSING',
+        baseSalary: 0,
+        netSalary: 0,
+      } as any,
+    });
+    const r = await recordPunch({
+      device: { id: device.id, branchId: branchA.id },
+      userId: user.id, shiftId: shift.id, direction: 'IN',
+      punchedAt: punchAt, uniformPhotoBase64: 'A', nailsPhotoBase64: 'B',
+    });
+    expect(r.outcome).toBe('RECORDED');
+    const after = await prisma.salary.findUnique({ where: { id: sal.id } });
+    expect(after?.status).toBe('PROCESSING');
+    await prisma.salary.delete({ where: { id: sal.id } });
+  });
+
+  it('PENDING salary → punch succeeds, calculateSalary called', async () => {
+    const punchAt = new Date('2026-05-26T03:30:00Z');
+    // calculateSalary() requires User.salary to be set; the default fixture
+    // user has no base salary, so the calculator would throw "Employee base
+    // salary not found". Give the user a base salary for this test.
+    await prisma.user.update({ where: { id: user.id }, data: { salary: 10000 } });
+    const sal = await prisma.salary.create({
+      data: {
+        userId: user.id,
+        month: 5,
+        year: 2026,
+        status: 'PENDING',
+        baseSalary: 0,
+        netSalary: 0,
+      } as any,
+    });
+    // We can't easily assert calculateSalary was called without mocking the module,
+    // so assert downstream: the Salary row was updated (updatedAt > created).
+    const beforeUpdatedAt = sal.updatedAt;
+    await new Promise((r) => setTimeout(r, 20));
+    const r = await recordPunch({
+      device: { id: device.id, branchId: branchA.id },
+      userId: user.id, shiftId: shift.id, direction: 'IN',
+      punchedAt: punchAt, uniformPhotoBase64: 'A', nailsPhotoBase64: 'B',
+    });
+    expect(r.outcome).toBe('RECORDED');
+    const after = await prisma.salary.findUnique({ where: { id: sal.id } });
+    expect(after!.updatedAt.getTime()).toBeGreaterThan(beforeUpdatedAt.getTime());
+    await prisma.salary.delete({ where: { id: sal.id } });
   });
 });
