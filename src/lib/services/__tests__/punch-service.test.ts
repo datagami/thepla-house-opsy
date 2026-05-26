@@ -126,3 +126,123 @@ describe('recordPunch — outlet gate', () => {
     expect(events[0].nailsPhotoUrl).toContain('nails');
   });
 });
+
+describe('recordPunch — authorized path', () => {
+  it('creates Attendance with checkIn (IST) on first IN of the day', async () => {
+    const r = await recordPunch({
+      device: { id: device.id, branchId: branchA.id },
+      userId: user.id,
+      shiftId: shift.id,
+      direction: 'IN',
+      punchedAt: new Date('2026-05-26T03:30:00Z'), // 09:00 IST
+      uniformPhotoBase64: 'AAAA',
+      nailsPhotoBase64: 'BBBB',
+    });
+    const att = await prisma.attendance.findFirstOrThrow({ where: { id: r.attendanceId } });
+    expect(att.userId).toBe(user.id);
+    expect(att.branchId).toBe(branchA.id);
+    expect(att.checkIn).toBe('09:00');
+    expect(att.checkOut).toBeNull();
+    expect(att.isPresent).toBe(true);
+    expect(att.status).toBe('PENDING_VERIFICATION');
+  });
+
+  it('upserts the same Attendance and sets checkOut on the OUT punch', async () => {
+    const inR = await recordPunch({
+      device: { id: device.id, branchId: branchA.id },
+      userId: user.id, shiftId: shift.id, direction: 'IN',
+      punchedAt: new Date('2026-05-26T03:30:00Z'),
+      uniformPhotoBase64: 'A', nailsPhotoBase64: 'B',
+    });
+    const outR = await recordPunch({
+      device: { id: device.id, branchId: branchA.id },
+      userId: user.id, shiftId: shift.id, direction: 'OUT',
+      punchedAt: new Date('2026-05-26T13:30:00Z'), // 19:00 IST
+      uniformPhotoBase64: 'A', nailsPhotoBase64: 'B',
+    });
+    expect(outR.attendanceId).toBe(inR.attendanceId); // same row, upserted
+
+    const att = await prisma.attendance.findFirstOrThrow({ where: { id: inR.attendanceId } });
+    expect(att.checkIn).toBe('09:00');
+    expect(att.checkOut).toBe('19:00');
+
+    const events = await prisma.punchEvent.findMany({ where: { userId: user.id }, orderBy: { punchedAt: 'asc' } });
+    expect(events).toHaveLength(2);
+    expect(events[0].direction).toBe('IN');
+    expect(events[1].direction).toBe('OUT');
+    expect(events.every((e) => e.attendanceId === inR.attendanceId)).toBe(true);
+  });
+
+  it('places a near-midnight punch on the correct IST calendar day', async () => {
+    // 2026-05-26T18:35:00Z == 00:05 IST on 2026-05-27 — must be on the 27th
+    const r = await recordPunch({
+      device: { id: device.id, branchId: branchA.id },
+      userId: user.id, shiftId: shift.id, direction: 'IN',
+      punchedAt: new Date('2026-05-26T18:35:00Z'),
+      uniformPhotoBase64: 'A', nailsPhotoBase64: 'B',
+    });
+    const att = await prisma.attendance.findFirstOrThrow({ where: { id: r.attendanceId } });
+    expect(att.date.toISOString().slice(0, 10)).toBe('2026-05-27');
+    expect(att.checkIn).toBe('00:05');
+  });
+
+  it('maps a split-shift IN at 07:00 IST to shift1 (best-effort legacy flag)', async () => {
+    // Break One: 07:00-15:00 + 19:00-23:00
+    const breakOne = await prisma.shift.create({
+      data: {
+        name: `Break One ${Math.random()}`,
+        branchId: null,
+        isActive: true,
+        sortOrder: 0,
+        segments: { create: [
+          { startTime: '07:00', endTime: '15:00', sortOrder: 0 },
+          { startTime: '19:00', endTime: '23:00', sortOrder: 1 },
+        ]},
+      },
+    });
+    const r = await recordPunch({
+      device: { id: device.id, branchId: branchA.id },
+      userId: user.id, shiftId: breakOne.id, direction: 'IN',
+      punchedAt: new Date('2026-05-26T01:30:00Z'), // 07:00 IST
+      uniformPhotoBase64: 'A', nailsPhotoBase64: 'B',
+    });
+    const att = await prisma.attendance.findFirstOrThrow({ where: { id: r.attendanceId } });
+    expect(att.shift1).toBe(true);
+    expect(att.shift2 ?? false).toBe(false);
+    expect(att.shift3 ?? false).toBe(false);
+
+    // Cleanup
+    await prisma.punchEvent.deleteMany({ where: { shiftId: breakOne.id } });
+    await prisma.shiftSegment.deleteMany({ where: { shiftId: breakOne.id } });
+    await prisma.shift.delete({ where: { id: breakOne.id } });
+  });
+
+  it('handles concurrent IN punches for the same user/day (P2002 retry)', async () => {
+    // Two parallel IN punches with the same userId+date
+    const [r1, r2] = await Promise.all([
+      recordPunch({
+        device: { id: device.id, branchId: branchA.id },
+        userId: user.id, shiftId: shift.id, direction: 'IN',
+        punchedAt: new Date('2026-05-26T03:30:00Z'),
+        uniformPhotoBase64: 'A', nailsPhotoBase64: 'B',
+      }),
+      recordPunch({
+        device: { id: device.id, branchId: branchA.id },
+        userId: user.id, shiftId: shift.id, direction: 'IN',
+        punchedAt: new Date('2026-05-26T03:30:00Z'),
+        uniformPhotoBase64: 'A', nailsPhotoBase64: 'B',
+      }),
+    ]);
+    // Both succeed; both reference the same Attendance row
+    expect(r1.outcome).toBe('RECORDED');
+    expect(r2.outcome).toBe('RECORDED');
+    expect(r1.attendanceId).toBe(r2.attendanceId);
+    // Exactly one Attendance row exists
+    const atts = await prisma.attendance.findMany({ where: { userId: user.id } });
+    expect(atts).toHaveLength(1);
+    // Two PunchEvents exist, both referencing it
+    const events = await prisma.punchEvent.findMany({ where: { userId: user.id } });
+    expect(events).toHaveLength(2);
+    expect(events.every(e => e.attendanceId === r1.attendanceId)).toBe(true);
+  });
+});
