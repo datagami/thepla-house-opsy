@@ -25,6 +25,8 @@ shifts. Grooming may later expand to oral health / shoes — out of scope for no
 | Kiosk app | **.NET / WPF (C#)** — native Mantra MFS500 SDK + webcam |
 | AI checks | **Backend-mediated, synchronous** — kiosk uploads photos, server analyzes, returns verdict in the same response |
 | Fingerprint match | **Local 1:N on the kiosk** — templates synced from server (Mantra matcher is a native Windows lib) |
+| Cross-branch mobility | Employees are moved between outlets (decided **before** the shift). **All** active templates sync to **every** kiosk; any employee can punch at any outlet; no cross-branch rejection |
+| Branch attribution | The day's `Attendance` is attributed to the **worked outlet** (the kiosk's branch where they punch in); that outlet's manager verifies it. `PunchEvent.branchId` records the same |
 | AI provider | **Azure AI Foundry**, vision deployment (default GPT-4o-class; provider-agnostic service so a Claude vision model is swappable) |
 | Punch storage | **New `PunchEvent` table**; daily `Attendance` row derived from it |
 | Shifts | **Configurable `Shift` + `ShiftSegment` tables** (supports split/break shifts) |
@@ -79,7 +81,7 @@ conventions (`@id @default(cuid())`, `numId Int @default(autoincrement()) @map("
 - **`FingerprintEnrollment`** — `userId`, `templateData` (`@db.Text`, base64 ISO 19794-2 template), `fingerIndex` (0–9; multiple fingers/user), `enrolledByDeviceId?`, `isActive`.
 - **`Shift`** — `name`, `branchId?` (null = all branches), `isActive`, `sortOrder`. Times live in segments.
 - **`ShiftSegment`** — `shiftId`, `startTime`/`endTime` (`"HH:mm"` branch-local), `sortOrder`. One row for a normal shift, two+ for a split/break shift.
-- **`PunchEvent`** — `userId`, `attendanceId?` (backlink), `shiftId?`, `kioskDeviceId?`, `branchId`, `direction` (`PunchDirection`), `punchedAt` (UTC `DateTime`, authoritative). Grooming: `uniformPhotoUrl`/`nailsPhotoUrl`, `uniformCheckStatus`/`nailsCheckStatus` (`GroomingCheckStatus`), `uniformCheckReason`/`nailsCheckReason` (`@db.Text`), `uniformConfidence`/`nailsConfidence` (Float), `aiRawResponse` (`@db.Text`, audit).
+- **`PunchEvent`** — `userId`, `attendanceId?` (backlink), `shiftId?`, `kioskDeviceId?`, `branchId` (the **worked outlet** = the kiosk's branch, which may differ from the user's home branch), `direction` (`PunchDirection`), `punchedAt` (UTC `DateTime`, authoritative). Grooming: `uniformPhotoUrl`/`nailsPhotoUrl`, `uniformCheckStatus`/`nailsCheckStatus` (`GroomingCheckStatus`), `uniformCheckReason`/`nailsCheckReason` (`@db.Text`), `uniformConfidence`/`nailsConfidence` (Float), `aiRawResponse` (`@db.Text`, audit).
 - Enums: `PunchDirection { IN, OUT }`, `GroomingCheckStatus { PASS, FAIL, PENDING, ERROR }`.
 - Back-links: `User` ← `punchEvents`, `fingerprintEnrollments`; `Attendance` ← `punchEvents`; `Branch` ← `kioskDevices`, `shifts`, `punchEvents`.
 - `ActivityType`: add `PUNCH_IN`, `PUNCH_OUT`, `GROOMING_CHECK_FAILED`, `FINGERPRINT_ENROLLED`, `KIOSK_DEVICE_CREATED`.
@@ -97,24 +99,36 @@ Photo folders: `kiosk-punches/uniform/{userId}/{YYYY-MM-DD}/{punchEventId}-unifo
 
 ### A3. API endpoints (`src/app/api/kiosk/...`)
 
-All use `authenticateKiosk()` except device provisioning (NextAuth). Each enforces that the target
-employee's `branchId` equals `device.branchId`.
+All use `authenticateKiosk()` except device provisioning (NextAuth). Endpoints are **not** branch-filtered —
+templates are global and any employee may punch at any outlet (mobility). The punch simply records the
+kiosk's branch as the worked outlet.
 
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/api/kiosk/handshake` | Validate device token; return device/branch + server UTC time |
-| GET | `/api/kiosk/fingerprints` | Sync active templates for the device's branch (`?updatedSince=` delta) |
-| POST | `/api/kiosk/fingerprints/enroll` | Store a template for a user (HR enroll mode) |
+| GET | `/api/kiosk/fingerprints` | Sync **all** active enrollments (delta via `?updatedSince=`, paginated via `?cursor=`); **delta includes deactivated/removed enrollments so kiosks purge them** |
+| POST | `/api/kiosk/fingerprints/enroll` | Store a template for **any** employee (global search by name/`#numId` in HR enroll mode) |
 | GET | `/api/kiosk/shifts` | List active shifts (+ segments) for the branch (shift dialog) |
 | POST | `/api/kiosk/punch` | **Core**: photos + shift + IN/OUT → store, analyze, persist, return verdicts |
 | POST | `/api/kiosk/devices` | Admin: provision a `KioskDevice`, return raw token **once**. Uses `auth()` (HR/MANAGEMENT) |
 
+**Fingerprint sync semantics (mobility-critical):** "active" means the enrollment's `isActive` is true **and**
+the owning user's status is `ACTIVE`. The `GET /api/kiosk/fingerprints` delta response returns each enrollment
+changed since `updatedSince` with its effective active flag — additions/re-enrollments **and tombstones**
+(for leavers, deactivated users, or a removed finger). The kiosk applies additions and **deletes** tombstoned
+templates from its local cache. A **transfer between outlets is not a sync event** — the employee is already
+on every kiosk. A kiosk also does a **full reconcile** (no `updatedSince`) on launch and once daily to
+self-heal missed deltas (and to catch hard-deleted users whose enrollment rows cascade away). Because matching is local and there
+is no server-side matcher, every kiosk must hold every active template — templates are non-reversible ISO
+minutiae (a few hundred bytes each), encrypted at rest on the device; the device token is revocable. This
+all-templates-everywhere footprint is an accepted tradeoff of local matching + a mobile workforce.
+
 **`POST /api/kiosk/punch` sequence** (synchronous, one handler):
-1. `authenticateKiosk`; assert `user.branchId === device.branchId`.
+1. `authenticateKiosk`; resolve the employee (no branch check — any employee may punch here). The worked outlet = `device.branchId`.
 2. Upload uniform + nails photos (failures → URLs null, status `ERROR`, continue).
 3. `checkGrooming(...)` (8s timeout each, parallel).
-4. Create `PunchEvent`.
-5. Upsert daily `Attendance` (`where userId_date`): on create set `isPresent=true`, `checkIn`, `branchId`, `status=PENDING_VERIFICATION`; on IN set `checkIn` if empty; on OUT set `checkOut`. Map `shiftId`→legacy `shift1/2/3` by segment overlap (best-effort; truth lives on `PunchEvent.shiftId`).
+4. Create `PunchEvent` with `branchId = device.branchId`.
+5. Upsert daily `Attendance` (`where userId_date`): on create set `isPresent=true`, `checkIn`, `branchId = device.branchId` (worked outlet), `status=PENDING_VERIFICATION`; on IN set `checkIn` if empty; on OUT set `checkOut`. Map `shiftId`→legacy `shift1/2/3` by segment overlap (best-effort; truth lives on `PunchEvent.shiftId`). Edge case: if a later punch arrives from a *different* outlet the same day (rare — moves happen pre-shift), keep the first outlet's `branchId` and continue.
 6. Write `attendanceId` back onto the `PunchEvent`.
 7. Salary-recalc guard (A4).
 8. `logEntityActivity` PUNCH_IN/PUNCH_OUT (+ GROOMING_CHECK_FAILED when relevant).
@@ -166,7 +180,7 @@ Single Windows app, two modes:
 
 - **Punch mode (default):** idle → finger scan → local 1:N match against synced templates (Mantra MFS500 SDK) → on match, shift dialog (`GET /api/kiosk/shifts`) + IN/OUT → capture 2 photos → `POST /api/kiosk/punch` → green/red verdict screen with reasons → idle. **Offline:** queue punches locally and sync on reconnect (photos held; grooming marked PENDING).
 - **Enroll mode (HR, PIN-gated):** search employee by name/`#numId` → scan finger(s) (≥2 recommended: index + thumb) → `POST /api/kiosk/fingerprints/enroll`.
-- **On launch:** `GET /api/kiosk/handshake`, then `GET /api/kiosk/fingerprints` (delta sync) to refresh the local template cache.
+- **Template cache:** holds **all** active employees' templates (encrypted at rest) so anyone can punch here. On launch and once daily it does a **full reconcile** (`GET /api/kiosk/fingerprints` with no `updatedSince`, following `cursor` pages); in between it polls **delta** syncs (`?updatedSince=`), applying additions and **purging tombstoned (`isActive:false`)** templates.
 - Stores its device token in the Windows credential store; uses handshake server time to bound clock skew.
 
 ---
