@@ -94,6 +94,12 @@ const activityTypeLabels: Record<ActivityType, string> = {
   PASSWORD_CHANGED: "Password Changed",
   SALARY_APPRAISAL: "Salary Appraisal",
   DAILY_ATTENDANCE_REPORT: "Daily Attendance Report",
+  PUNCH_IN: "Kiosk Punch In",
+  PUNCH_OUT: "Kiosk Punch Out",
+  PUNCH_BLOCKED_WRONG_OUTLET: "Kiosk Punch Blocked (Wrong Outlet)",
+  GROOMING_CHECK_FAILED: "Grooming Check Failed",
+  FINGERPRINT_ENROLLED: "Fingerprint Enrolled",
+  KIOSK_DEVICE_CREATED: "Kiosk Device Provisioned",
   OTHER: "Other",
 };
 
