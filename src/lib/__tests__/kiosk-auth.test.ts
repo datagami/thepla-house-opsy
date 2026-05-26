@@ -55,6 +55,7 @@ describe('authenticateKiosk', () => {
     (prisma.kioskDevice.findUnique as any).mockResolvedValueOnce({
       id: 'dev_1',
       branchId: 'b1',
+      name: 'Smoke Kiosk',
       tokenHash: hashKioskToken('correct-token'),
       isActive: false,
     });
@@ -68,6 +69,7 @@ describe('authenticateKiosk', () => {
     (prisma.kioskDevice.findUnique as any).mockResolvedValueOnce({
       id: 'dev_1',
       branchId: 'b1',
+      name: 'Smoke Kiosk',
       tokenHash: hashKioskToken('correct-token'),
       isActive: true,
     });
@@ -81,6 +83,7 @@ describe('authenticateKiosk', () => {
     (prisma.kioskDevice.findUnique as any).mockResolvedValueOnce({
       id: 'dev_1',
       branchId: 'b1',
+      name: 'Smoke Kiosk',
       tokenHash: hashKioskToken('correct-token'),
       isActive: true,
     });
@@ -99,6 +102,7 @@ describe('authenticateKiosk', () => {
     (prisma.kioskDevice.findUnique as any).mockResolvedValueOnce({
       id: 'dev_1',
       branchId: 'b1',
+      name: 'Smoke Kiosk',
       tokenHash: 'short',
       isActive: true,
     });

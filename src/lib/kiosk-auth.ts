@@ -5,7 +5,7 @@ export interface AuthenticatedKiosk {
   device: {
     id: string;
     branchId: string;
-    name?: string;
+    name: string;
   };
 }
 
