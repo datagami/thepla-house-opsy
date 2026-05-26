@@ -168,7 +168,9 @@ notifyBranchManager(...)` — `PunchEvent` already carries everything a notifier
 ### A6. Env vars (names only — never commit secrets)
 
 Add: `AZURE_AI_FOUNDRY_ENDPOINT`, `AZURE_AI_FOUNDRY_KEY`, `AZURE_AI_FOUNDRY_DEPLOYMENT`,
-`AZURE_AI_FOUNDRY_TIMEOUT_MS`, `KIOSK_TOKEN_SECRET`. Reuse existing `AZURE_STORAGE_*`.
+`AZURE_AI_FOUNDRY_TIMEOUT_MS`. Reuse existing `AZURE_STORAGE_*`. Kiosk device
+tokens are 32-byte CSPRNG (256 bits of entropy) and stored as plain SHA-256 hex —
+no extra HMAC secret is needed.
 
 ### A7. Timezone (must handle)
 
