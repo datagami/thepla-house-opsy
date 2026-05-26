@@ -1,0 +1,114 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { authenticateKiosk, hashKioskToken } from '@/lib/kiosk-auth';
+import { prisma } from '@/lib/prisma';
+
+// Use an in-test fake of prisma.kioskDevice
+vi.mock('@/lib/prisma', () => ({
+  prisma: {
+    kioskDevice: {
+      findUnique: vi.fn(),
+      update: vi.fn().mockResolvedValue({}),
+    },
+  },
+}));
+
+function reqWith(headers: Record<string, string>): Request {
+  return new Request('http://localhost/api/kiosk/handshake', { headers });
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
+describe('hashKioskToken', () => {
+  it('produces a stable lowercase hex SHA-256', () => {
+    expect(hashKioskToken('hello')).toBe(
+      '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'
+    );
+  });
+});
+
+describe('authenticateKiosk', () => {
+  it('returns null when Authorization header is missing', async () => {
+    const result = await authenticateKiosk(
+      reqWith({ 'X-Kiosk-Device-Id': 'dev_1' })
+    );
+    expect(result).toBeNull();
+  });
+
+  it('returns null when X-Kiosk-Device-Id is missing', async () => {
+    const result = await authenticateKiosk(
+      reqWith({ Authorization: 'Bearer abc' })
+    );
+    expect(result).toBeNull();
+  });
+
+  it('returns null when device not found', async () => {
+    (prisma.kioskDevice.findUnique as any).mockResolvedValueOnce(null);
+    const result = await authenticateKiosk(
+      reqWith({ Authorization: 'Bearer abc', 'X-Kiosk-Device-Id': 'dev_x' })
+    );
+    expect(result).toBeNull();
+  });
+
+  it('returns null when device is inactive', async () => {
+    (prisma.kioskDevice.findUnique as any).mockResolvedValueOnce({
+      id: 'dev_1',
+      branchId: 'b1',
+      name: 'Smoke Kiosk',
+      tokenHash: hashKioskToken('correct-token'),
+      isActive: false,
+    });
+    const result = await authenticateKiosk(
+      reqWith({ Authorization: 'Bearer correct-token', 'X-Kiosk-Device-Id': 'dev_1' })
+    );
+    expect(result).toBeNull();
+  });
+
+  it('returns null when token hash mismatches', async () => {
+    (prisma.kioskDevice.findUnique as any).mockResolvedValueOnce({
+      id: 'dev_1',
+      branchId: 'b1',
+      name: 'Smoke Kiosk',
+      tokenHash: hashKioskToken('correct-token'),
+      isActive: true,
+    });
+    const result = await authenticateKiosk(
+      reqWith({ Authorization: 'Bearer WRONG', 'X-Kiosk-Device-Id': 'dev_1' })
+    );
+    expect(result).toBeNull();
+  });
+
+  it('returns { device } on a valid match and fires lastSeenAt update', async () => {
+    (prisma.kioskDevice.findUnique as any).mockResolvedValueOnce({
+      id: 'dev_1',
+      branchId: 'b1',
+      name: 'Smoke Kiosk',
+      tokenHash: hashKioskToken('correct-token'),
+      isActive: true,
+    });
+    const result = await authenticateKiosk(
+      reqWith({ Authorization: 'Bearer correct-token', 'X-Kiosk-Device-Id': 'dev_1' })
+    );
+    expect(result).not.toBeNull();
+    expect(result!.device.id).toBe('dev_1');
+    expect(prisma.kioskDevice.update).toHaveBeenCalledWith({
+      where: { id: 'dev_1' },
+      data: { lastSeenAt: expect.any(Date) },
+    });
+  });
+
+  it('uses timing-safe compare (different hash lengths return null)', async () => {
+    (prisma.kioskDevice.findUnique as any).mockResolvedValueOnce({
+      id: 'dev_1',
+      branchId: 'b1',
+      name: 'Smoke Kiosk',
+      tokenHash: 'short',
+      isActive: true,
+    });
+    const result = await authenticateKiosk(
+      reqWith({ Authorization: 'Bearer anything', 'X-Kiosk-Device-Id': 'dev_1' })
+    );
+    expect(result).toBeNull();
+  });
+});
