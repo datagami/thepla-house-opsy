@@ -156,23 +156,31 @@ export async function POST(req: Request) {
     );
 
     // Notify role mailboxes of the new leave request (best-effort; never blocks creation)
-    const requester = await prisma.user.findUnique({
-      where: { id: sessionUserId },
-      select: { name: true },
-    });
-    const requesterName = requester?.name ?? null;
-    const employeeName =
-      targetUserId === sessionUserId ? requesterName : targetUserName;
+    try {
+      const requester = await prisma.user.findUnique({
+        where: { id: sessionUserId },
+        select: { name: true },
+      });
+      const requesterName = requester?.name ?? null;
+      const employeeName =
+        targetUserId === sessionUserId ? requesterName : targetUserName;
 
-    await notifyNewLeaveRequest({
-      leaveRequestId: leaveRequest.id,
-      requesterName,
-      employeeName,
-      leaveType: leaveType as LeaveType,
-      startDate,
-      endDate,
-      reason,
-    });
+      await notifyNewLeaveRequest({
+        leaveRequestId: leaveRequest.id,
+        requesterName,
+        employeeName,
+        leaveType: leaveType as LeaveType,
+        startDate,
+        endDate,
+        reason,
+      });
+    } catch (notifyError) {
+      console.error(
+        "Failed to send new-leave-request notification for",
+        leaveRequest.id,
+        notifyError
+      );
+    }
 
     return NextResponse.json(leaveRequest);
   } catch (error) {
