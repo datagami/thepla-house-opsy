@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { logEntityActivity } from "@/lib/services/activity-log";
-import { ActivityType } from "@prisma/client";
+import { ActivityType, LeaveType } from "@prisma/client";
+import { notifyNewLeaveRequest } from "@/lib/services/leave-notifications";
 
 export async function POST(req: Request) {
   try {
@@ -153,6 +154,25 @@ export async function POST(req: Request) {
       },
       req
     );
+
+    // Notify role mailboxes of the new leave request (best-effort; never blocks creation)
+    const requester = await prisma.user.findUnique({
+      where: { id: sessionUserId },
+      select: { name: true },
+    });
+    const requesterName = requester?.name ?? null;
+    const employeeName =
+      targetUserId === sessionUserId ? requesterName : targetUserName;
+
+    await notifyNewLeaveRequest({
+      leaveRequestId: leaveRequest.id,
+      requesterName,
+      employeeName,
+      leaveType: leaveType as LeaveType,
+      startDate,
+      endDate,
+      reason,
+    });
 
     return NextResponse.json(leaveRequest);
   } catch (error) {
