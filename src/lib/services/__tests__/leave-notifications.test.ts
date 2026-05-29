@@ -1,0 +1,104 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import {
+  buildNewLeaveRequestEmail,
+  notifyNewLeaveRequest,
+  getLeaveNotificationRecipients,
+} from '@/lib/services/leave-notifications';
+import { sendEmail } from '@/lib/services/email';
+
+vi.mock('@/lib/services/email', () => ({
+  sendEmail: vi.fn(),
+}));
+
+const sendEmailMock = sendEmail as unknown as ReturnType<typeof vi.fn>;
+
+const base = {
+  leaveRequestId: 'lr-1',
+  requesterName: 'Asha Rao',
+  employeeName: 'Asha Rao',
+  leaveType: 'CASUAL',
+  startDate: '2026-06-01',
+  endDate: '2026-06-03',
+  reason: 'Family function',
+};
+
+describe('buildNewLeaveRequestEmail', () => {
+  it('includes employee, leave type, dates and reason in subject/body', () => {
+    const { subject, html } = buildNewLeaveRequestEmail(base);
+    expect(subject).toContain('Asha Rao');
+    expect(subject).toContain('CASUAL');
+    expect(html).toContain('Asha Rao');
+    expect(html).toContain('CASUAL');
+    expect(html).toContain('Family function');
+    expect(html).toContain('2026');
+  });
+
+  it('uses NEXTAUTH_URL for the review link', () => {
+    const prev = process.env.NEXTAUTH_URL;
+    process.env.NEXTAUTH_URL = 'https://opsy.theplahouse.com';
+    const { html } = buildNewLeaveRequestEmail(base);
+    expect(html).toContain('https://opsy.theplahouse.com/leave-requests');
+    if (prev === undefined) delete process.env.NEXTAUTH_URL;
+    else process.env.NEXTAUTH_URL = prev;
+  });
+
+  it('shows "Submitted by" only when requester differs from employee', () => {
+    const self = buildNewLeaveRequestEmail(base);
+    expect(self.html).not.toContain('Submitted by');
+
+    const onBehalf = buildNewLeaveRequestEmail({
+      ...base,
+      requesterName: 'Branch Manager',
+      employeeName: 'Asha Rao',
+    });
+    expect(onBehalf.html).toContain('Submitted by');
+    expect(onBehalf.html).toContain('Branch Manager');
+  });
+});
+
+describe('getLeaveNotificationRecipients', () => {
+  it('defaults to the management and hr role mailboxes', () => {
+    const prev = process.env.LEAVE_NOTIFICATION_EMAILS;
+    delete process.env.LEAVE_NOTIFICATION_EMAILS;
+    expect(getLeaveNotificationRecipients()).toEqual([
+      'management@theplahouse.com',
+      'hr@theplahouse.com',
+    ]);
+    if (prev !== undefined) process.env.LEAVE_NOTIFICATION_EMAILS = prev;
+  });
+
+  it('honors the LEAVE_NOTIFICATION_EMAILS override (comma-separated, trimmed)', () => {
+    const prev = process.env.LEAVE_NOTIFICATION_EMAILS;
+    process.env.LEAVE_NOTIFICATION_EMAILS = 'a@x.com, b@x.com ';
+    expect(getLeaveNotificationRecipients()).toEqual(['a@x.com', 'b@x.com']);
+    if (prev === undefined) delete process.env.LEAVE_NOTIFICATION_EMAILS;
+    else process.env.LEAVE_NOTIFICATION_EMAILS = prev;
+  });
+});
+
+describe('notifyNewLeaveRequest', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete process.env.LEAVE_NOTIFICATION_EMAILS;
+  });
+
+  it('sends one email to the default role mailboxes', async () => {
+    sendEmailMock.mockResolvedValue({ messageId: 'ok' });
+    await notifyNewLeaveRequest(base);
+    expect(sendEmailMock).toHaveBeenCalledTimes(1);
+    const arg = sendEmailMock.mock.calls[0][0];
+    expect(arg.to).toEqual(['management@theplahouse.com', 'hr@theplahouse.com']);
+    expect(arg.subject).toContain('CASUAL');
+  });
+
+  it('does not send when the recipient list resolves empty', async () => {
+    process.env.LEAVE_NOTIFICATION_EMAILS = '   ';
+    await notifyNewLeaveRequest(base);
+    expect(sendEmailMock).not.toHaveBeenCalled();
+  });
+
+  it('never throws when sendEmail fails (email failure cannot break creation)', async () => {
+    sendEmailMock.mockRejectedValue(new Error('SMTP down'));
+    await expect(notifyNewLeaveRequest(base)).resolves.toBeUndefined();
+  });
+});
