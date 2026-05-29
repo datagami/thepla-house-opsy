@@ -3,6 +3,7 @@ import {
   buildNewLeaveRequestEmail,
   notifyNewLeaveRequest,
   getLeaveNotificationRecipients,
+  NewLeaveRequestNotification,
 } from '@/lib/services/leave-notifications';
 import { sendEmail } from '@/lib/services/email';
 
@@ -12,7 +13,7 @@ vi.mock('@/lib/services/email', () => ({
 
 const sendEmailMock = sendEmail as unknown as ReturnType<typeof vi.fn>;
 
-const base = {
+const base: NewLeaveRequestNotification = {
   leaveRequestId: 'lr-1',
   requesterName: 'Asha Rao',
   employeeName: 'Asha Rao',

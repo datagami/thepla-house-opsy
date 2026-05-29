@@ -1,10 +1,11 @@
+import type { LeaveType } from "@prisma/client";
 import { sendEmail } from "@/lib/services/email";
 
 export interface NewLeaveRequestNotification {
   leaveRequestId: string;
   requesterName: string | null;
   employeeName: string | null;
-  leaveType: string;
+  leaveType: LeaveType;
   startDate: string | Date;
   endDate: string | Date;
   reason: string;
@@ -22,6 +23,12 @@ const formatDate = (d: string | Date): string =>
     day: "numeric",
   });
 
+const escapeHtml = (s: string): string =>
+  s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
 export function getLeaveNotificationRecipients(): string[] {
   const override = process.env.LEAVE_NOTIFICATION_EMAILS;
   if (!override) return DEFAULT_RECIPIENTS;
@@ -34,10 +41,11 @@ export function getLeaveNotificationRecipients(): string[] {
 export function buildNewLeaveRequestEmail(
   input: NewLeaveRequestNotification
 ): { subject: string; html: string } {
-  const employee = input.employeeName ?? "An employee";
+  const employee = escapeHtml(input.employeeName ?? "An employee");
+  // Show "Submitted by" only when someone other than the employee filed it (e.g. a branch manager). Self-submissions pass requesterName === employeeName.
   const submittedBy =
     input.requesterName && input.requesterName !== input.employeeName
-      ? `<p><strong>Submitted by:</strong> ${input.requesterName}</p>`
+      ? `<p><strong>Submitted by:</strong> ${escapeHtml(input.requesterName)}</p>`
       : "";
   const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
   const link = `${baseUrl}/leave-requests`;
@@ -50,7 +58,7 @@ export function buildNewLeaveRequestEmail(
       ${submittedBy}
       <p><strong>Leave type:</strong> ${input.leaveType}</p>
       <p><strong>Dates:</strong> ${formatDate(input.startDate)} &ndash; ${formatDate(input.endDate)}</p>
-      <p><strong>Reason:</strong> ${input.reason}</p>
+      <p><strong>Reason:</strong> ${escapeHtml(input.reason)}</p>
       <p style="margin-top: 16px;">
         <a href="${link}" style="color: #2563eb;">Review leave requests</a>
       </p>
