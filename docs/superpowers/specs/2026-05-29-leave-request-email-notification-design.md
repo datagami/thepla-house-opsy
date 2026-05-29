@@ -15,9 +15,11 @@ log; no notification is sent to anyone.
 
 **In scope**
 - One trigger: a **new** leave request is created (`POST /api/leave-requests`).
-- Recipients: **all active users with role `HR` or `MANAGEMENT`** that have a
-  non-null email address.
-- A single email per request, addressed to the resolved recipient list.
+- Recipients: a **fixed list of role mailboxes** —
+  `management@theplahouse.com` and `hr@theplahouse.com` — overridable via the
+  optional `LEAVE_NOTIFICATION_EMAILS` env var (comma-separated). No per-user
+  role lookup.
+- A single email per request, addressed to the recipient list.
 
 **Out of scope** (explicitly deferred)
 - Approval / rejection emails to the employee.
@@ -36,9 +38,9 @@ log; no notification is sent to anyone.
   own HTML templating and calls `sendEmail`. We follow the same "service owns its
   template" pattern.
 - **Recipient safety:** Most non-management users have placeholder / made-up
-  email addresses. Because we only email `HR`/`MANAGEMENT` users (who have real
-  addresses), there is no bounce concern. This constraint is *why* recipients are
-  restricted to those roles.
+  email addresses. Because we email fixed role mailboxes
+  (`management@`/`hr@theplahouse.com`) rather than individual user records, there
+  is no bounce concern and no dependence on the accuracy of per-user emails.
 - **Base URL:** Reuse the existing `NEXTAUTH_URL` env var for links
   (`http://localhost:3000` locally, `https://opsy.theplahouse.com` in prod).
   No new env var is introduced.
@@ -65,19 +67,9 @@ notifyNewLeaveRequest(input: {
 ```
 
 Responsibilities:
-1. **Resolve recipients** — query:
-   ```ts
-   prisma.user.findMany({
-     where: {
-       role: { in: ["HR", "MANAGEMENT"] },
-       status: "ACTIVE",
-       email: { not: null },
-     },
-     select: { email: true },
-   })
-   ```
-   Collect the non-null emails. If the list is empty, log and return early
-   (nothing to send).
+1. **Resolve recipients** — read the fixed list from `LEAVE_NOTIFICATION_EMAILS`
+   (comma-separated) if set, otherwise default to
+   `["management@theplahouse.com", "hr@theplahouse.com"]`. No database query.
 2. **Build the HTML email** — subject like
    `New leave request: <employeeName> (<leaveType>)`. Body includes: employee
    name, who submitted it (if different from the employee), leave type, date
@@ -109,7 +101,7 @@ employee/manager submits form
     → validate + create LeaveRequest (PENDING)
     → logEntityActivity(LEAVE_REQUEST_CREATED)
     → notifyNewLeaveRequest(...)        [try/catch, await]
-        → query HR/MANAGEMENT emails
+        → resolve fixed recipient list (env or default)
         → build HTML
         → sendEmail(...)
     → return created leaveRequest (200) regardless of email outcome
@@ -126,9 +118,10 @@ acceptable for this low-frequency action.
 
 ## Testing
 
-- **Unit:** recipient query shape (filters role/status/non-null email) and the
-  HTML builder (contains employee name, dates, leave type, reason, and the
-  `NEXTAUTH_URL`-based link). Mock Prisma and `sendEmail`.
+- **Unit:** recipient resolution (defaults to the two role mailboxes; honors
+  `LEAVE_NOTIFICATION_EMAILS` override) and the HTML builder (contains employee
+  name, dates, leave type, reason, and the `NEXTAUTH_URL`-based link). Mock
+  `sendEmail`.
 - **Unit:** route still returns 200 when `sendEmail` throws (email failure is
   contained).
 - **Manual:** submit a leave request in dev and confirm an email arrives at the
@@ -140,5 +133,6 @@ acceptable for this low-frequency action.
 - **Edit:** `src/app/api/leave-requests/route.ts` (call the notifier; load
   requester name)
 - **Tests:** new test file(s) for the notifications module / route behavior.
-- **Docs:** note `NEXTAUTH_URL` is reused for email links (no `.env.example`
-  change required since it already exists).
+- **Edit:** `.env.example` — add the optional `LEAVE_NOTIFICATION_EMAILS` var
+  with the two default addresses as a comment. `NEXTAUTH_URL` is reused for email
+  links and already exists.

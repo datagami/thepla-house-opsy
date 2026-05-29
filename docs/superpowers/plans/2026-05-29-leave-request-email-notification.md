@@ -4,7 +4,7 @@
 
 **Goal:** Email all active HR/Management users whenever a new leave request is created.
 
-**Architecture:** A new isolated service module (`leave-notifications.ts`) owns recipient resolution and HTML templating. A pure builder function produces the email content (easily unit-tested); an orchestrator function resolves recipients via Prisma, builds the email, and sends it via the existing `sendEmail` helper. The orchestrator wraps all work in an internal try/catch and never throws, so a mail failure can never break leave-request creation. The `POST /api/leave-requests` route calls the orchestrator after the request is persisted.
+**Architecture:** A new isolated service module (`leave-notifications.ts`) owns recipient resolution and HTML templating. A pure builder function produces the email content (easily unit-tested); an orchestrator function resolves a fixed recipient list (env-overridable, default `management@`/`hr@theplahouse.com`), builds the email, and sends it via the existing `sendEmail` helper. The orchestrator wraps all work in an internal try/catch and never throws, so a mail failure can never break leave-request creation. The `POST /api/leave-requests` route calls the orchestrator after the request is persisted.
 
 **Tech Stack:** Next.js 15 (App Router), TypeScript, Prisma 6 + PostgreSQL, Nodemailer (existing `sendEmail`), Vitest.
 
@@ -12,14 +12,14 @@
 
 ## File Structure
 
-- **Create:** `src/lib/services/leave-notifications.ts` — owns recipient query + email template + send orchestration.
-- **Create:** `src/lib/services/__tests__/leave-notifications.test.ts` — unit tests (pure builder + mocked orchestrator).
+- **Create:** `src/lib/services/leave-notifications.ts` — owns recipient resolution + email template + send orchestration.
+- **Create:** `src/lib/services/__tests__/leave-notifications.test.ts` — unit tests (pure builder + mocked-`sendEmail` orchestrator).
 - **Modify:** `src/app/api/leave-requests/route.ts` — load requester name; call `notifyNewLeaveRequest` after persist + activity log.
+- **Modify:** `.env.example` — document the optional `LEAVE_NOTIFICATION_EMAILS` var.
 
 **Reference (read-only, do not change):**
 - `src/lib/services/email.ts` — `sendEmail({ to, subject, html })`, throws on SMTP failure.
-- `src/lib/services/document-expiry.ts` — existing "service owns its template" pattern.
-- `prisma/schema.prisma` — `UserRole` (`HR`, `MANAGEMENT`), `UserStatus` (`ACTIVE`), `User.email` is nullable.
+- `src/lib/services/document-expiry.ts` — existing "service owns its template + fixed recipients" pattern.
 - `vitest.config.ts` — tests must live under `src/**/__tests__/**/*.test.ts`; env is `node`.
 
 ---
@@ -90,13 +90,9 @@ Expected: FAIL — `buildNewLeaveRequestEmail` is not exported (module/file does
 
 - [ ] **Step 3: Write minimal implementation**
 
-Create `src/lib/services/leave-notifications.ts`:
+Create `src/lib/services/leave-notifications.ts` (the pure builder needs no imports; `sendEmail` is added in Task 2):
 
 ```ts
-import { prisma } from "@/lib/prisma";
-import { sendEmail } from "@/lib/services/email";
-import { UserRole, UserStatus } from "@prisma/client";
-
 export interface NewLeaveRequestNotification {
   leaveRequestId: string;
   requesterName: string | null;
@@ -166,108 +162,110 @@ git commit -m "feat(leave): add new-leave-request email content builder"
 
 - [ ] **Step 1: Write the failing test**
 
-Append to `src/lib/services/__tests__/leave-notifications.test.ts`. Add `vi`, `beforeEach` to the vitest import and mock both `@/lib/prisma` and `@/lib/services/email` at the top of the file (place the `vi.mock` calls directly under the existing imports):
+At the **top** of `src/lib/services/__tests__/leave-notifications.test.ts`, extend the vitest import to `import { describe, it, expect, vi, beforeEach } from 'vitest';`, add the imports below, and mock `@/lib/services/email` (place the `vi.mock` directly under the imports):
 
 ```ts
-import { vi, beforeEach } from 'vitest';
-import { notifyNewLeaveRequest } from '@/lib/services/leave-notifications';
-import { prisma } from '@/lib/prisma';
+import { notifyNewLeaveRequest, getLeaveNotificationRecipients } from '@/lib/services/leave-notifications';
 import { sendEmail } from '@/lib/services/email';
 
-vi.mock('@/lib/prisma', () => ({
-  prisma: { user: { findMany: vi.fn() } },
-}));
 vi.mock('@/lib/services/email', () => ({
   sendEmail: vi.fn(),
 }));
 
-const findMany = prisma.user.findMany as unknown as ReturnType<typeof vi.fn>;
 const sendEmailMock = sendEmail as unknown as ReturnType<typeof vi.fn>;
+```
+
+Then append these describe blocks:
+
+```ts
+describe('getLeaveNotificationRecipients', () => {
+  it('defaults to the management and hr role mailboxes', () => {
+    const prev = process.env.LEAVE_NOTIFICATION_EMAILS;
+    delete process.env.LEAVE_NOTIFICATION_EMAILS;
+    expect(getLeaveNotificationRecipients()).toEqual([
+      'management@theplahouse.com',
+      'hr@theplahouse.com',
+    ]);
+    if (prev !== undefined) process.env.LEAVE_NOTIFICATION_EMAILS = prev;
+  });
+
+  it('honors the LEAVE_NOTIFICATION_EMAILS override (comma-separated, trimmed)', () => {
+    const prev = process.env.LEAVE_NOTIFICATION_EMAILS;
+    process.env.LEAVE_NOTIFICATION_EMAILS = 'a@x.com, b@x.com ';
+    expect(getLeaveNotificationRecipients()).toEqual(['a@x.com', 'b@x.com']);
+    if (prev === undefined) delete process.env.LEAVE_NOTIFICATION_EMAILS;
+    else process.env.LEAVE_NOTIFICATION_EMAILS = prev;
+  });
+});
 
 describe('notifyNewLeaveRequest', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    delete process.env.LEAVE_NOTIFICATION_EMAILS;
   });
 
-  it('sends one email to all active HR/Management recipient emails', async () => {
-    findMany.mockResolvedValue([
-      { email: 'hr@x.com' },
-      { email: 'mgmt@x.com' },
-    ]);
+  it('sends one email to the default role mailboxes', async () => {
     sendEmailMock.mockResolvedValue({ messageId: 'ok' });
 
     await notifyNewLeaveRequest(base);
 
     expect(sendEmailMock).toHaveBeenCalledTimes(1);
     const arg = sendEmailMock.mock.calls[0][0];
-    expect(arg.to).toEqual(['hr@x.com', 'mgmt@x.com']);
+    expect(arg.to).toEqual(['management@theplahouse.com', 'hr@theplahouse.com']);
     expect(arg.subject).toContain('CASUAL');
   });
 
-  it('queries only ACTIVE HR/MANAGEMENT users with a non-null email', async () => {
-    findMany.mockResolvedValue([{ email: 'hr@x.com' }]);
-    sendEmailMock.mockResolvedValue({ messageId: 'ok' });
-
-    await notifyNewLeaveRequest(base);
-
-    const where = findMany.mock.calls[0][0].where;
-    expect(where.role).toEqual({ in: ['HR', 'MANAGEMENT'] });
-    expect(where.status).toBe('ACTIVE');
-    expect(where.email).toEqual({ not: null });
-  });
-
-  it('does not send when there are no recipients', async () => {
-    findMany.mockResolvedValue([]);
+  it('does not send when the recipient list resolves empty', async () => {
+    process.env.LEAVE_NOTIFICATION_EMAILS = '   ';
     await notifyNewLeaveRequest(base);
     expect(sendEmailMock).not.toHaveBeenCalled();
   });
 
   it('never throws when sendEmail fails (email failure cannot break creation)', async () => {
-    findMany.mockResolvedValue([{ email: 'hr@x.com' }]);
     sendEmailMock.mockRejectedValue(new Error('SMTP down'));
     await expect(notifyNewLeaveRequest(base)).resolves.toBeUndefined();
-  });
-
-  it('never throws when the recipient query fails', async () => {
-    findMany.mockRejectedValue(new Error('db down'));
-    await expect(notifyNewLeaveRequest(base)).resolves.toBeUndefined();
-    expect(sendEmailMock).not.toHaveBeenCalled();
   });
 });
 ```
 
-Note: `UserRole.HR` / `UserStatus.ACTIVE` serialize to the strings `'HR'` / `'ACTIVE'`, which is why the assertions compare against those string values.
-
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/lib/services/__tests__/leave-notifications.test.ts`
-Expected: FAIL — `notifyNewLeaveRequest` is not exported yet.
+Expected: FAIL — `notifyNewLeaveRequest` / `getLeaveNotificationRecipients` are not exported yet.
 
 - [ ] **Step 3: Write minimal implementation**
 
-Append to `src/lib/services/leave-notifications.ts`:
+Add the `sendEmail` import at the top of `src/lib/services/leave-notifications.ts`:
 
 ```ts
+import { sendEmail } from "@/lib/services/email";
+```
+
+Then append to the same file:
+
+```ts
+const DEFAULT_RECIPIENTS = [
+  "management@theplahouse.com",
+  "hr@theplahouse.com",
+];
+
+export function getLeaveNotificationRecipients(): string[] {
+  const override = process.env.LEAVE_NOTIFICATION_EMAILS;
+  if (!override) return DEFAULT_RECIPIENTS;
+  return override
+    .split(",")
+    .map((e) => e.trim())
+    .filter((e) => e.length > 0);
+}
+
 export async function notifyNewLeaveRequest(
   input: NewLeaveRequestNotification
 ): Promise<void> {
   try {
-    const recipients = await prisma.user.findMany({
-      where: {
-        role: { in: [UserRole.HR, UserRole.MANAGEMENT] },
-        status: UserStatus.ACTIVE,
-        email: { not: null },
-      },
-      select: { email: true },
-    });
-
-    const to = recipients
-      .map((r) => r.email)
-      .filter((e): e is string => Boolean(e));
-
+    const to = getLeaveNotificationRecipients();
     if (to.length === 0) {
       console.warn(
-        "[leave-notifications] No active HR/Management recipients; skipping email for leave request",
+        "[leave-notifications] No recipients configured; skipping email for leave request",
         input.leaveRequestId
       );
       return;
@@ -288,13 +286,13 @@ export async function notifyNewLeaveRequest(
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run src/lib/services/__tests__/leave-notifications.test.ts`
-Expected: PASS (all builder + orchestrator tests).
+Expected: PASS (all builder + recipient + orchestrator tests).
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add src/lib/services/leave-notifications.ts src/lib/services/__tests__/leave-notifications.test.ts
-git commit -m "feat(leave): resolve HR/Management recipients and send notification email"
+git commit -m "feat(leave): send new-leave-request email to role mailboxes"
 ```
 
 ---
@@ -305,6 +303,16 @@ git commit -m "feat(leave): resolve HR/Management recipients and send notificati
 - Modify: `src/app/api/leave-requests/route.ts`
 
 This route's existing tests hit a real database, so we keep this task as an integration edit verified by build + manual check rather than a new DB-backed unit test (the notification behavior itself is fully covered by Task 1–2). The orchestrator never throws, so no behavioral test of the route's response code is required.
+
+- [ ] **Step 0: Document the optional env var in `.env.example`**
+
+Add near the existing `SMTP_*` / `EMAIL_FROM` lines in `.env.example`:
+
+```
+# Optional: comma-separated recipients for new-leave-request notifications.
+# Defaults to management@theplahouse.com,hr@theplahouse.com when unset.
+# LEAVE_NOTIFICATION_EMAILS="management@theplahouse.com,hr@theplahouse.com"
+```
 
 - [ ] **Step 1: Add the import**
 
@@ -358,8 +366,8 @@ Expected: PASS, including the new `leave-notifications` tests.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/app/api/leave-requests/route.ts
-git commit -m "feat(leave): notify HR/Management by email on new leave request"
+git add src/app/api/leave-requests/route.ts .env.example
+git commit -m "feat(leave): notify role mailboxes by email on new leave request"
 ```
 
 ---
@@ -370,7 +378,7 @@ git commit -m "feat(leave): notify HR/Management by email on new leave request"
 
 - [ ] **Step 1: Ensure SMTP + URL env vars are set**
 
-Confirm `.env` has `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`, and `NEXTAUTH_URL` (e.g. `http://localhost:3000` locally). These already power document-expiry/attendance emails.
+Confirm `.env` has `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`, and `NEXTAUTH_URL` (e.g. `http://localhost:3000` locally). These already power document-expiry/attendance emails. `LEAVE_NOTIFICATION_EMAILS` is optional — leave unset to use the `management@`/`hr@theplahouse.com` defaults.
 
 - [ ] **Step 2: Restart dev server**
 
@@ -385,7 +393,7 @@ npm run dev
 
 Log in as an EMPLOYEE (or BRANCH_MANAGER) and submit a leave request via `/leave-requests/new`. Confirm:
 - The request is created (200 / appears in the list).
-- The configured HR/Management mailbox(es) receive an email with correct employee name, leave type, date range, reason, and a `Review leave requests` link pointing at `${NEXTAUTH_URL}/leave-requests`.
+- The role mailboxes (`management@`/`hr@theplahouse.com`, or your `LEAVE_NOTIFICATION_EMAILS` override) receive an email with correct employee name, leave type, date range, reason, and a `Review leave requests` link pointing at `${NEXTAUTH_URL}/leave-requests`.
 
 - [ ] **Step 4: Verify failure isolation (optional)**
 
@@ -395,6 +403,6 @@ Temporarily set an invalid `SMTP_HOST`, submit a request, and confirm the reques
 
 ## Self-Review Notes
 
-- **Spec coverage:** trigger on create (Task 3) ✓; recipients = active HR/MANAGEMENT with non-null email (Task 2) ✓; single email to list (Task 2) ✓; new `leave-notifications.ts` module mirroring `document-expiry.ts` (Task 1–2) ✓; `NEXTAUTH_URL` link, no new env var (Task 1) ✓; email failure never breaks creation (Task 2 throw-safety tests + Task 4 manual) ✓; out-of-scope items (approval/rejection/ack) not implemented ✓.
+- **Spec coverage:** trigger on create (Task 3) ✓; recipients = fixed role mailboxes, env-overridable, no role query (Task 2) ✓; single email to list (Task 2) ✓; new `leave-notifications.ts` module mirroring `document-expiry.ts` (Task 1–2) ✓; `NEXTAUTH_URL` link reused (Task 1), optional `LEAVE_NOTIFICATION_EMAILS` documented (Task 3 Step 0) ✓; email failure never breaks creation (Task 2 throw-safety test + Task 4 manual) ✓; out-of-scope items (approval/rejection/ack) not implemented ✓.
 - **Type consistency:** `NewLeaveRequestNotification` interface, `buildNewLeaveRequestEmail`, and `notifyNewLeaveRequest` signatures are identical across Tasks 1–3.
 - **No placeholders:** every code step contains complete, runnable code.
