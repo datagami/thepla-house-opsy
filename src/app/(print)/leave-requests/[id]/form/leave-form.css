@@ -151,17 +151,17 @@ html, body {
 }
 .letterhead .name {
   font-family: var(--font-brand);
-  font-weight: 400;        /* Mouse Memoirs only ships a single weight */
-  font-size: 32px;          /* display face — scale up vs Epilogue 18px */
-  letter-spacing: 0.04em;
+  font-weight: 400;        /* Mouser ships a single weight */
+  font-size: 22px;          /* Mouser is chunky — smaller than display-Epilogue sizing */
+  letter-spacing: 0.03em;
   color: var(--green);
   line-height: 1;
   text-transform: uppercase;
 }
 .letterhead .tagline {
-  margin-top: 2px;
+  margin-top: 1px;
   font-family: var(--font-script);
-  font-size: 14px;          /* script face — scale up to read */
+  font-size: 11px;
   letter-spacing: 0.02em;
   text-transform: none;     /* Aladin is decorative; don't uppercase */
   color: var(--ink-3);
