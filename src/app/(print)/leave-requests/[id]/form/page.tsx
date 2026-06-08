@@ -183,6 +183,28 @@ export default async function LeaveApplicationPrintPage({ params }: PageProps) {
           hand over my pending work. I will keep my phone on and answer if the office calls me during my leave.
         </p>
 
+        <div className="undertaking">
+          <div className="undertaking-head">
+            Acknowledgement on Failure to Resume Duty
+          </div>
+          <p>
+            Should I fail to report back to duty on or before the next working day following the expiry of the leave
+            period sanctioned above, I hereby acknowledge and accept that:
+          </p>
+          <ol className="undertaking-list">
+            <li>
+              I shall forfeit my eligibility for the annual performance appraisal cycle, together with any associated
+              increments, bonuses and benefits for the relevant assessment year.
+            </li>
+            <li>
+              My employment with the Company shall stand discontinued, and any subsequent re&#8209;engagement shall
+              be entirely at the Company&apos;s sole discretion, subject to availability of a suitable vacancy. Such
+              re&#8209;engagement, if granted, shall be treated as <strong>fresh employment</strong>&nbsp;&mdash; with
+              no continuity of service, tenure, accrued leave balance or seniority being preserved.
+            </li>
+          </ol>
+        </div>
+
         <div className="signature-block">
           <div className="col">
             <div className="role">Employee</div>

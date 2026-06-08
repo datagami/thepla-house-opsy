@@ -186,7 +186,43 @@ const styles = StyleSheet.create({
     color: colors.ink2,
     lineHeight: 1.45,
     marginTop: 4,
-    marginBottom: 12,
+    marginBottom: 8,
+  },
+  undertaking: {
+    marginTop: 4,
+    marginBottom: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderLeftWidth: 2,
+    borderLeftColor: colors.gold,
+    borderLeftStyle: "solid",
+    backgroundColor: "#FBF6E8",
+  },
+  undertakingHead: {
+    fontSize: 8.5,
+    fontFamily: "Helvetica-Bold",
+    color: colors.greenDeep,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
+  undertakingBody: {
+    fontSize: 9.5,
+    lineHeight: 1.45,
+    color: colors.ink1,
+    marginBottom: 3,
+  },
+  undertakingItem: {
+    fontSize: 9.5,
+    lineHeight: 1.45,
+    color: colors.ink1,
+    flexDirection: "row",
+    marginTop: 2,
+  },
+  undertakingBullet: {
+    width: 16,
+    color: colors.gold,
+    fontFamily: "Helvetica-Bold",
   },
   signatureRow: {
     flexDirection: "row",
@@ -360,6 +396,32 @@ export function LeaveApplicationDocument({ input }: { input: LeaveApplicationPdf
           I confirm that the details given above are correct. I will inform my branch manager before my leave starts
           and hand over my pending work. I will keep my phone on and answer if the office calls me during my leave.
         </Text>
+
+        <View style={styles.undertaking}>
+          <Text style={styles.undertakingHead}>
+            Acknowledgement on Failure to Resume Duty
+          </Text>
+          <Text style={styles.undertakingBody}>
+            Should I fail to report back to duty on or before the next working day following the expiry of the leave
+            period sanctioned above, I hereby acknowledge and accept that:
+          </Text>
+          <View style={styles.undertakingItem}>
+            <Text style={styles.undertakingBullet}>(i)</Text>
+            <Text style={{ flex: 1 }}>
+              I shall forfeit my eligibility for the annual performance appraisal cycle, together with any associated
+              increments, bonuses and benefits for the relevant assessment year.
+            </Text>
+          </View>
+          <View style={styles.undertakingItem}>
+            <Text style={styles.undertakingBullet}>(ii)</Text>
+            <Text style={{ flex: 1 }}>
+              My employment with the Company shall stand discontinued, and any subsequent re-engagement shall be
+              entirely at the Company&apos;s sole discretion, subject to availability of a suitable vacancy. Such
+              re-engagement, if granted, shall be treated as <Text style={styles.bold}>fresh employment</Text> —
+              with no continuity of service, tenure, accrued leave balance or seniority being preserved.
+            </Text>
+          </View>
+        </View>
 
         <View style={styles.signatureRow}>
           <View style={styles.sigCol}>
