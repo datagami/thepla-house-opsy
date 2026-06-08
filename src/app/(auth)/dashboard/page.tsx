@@ -10,6 +10,8 @@ import { userIdentitySelect } from "@/lib/select-presets";
 import { PendingSignaturesWidget } from "@/components/dashboard/pending-signatures-widget";
 import { JoiningFormCard } from "@/components/dashboard/joining-form-card";
 import { DocumentExpiryWidget } from "@/components/dashboard/document-expiry-widget";
+import { MaintenanceDueWidget } from "@/components/dashboard/maintenance-due-widget";
+import { hasAccess } from "@/lib/access-control";
 
 export const metadata: Metadata = {
   title: "Dashboard - HRMS",
@@ -543,6 +545,14 @@ export default async function DashboardPage() {
           pendingUsers={pendingSignatures}
           currentUserRole={role}
         />
+
+        {/* Maintenance Due Widget - Show for roles with equipment.view */}
+        {hasAccess(role, "equipment.view") && (
+          <MaintenanceDueWidget
+            role={role}
+            branchId={(managedBranchId || userBranchId) ?? null}
+          />
+        )}
 
         {/* Document Expiry Widget - Show for Branch Managers, HR, and Management */}
         {["BRANCH_MANAGER", "HR", "MANAGEMENT"].includes(role) && (
