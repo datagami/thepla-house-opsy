@@ -314,8 +314,8 @@ p.body strong {
 .reason-block .reason-box {
   border: 1px solid var(--rule);
   border-radius: 4px;
-  padding: 10px 12px;
-  min-height: 56px;
+  padding: 8px 12px;
+  min-height: 48px;
   background: #fff;
   font-size: 10.5px;
   line-height: 1.5;
@@ -478,7 +478,7 @@ p.body-hi { margin-bottom: 6px; }
 }
 .signature-block .col .line {
   border-top: 1px solid var(--ink-2);
-  margin-top: 48px;
+  margin-top: 38px;
   margin-bottom: 4px;
 }
 .signature-block .col .lbl {
@@ -526,17 +526,17 @@ p.body-hi { margin-bottom: 6px; }
 .hr-use .row .v {
   border-bottom: 1px dotted var(--rule-strong);
   padding-bottom: 1px;
-  min-height: 24px;
+  min-height: 18px;
 }
 
 /* ---------- Page footer ---------- */
 .page-foot {
-  margin-top: 10px;
+  margin-top: 6px;
   display: flex;
   justify-content: space-between;
   font-size: 8px;
   color: var(--ink-3);
   letter-spacing: 0.02em;
   border-top: 1px solid var(--rule);
-  padding-top: 4px;
+  padding-top: 3px;
 }
