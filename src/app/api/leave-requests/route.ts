@@ -27,6 +27,27 @@ export async function POST(req: Request) {
       );
     }
 
+    // Validate leaveType against the Prisma enum up-front so an invalid
+    // value surfaces as a clean 400 with context, rather than as a generic
+    // 500 from the Prisma insert later. Keep this list in sync with
+    // prisma/schema.prisma `enum LeaveType`.
+    const VALID_LEAVE_TYPES = [
+      "CASUAL",
+      "SICK",
+      "ANNUAL",
+      "UNPAID",
+      "OTHER",
+      "EMERGENCY",
+    ] as const;
+    if (!VALID_LEAVE_TYPES.includes(leaveType)) {
+      return NextResponse.json(
+        {
+          error: `Invalid leaveType "${leaveType}". Allowed: ${VALID_LEAVE_TYPES.join(", ")}.`,
+        },
+        { status: 400 }
+      );
+    }
+
     // Annual leave must be filed at least 15 days before the start date.
     // Emergency leave bypasses this (short-notice is the whole point).
     // The constant lives here AND in the form — kept in sync intentionally.
@@ -205,30 +226,57 @@ export async function POST(req: Request) {
     const employeeName =
       targetUserId === sessionUserId ? requesterName : targetUserName;
     after(async () => {
-      const employeeForPdf = await prisma.user.findUnique({
-        where: { id: targetUserId },
-        select: {
-          numId: true,
-          doj: true,
-          department: { select: { name: true } },
-          branch: { select: { name: true } },
-        },
-      });
-      await notifyNewLeaveRequest({
-        leaveRequestId: leaveRequest.id,
-        leaveRequestNumId: leaveRequest.numId,
-        filedAt: leaveRequest.createdAt,
-        requesterName,
-        employeeName,
-        employeeNumId: employeeForPdf?.numId ?? null,
-        employeeDepartment: employeeForPdf?.department?.name ?? null,
-        employeeBranch: employeeForPdf?.branch?.name ?? null,
-        employeeDoj: employeeForPdf?.doj ?? null,
-        leaveType: leaveType as LeaveType,
-        startDate,
-        endDate,
-        reason,
-      });
+      // Belt-and-braces: notifyNewLeaveRequest already swallows its own
+      // errors, but the prisma.user.findUnique BEFORE it does not. If the
+      // DB blips for the PDF-fields lookup, still try to send the email
+      // (with null PDF fields — the PDF renderer falls back to "—") and
+      // log a single line so the failure is debuggable.
+      let employeeForPdf: {
+        numId: number;
+        doj: Date | null;
+        department: { name: string } | null;
+        branch: { name: string } | null;
+      } | null = null;
+      try {
+        employeeForPdf = await prisma.user.findUnique({
+          where: { id: targetUserId },
+          select: {
+            numId: true,
+            doj: true,
+            department: { select: { name: true } },
+            branch: { select: { name: true } },
+          },
+        });
+      } catch (err) {
+        console.error(
+          "[leave-requests] post-response employee lookup failed; notification will go out with null PDF fields:",
+          leaveRequest.id,
+          err
+        );
+      }
+      try {
+        await notifyNewLeaveRequest({
+          leaveRequestId: leaveRequest.id,
+          leaveRequestNumId: leaveRequest.numId,
+          filedAt: leaveRequest.createdAt,
+          requesterName,
+          employeeName,
+          employeeNumId: employeeForPdf?.numId ?? null,
+          employeeDepartment: employeeForPdf?.department?.name ?? null,
+          employeeBranch: employeeForPdf?.branch?.name ?? null,
+          employeeDoj: employeeForPdf?.doj ?? null,
+          leaveType: leaveType as LeaveType,
+          startDate,
+          endDate,
+          reason,
+        });
+      } catch (err) {
+        console.error(
+          "[leave-requests] post-response notify failed for",
+          leaveRequest.id,
+          err
+        );
+      }
     });
 
     return NextResponse.json(leaveRequest);

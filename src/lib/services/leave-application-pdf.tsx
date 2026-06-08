@@ -521,5 +521,8 @@ export async function renderLeaveApplicationPdf(
   }
   const blob: Blob = await anyInstance.toBlob();
   const arr = await blob.arrayBuffer();
-  return Buffer.from(arr);
+  // Buffer.from(ArrayBuffer) returns a Buffer that SHARES memory with the
+  // backing ArrayBuffer. Wrap in Uint8Array first to force a real copy so
+  // the returned Buffer is decoupled from any future mutation of `arr`.
+  return Buffer.from(new Uint8Array(arr));
 }

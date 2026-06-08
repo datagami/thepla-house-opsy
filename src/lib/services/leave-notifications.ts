@@ -124,9 +124,16 @@ async function buildLeaveApplicationAttachment(
       totalDays: differenceInCalendarDays(end, start) + 1,
       reason: input.reason,
     });
-    // Safe filename: replace anything outside [\w.-] so SMTP / mail clients
-    // don't choke on names like "Sam & Co.".
-    const safeName = (input.employeeName ?? "employee").replace(/[^\w.-]+/g, "_");
+    // Safe filename: replace anything outside letters/numbers/.- so SMTP and
+    // mail clients don't choke on names like "Sam & Co." — but using the
+    // Unicode `\p{L}\p{N}` classes (with the /u flag) so Devanagari and
+    // other non-ASCII scripts survive instead of collapsing to underscores.
+    // If the cleaned name is empty (rare — pure punctuation), fall back to
+    // "employee" so the filename always has a meaningful base.
+    const cleaned = (input.employeeName ?? "employee")
+      .replace(/[^\p{L}\p{N}.-]+/gu, "_")
+      .replace(/^_+|_+$/g, "");
+    const safeName = cleaned.length > 0 ? cleaned : "employee";
     return {
       filename: `leave-application-${safeName}-${refNo.replace(/\//g, "-")}.pdf`,
       content: pdfBuffer,

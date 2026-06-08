@@ -656,17 +656,19 @@ export function LeaveRequestTable({
                           </Badge>
 
                           <div className="flex flex-wrap items-center gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              title="Download printable leave application form (PDF)"
-                              onClick={() =>
-                                window.open(`/leave-requests/${request.id}/form`, "_blank")
-                              }
-                            >
-                              <FileText className="mr-1 h-4 w-4" />
-                              Download Form
-                            </Button>
+                            {canDownloadForm(request) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                title="Download printable leave application form (PDF)"
+                                onClick={() =>
+                                  window.open(`/leave-requests/${request.id}/form`, "_blank")
+                                }
+                              >
+                                <FileText className="mr-1 h-4 w-4" />
+                                Download Form
+                              </Button>
+                            )}
                             {canReview && request.status === "PENDING" && (
                               <>
                                 <Button

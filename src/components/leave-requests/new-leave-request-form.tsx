@@ -100,13 +100,17 @@ export function NewLeaveRequestForm({
   // Switching the leave type to ANNUAL while a too-soon start date is
   // already chosen leaves the trigger button showing an invalid date until
   // the user reopens the calendar (which would disable it). Proactively
-  // clear stale dates so the form doesn't lie about what's selectable.
+  // clear stale dates so the form doesn't lie about what's selectable,
+  // and toast the user so they know why their selection disappeared.
   useEffect(() => {
     if (leaveType !== "ANNUAL") return;
     const minStart = addDays(startOfDay(new Date()), ANNUAL_LEAVE_MIN_ADVANCE_DAYS);
     if (startDate && startOfDay(startDate) < minStart) {
       setStartDate(undefined);
       setEndDate(undefined);
+      toast.info(
+        `Start date cleared — Annual leave needs at least ${ANNUAL_LEAVE_MIN_ADVANCE_DAYS} days advance notice.`
+      );
     }
   }, [leaveType, startDate]);
 
@@ -180,8 +184,12 @@ export function NewLeaveRequestForm({
       recog.onend = () => {
         setListening(false);
       };
-      recognitionRef.current = recog;
+      // start() can throw synchronously (e.g. duplicate-start, or a fresh
+      // permission revocation). Only publish the ref AFTER a successful
+      // start so cleanup-time abort() never targets a never-started
+      // instance.
       recog.start();
+      recognitionRef.current = recog;
       setListening(true);
     } catch (err) {
       console.error(err);
