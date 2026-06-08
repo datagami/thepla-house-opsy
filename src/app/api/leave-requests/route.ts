@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { logEntityActivity } from "@/lib/services/activity-log";
-import { ActivityType } from "@prisma/client";
+import { ActivityType, LeaveType } from "@prisma/client";
+import { notifyNewLeaveRequest } from "@/lib/services/leave-notifications";
 
 export async function POST(req: Request) {
   try {
@@ -28,6 +29,7 @@ export async function POST(req: Request) {
     const sessionUserId = (session.user as { id?: string; role?: string; branchId?: string | null }).id;
     const role = (session.user as { role?: string }).role;
     const managerBranchId = (session.user as { branchId?: string | null }).branchId ?? null;
+    const requesterName = (session.user as { name?: string | null }).name ?? null;
 
     if (!sessionUserId) {
       return NextResponse.json(
@@ -152,6 +154,23 @@ export async function POST(req: Request) {
         endDate,
       },
       req
+    );
+
+    // Notify role mailboxes of the new leave request after the response is sent.
+    // notifyNewLeaveRequest swallows its own errors, so this can never break creation
+    // and `after()` keeps the work alive on serverless runtimes past the response.
+    const employeeName =
+      targetUserId === sessionUserId ? requesterName : targetUserName;
+    after(
+      notifyNewLeaveRequest({
+        leaveRequestId: leaveRequest.id,
+        requesterName,
+        employeeName,
+        leaveType: leaveType as LeaveType,
+        startDate,
+        endDate,
+        reason,
+      })
     );
 
     return NextResponse.json(leaveRequest);
