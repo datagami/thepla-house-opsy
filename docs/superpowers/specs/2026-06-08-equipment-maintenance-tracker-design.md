@@ -31,6 +31,14 @@ and columns intentionally mirror that sheet.
 | Remarks                 | `MaintenanceRecord.remarks`                              |
 | Checked By / Manager    | `MaintenanceRecord.loggedById` (from logged-in user)     |
 
+## 1a. Terminology (UI vs code)
+
+- The side-nav menu is labeled **"Maintenance"**.
+- The `Equipment` model is shown to users as **"Item"** / **"Items"** everywhere in the
+  UI (e.g. "Add Item", "Items due soon"). The Prisma model and code identifiers keep
+  the name `Equipment` for precision; only user-facing copy says "Item".
+- A `MaintenanceRecord` is shown as a **"Maintenance Record"** or "service entry".
+
 ## 2. Core model: two layers
 
 The key design decision is a **two-layer model**:
@@ -236,7 +244,8 @@ layout used by leave and attendance.
 - `opsy-timer/` Azure timer entry calling the cron route daily.
 
 **Other wiring:**
-- Side-nav entry (`src/components/layout/side-nav.tsx`) gated by `equipment.view`.
+- Side-nav entry labeled **"Maintenance"** (`src/components/layout/side-nav.tsx`),
+  gated by `equipment.view`.
 - New `ActivityType.EQUIPMENT_MAINTENANCE_LOGGED` (record logged) and
   `ActivityType.EQUIPMENT_MAINTENANCE_ALERT` (daily reminder report) for the audit
   ledger (`logEntityActivity` / `logActivity`).
