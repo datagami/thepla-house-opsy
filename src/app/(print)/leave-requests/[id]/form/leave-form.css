@@ -117,14 +117,14 @@ html, body {
 /* ---------- Letterhead ---------- */
 .letterhead {
   text-align: center;
-  padding-bottom: 10px;
-  margin-bottom: 14px;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
   border-bottom: 1px solid var(--rule);
 }
 .letterhead .logo {
-  width: 60px;
-  height: 60px;
-  margin: 0 auto 4px;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 3px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -137,24 +137,24 @@ html, body {
 .letterhead .name {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 17px;
+  font-size: 14px;
   letter-spacing: -0.01em;
   color: var(--green);
   line-height: 1.1;
 }
 .letterhead .tagline {
-  margin-top: 3px;
-  font-size: 9.5px;
+  margin-top: 2px;
+  font-size: 8.5px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--ink-3);
   font-weight: 500;
 }
 .letterhead .addr {
-  margin-top: 6px;
-  font-size: 9px;
+  margin-top: 4px;
+  font-size: 8px;
   color: var(--ink-2);
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
 /* ---------- Reference + date row ---------- */
@@ -162,8 +162,8 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 10px;
-  font-size: 11px;
+  margin-bottom: 6px;
+  font-size: 9.5px;
   color: var(--ink-2);
 }
 .ref-row .k {
@@ -182,22 +182,22 @@ html, body {
 /* ---------- Document title ---------- */
 .doc-title {
   text-align: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 .doc-title .en {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 20px;
-  letter-spacing: 0.18em;
+  font-size: 16px;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--green);
 }
 .doc-title .underline {
   display: block;
-  width: 56px;
+  width: 48px;
   height: 2px;
   background: var(--gold);
-  margin: 8px auto 0;
+  margin: 5px auto 0;
 }
 .doc-title .hi {
   display: block;
@@ -209,23 +209,23 @@ html, body {
 
 /* ---------- "To" block ---------- */
 .to-block {
-  margin-bottom: 10px;
-  font-size: 11.5px;
-  line-height: 1.5;
+  margin-bottom: 6px;
+  font-size: 10px;
+  line-height: 1.45;
   color: var(--ink-1);
 }
 .to-block .to-lbl {
-  font-size: 9.5px;
+  font-size: 8.5px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--ink-3);
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 .to-block .recipient {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 13px;
+  font-size: 11px;
   color: var(--ink-1);
   letter-spacing: -0.005em;
 }
@@ -238,20 +238,20 @@ html, body {
 .subject {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 12.5px;
+  font-size: 11px;
   color: var(--ink-1);
-  margin-bottom: 8px;
+  margin-bottom: 5px;
   text-decoration: underline;
-  text-underline-offset: 4px;
+  text-underline-offset: 3px;
   text-decoration-color: var(--gold);
-  text-decoration-thickness: 1.5px;
+  text-decoration-thickness: 1.25px;
 }
 
 p.body {
-  font-size: 11.5px;
-  line-height: 1.5;
+  font-size: 10px;
+  line-height: 1.4;
   color: var(--ink-1);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   text-align: justify;
   text-wrap: pretty;
 }
@@ -262,26 +262,26 @@ p.body strong {
 
 /* ---------- Employee details grid ---------- */
 .field-grid {
-  margin: 10px 0 12px;
+  margin: 6px 0 8px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 5px 22px;
+  gap: 3px 22px;
   border: 1px solid var(--rule);
-  border-radius: 4px;
-  padding: 10px 14px;
+  border-radius: 3px;
+  padding: 7px 12px;
   background: hsl(150 10% 98%);
 }
 .field-row {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  font-size: 11px;
-  line-height: 1.5;
+  font-size: 9.5px;
+  line-height: 1.35;
 }
 .field-row .k {
-  flex: 0 0 110px;
-  font-size: 9.5px;
-  letter-spacing: 0.12em;
+  flex: 0 0 100px;
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink-3);
   font-weight: 600;
@@ -292,7 +292,7 @@ p.body strong {
   font-weight: 600;
   border-bottom: 1px dotted var(--rule-strong);
   padding-bottom: 1px;
-  min-height: 14px;
+  min-height: 12px;
 }
 .field-row .v.muted {
   color: var(--ink-3);
@@ -301,24 +301,24 @@ p.body strong {
 
 /* ---------- Reason block ---------- */
 .reason-block {
-  margin: 10px 0 12px;
+  margin: 6px 0 8px;
 }
 .reason-block .k {
-  font-size: 9.5px;
-  letter-spacing: 0.12em;
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink-3);
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 .reason-block .reason-box {
   border: 1px solid var(--rule);
-  border-radius: 4px;
-  padding: 8px 12px;
-  min-height: 44px;
+  border-radius: 3px;
+  padding: 6px 10px;
+  min-height: 32px;
   background: #fff;
-  font-size: 11.5px;
-  line-height: 1.55;
+  font-size: 10px;
+  line-height: 1.45;
   color: var(--ink-1);
   white-space: pre-wrap;
 }
@@ -340,8 +340,8 @@ p.body strong {
 /* ---------- Declaration ---------- */
 .declaration {
   margin-top: 2px;
-  font-size: 10.5px;
-  line-height: 1.5;
+  font-size: 9.5px;
+  line-height: 1.4;
   color: var(--ink-2);
   font-style: italic;
 }
@@ -422,35 +422,35 @@ p.body-hi { margin-bottom: 6px; }
 
 /* ---------- Undertaking on failure to resume duty ---------- */
 .undertaking {
-  margin-top: 10px;
-  padding: 8px 12px;
-  border-left: 2.5px solid var(--gold);
+  margin-top: 6px;
+  padding: 6px 10px;
+  border-left: 2px solid var(--gold);
   background: hsl(38 60% 97%);
 }
 .undertaking .undertaking-head {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 10px;
-  letter-spacing: 0.14em;
+  font-size: 9px;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--green-deep);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 .undertaking p {
-  font-size: 10.5px;
-  line-height: 1.5;
+  font-size: 9.5px;
+  line-height: 1.4;
   color: var(--ink-1);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 .undertaking .undertaking-list {
   margin: 0;
-  padding-left: 22px;
-  font-size: 10.5px;
-  line-height: 1.5;
+  padding-left: 20px;
+  font-size: 9.5px;
+  line-height: 1.4;
   color: var(--ink-1);
 }
 .undertaking .undertaking-list li {
-  margin-top: 3px;
+  margin-top: 2px;
 }
 .undertaking .undertaking-list li::marker {
   color: var(--gold);
@@ -463,79 +463,80 @@ p.body-hi { margin-bottom: 6px; }
 
 /* ---------- Signature block ---------- */
 .signature-block {
-  margin-top: 14px;
+  margin-top: 10px;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 18px;
+  gap: 16px;
 }
 .signature-block .col .role {
-  font-size: 9px;
-  letter-spacing: 0.16em;
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-3);
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 .signature-block .col .line {
   border-top: 1px solid var(--ink-2);
-  margin-top: 22px;
-  margin-bottom: 4px;
+  margin-top: 16px;
+  margin-bottom: 3px;
 }
 .signature-block .col .lbl {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--ink-2);
   font-weight: 500;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 .signature-block .col .nm {
-  font-size: 10.5px;
+  font-size: 9.5px;
   color: var(--ink-1);
   font-weight: 600;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 /* ---------- HR-use box ---------- */
 .hr-use {
-  margin-top: 12px;
-  padding: 8px 12px;
+  margin-top: 8px;
+  padding: 6px 10px;
   border: 1px dashed var(--rule-strong);
-  border-radius: 4px;
+  border-radius: 3px;
   background: var(--gold-soft);
 }
 .hr-use .head {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 10px;
-  letter-spacing: 0.16em;
+  font-size: 9px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--green-deep);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 .hr-use .row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 5px 22px;
-  font-size: 10.5px;
+  gap: 3px 20px;
+  font-size: 9.5px;
 }
 .hr-use .row .k {
   color: var(--ink-3);
   font-weight: 600;
   letter-spacing: 0.04em;
+  font-size: 8.5px;
 }
 .hr-use .row .v {
   border-bottom: 1px dotted var(--rule-strong);
   padding-bottom: 1px;
-  min-height: 14px;
+  min-height: 12px;
 }
 
 /* ---------- Page footer ---------- */
 .page-foot {
-  margin-top: 10px;
+  margin-top: 6px;
   display: flex;
   justify-content: space-between;
-  font-size: 8.5px;
+  font-size: 7.5px;
   color: var(--ink-3);
   letter-spacing: 0.02em;
   border-top: 1px solid var(--rule);
-  padding-top: 5px;
+  padding-top: 4px;
 }
