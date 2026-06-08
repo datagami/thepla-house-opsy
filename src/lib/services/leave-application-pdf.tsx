@@ -421,6 +421,15 @@ export function LeaveApplicationDocument({ input }: { input: LeaveApplicationPdf
               with no continuity of service, tenure, accrued leave balance or seniority being preserved.
             </Text>
           </View>
+          <View style={styles.undertakingItem}>
+            <Text style={styles.undertakingBullet}>(iii)</Text>
+            <Text style={{ flex: 1 }}>
+              The Company shall be entitled to withhold my final month&apos;s salary and any other dues then payable
+              to me, until such time as a suitable replacement has been engaged and adequately trained to assume my
+              responsibilities. No interest or compensation shall be payable by the Company in respect of the period
+              of such withholding.
+            </Text>
+          </View>
         </View>
 
         <View style={styles.signatureRow}>

@@ -202,6 +202,12 @@ export default async function LeaveApplicationPrintPage({ params }: PageProps) {
               re&#8209;engagement, if granted, shall be treated as <strong>fresh employment</strong>&nbsp;&mdash; with
               no continuity of service, tenure, accrued leave balance or seniority being preserved.
             </li>
+            <li>
+              The Company shall be entitled to withhold my final month&apos;s salary and any other dues then payable
+              to me, until such time as a suitable replacement has been engaged and adequately trained to assume my
+              responsibilities. No interest or compensation shall be payable by the Company in respect of the period
+              of such withholding.
+            </li>
           </ol>
         </div>
 
