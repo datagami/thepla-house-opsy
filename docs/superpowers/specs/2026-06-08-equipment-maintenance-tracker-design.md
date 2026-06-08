@@ -59,6 +59,7 @@ distinguished by a `category` field. One model, one list, one reminder engine.
 | `reminderLeadDays`| Int (default 30)              | Per-item reminder lead time                                       |
 | `nextDueDate`     | DateTime?                     | Drives reminders; recalculated when a record is logged            |
 | `lastServiceDate` | DateTime?                     | Last completed service                                            |
+| `snoozedUntil`    | DateTime?                     | If set & in the future, suppresses the daily reminder email (see §3) |
 | `status`          | enum `EquipmentStatus`        | `ACTIVE` / `RETIRED`                                              |
 | `notes`           | String?                       | Free text                                                         |
 | `createdById`     | String → `User`               | Who registered the item                                          |
@@ -109,22 +110,63 @@ distinguished by a `category` field. One model, one list, one reminder engine.
 > **Vendors (v1):** stored as inline `vendorName` / `vendorContact` fields — no
 > separate `Vendor` table. Can be normalized into a vendor directory later if needed.
 
-## 3. Reminders — dashboard only (no cron)
+## 3. Reminders — dashboard + daily email (mirrors document-expiry)
 
-Reminders are a **live query**, not a scheduled job. No Azure Function / cron is added
-for this module.
+Two delivery channels: a **live dashboard query** and a **daily email digest** built on
+the exact same cron + email infrastructure as the existing branch document-expiry
+reminders.
+
+### 3.1 Due / overdue definition (per-item lead time)
 
 - **Due Soon:** `nextDueDate != null AND nextDueDate <= today + reminderLeadDays`
-- **Overdue:** `nextDueDate != null AND nextDueDate < today`
+  (each item uses its own `reminderLeadDays`, so a monthly pest-control item with a
+  7-day lead and an annual extinguisher with a 30-day lead behave correctly).
+- **Overdue:** `nextDueDate != null AND nextDueDate < today`.
+- An item is **silenced** from reminders when either: it is no longer due (a newer
+  `MaintenanceRecord` pushed `nextDueDate` out — "resolved"), `status = RETIRED`, or
+  `snoozedUntil != null AND snoozedUntil > today` ("snoozed").
 
-Surfaced as:
+### 3.2 Dashboard
+
 - **Branch Manager dashboard:** action-item cards for *their outlet's* due/overdue
-  items, with a "Log maintenance" shortcut.
+  items, with "Log maintenance" and "Snooze" actions.
 - **Management view:** all outlets, grouped by branch, overdue highlighted.
 
-> Future option (out of scope for v1): an email digest reusing the existing
-> `sendEmail()` + cron infra, like the document-expiry reminders, if dashboard-only
-> proves too easy to miss.
+### 3.3 Daily email digest
+
+Mirrors `src/lib/services/document-expiry.ts` + `src/app/api/cron/document-expiry/`:
+
+- **New service:** `src/lib/services/equipment-maintenance-reminders.ts` exporting
+  `processEquipmentMaintenanceReminders()`.
+- **New cron route:** `src/app/api/cron/equipment-maintenance/route.ts` — GET/POST,
+  guarded by `Authorization: Bearer ${CRON_SECRET}`, returns
+  `{ success, result, duration, timestamp }`.
+- **New Azure timer:** an entry under `opsy-timer/` (sibling of the document-expiry
+  timer) that hits the cron route daily.
+- **Cadence:** runs **daily**. Every active, non-snoozed item that is Due Soon or
+  Overdue is included in that day's digest — so an item is emailed **every day** from
+  `nextDueDate - reminderLeadDays` onward **until it is resolved or snoozed**. (No
+  per-item "already notified" flag; the daily re-send is intentional.)
+- **Recipients:** the env var `EQUIPMENT_MAINTENANCE_EMAILS`, defaulting to
+  `management@theplahouse.com`. Single central digest across all outlets (not
+  per-manager), matching the document-expiry approach.
+- **Email body:** one HTML digest grouped into two sections — `🚨 Overdue` and
+  `⏰ Due Soon` — each listing item name, category, outlet, location, due date, and
+  days overdue/remaining. Reuses the `renderDocList`-style helper and `sendEmail()`.
+- **Audit:** logs `ActivityType.EQUIPMENT_MAINTENANCE_ALERT` (overall report + one per
+  overdue item), mirroring how document-expiry logs `DOCUMENT_EXPIRY_ALERT`.
+
+### 3.4 Snooze
+
+A manager/management user can snooze an item's reminder (e.g. "vendor booked for next
+week, stop nagging me"):
+
+- Sets `Equipment.snoozedUntil` to a chosen date (UI offers quick options like +7 days
+  / +14 days / pick a date).
+- While `snoozedUntil > today`, the item is excluded from the daily email **and**
+  visually marked "Snoozed until <date>" on the dashboard (still visible, just quiet).
+- Snooze is cleared automatically once a new `MaintenanceRecord` resolves the item, and
+  the action is logged to the activity ledger.
 
 ## 4. Access control
 
@@ -135,6 +177,7 @@ New `Feature` strings in `src/lib/access-control.ts`:
 | `equipment.view`           | ✗        | ✓ (own outlet)        | ✓ (all)   | ✓ (all)    |
 | `equipment.manage`         | ✗        | ✓ (own outlet)        | ✗         | ✓ (all)    |
 | `equipment.records.create` | ✗        | ✓ (own outlet)        | ✗         | ✓ (all)    |
+| `equipment.snooze`         | ✗        | ✓ (own outlet)        | ✗         | ✓ (all)    |
 
 - **Branch Manager:** full manage + log, scoped to their own outlet only — same
   branch-filter pattern already used in the leave-requests module (HR/MANAGEMENT see
@@ -183,28 +226,42 @@ layout used by leave and attendance.
 - `route.ts` (GET list / POST create equipment)
 - `[id]/route.ts` (GET / PATCH / DELETE equipment)
 - `[id]/records/route.ts` (GET list / POST create record + upload bill/photos)
+- `[id]/snooze/route.ts` (POST set `snoozedUntil`) — gated by `equipment.snooze`
 - All role-gated and branch-scoped per §4.
+
+**Reminder cron (mirrors document-expiry):**
+- `src/lib/services/equipment-maintenance-reminders.ts` —
+  `processEquipmentMaintenanceReminders()` (see §3.3).
+- `src/app/api/cron/equipment-maintenance/route.ts` — `CRON_SECRET`-guarded endpoint.
+- `opsy-timer/` Azure timer entry calling the cron route daily.
 
 **Other wiring:**
 - Side-nav entry (`src/components/layout/side-nav.tsx`) gated by `equipment.view`.
-- New `ActivityType.EQUIPMENT_MAINTENANCE_LOGGED` for the audit ledger
-  (`logEntityActivity`).
+- New `ActivityType.EQUIPMENT_MAINTENANCE_LOGGED` (record logged) and
+  `ActivityType.EQUIPMENT_MAINTENANCE_ALERT` (daily reminder report) for the audit
+  ledger (`logEntityActivity` / `logActivity`).
+- New env var `EQUIPMENT_MAINTENANCE_EMAILS` (default `management@theplahouse.com`).
 - Zod schemas + React Hook Form for the forms, matching existing module conventions.
 
 ## 8. Out of scope (v1 / YAGNI)
 
-- Email/SMS reminders (dashboard-only for v1).
+- SMS / push reminders (email + dashboard only for v1).
+- Per-manager / per-outlet email recipients (single central digest for v1).
 - Separate normalized Vendor directory.
 - Approval workflow / cost-threshold sign-off.
 - Per-equipment QR codes / asset tagging.
-- Cron / scheduled jobs.
 
 ## 9. Success criteria
 
 - A manager can register their outlet's equipment and recurring services, and see a
   live list of what's due soon / overdue for their outlet on their dashboard.
 - A manager can log a maintenance event with type, vendor, cost, bill, and photos;
-  saving it updates the item's next-due date.
+  saving it updates the item's next-due date and silences its reminder.
+- A daily cron emails `management@theplahouse.com` a digest of all due/overdue items
+  (grouped Overdue / Due Soon), re-sent every day until each item is resolved or
+  snoozed — mirroring the existing document-expiry reminder job.
+- A manager/management user can snooze an item to suppress its reminder until a chosen
+  date.
 - Management can see all outlets' equipment, full service history, and a cost summary
   filterable by outlet / category / date range.
 - HR can view everything read-only.
