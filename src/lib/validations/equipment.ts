@@ -41,7 +41,12 @@ export const maintenanceRecordCreateSchema = z.object({
 });
 
 export const snoozeSchema = z.object({
-  snoozedUntil: z.string().nullable(), // ISO date, or null to clear
+  // A parseable date string (date-only "YYYY-MM-DD" or full ISO), or null to clear.
+  // Reject unparseable strings so a bad value is a 400, not a 500 / silent bad write.
+  snoozedUntil: z
+    .string()
+    .refine((s) => !Number.isNaN(new Date(s).getTime()), "Invalid date")
+    .nullable(),
 });
 
 export type EquipmentCreateInput = z.infer<typeof equipmentCreateSchema>;
