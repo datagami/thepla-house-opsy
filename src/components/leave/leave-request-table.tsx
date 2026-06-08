@@ -52,7 +52,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, FileText } from "lucide-react";
 import { DownloadLeaveReport } from "@/components/leave-requests/download-leave-report";
 
 
@@ -412,7 +412,7 @@ export function LeaveRequestTable({
               <TableHead>End Date</TableHead>
               <TableHead>Reason</TableHead>
               <TableHead>Status</TableHead>
-              {canReview && <TableHead>Actions</TableHead>}
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -436,10 +436,21 @@ export function LeaveRequestTable({
                     {request.status}
                   </Badge>
                 </TableCell>
-                {canReview && (
-                  <TableCell>
-                    {request.status === "PENDING" && (
-                      <div className="flex space-x-2">
+                <TableCell>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      title="Download printable leave application form (PDF)"
+                      onClick={() =>
+                        window.open(`/leave-requests/${request.id}/form`, "_blank")
+                      }
+                    >
+                      <FileText className="mr-1 h-4 w-4" />
+                      Download Form
+                    </Button>
+                    {canReview && request.status === "PENDING" && (
+                      <>
                         <Button
                           size="sm"
                           variant="outline"
@@ -456,10 +467,10 @@ export function LeaveRequestTable({
                         >
                           Reject
                         </Button>
-                      </div>
+                      </>
                     )}
-                  </TableCell>
-                )}
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -597,26 +608,39 @@ export function LeaveRequestTable({
                             {request.status}
                           </Badge>
 
-                          {canReview && request.status === "PENDING" && (
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="bg-green-100 hover:bg-green-200 text-green-800"
-                                onClick={() => handleStatusUpdate(request.id, "APPROVED")}
-                              >
-                                Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="bg-red-100 hover:bg-red-200 text-red-800"
-                                onClick={() => handleStatusUpdate(request.id, "REJECTED")}
-                              >
-                                Reject
-                              </Button>
-                            </div>
-                          )}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              title="Download printable leave application form (PDF)"
+                              onClick={() =>
+                                window.open(`/leave-requests/${request.id}/form`, "_blank")
+                              }
+                            >
+                              <FileText className="mr-1 h-4 w-4" />
+                              Download Form
+                            </Button>
+                            {canReview && request.status === "PENDING" && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="bg-green-100 hover:bg-green-200 text-green-800"
+                                  onClick={() => handleStatusUpdate(request.id, "APPROVED")}
+                                >
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="bg-red-100 hover:bg-red-200 text-red-800"
+                                  onClick={() => handleStatusUpdate(request.id, "REJECTED")}
+                                >
+                                  Reject
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>

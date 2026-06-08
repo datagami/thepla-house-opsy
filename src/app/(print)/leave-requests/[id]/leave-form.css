@@ -1,0 +1,394 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Epilogue:wght@600;700;800;900&display=swap');
+/* ============================================================
+   Thepla House — Leave Application Form
+   A4 portrait · single page.
+   Lighter than the offer letter (no full-bleed cream sheet) —
+   this is a working form, not a ceremonial letter. Crisp white
+   background, traditional letter hierarchy, signature lines.
+   Print-safe; @page set to A4 with the sheet owning padding.
+   ============================================================ */
+
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+/* Floating "Download PDF" button on screen — hidden when printing so the
+   button doesn't appear in the rendered PDF nor steal vertical layout
+   space. */
+.print-toolbar {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 9999;
+}
+@media print {
+  .print-toolbar { display: none !important; }
+}
+
+:root {
+  --green:        hsl(147 41% 16%);
+  --green-deep:   hsl(147 45% 12%);
+  --gold:         hsl(38 80% 55%);
+  --gold-soft:    hsl(38 90% 94%);
+
+  --ink-1:        hsl(150 15% 12%);
+  --ink-2:        hsl(150 8%  35%);
+  --ink-3:        hsl(150 6%  52%);
+  --ink-4:        hsl(150 6%  68%);
+
+  --rule:         hsl(150 10% 88%);
+  --rule-strong:  hsl(150 10% 78%);
+
+  --font-body:    'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Epilogue', 'Inter', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: #e8e6e2;
+  font-family: var(--font-body);
+  color: var(--ink-1);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+/* ---------- Page shell ---------- */
+.page {
+  width: 210mm;
+  margin: 24px auto;
+  padding: 18mm 18mm 16mm;
+  background: #fff;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.10);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+@media print {
+  *, *::before, *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  html, body { background: #fff; }
+  .page {
+    width: 210mm;
+    margin: 0;
+    padding: 18mm 18mm 16mm;
+    box-shadow: none;
+  }
+  .field-row, .signature-block, .sig-row {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+/* ---------- Letterhead ---------- */
+.letterhead {
+  text-align: center;
+  padding-bottom: 18px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--rule);
+}
+.letterhead .logo {
+  width: 88px;
+  height: 88px;
+  margin: 0 auto 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.letterhead .logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.letterhead .name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  color: var(--green);
+  line-height: 1.1;
+}
+.letterhead .tagline {
+  margin-top: 4px;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+.letterhead .addr {
+  margin-top: 8px;
+  font-size: 9.5px;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+/* ---------- Reference + date row ---------- */
+.ref-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 16px;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+.ref-row .k {
+  color: var(--ink-3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 9.5px;
+  font-weight: 600;
+  margin-right: 6px;
+}
+.ref-row .v {
+  color: var(--ink-1);
+  font-weight: 600;
+}
+
+/* ---------- Document title ---------- */
+.doc-title {
+  text-align: center;
+  margin-bottom: 18px;
+}
+.doc-title .en {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--green);
+}
+.doc-title .underline {
+  display: block;
+  width: 56px;
+  height: 2px;
+  background: var(--gold);
+  margin: 8px auto 0;
+}
+
+/* ---------- "To" block ---------- */
+.to-block {
+  margin-bottom: 16px;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--ink-1);
+}
+.to-block .to-lbl {
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.to-block .recipient {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ink-1);
+  letter-spacing: -0.005em;
+}
+.to-block .org {
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+/* ---------- Subject + salutation ---------- */
+.subject {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--ink-1);
+  margin-bottom: 12px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: var(--gold);
+  text-decoration-thickness: 1.5px;
+}
+
+p.body {
+  font-size: 11.5px;
+  line-height: 1.65;
+  color: var(--ink-1);
+  margin-bottom: 10px;
+  text-align: justify;
+  text-wrap: pretty;
+}
+p.body strong {
+  font-weight: 600;
+  color: var(--green-deep);
+}
+
+/* ---------- Employee details grid ---------- */
+.field-grid {
+  margin: 14px 0 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 24px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 12px 16px;
+  background: hsl(150 10% 98%);
+}
+.field-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.field-row .k {
+  flex: 0 0 110px;
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+.field-row .v {
+  flex: 1;
+  color: var(--ink-1);
+  font-weight: 600;
+  border-bottom: 1px dotted var(--rule-strong);
+  padding-bottom: 1px;
+  min-height: 14px;
+}
+.field-row .v.muted {
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+/* ---------- Reason block ---------- */
+.reason-block {
+  margin: 14px 0 18px;
+}
+.reason-block .k {
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.reason-block .reason-box {
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 10px 12px;
+  min-height: 64px;
+  background: #fff;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--ink-1);
+  white-space: pre-wrap;
+}
+
+/* ---------- Status badge ---------- */
+.status-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.status-pill.PENDING  { background: hsl(48 95% 90%); color: hsl(36 65% 30%); border: 1px solid hsl(48 80% 70%); }
+.status-pill.APPROVED { background: hsl(140 60% 92%); color: hsl(140 55% 22%); border: 1px solid hsl(140 50% 70%); }
+.status-pill.REJECTED { background: hsl(0 70% 94%);  color: hsl(0 55% 30%);  border: 1px solid hsl(0 50% 75%); }
+
+/* ---------- Declaration ---------- */
+.declaration {
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  font-style: italic;
+}
+
+/* ---------- Signature block ---------- */
+.signature-block {
+  margin-top: 36px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 22px;
+}
+.signature-block .col .role {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.signature-block .col .line {
+  border-top: 1px solid var(--ink-2);
+  margin-top: 44px;
+  margin-bottom: 6px;
+}
+.signature-block .col .lbl {
+  font-size: 10px;
+  color: var(--ink-2);
+  font-weight: 500;
+  margin-top: 2px;
+}
+.signature-block .col .nm {
+  font-size: 10.5px;
+  color: var(--ink-1);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* ---------- HR-use box ---------- */
+.hr-use {
+  margin-top: 28px;
+  padding: 12px 14px;
+  border: 1px dashed var(--rule-strong);
+  border-radius: 4px;
+  background: var(--gold-soft);
+}
+.hr-use .head {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--green-deep);
+  margin-bottom: 8px;
+}
+.hr-use .row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 22px;
+  font-size: 10.5px;
+}
+.hr-use .row .k {
+  color: var(--ink-3);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.hr-use .row .v {
+  border-bottom: 1px dotted var(--rule-strong);
+  padding-bottom: 1px;
+  min-height: 14px;
+}
+
+/* ---------- Page footer ---------- */
+.page-foot {
+  margin-top: 24px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 8.5px;
+  color: var(--ink-3);
+  letter-spacing: 0.02em;
+  border-top: 1px solid var(--rule);
+  padding-top: 6px;
+}
