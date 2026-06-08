@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MapPin, MoreHorizontal } from "lucide-react";
+import { MapPin, MoreHorizontal, Archive, ArchiveRestore } from "lucide-react";
+import { toast } from "sonner";
+import { setEquipmentStatus } from "@/lib/equipment-actions";
 import { EquipmentCards } from "@/components/equipment/equipment-cards";
 import {
   Table,
@@ -100,15 +102,24 @@ export function EquipmentTable({ rows, canManage }: EquipmentTableProps) {
                 ? `→ ${formatShortDate(row.snoozedUntil)}`
                 : undefined;
 
+            const isRetired = row.status === "RETIRED";
+
             return (
               <TableRow
                 key={row.id}
-                className="cursor-pointer hover:bg-muted/50"
+                className={`cursor-pointer hover:bg-muted/50${isRetired ? " opacity-60" : ""}`}
                 onClick={() => router.push(`/equipment/${row.id}`)}
               >
                 {/* Item */}
                 <TableCell>
-                  <div className="font-semibold text-foreground">{row.name}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-foreground">{row.name}</span>
+                    {isRetired && (
+                      <Badge variant="secondary" className="text-[11px] text-muted-foreground">
+                        Inactive
+                      </Badge>
+                    )}
+                  </div>
                   <div className="mt-[2px] text-[11.5px] text-muted-foreground">
                     {row.frequencyMonths
                       ? `Every ${row.frequencyMonths} months`
@@ -197,6 +208,41 @@ export function EquipmentTable({ rows, canManage }: EquipmentTableProps) {
                           <Link href={`/equipment/${row.id}/edit`}>
                             Edit item
                           </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onSelect={async () => {
+                            try {
+                              await setEquipmentStatus(
+                                row.id,
+                                row.status === "ACTIVE" ? "RETIRED" : "ACTIVE"
+                              );
+                              toast.success(
+                                row.status === "ACTIVE"
+                                  ? "Item marked inactive"
+                                  : "Item marked active"
+                              );
+                              router.refresh();
+                            } catch (err) {
+                              toast.error(
+                                err instanceof Error
+                                  ? err.message
+                                  : "Failed to update item status"
+                              );
+                            }
+                          }}
+                        >
+                          {row.status === "ACTIVE" ? (
+                            <>
+                              <Archive size={14} className="mr-2 text-muted-foreground" />
+                              Mark inactive
+                            </>
+                          ) : (
+                            <>
+                              <ArchiveRestore size={14} className="mr-2 text-muted-foreground" />
+                              Mark active
+                            </>
+                          )}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

@@ -23,6 +23,7 @@ import { ALL_CATEGORIES, categoryLabel } from "@/lib/equipment-display";
 interface EquipmentFiltersProps {
   outlets: { id: string; name: string }[];
   lockedOutletId?: string | null;
+  lifecycle?: string;
 }
 
 const STATUS_OPTIONS = [
@@ -32,9 +33,16 @@ const STATUS_OPTIONS = [
   { value: "ok", label: "On track" },
 ] as const;
 
+const LIFECYCLE_OPTIONS = [
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+  { value: "all", label: "All" },
+] as const;
+
 export function EquipmentFilters({
   outlets,
   lockedOutletId,
+  lifecycle: lifecycleProp,
 }: EquipmentFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -43,6 +51,9 @@ export function EquipmentFilters({
   const currentOutlet = searchParams.get("outlet") ?? "";
   const currentCategory = searchParams.get("category") ?? "";
   const currentStatus = searchParams.get("status") ?? "";
+  // lifecycle: read from prop (server-driven) if provided, else fall back to URL param
+  const currentLifecycle =
+    lifecycleProp ?? searchParams.get("lifecycle") ?? "active";
 
   function setParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -54,21 +65,36 @@ export function EquipmentFilters({
     router.push(`${pathname}?${params.toString()}`);
   }
 
+  function setLifecycle(value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value === "active" || !value) {
+      params.delete("lifecycle");
+    } else {
+      params.set("lifecycle", value);
+    }
+    router.push(`${pathname}?${params.toString()}`);
+  }
+
   function clearAll() {
     const params = new URLSearchParams(searchParams.toString());
     if (!lockedOutletId) params.delete("outlet");
     params.delete("category");
     params.delete("status");
+    params.delete("lifecycle");
     router.push(`${pathname}?${params.toString()}`);
   }
 
   const hasActiveFilter =
-    (currentOutlet && !lockedOutletId) || currentCategory || currentStatus;
+    (currentOutlet && !lockedOutletId) ||
+    currentCategory ||
+    currentStatus ||
+    (currentLifecycle && currentLifecycle !== "active");
 
   const activeCount =
     (currentOutlet && !lockedOutletId ? 1 : 0) +
     (currentCategory ? 1 : 0) +
-    (currentStatus ? 1 : 0);
+    (currentStatus ? 1 : 0) +
+    (currentLifecycle && currentLifecycle !== "active" ? 1 : 0);
 
   return (
     <>
@@ -133,6 +159,23 @@ export function EquipmentFilters({
             {STATUS_OPTIONS.map((s) => (
               <SelectItem key={s.value} value={s.value}>
                 {s.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Lifecycle */}
+        <Select
+          value={currentLifecycle || "active"}
+          onValueChange={(v) => setLifecycle(v)}
+        >
+          <SelectTrigger className="h-[34px] min-w-[120px] text-[13px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {LIFECYCLE_OPTIONS.map((l) => (
+              <SelectItem key={l.value} value={l.value}>
+                {l.label}
               </SelectItem>
             ))}
           </SelectContent>
@@ -243,6 +286,28 @@ export function EquipmentFilters({
                     {STATUS_OPTIONS.map((s) => (
                       <SelectItem key={s.value} value={s.value}>
                         {s.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Lifecycle */}
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[12.5px] font-[550] text-muted-foreground">
+                  Lifecycle
+                </Label>
+                <Select
+                  value={currentLifecycle || "active"}
+                  onValueChange={(v) => setLifecycle(v)}
+                >
+                  <SelectTrigger className="h-10 text-[13px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LIFECYCLE_OPTIONS.map((l) => (
+                      <SelectItem key={l.value} value={l.value}>
+                        {l.label}
                       </SelectItem>
                     ))}
                   </SelectContent>

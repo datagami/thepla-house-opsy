@@ -17,6 +17,7 @@ interface Props {
     outlet?: string;
     category?: string;
     status?: string;
+    lifecycle?: string;
   }>;
 }
 
@@ -39,7 +40,7 @@ export default async function EquipmentPage({ searchParams }: Props) {
 
   if (!hasAccess(role, "equipment.view")) redirect("/dashboard");
 
-  const { outlet, category, status } = await searchParams;
+  const { outlet, category, status, lifecycle } = await searchParams;
 
   // ── Build DB where clause ────────────────────────────────────────────────
   const roleWhere = equipmentWhereForRole(role, branchId);
@@ -54,12 +55,19 @@ export default async function EquipmentPage({ searchParams }: Props) {
   const categoryWhere =
     category && category.length > 0 ? { category: category as never } : {};
 
-  // Always restrict to ACTIVE at DB level; status param is reminder-state not DB status
+  // Lifecycle param drives the DB-level status filter ("active" / absent = ACTIVE, "inactive" = RETIRED, "all" = no filter)
+  const lifecycleWhere =
+    lifecycle === "inactive"
+      ? { status: "RETIRED" as const }
+      : lifecycle === "all"
+      ? {}
+      : { status: "ACTIVE" as const };
+
   const dbWhere = {
     ...roleWhere,
     ...outletWhere,
     ...categoryWhere,
-    status: "ACTIVE" as const,
+    ...lifecycleWhere,
   };
 
   // ── Query equipment ──────────────────────────────────────────────────────
@@ -158,9 +166,11 @@ export default async function EquipmentPage({ searchParams }: Props) {
   function buildStatusLink(s: string) {
     const base = outlet ? `?outlet=${outlet}&` : "?";
     const cat = category ? `category=${category}&` : "";
+    const lc =
+      lifecycle && lifecycle !== "active" ? `lifecycle=${lifecycle}&` : "";
     return status === s
-      ? `${base}${cat}` // clicking active filter → clear it
-      : `${base}${cat}status=${s}`;
+      ? `${base}${cat}${lc}` // clicking active filter → clear it
+      : `${base}${cat}${lc}status=${s}`;
   }
 
   const isEmpty = equipment.length === 0;
@@ -254,6 +264,7 @@ export default async function EquipmentPage({ searchParams }: Props) {
           <EquipmentFilters
             outlets={branches}
             lockedOutletId={lockedOutletId}
+            lifecycle={lifecycle ?? "active"}
           />
         </div>
 

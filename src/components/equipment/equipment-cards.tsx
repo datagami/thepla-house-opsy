@@ -3,9 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MapPin, ChevronRight, BellOff, Wrench } from "lucide-react";
+import { MapPin, ChevronRight, BellOff, Wrench, MoreVertical, Archive, ArchiveRestore } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { setEquipmentStatus } from "@/lib/equipment-actions";
 import { CategoryPill, StatusBadge } from "@/components/equipment/ui";
 import { CategoryIcon } from "@/components/equipment/category-icon";
 import { SnoozeDialog } from "@/components/equipment/snooze-dialog";
@@ -37,6 +46,7 @@ interface ItemCardProps {
 function ItemCard({ row, canManage, onSnooze }: ItemCardProps) {
   const router = useRouter();
   const today = new Date();
+  const isRetired = row.status === "RETIRED";
   const reminderState = getReminderState(
     {
       nextDueDate: row.nextDueDate ? new Date(row.nextDueDate) : null,
@@ -56,7 +66,7 @@ function ItemCard({ row, canManage, onSnooze }: ItemCardProps) {
 
   return (
     <div
-      className="rounded-xl border bg-card shadow-sm cursor-pointer"
+      className={`rounded-xl border bg-card shadow-sm cursor-pointer${isRetired ? " opacity-60" : ""}`}
       onClick={() => router.push(`/equipment/${row.id}`)}
     >
       {/* Top row: icon + name/category/outlet + chevron */}
@@ -71,8 +81,15 @@ function ItemCard({ row, canManage, onSnooze }: ItemCardProps) {
 
         {/* Name + pills */}
         <div className="min-w-0 flex-1">
-          <div className="text-[14px] font-[650] leading-[1.3] text-foreground">
-            {row.name}
+          <div className="flex flex-wrap items-center gap-[7px] leading-[1.3]">
+            <span className="text-[14px] font-[650] text-foreground">
+              {row.name}
+            </span>
+            {isRetired && (
+              <Badge variant="secondary" className="text-[11px] text-muted-foreground">
+                Inactive
+              </Badge>
+            )}
           </div>
           <div className="mt-[5px] flex flex-wrap items-center gap-[7px]">
             <CategoryPill category={row.category} size="sm" />
@@ -126,6 +143,61 @@ function ItemCard({ row, canManage, onSnooze }: ItemCardProps) {
                 Log
               </Link>
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  aria-label="More actions"
+                >
+                  <MoreVertical size={15} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href={`/equipment/${row.id}`}>Open detail</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={`/equipment/${row.id}/edit`}>Edit item</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onSelect={async () => {
+                    try {
+                      await setEquipmentStatus(
+                        row.id,
+                        row.status === "ACTIVE" ? "RETIRED" : "ACTIVE"
+                      );
+                      toast.success(
+                        row.status === "ACTIVE"
+                          ? "Item marked inactive"
+                          : "Item marked active"
+                      );
+                      router.refresh();
+                    } catch (err) {
+                      toast.error(
+                        err instanceof Error
+                          ? err.message
+                          : "Failed to update item status"
+                      );
+                    }
+                  }}
+                >
+                  {row.status === "ACTIVE" ? (
+                    <>
+                      <Archive size={14} className="mr-2 text-muted-foreground" />
+                      Mark inactive
+                    </>
+                  ) : (
+                    <>
+                      <ArchiveRestore size={14} className="mr-2 text-muted-foreground" />
+                      Mark active
+                    </>
+                  )}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
       </div>

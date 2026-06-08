@@ -1,23 +1,30 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { BellOff, Pencil, Wrench } from "lucide-react";
+import { BellOff, Pencil, Wrench, Archive, ArchiveRestore } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { SnoozeDialog } from "@/components/equipment/snooze-dialog";
+import { setEquipmentStatus } from "@/lib/equipment-actions";
 
 interface DetailActionsProps {
   equipmentId: string;
   equipmentName?: string;
   canManage: boolean;
+  status: "ACTIVE" | "RETIRED";
 }
 
 export function DetailActions({
   equipmentId,
   equipmentName,
   canManage,
+  status,
 }: DetailActionsProps) {
+  const router = useRouter();
   const [snoozeOpen, setSnoozeOpen] = useState(false);
+  const isRetired = status === "RETIRED";
 
   if (!canManage) {
     return (
@@ -65,6 +72,41 @@ export function DetailActions({
             <Pencil size={15} className="mr-1.5" />
             Edit
           </Link>
+        </Button>
+
+        <Button
+          variant="outline"
+          type="button"
+          onClick={async () => {
+            try {
+              await setEquipmentStatus(
+                equipmentId,
+                isRetired ? "ACTIVE" : "RETIRED"
+              );
+              toast.success(
+                isRetired ? "Item marked active" : "Item marked inactive"
+              );
+              router.refresh();
+            } catch (err) {
+              toast.error(
+                err instanceof Error
+                  ? err.message
+                  : "Failed to update item status"
+              );
+            }
+          }}
+        >
+          {isRetired ? (
+            <>
+              <ArchiveRestore size={15} className="mr-1.5" />
+              Mark active
+            </>
+          ) : (
+            <>
+              <Archive size={15} className="mr-1.5" />
+              Mark inactive
+            </>
+          )}
         </Button>
 
         <Button asChild>

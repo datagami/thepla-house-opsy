@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Bell, Calendar } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { hasAccess } from "@/lib/access-control";
@@ -156,6 +157,11 @@ export default async function EquipmentDetailPage({ params }: Props) {
                 {item.name}
               </h1>
               <StatusBadge state={reminderState} />
+              {item.status === "RETIRED" && (
+                <Badge variant="secondary" className="text-[12px] text-muted-foreground">
+                  Inactive
+                </Badge>
+              )}
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-[10px]">
               <CategoryPill category={item.category} size="sm" />
@@ -176,6 +182,7 @@ export default async function EquipmentDetailPage({ params }: Props) {
               equipmentId={item.id}
               equipmentName={item.name}
               canManage={canManage}
+              status={item.status}
             />
           </div>
         </div>
@@ -186,6 +193,7 @@ export default async function EquipmentDetailPage({ params }: Props) {
             equipmentId={item.id}
             equipmentName={item.name}
             canManage={canManage}
+            status={item.status}
           />
         </div>
 
