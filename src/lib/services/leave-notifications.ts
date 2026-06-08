@@ -17,11 +17,14 @@ const DEFAULT_RECIPIENTS = [
 ];
 
 const formatDate = (d: string | Date): string =>
-  new Date(d).toLocaleDateString("en-IN", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  new Date(d).toLocaleDateString(
+    process.env.NEXT_PUBLIC_ATTENDANCE_LOCALE ?? "en-IN",
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }
+  );
 
 const escapeHtml = (s: string): string =>
   s
@@ -30,7 +33,7 @@ const escapeHtml = (s: string): string =>
     .replace(/>/g, "&gt;");
 
 export function getLeaveNotificationRecipients(): string[] {
-  const override = process.env.LEAVE_NOTIFICATION_EMAILS;
+  const override = process.env.LEAVE_NOTIFICATION_EMAILS?.trim();
   if (!override) return DEFAULT_RECIPIENTS;
   return override
     .split(",")
@@ -41,7 +44,8 @@ export function getLeaveNotificationRecipients(): string[] {
 export function buildNewLeaveRequestEmail(
   input: NewLeaveRequestNotification
 ): { subject: string; html: string } {
-  const employee = escapeHtml(input.employeeName ?? "An employee");
+  const employeeRaw = input.employeeName ?? "An employee";
+  const employee = escapeHtml(employeeRaw);
   // Show "Submitted by" only when someone other than the employee filed it (e.g. a branch manager). Self-submissions pass requesterName === employeeName.
   const submittedBy =
     input.requesterName && input.requesterName !== input.employeeName
@@ -50,7 +54,8 @@ export function buildNewLeaveRequestEmail(
   const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
   const link = `${baseUrl}/leave-requests`;
 
-  const subject = `New leave request: ${employee} (${input.leaveType})`;
+  // Subject is plain text — use the unescaped name so "Sam & Co." doesn't reach the inbox as "Sam &amp; Co.".
+  const subject = `New leave request: ${employeeRaw} (${input.leaveType})`;
   const html = `
     <div style="font-family: Arial, sans-serif; font-size: 14px; color: #111;">
       <h2 style="margin: 0 0 12px;">New leave request</h2>

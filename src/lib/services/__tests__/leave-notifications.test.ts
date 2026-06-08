@@ -43,6 +43,17 @@ describe('buildNewLeaveRequestEmail', () => {
     else process.env.NEXTAUTH_URL = prev;
   });
 
+  it('uses the raw name in the plain-text subject but escapes it in the HTML body', () => {
+    const { subject, html } = buildNewLeaveRequestEmail({
+      ...base,
+      requesterName: 'Sam & Co.',
+      employeeName: 'Sam & Co.',
+    });
+    expect(subject).toContain('Sam & Co.');
+    expect(subject).not.toContain('&amp;');
+    expect(html).toContain('Sam &amp; Co.');
+  });
+
   it('shows "Submitted by" only when requester differs from employee', () => {
     const self = buildNewLeaveRequestEmail(base);
     expect(self.html).not.toContain('Submitted by');
@@ -92,8 +103,17 @@ describe('notifyNewLeaveRequest', () => {
     expect(arg.subject).toContain('CASUAL');
   });
 
-  it('does not send when the recipient list resolves empty', async () => {
+  it('falls back to defaults when LEAVE_NOTIFICATION_EMAILS is whitespace-only', async () => {
+    sendEmailMock.mockResolvedValue({ messageId: 'ok' });
     process.env.LEAVE_NOTIFICATION_EMAILS = '   ';
+    await notifyNewLeaveRequest(base);
+    expect(sendEmailMock).toHaveBeenCalledTimes(1);
+    const arg = sendEmailMock.mock.calls[0][0];
+    expect(arg.to).toEqual(['management@theplahouse.com', 'hr@theplahouse.com']);
+  });
+
+  it('does not send when the recipient list resolves empty (only commas)', async () => {
+    process.env.LEAVE_NOTIFICATION_EMAILS = ',,,';
     await notifyNewLeaveRequest(base);
     expect(sendEmailMock).not.toHaveBeenCalled();
   });

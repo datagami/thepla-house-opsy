@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { logEntityActivity } from "@/lib/services/activity-log";
@@ -29,6 +29,7 @@ export async function POST(req: Request) {
     const sessionUserId = (session.user as { id?: string; role?: string; branchId?: string | null }).id;
     const role = (session.user as { role?: string }).role;
     const managerBranchId = (session.user as { branchId?: string | null }).branchId ?? null;
+    const requesterName = (session.user as { name?: string | null }).name ?? null;
 
     if (!sessionUserId) {
       return NextResponse.json(
@@ -155,17 +156,13 @@ export async function POST(req: Request) {
       req
     );
 
-    // Notify role mailboxes of the new leave request (best-effort; never blocks creation)
-    try {
-      const requester = await prisma.user.findUnique({
-        where: { id: sessionUserId },
-        select: { name: true },
-      });
-      const requesterName = requester?.name ?? null;
-      const employeeName =
-        targetUserId === sessionUserId ? requesterName : targetUserName;
-
-      await notifyNewLeaveRequest({
+    // Notify role mailboxes of the new leave request after the response is sent.
+    // notifyNewLeaveRequest swallows its own errors, so this can never break creation
+    // and `after()` keeps the work alive on serverless runtimes past the response.
+    const employeeName =
+      targetUserId === sessionUserId ? requesterName : targetUserName;
+    after(
+      notifyNewLeaveRequest({
         leaveRequestId: leaveRequest.id,
         requesterName,
         employeeName,
@@ -173,14 +170,8 @@ export async function POST(req: Request) {
         startDate,
         endDate,
         reason,
-      });
-    } catch (notifyError) {
-      console.error(
-        "Failed to send new-leave-request notification for",
-        leaveRequest.id,
-        notifyError
-      );
-    }
+      })
+    );
 
     return NextResponse.json(leaveRequest);
   } catch (error) {
