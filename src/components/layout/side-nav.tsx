@@ -24,6 +24,7 @@ import {
   FileCheck,
   Wallet,
   AlertCircle,
+  Wrench,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
@@ -153,6 +154,23 @@ const roleNavItems: Record<string, NavItem[]> = {
       ]
     },
     {
+      title: "Maintenance",
+      icon: <Wrench className="h-5 w-5" />,
+      feature: "equipment.view",
+      subItems: [
+        {
+          title: "Items",
+          href: "/equipment",
+          feature: "equipment.view",
+        },
+        {
+          title: "Cost Summary",
+          href: "/equipment/costs",
+          feature: "equipment.view",
+        },
+      ],
+    },
+    {
       title: "Leave Management",
       icon: <CalendarCheck className="h-5 w-5" />,
       feature: "leave.view",
@@ -247,17 +265,23 @@ const roleNavItems: Record<string, NavItem[]> = {
       icon: <AlertTriangle className="h-5 w-5" />,
       feature: "employees.view" 
     },
-    { 
-      title: "Attendance", 
-      href: "/attendance", 
+    {
+      title: "Attendance",
+      href: "/attendance",
       icon: <Clock className="h-5 w-5" />,
-      feature: "attendance.mark" 
+      feature: "attendance.mark"
     },
-    { 
-      title: "Leave Requests", 
-      href: "/leave-requests", 
+    {
+      title: "Maintenance",
+      href: "/equipment",
+      icon: <Wrench className="h-5 w-5" />,
+      feature: "equipment.view",
+    },
+    {
+      title: "Leave Requests",
+      href: "/leave-requests",
       icon: <CalendarCheck className="h-5 w-5" />,
-      feature: "leave.view" 
+      feature: "leave.view"
     },
     { 
       title: "New Leave Request", 
@@ -377,6 +401,23 @@ const roleNavItems: Record<string, NavItem[]> = {
           feature: "users.manage"
         },
       ]
+    },
+    {
+      title: "Maintenance",
+      icon: <Wrench className="h-5 w-5" />,
+      feature: "equipment.view",
+      subItems: [
+        {
+          title: "Items",
+          href: "/equipment",
+          feature: "equipment.view",
+        },
+        {
+          title: "Cost Summary",
+          href: "/equipment/costs",
+          feature: "equipment.view",
+        },
+      ],
     },
     {
       title: "Leave Management",
