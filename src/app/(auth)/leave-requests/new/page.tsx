@@ -57,9 +57,16 @@ export default async function NewLeaveRequestPage() {
     }));
   } else if (role === "HR" || role === "MANAGEMENT") {
     // HR and MANAGEMENT can file on behalf of any ACTIVE user across all
-    // branches (including other managers / HR colleagues).
+    // branches (including other managers / HR colleagues). Exclude the
+    // session user themselves — the form has a separate "Myself" option,
+    // and including them again created a confusing duplicate.
+    // @ts-expect-error - id is not in the User type
+    const sessionUserId = session.user.id as string | undefined;
     const rows = await prisma.user.findMany({
-      where: { status: "ACTIVE" },
+      where: {
+        status: "ACTIVE",
+        ...(sessionUserId ? { id: { not: sessionUserId } } : {}),
+      },
       select: {
         id: true,
         name: true,

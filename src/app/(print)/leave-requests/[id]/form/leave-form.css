@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Epilogue:wght@600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Epilogue:wght@600;700;800;900&family=Mouse+Memoirs&family=Aladin&display=swap');
 /* ============================================================
    Thepla House — Leave Application Form
    A4 portrait · single page.
@@ -42,6 +42,12 @@
 
   --font-body:    'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-display: 'Epilogue', 'Inter', system-ui, sans-serif;
+  /* Brand fonts: chunky all-caps for the wordmark, decorative script for
+     the "By Tejal's Kitchen" tagline. Mouse Memoirs is the closest free
+     Google Font to the licensed "Mouser" face we use elsewhere; swap to
+     a self-hosted .woff2 if HR has a paid Mouser licence. */
+  --font-brand:   'Mouse Memoirs', 'Epilogue', system-ui, sans-serif;
+  --font-script:  'Aladin', 'Georgia', cursive;
   /* Devanagari fallback chain — browsers ship at least one of these. */
   --font-hindi:   'Noto Sans Devanagari', 'Mangal', 'Kohinoor Devanagari',
                   'Sanskrit Text', 'Inter', system-ui, sans-serif;
@@ -135,20 +141,22 @@ html, body {
   object-fit: contain;
 }
 .letterhead .name {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 18px;
-  letter-spacing: -0.01em;
+  font-family: var(--font-brand);
+  font-weight: 400;        /* Mouse Memoirs only ships a single weight */
+  font-size: 32px;          /* display face — scale up vs Epilogue 18px */
+  letter-spacing: 0.04em;
   color: var(--green);
-  line-height: 1.1;
+  line-height: 1;
+  text-transform: uppercase;
 }
 .letterhead .tagline {
   margin-top: 2px;
-  font-size: 9px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  font-family: var(--font-script);
+  font-size: 14px;          /* script face — scale up to read */
+  letter-spacing: 0.02em;
+  text-transform: none;     /* Aladin is decorative; don't uppercase */
   color: var(--ink-3);
-  font-weight: 500;
+  font-weight: 400;
 }
 .letterhead .addr {
   margin-top: 4px;

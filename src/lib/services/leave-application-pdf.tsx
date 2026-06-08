@@ -181,8 +181,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   declaration: {
+    // `fontStyle: "italic"` requires an italic variant of the font family
+    // to be registered with Font.register(). Built-in Helvetica only ships
+    // Regular + Bold in @react-pdf/renderer, and the missing italic variant
+    // makes the reconciler throw at render time (observed as React error #31
+    // when the PDF attachment was added in PR #51). Drop the italic and lean
+    // on size + color to differentiate the declaration from the body text.
     fontSize: 9.5,
-    fontStyle: "italic",
     color: colors.ink2,
     lineHeight: 1.45,
     marginTop: 4,

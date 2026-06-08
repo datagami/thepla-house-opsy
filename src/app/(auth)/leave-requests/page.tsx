@@ -83,12 +83,14 @@ export default async function LeaveRequestsPage() {
       </div>
 
       <div className="rounded-md border">
-        <LeaveRequestTable 
+        <LeaveRequestTable
           requests={leaveRequests}
           showBranch={["HR", "MANAGEMENT"].includes(role)}
           userRole={role}
           // @ts-expect-error - id is not in the User type
           userId={session.user.id}
+          // @ts-expect-error - branchId is not in the User type
+          userBranchId={(session.user.branchId as string | null | undefined) ?? null}
         />
       </div>
     </div>

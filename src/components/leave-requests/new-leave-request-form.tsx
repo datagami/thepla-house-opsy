@@ -97,6 +97,19 @@ export function NewLeaveRequestForm({
     canFileForOthers(userRole) ? "SELF" : ""
   );
 
+  // Switching the leave type to ANNUAL while a too-soon start date is
+  // already chosen leaves the trigger button showing an invalid date until
+  // the user reopens the calendar (which would disable it). Proactively
+  // clear stale dates so the form doesn't lie about what's selectable.
+  useEffect(() => {
+    if (leaveType !== "ANNUAL") return;
+    const minStart = addDays(startOfDay(new Date()), ANNUAL_LEAVE_MIN_ADVANCE_DAYS);
+    if (startDate && startOfDay(startDate) < minStart) {
+      setStartDate(undefined);
+      setEndDate(undefined);
+    }
+  }, [leaveType, startDate]);
+
   // Voice-to-text for the Reason field. Uses the browser's Web Speech API
   // (free, no backend) — works in Chrome/Edge/Safari. The mic button is
   // hidden entirely on unsupported browsers.
@@ -144,7 +157,10 @@ export function NewLeaveRequestForm({
         let finalChunk = "";
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const result = event.results[i];
-          const transcript = result[0].transcript;
+          // Spec allows zero alternatives in a SpeechRecognitionResult;
+          // skip rather than crash on transcript-of-undefined.
+          const transcript = result[0]?.transcript;
+          if (!transcript) continue;
           if (result.isFinal) finalChunk += transcript;
           else interim += transcript;
         }

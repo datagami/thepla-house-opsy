@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { logEntityActivity } from "@/lib/services/activity-log";
 import { ActivityType, LeaveType } from "@prisma/client";
 import { notifyNewLeaveRequest } from "@/lib/services/leave-notifications";
+import { differenceInCalendarDays, startOfDay } from "date-fns";
 
 export async function POST(req: Request) {
   try {
@@ -29,11 +30,16 @@ export async function POST(req: Request) {
     // Annual leave must be filed at least 15 days before the start date.
     // Emergency leave bypasses this (short-notice is the whole point).
     // The constant lives here AND in the form — kept in sync intentionally.
+    // Use differenceInCalendarDays + startOfDay (same helpers the client form
+    // uses) so the boundary is computed in the same timezone on both sides.
+    // Previous `Date#setHours(0,0,0,0)` math diverged from the client on
+    // cross-TZ deployments at the day boundary.
     const ANNUAL_LEAVE_MIN_ADVANCE_DAYS = 15;
     if (leaveType === "ANNUAL") {
-      const startMs = new Date(startDate).setHours(0, 0, 0, 0);
-      const todayMs = new Date().setHours(0, 0, 0, 0);
-      const advanceDays = Math.floor((startMs - todayMs) / 86_400_000);
+      const advanceDays = differenceInCalendarDays(
+        startOfDay(new Date(startDate)),
+        startOfDay(new Date())
+      );
       if (advanceDays < ANNUAL_LEAVE_MIN_ADVANCE_DAYS) {
         return NextResponse.json(
           {
@@ -193,22 +199,22 @@ export async function POST(req: Request) {
     // Notify role mailboxes of the new leave request after the response is sent.
     // notifyNewLeaveRequest swallows its own errors, so this can never break creation
     // and `after()` keeps the work alive on serverless runtimes past the response.
+    // Everything inside this after() callback — including the DB roundtrip for
+    // PDF fields and the PDF render — runs AFTER the JSON response is flushed,
+    // so user-facing latency is unaffected.
     const employeeName =
       targetUserId === sessionUserId ? requesterName : targetUserName;
-    // Pull the employee's branch / department / doj / numId so the PDF
-    // attachment in the email can render the same fields as the on-screen
-    // form. Self-creation uses the session user; on-behalf uses the target.
-    const employeeForPdf = await prisma.user.findUnique({
-      where: { id: targetUserId },
-      select: {
-        numId: true,
-        doj: true,
-        department: { select: { name: true } },
-        branch: { select: { name: true } },
-      },
-    });
-    after(
-      notifyNewLeaveRequest({
+    after(async () => {
+      const employeeForPdf = await prisma.user.findUnique({
+        where: { id: targetUserId },
+        select: {
+          numId: true,
+          doj: true,
+          department: { select: { name: true } },
+          branch: { select: { name: true } },
+        },
+      });
+      await notifyNewLeaveRequest({
         leaveRequestId: leaveRequest.id,
         leaveRequestNumId: leaveRequest.numId,
         filedAt: leaveRequest.createdAt,
@@ -222,8 +228,8 @@ export async function POST(req: Request) {
         startDate,
         endDate,
         reason,
-      })
-    );
+      });
+    });
 
     return NextResponse.json(leaveRequest);
   } catch (error) {

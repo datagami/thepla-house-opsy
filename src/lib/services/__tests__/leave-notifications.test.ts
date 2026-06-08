@@ -11,9 +11,10 @@ vi.mock('@/lib/services/email', () => ({
   sendEmail: vi.fn(),
 }));
 
-// PDF generation is heavy (loads @react-pdf/renderer) — mock it so unit tests
-// stay fast. Tests that need to verify attachment shape inspect the mocked
-// return value.
+// PDF generation is heavy (loads @react-pdf/renderer) — mock it for the unit
+// tests in this file so they stay fast. A separate file exercises the real
+// renderer end-to-end (see leave-application-pdf.test.ts) so this mock can't
+// silently mask a real render failure.
 vi.mock('@/lib/services/leave-application-pdf', () => ({
   renderLeaveApplicationPdf: vi.fn(async () => Buffer.from('FAKE-PDF')),
 }));

@@ -61,6 +61,7 @@ interface LeaveRequestTableProps {
   showBranch?: boolean;
   userRole: string;
   userId: string;
+  userBranchId?: string | null;
 }
 
 function toDate(value: unknown): Date {
@@ -95,14 +96,37 @@ function getRequestStatusClass(status: string) {
   return "bg-yellow-100 text-yellow-900 border-yellow-200";
 }
 
-export function LeaveRequestTable({ 
-  requests, 
+export function LeaveRequestTable({
+  requests,
   showBranch = false,
   userRole,
   userId,
+  userBranchId = null,
 }: LeaveRequestTableProps) {
   const router = useRouter();
   const canReview = ["MANAGEMENT", "HR"].includes(userRole);
+
+  // Mirror the access-control check from the print page (server-authoritative
+  // — see src/app/(print)/leave-requests/[id]/form/page.tsx). Used here only
+  // to hide the Form button on rows the user couldn't open anyway. The server
+  // still redirects on unauthorised access, so this is UX, not security.
+  const canDownloadForm = React.useCallback(
+    (request: LeaveRequest) => {
+      const ownerId = request.userId;
+      const ownerBranchId = request.user?.branch?.id ?? null;
+      if (ownerId === userId) return true; // own request
+      if (userRole === "HR" || userRole === "MANAGEMENT") return true;
+      if (
+        userRole === "BRANCH_MANAGER" &&
+        userBranchId &&
+        ownerBranchId === userBranchId
+      ) {
+        return true;
+      }
+      return false;
+    },
+    [userId, userRole, userBranchId]
+  );
   const [timeRange, setTimeRange] = React.useState<"current_future" | "past">("current_future");
   const [view, setView] = React.useState<"table" | "calendar">("table");
   const [month, setMonth] = React.useState<Date>(() => startOfMonth(new Date()));
@@ -459,17 +483,19 @@ export function LeaveRequestTable({
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      title="Download printable leave application form (PDF)"
-                      onClick={() =>
-                        window.open(`/leave-requests/${request.id}/form`, "_blank")
-                      }
-                    >
-                      <FileText className="mr-1 h-4 w-4" />
-                      Form
-                    </Button>
+                    {canDownloadForm(request) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        title="Download printable leave application form (PDF)"
+                        onClick={() =>
+                          window.open(`/leave-requests/${request.id}/form`, "_blank")
+                        }
+                      >
+                        <FileText className="mr-1 h-4 w-4" />
+                        Form
+                      </Button>
+                    )}
                     {canReview && request.status === "PENDING" && (
                       <>
                         <Button

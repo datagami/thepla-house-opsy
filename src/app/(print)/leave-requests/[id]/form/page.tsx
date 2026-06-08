@@ -153,7 +153,7 @@ export default async function LeaveApplicationPrintPage({ params }: PageProps) {
           </div>
           <div className="field-row">
             <span className="k">Employee ID</span>
-            <span className="v num">{employee?.numId ?? '—'}</span>
+            <span className="v num">{employee?.numId}</span>
           </div>
           <div className="field-row">
             <span className="k">Department</span>
@@ -333,7 +333,7 @@ export default async function LeaveApplicationPrintPage({ params }: PageProps) {
           </div>
           <div className="field-row">
             <span className="k">कर्म. आई.डी.</span>
-            <span className="v num">{employee?.numId ?? '—'}</span>
+            <span className="v num">{employee?.numId}</span>
           </div>
           <div className="field-row">
             <span className="k">विभाग</span>
