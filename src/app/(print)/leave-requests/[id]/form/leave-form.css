@@ -42,6 +42,16 @@
 
   --font-body:    'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-display: 'Epilogue', 'Inter', system-ui, sans-serif;
+  /* Devanagari fallback chain — browsers ship at least one of these. */
+  --font-hindi:   'Noto Sans Devanagari', 'Mangal', 'Kohinoor Devanagari',
+                  'Sanskrit Text', 'Inter', system-ui, sans-serif;
+}
+
+/* Hindi sub-line shown below each English block — slightly smaller and
+   muted so the English reads as the primary line. */
+.hi {
+  font-family: var(--font-hindi);
+  color: var(--ink-2);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -63,7 +73,7 @@ html, body {
 .page {
   width: 210mm;
   margin: 24px auto;
-  padding: 10mm 16mm 12mm;
+  padding: 7mm 16mm 10mm;
   background: #fff;
   box-shadow: 0 12px 40px rgba(0,0,0,0.10);
   -webkit-print-color-adjust: exact;
@@ -80,7 +90,7 @@ html, body {
   .page {
     width: 210mm;
     margin: 0;
-    padding: 10mm 16mm 12mm;
+    padding: 7mm 16mm 10mm;
     box-shadow: none;
   }
   .field-row, .signature-block, .sig-row, .hr-use, .reason-block, .field-grid, .undertaking {
@@ -173,6 +183,13 @@ html, body {
   height: 2px;
   background: var(--gold);
   margin: 8px auto 0;
+}
+.doc-title .hi {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: none;
 }
 
 /* ---------- "To" block ---------- */
@@ -313,6 +330,80 @@ p.body strong {
   color: var(--ink-2);
   font-style: italic;
 }
+.declaration .hi {
+  display: block;
+  margin-top: 3px;
+  font-style: normal;
+  font-size: 10px;
+  color: var(--ink-3);
+}
+.body-hi {
+  display: block;
+  margin-top: 2px;
+  margin-bottom: 6px;
+  font-size: 10.5px;
+  line-height: 1.55;
+  color: var(--ink-3);
+  font-family: var(--font-hindi);
+  text-align: justify;
+}
+p.body-hi { margin-bottom: 6px; }
+.undertaking-list .hi,
+.undertaking p .hi {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--ink-3);
+  font-family: var(--font-hindi);
+}
+.undertaking .undertaking-head .hi {
+  display: block;
+  margin-top: 2px;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--ink-3);
+}
+.subject .hi {
+  display: block;
+  margin-top: 1px;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-2);
+  font-family: var(--font-hindi);
+}
+.to-block .recipient .hi {
+  display: block;
+  margin-top: 1px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-3);
+  font-family: var(--font-hindi);
+}
+.signature-block .col .role .hi {
+  display: block;
+  margin-top: 1px;
+  font-size: 8.5px;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--ink-3);
+  font-family: var(--font-hindi);
+}
+.reason-block .k .hi {
+  margin-left: 6px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-3);
+  font-family: var(--font-hindi);
+}
+.hr-use .head .hi {
+  margin-left: 6px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-3);
+  font-family: var(--font-hindi);
+}
 
 /* ---------- Undertaking on failure to resume duty ---------- */
 .undertaking {
@@ -357,10 +448,10 @@ p.body strong {
 
 /* ---------- Signature block ---------- */
 .signature-block {
-  margin-top: 18px;
+  margin-top: 14px;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 22px;
+  gap: 18px;
 }
 .signature-block .col .role {
   font-size: 9px;
@@ -372,7 +463,7 @@ p.body strong {
 }
 .signature-block .col .line {
   border-top: 1px solid var(--ink-2);
-  margin-top: 26px;
+  margin-top: 22px;
   margin-bottom: 4px;
 }
 .signature-block .col .lbl {
@@ -390,8 +481,8 @@ p.body strong {
 
 /* ---------- HR-use box ---------- */
 .hr-use {
-  margin-top: 16px;
-  padding: 10px 12px;
+  margin-top: 12px;
+  padding: 8px 12px;
   border: 1px dashed var(--rule-strong);
   border-radius: 4px;
   background: var(--gold-soft);
@@ -424,7 +515,7 @@ p.body strong {
 
 /* ---------- Page footer ---------- */
 .page-foot {
-  margin-top: 14px;
+  margin-top: 10px;
   display: flex;
   justify-content: space-between;
   font-size: 8.5px;

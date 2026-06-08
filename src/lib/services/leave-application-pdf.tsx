@@ -430,6 +430,17 @@ export function LeaveApplicationDocument({ input }: { input: LeaveApplicationPdf
               of such withholding.
             </Text>
           </View>
+          <View style={styles.undertakingItem}>
+            <Text style={styles.undertakingBullet}>(iv)</Text>
+            <Text style={{ flex: 1 }}>
+              Routine or general representations — including illness without documentary support
+              (&quot;bimar ho gaya hu&quot;), personal financial constraints (&quot;paise nahi hain&quot;), family
+              disputes or similar reasons — shall NOT be regarded as valid justification for failure to resume duty
+              within the sanctioned period. Only verified medical emergencies, supported by a certificate issued by a
+              Registered Medical Practitioner, or other circumstances accepted at the sole discretion of the Company,
+              shall be entertained.
+            </Text>
+          </View>
         </View>
 
         <View style={styles.signatureRow}>
