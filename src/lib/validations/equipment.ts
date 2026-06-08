@@ -17,7 +17,7 @@ export const equipmentCreateSchema = z.object({
   branchId: z.string().min(1, "Outlet is required"),
   location: z.string().trim().optional().nullable(),
   frequencyMonths: z.coerce.number().int().positive().nullable().optional(),
-  reminderLeadDays: z.coerce.number().int().min(0).max(365).default(30),
+  reminderLeadDays: z.coerce.number().int().min(0).max(365).default(15),
   nextDueDate: z.string().optional().nullable(),
   notes: z.string().trim().optional().nullable(),
 });

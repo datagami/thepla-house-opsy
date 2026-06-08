@@ -66,7 +66,7 @@ export function EquipmentForm({
     frequencyMonths:
       initial?.frequencyMonths != null ? String(initial.frequencyMonths) : "",
     reminderLeadDays:
-      initial?.reminderLeadDays != null ? String(initial.reminderLeadDays) : "30",
+      initial?.reminderLeadDays != null ? String(initial.reminderLeadDays) : "15",
     notes: initial?.notes ?? "",
   });
 
@@ -87,7 +87,7 @@ export function EquipmentForm({
         form.frequencyMonths.trim() === ""
           ? null
           : Number(form.frequencyMonths);
-      const reminderLeadDays = Number(form.reminderLeadDays) || 30;
+      const reminderLeadDays = Number(form.reminderLeadDays) || 15;
 
       const body = {
         name: form.name.trim(),
@@ -236,7 +236,7 @@ export function EquipmentForm({
                       set("reminderLeadDays", v);
                     }
                   }}
-                  placeholder="30"
+                  placeholder="15"
                   inputMode="numeric"
                   className="pr-12"
                 />

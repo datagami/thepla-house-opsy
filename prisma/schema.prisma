@@ -794,7 +794,7 @@ model Equipment {
   category         EquipmentCategory @default(OTHER)
   location         String?
   frequencyMonths  Int?              @map("frequency_months")
-  reminderLeadDays Int               @default(30) @map("reminder_lead_days")
+  reminderLeadDays Int               @default(15) @map("reminder_lead_days")
   nextDueDate      DateTime?         @map("next_due_date")
   lastServiceDate  DateTime?         @map("last_service_date")
   snoozedUntil     DateTime?         @map("snoozed_until")

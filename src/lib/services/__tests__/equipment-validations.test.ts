@@ -17,7 +17,7 @@ describe("equipmentCreateSchema", () => {
   it("accepts a minimal valid item", () => {
     const r = equipmentCreateSchema.safeParse({ name: "Extinguisher", category: "FIRE_SAFETY", branchId: "b-1" });
     expect(r.success).toBe(true);
-    if (r.success) expect(r.data.reminderLeadDays).toBe(30); // default
+    if (r.success) expect(r.data.reminderLeadDays).toBe(15); // default
   });
 
   it("rejects empty name and bad category", () => {
