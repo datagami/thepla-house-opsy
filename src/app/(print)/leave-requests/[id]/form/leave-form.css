@@ -47,11 +47,18 @@
                   'Sanskrit Text', 'Inter', system-ui, sans-serif;
 }
 
-/* Hindi sub-line shown below each English block — slightly smaller and
-   muted so the English reads as the primary line. */
-.hi {
+/* Page-level Hindi mode — applied to the second .page so its body
+   inherits the Devanagari fallback font. Keeps the rest of the print
+   styles intact while making the entire page render in Hindi.       */
+.page-hi {
   font-family: var(--font-hindi);
-  color: var(--ink-2);
+}
+.page-hi p.body,
+.page-hi .declaration,
+.page-hi .undertaking p,
+.page-hi .undertaking-list,
+.page-hi .undertaking-list li {
+  text-align: justify;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -78,7 +85,9 @@ html, body {
   box-shadow: 0 12px 40px rgba(0,0,0,0.10);
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
+  page-break-after: always;
 }
+.page:last-of-type { page-break-after: auto; }
 
 @media print {
   *, *::before, *::after {
@@ -92,6 +101,12 @@ html, body {
     margin: 0;
     padding: 7mm 16mm 10mm;
     box-shadow: none;
+    page-break-after: auto;
+    break-after: auto;
+  }
+  .page + .page {
+    page-break-before: always;
+    break-before: page;
   }
   .field-row, .signature-block, .sig-row, .hr-use, .reason-block, .field-grid, .undertaking {
     break-inside: avoid;
