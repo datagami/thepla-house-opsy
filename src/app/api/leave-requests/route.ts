@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { logEntityActivity } from "@/lib/services/activity-log";
 import { ActivityType, LeaveType } from "@prisma/client";
 import { notifyNewLeaveRequest } from "@/lib/services/leave-notifications";
+import { differenceInCalendarDays, startOfDay } from "date-fns";
 
 export async function POST(req: Request) {
   try {
@@ -24,6 +25,50 @@ export async function POST(req: Request) {
         { error: "Missing required fields" },
         { status: 400 }
       );
+    }
+
+    // Validate leaveType against the Prisma enum up-front so an invalid
+    // value surfaces as a clean 400 with context, rather than as a generic
+    // 500 from the Prisma insert later. Keep this list in sync with
+    // prisma/schema.prisma `enum LeaveType`.
+    const VALID_LEAVE_TYPES = [
+      "CASUAL",
+      "SICK",
+      "ANNUAL",
+      "UNPAID",
+      "OTHER",
+      "EMERGENCY",
+    ] as const;
+    if (!VALID_LEAVE_TYPES.includes(leaveType)) {
+      return NextResponse.json(
+        {
+          error: `Invalid leaveType "${leaveType}". Allowed: ${VALID_LEAVE_TYPES.join(", ")}.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Annual leave must be filed at least 15 days before the start date.
+    // Emergency leave bypasses this (short-notice is the whole point).
+    // The constant lives here AND in the form — kept in sync intentionally.
+    // Use differenceInCalendarDays + startOfDay (same helpers the client form
+    // uses) so the boundary is computed in the same timezone on both sides.
+    // Previous `Date#setHours(0,0,0,0)` math diverged from the client on
+    // cross-TZ deployments at the day boundary.
+    const ANNUAL_LEAVE_MIN_ADVANCE_DAYS = 15;
+    if (leaveType === "ANNUAL") {
+      const advanceDays = differenceInCalendarDays(
+        startOfDay(new Date(startDate)),
+        startOfDay(new Date())
+      );
+      if (advanceDays < ANNUAL_LEAVE_MIN_ADVANCE_DAYS) {
+        return NextResponse.json(
+          {
+            error: `Annual leave must be applied at least ${ANNUAL_LEAVE_MIN_ADVANCE_DAYS} days before the start date. For shorter notice, use Emergency leave.`,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     const sessionUserId = (session.user as { id?: string; role?: string; branchId?: string | null }).id;
@@ -78,6 +123,27 @@ export async function POST(req: Request) {
           targetUserName = employee.name ?? null;
         }
       }
+    } else if (role === "HR" || role === "MANAGEMENT") {
+      // HR / Management may file leave for ANY active user (across branches),
+      // including themselves. If no userId is provided, default to self.
+      if (!requestedUserId || requestedUserId === sessionUserId) {
+        targetUserId = sessionUserId;
+      } else {
+        const target = await prisma.user.findFirst({
+          where: { id: requestedUserId, status: "ACTIVE" },
+          select: { id: true, name: true },
+        });
+
+        if (!target) {
+          return NextResponse.json(
+            { error: "Employee not found or inactive" },
+            { status: 404 }
+          );
+        }
+
+        targetUserId = target.id;
+        targetUserName = target.name ?? null;
+      }
     } else if (role === "EMPLOYEE") {
       targetUserId = sessionUserId;
     } else {
@@ -112,12 +178,9 @@ export async function POST(req: Request) {
       const isSelf = targetUserId === sessionUserId;
       return NextResponse.json(
         {
-          error:
-            role === "BRANCH_MANAGER"
-              ? isSelf
-                ? "You already have a leave request for these dates"
-                : "Employee already has a leave request for these dates"
-              : "You already have a leave request for these dates",
+          error: isSelf
+            ? "You already have a leave request for these dates"
+            : "Employee already has a leave request for these dates",
         },
         { status: 400 }
       );
@@ -128,7 +191,7 @@ export async function POST(req: Request) {
         userId: targetUserId,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
-        leaveType: leaveType as "CASUAL" | "SICK" | "ANNUAL" | "UNPAID" | "OTHER",
+        leaveType: leaveType as "CASUAL" | "SICK" | "ANNUAL" | "UNPAID" | "OTHER" | "EMERGENCY",
         reason,
         status: "PENDING",
       },
@@ -140,11 +203,9 @@ export async function POST(req: Request) {
       sessionUserId,
       "LeaveRequest",
       leaveRequest.id,
-      role === "BRANCH_MANAGER"
-        ? targetUserId === sessionUserId
-          ? `Created leave request for self: ${leaveType} from ${startDate} to ${endDate}`
-          : `Created leave request for ${targetUserName ?? "employee"}: ${leaveType} from ${startDate} to ${endDate}`
-        : `Created leave request: ${leaveType} from ${startDate} to ${endDate}`,
+      targetUserId === sessionUserId
+        ? `Created leave request for self: ${leaveType} from ${startDate} to ${endDate}`
+        : `Created leave request for ${targetUserName ?? "employee"}: ${leaveType} from ${startDate} to ${endDate}`,
       {
         leaveRequestId: leaveRequest.id,
         userId: leaveRequest.userId,
@@ -159,19 +220,64 @@ export async function POST(req: Request) {
     // Notify role mailboxes of the new leave request after the response is sent.
     // notifyNewLeaveRequest swallows its own errors, so this can never break creation
     // and `after()` keeps the work alive on serverless runtimes past the response.
+    // Everything inside this after() callback — including the DB roundtrip for
+    // PDF fields and the PDF render — runs AFTER the JSON response is flushed,
+    // so user-facing latency is unaffected.
     const employeeName =
       targetUserId === sessionUserId ? requesterName : targetUserName;
-    after(
-      notifyNewLeaveRequest({
-        leaveRequestId: leaveRequest.id,
-        requesterName,
-        employeeName,
-        leaveType: leaveType as LeaveType,
-        startDate,
-        endDate,
-        reason,
-      })
-    );
+    after(async () => {
+      // Belt-and-braces: notifyNewLeaveRequest already swallows its own
+      // errors, but the prisma.user.findUnique BEFORE it does not. If the
+      // DB blips for the PDF-fields lookup, still try to send the email
+      // (with null PDF fields — the PDF renderer falls back to "—") and
+      // log a single line so the failure is debuggable.
+      let employeeForPdf: {
+        numId: number;
+        doj: Date | null;
+        department: { name: string } | null;
+        branch: { name: string } | null;
+      } | null = null;
+      try {
+        employeeForPdf = await prisma.user.findUnique({
+          where: { id: targetUserId },
+          select: {
+            numId: true,
+            doj: true,
+            department: { select: { name: true } },
+            branch: { select: { name: true } },
+          },
+        });
+      } catch (err) {
+        console.error(
+          "[leave-requests] post-response employee lookup failed; notification will go out with null PDF fields:",
+          leaveRequest.id,
+          err
+        );
+      }
+      try {
+        await notifyNewLeaveRequest({
+          leaveRequestId: leaveRequest.id,
+          leaveRequestNumId: leaveRequest.numId,
+          filedAt: leaveRequest.createdAt,
+          requesterName,
+          employeeName,
+          employeeNumId: employeeForPdf?.numId ?? null,
+          employeeDepartment: employeeForPdf?.department?.name ?? null,
+          employeeBranch: employeeForPdf?.branch?.name ?? null,
+          employeeDoj: employeeForPdf?.doj ?? null,
+          leaveType: leaveType as LeaveType,
+          startDate,
+          endDate,
+          reason,
+        });
+      } catch (err) {
+        console.error(
+          "[leave-requests] post-response notify failed for",
+          leaveRequest.id,
+          err
+        );
+      }
+    });
 
     return NextResponse.json(leaveRequest);
   } catch (error) {

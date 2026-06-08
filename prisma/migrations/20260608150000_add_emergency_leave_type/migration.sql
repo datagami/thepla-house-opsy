@@ -1,0 +1,2 @@
+-- AlterEnum: add EMERGENCY to LeaveType
+ALTER TYPE "LeaveType" ADD VALUE IF NOT EXISTS 'EMERGENCY';

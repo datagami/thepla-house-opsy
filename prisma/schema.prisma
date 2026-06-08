@@ -29,6 +29,7 @@ enum LeaveType {
   ANNUAL
   UNPAID
   OTHER
+  EMERGENCY
 }
 
 enum AttendanceStatus {

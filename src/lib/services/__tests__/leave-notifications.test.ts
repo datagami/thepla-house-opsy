@@ -11,6 +11,14 @@ vi.mock('@/lib/services/email', () => ({
   sendEmail: vi.fn(),
 }));
 
+// PDF generation is heavy (loads @react-pdf/renderer) — mock it for the unit
+// tests in this file so they stay fast. A separate file exercises the real
+// renderer end-to-end (see leave-application-pdf.test.ts) so this mock can't
+// silently mask a real render failure.
+vi.mock('@/lib/services/leave-application-pdf', () => ({
+  renderLeaveApplicationPdf: vi.fn(async () => Buffer.from('FAKE-PDF')),
+}));
+
 const sendEmailMock = sendEmail as unknown as ReturnType<typeof vi.fn>;
 
 const base: NewLeaveRequestNotification = {
@@ -121,5 +129,34 @@ describe('notifyNewLeaveRequest', () => {
   it('never throws when sendEmail fails (email failure cannot break creation)', async () => {
     sendEmailMock.mockRejectedValue(new Error('SMTP down'));
     await expect(notifyNewLeaveRequest(base)).resolves.toBeUndefined();
+  });
+
+  it('attaches the leave application form as a PDF', async () => {
+    sendEmailMock.mockResolvedValue({ messageId: 'ok' });
+    await notifyNewLeaveRequest({
+      ...base,
+      leaveRequestNumId: 42,
+      filedAt: '2026-05-29T10:00:00.000Z',
+    });
+    const arg = sendEmailMock.mock.calls[0][0];
+    expect(arg.attachments).toBeDefined();
+    expect(arg.attachments).toHaveLength(1);
+    const a = arg.attachments[0];
+    expect(a.contentType).toBe('application/pdf');
+    expect(a.filename).toMatch(/^leave-application-.*\.pdf$/);
+    expect(Buffer.isBuffer(a.content)).toBe(true);
+  });
+
+  it('still sends the email (without attachment) if PDF rendering fails', async () => {
+    sendEmailMock.mockResolvedValue({ messageId: 'ok' });
+    const { renderLeaveApplicationPdf } = await import(
+      '@/lib/services/leave-application-pdf'
+    );
+    (renderLeaveApplicationPdf as unknown as ReturnType<typeof vi.fn>)
+      .mockRejectedValueOnce(new Error('pdf render boom'));
+    await notifyNewLeaveRequest(base);
+    expect(sendEmailMock).toHaveBeenCalledTimes(1);
+    const arg = sendEmailMock.mock.calls[0][0];
+    expect(arg.attachments).toBeUndefined();
   });
 });

@@ -52,7 +52,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, FileText } from "lucide-react";
 import { DownloadLeaveReport } from "@/components/leave-requests/download-leave-report";
 
 
@@ -61,6 +61,7 @@ interface LeaveRequestTableProps {
   showBranch?: boolean;
   userRole: string;
   userId: string;
+  userBranchId?: string | null;
 }
 
 function toDate(value: unknown): Date {
@@ -95,14 +96,37 @@ function getRequestStatusClass(status: string) {
   return "bg-yellow-100 text-yellow-900 border-yellow-200";
 }
 
-export function LeaveRequestTable({ 
-  requests, 
+export function LeaveRequestTable({
+  requests,
   showBranch = false,
   userRole,
   userId,
+  userBranchId = null,
 }: LeaveRequestTableProps) {
   const router = useRouter();
   const canReview = ["MANAGEMENT", "HR"].includes(userRole);
+
+  // Mirror the access-control check from the print page (server-authoritative
+  // — see src/app/(print)/leave-requests/[id]/form/page.tsx). Used here only
+  // to hide the Form button on rows the user couldn't open anyway. The server
+  // still redirects on unauthorised access, so this is UX, not security.
+  const canDownloadForm = React.useCallback(
+    (request: LeaveRequest) => {
+      const ownerId = request.userId;
+      const ownerBranchId = request.user?.branch?.id ?? null;
+      if (ownerId === userId) return true; // own request
+      if (userRole === "HR" || userRole === "MANAGEMENT") return true;
+      if (
+        userRole === "BRANCH_MANAGER" &&
+        userBranchId &&
+        ownerBranchId === userBranchId
+      ) {
+        return true;
+      }
+      return false;
+    },
+    [userId, userRole, userBranchId]
+  );
   const [timeRange, setTimeRange] = React.useState<"current_future" | "past">("current_future");
   const [view, setView] = React.useState<"table" | "calendar">("table");
   const [month, setMonth] = React.useState<Date>(() => startOfMonth(new Date()));
@@ -412,14 +436,28 @@ export function LeaveRequestTable({
               <TableHead>End Date</TableHead>
               <TableHead>Reason</TableHead>
               <TableHead>Status</TableHead>
-              {canReview && <TableHead>Actions</TableHead>}
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredRequests.map((request) => (
               <TableRow key={request.id}>
                 <TableCell>
-                  {request.user ? <EmployeeIdentity user={request.user} size="md" /> : "-"}
+                  <div
+                    className="w-[180px]"
+                    title={request.user?.name ?? ""}
+                  >
+                    {request.user ? (
+                      <EmployeeIdentity
+                        user={request.user}
+                        size="md"
+                        wrap
+                        className="flex w-full"
+                      />
+                    ) : (
+                      "-"
+                    )}
+                  </div>
                 </TableCell>
                 {showBranch && (
                   <TableCell>{request.user?.branch?.name || "-"}</TableCell>
@@ -430,16 +468,36 @@ export function LeaveRequestTable({
                 <TableCell>{request.leaveType}</TableCell>
                 <TableCell>{format(toDate(request.startDate), "PPP")}</TableCell>
                 <TableCell>{format(toDate(request.endDate), "PPP")}</TableCell>
-                <TableCell className="max-w-[320px] truncate">{request.reason}</TableCell>
+                <TableCell>
+                  <div
+                    className="max-w-[200px] whitespace-normal break-words text-sm leading-snug"
+                    title={request.reason}
+                  >
+                    {request.reason}
+                  </div>
+                </TableCell>
                 <TableCell>
                   <Badge className={statusColors[request.status as keyof typeof statusColors]}>
                     {request.status}
                   </Badge>
                 </TableCell>
-                {canReview && (
-                  <TableCell>
-                    {request.status === "PENDING" && (
-                      <div className="flex space-x-2">
+                <TableCell>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {canDownloadForm(request) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        title="Download printable leave application form (PDF)"
+                        onClick={() =>
+                          window.open(`/leave-requests/${request.id}/form`, "_blank")
+                        }
+                      >
+                        <FileText className="mr-1 h-4 w-4" />
+                        Form
+                      </Button>
+                    )}
+                    {canReview && request.status === "PENDING" && (
+                      <>
                         <Button
                           size="sm"
                           variant="outline"
@@ -456,10 +514,10 @@ export function LeaveRequestTable({
                         >
                           Reject
                         </Button>
-                      </div>
+                      </>
                     )}
-                  </TableCell>
-                )}
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -597,26 +655,41 @@ export function LeaveRequestTable({
                             {request.status}
                           </Badge>
 
-                          {canReview && request.status === "PENDING" && (
-                            <div className="flex gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {canDownloadForm(request) && (
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="bg-green-100 hover:bg-green-200 text-green-800"
-                                onClick={() => handleStatusUpdate(request.id, "APPROVED")}
+                                title="Download printable leave application form (PDF)"
+                                onClick={() =>
+                                  window.open(`/leave-requests/${request.id}/form`, "_blank")
+                                }
                               >
-                                Approve
+                                <FileText className="mr-1 h-4 w-4" />
+                                Download Form
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="bg-red-100 hover:bg-red-200 text-red-800"
-                                onClick={() => handleStatusUpdate(request.id, "REJECTED")}
-                              >
-                                Reject
-                              </Button>
-                            </div>
-                          )}
+                            )}
+                            {canReview && request.status === "PENDING" && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="bg-green-100 hover:bg-green-200 text-green-800"
+                                  onClick={() => handleStatusUpdate(request.id, "APPROVED")}
+                                >
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="bg-red-100 hover:bg-red-200 text-red-800"
+                                  onClick={() => handleStatusUpdate(request.id, "REJECTED")}
+                                >
+                                  Reject
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>

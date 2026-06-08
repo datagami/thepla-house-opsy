@@ -19,6 +19,10 @@ interface EmployeeIdentityProps {
   subtitle?: React.ReactNode;
   href?: string;
   className?: string;
+  // When true, allow long names to wrap onto multiple lines instead of
+  // truncating with an ellipsis. Useful inside narrow table cells where
+  // horizontal scroll is worse than a slightly taller row.
+  wrap?: boolean;
 }
 
 const AVATAR_SIZE: Record<Size, string> = {
@@ -45,7 +49,9 @@ export function EmployeeIdentity({
   subtitle,
   href,
   className,
+  wrap = false,
 }: EmployeeIdentityProps) {
+  const lineWrap = wrap ? "whitespace-normal break-words" : "truncate";
   const initials = getInitials(user.name);
   const hue = user.name ? stringToHue(user.name) : null;
   const fallbackStyle = hue !== null
@@ -74,18 +80,18 @@ export function EmployeeIdentity({
 
       {size === "sm" ? (
         <div className="flex min-w-0 items-baseline gap-1.5">
-          <span className={cn(NAME_TEXT[size], "truncate")}>{user.name ?? "Unnamed"}</span>
+          <span className={cn(NAME_TEXT[size], lineWrap)}>{user.name ?? "Unnamed"}</span>
           {idLine !== null && (
             <span className={cn(ID_TEXT[size], "shrink-0")}>· {idLine}</span>
           )}
         </div>
       ) : (
         <div className="min-w-0">
-          <div className={cn(NAME_TEXT[size], "truncate")}>
+          <div className={cn(NAME_TEXT[size], lineWrap)}>
             {user.name ?? "Unnamed"}
           </div>
           {idLine !== null && (
-            <div className={cn(ID_TEXT[size], "truncate")}>{idLine}</div>
+            <div className={cn(ID_TEXT[size], lineWrap)}>{idLine}</div>
           )}
         </div>
       )}
