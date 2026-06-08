@@ -24,16 +24,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import { format, differenceInDays, addDays } from "date-fns";
-import { Calendar as CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -70,11 +62,6 @@ export function NewLeaveRequestForm({
   const [employeeId, setEmployeeId] = useState<string>(() =>
     canFileForOthers(userRole) ? "SELF" : ""
   );
-  const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
-  const selectedEmployee =
-    employeeId && employeeId !== "SELF"
-      ? employees.find((e) => e.id === employeeId)
-      : null;
 
   const handleSubmit = async () => {
     if (!startDate || !endDate || !leaveType || !reason) {
@@ -144,109 +131,25 @@ export function NewLeaveRequestForm({
           {canFileForOthers(userRole) && (
             <div className="space-y-2">
               <label className="text-sm font-medium">Employee</label>
-              {userRole === "BRANCH_MANAGER" ? (
-                <Select value={employeeId} onValueChange={setEmployeeId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select employee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="SELF">Myself</SelectItem>
-                    {employees.map((e) => (
+              <Select value={employeeId} onValueChange={setEmployeeId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select employee" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SELF">Myself</SelectItem>
+                  {employees.map((e) => {
+                    const meta = [e.branchName, e.departmentName]
+                      .filter(Boolean)
+                      .join(" · ");
+                    return (
                       <SelectItem key={e.id} value={e.id}>
                         {(e.name ?? "Unnamed")}
-                        {e.departmentName ? ` (${e.departmentName})` : ""}
+                        {meta ? ` (${meta})` : ""}
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                // HR / MANAGEMENT — searchable combobox; list spans all branches.
-                <Popover
-                  open={employeePickerOpen}
-                  onOpenChange={setEmployeePickerOpen}
-                >
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={employeePickerOpen}
-                      className="w-full justify-between font-normal"
-                    >
-                      <span className="truncate">
-                        {employeeId === "SELF"
-                          ? "Myself"
-                          : selectedEmployee
-                            ? `${selectedEmployee.name ?? "Unnamed"}${
-                                selectedEmployee.branchName
-                                  ? ` · ${selectedEmployee.branchName}`
-                                  : ""
-                              }`
-                            : "Select employee"}
-                      </span>
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                    <Command>
-                      <CommandInput placeholder="Search by name, branch, or department…" />
-                      <CommandList>
-                        <CommandEmpty>No employee found.</CommandEmpty>
-                        <CommandGroup>
-                          <CommandItem
-                            value="myself"
-                            onSelect={() => {
-                              setEmployeeId("SELF");
-                              setEmployeePickerOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                employeeId === "SELF" ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            Myself
-                          </CommandItem>
-                          {employees.map((e) => {
-                            const label = [
-                              e.name ?? "Unnamed",
-                              e.branchName,
-                              e.departmentName,
-                            ]
-                              .filter(Boolean)
-                              .join(" · ");
-                            return (
-                              <CommandItem
-                                key={e.id}
-                                value={label}
-                                onSelect={() => {
-                                  setEmployeeId(e.id);
-                                  setEmployeePickerOpen(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    employeeId === e.id ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                <div className="flex flex-col">
-                                  <span className="font-medium">{e.name ?? "Unnamed"}</span>
-                                  {(e.branchName || e.departmentName) && (
-                                    <span className="text-xs text-muted-foreground">
-                                      {[e.branchName, e.departmentName].filter(Boolean).join(" · ")}
-                                    </span>
-                                  )}
-                                </div>
-                              </CommandItem>
-                            );
-                          })}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              )}
+                    );
+                  })}
+                </SelectContent>
+              </Select>
             </div>
           )}
 
