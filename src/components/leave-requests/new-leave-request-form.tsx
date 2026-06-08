@@ -24,17 +24,20 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { format, differenceInDays, addDays } from "date-fns";
+import { format, differenceInDays, addDays, startOfDay } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 const LEAVE_TYPES = [
-  { value: "CASUAL", label: "Casual Leave" },
-  { value: "SICK", label: "Sick Leave" },
+  { value: "EMERGENCY", label: "Emergency Leave" },
   { value: "ANNUAL", label: "Annual Leave" },
-  { value: "UNPAID", label: "Unpaid Leave" },
 ];
+
+// Annual leave must be filed at least this many calendar days before the
+// start date — gives the team time to plan cover. Emergency leave has no
+// advance-notice requirement (that's the point of it).
+const ANNUAL_LEAVE_MIN_ADVANCE_DAYS = 15;
 
 type EmployeeOption = {
   id: string;
@@ -72,6 +75,16 @@ export function NewLeaveRequestForm({
     if (differenceInDays(endDate, startDate) < 0) {
       toast.error("End date cannot be before start date");
       return;
+    }
+
+    if (leaveType === "ANNUAL") {
+      const advance = differenceInDays(startOfDay(startDate), startOfDay(new Date()));
+      if (advance < ANNUAL_LEAVE_MIN_ADVANCE_DAYS) {
+        toast.error(
+          `Annual leave must be applied at least ${ANNUAL_LEAVE_MIN_ADVANCE_DAYS} days before the start date. For shorter notice, please use Emergency Leave.`
+        );
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -195,13 +208,26 @@ export function NewLeaveRequestForm({
                         setEndDate(addDays(date, 1));
                       }
                     }}
-                    disabled={(date) => 
-                      date < new Date(new Date().setHours(0, 0, 0, 0))
-                    }
+                    disabled={(date) => {
+                      const today = startOfDay(new Date());
+                      // Annual leave must start at least N days from today.
+                      // For Emergency leave (and any other type), today is fine.
+                      const minStart =
+                        leaveType === "ANNUAL"
+                          ? addDays(today, ANNUAL_LEAVE_MIN_ADVANCE_DAYS)
+                          : today;
+                      return date < minStart;
+                    }}
                     initialFocus
                   />
                 </PopoverContent>
               </Popover>
+              {leaveType === "ANNUAL" && (
+                <p className="text-xs text-muted-foreground">
+                  Annual leave must be applied at least {ANNUAL_LEAVE_MIN_ADVANCE_DAYS} days
+                  before the start date.
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">

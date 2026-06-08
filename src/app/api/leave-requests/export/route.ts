@@ -118,6 +118,7 @@ export async function GET(req: Request) {
         branch: string;
         department: string;
         totalLeaveDays: number;
+        emergencyLeaves: number;
         casualLeaves: number;
         sickLeaves: number;
         annualLeaves: number;
@@ -140,6 +141,7 @@ export async function GET(req: Request) {
           branch: leave.user.branch?.name ?? "N/A",
           department: leave.user.department?.name ?? "N/A",
           totalLeaveDays: 0,
+          emergencyLeaves: 0,
           casualLeaves: 0,
           sickLeaves: 0,
           annualLeaves: 0,
@@ -158,6 +160,9 @@ export async function GET(req: Request) {
         userStats.totalLeaveDays += days;
         
         switch (leave.leaveType) {
+          case "EMERGENCY":
+            userStats.emergencyLeaves += days;
+            break;
           case "CASUAL":
             userStats.casualLeaves += days;
             break;
@@ -198,9 +203,10 @@ export async function GET(req: Request) {
         Branch: user.branch,
         Department: user.department,
         "Total Leave Days": user.totalLeaveDays,
+        "Emergency Leaves": user.emergencyLeaves,
+        "Annual Leaves": user.annualLeaves,
         "Casual Leaves": user.casualLeaves,
         "Sick Leaves": user.sickLeaves,
-        "Annual Leaves": user.annualLeaves,
         "Unpaid Leaves": user.unpaidLeaves,
         "Other Leaves": user.otherLeaves,
         "Pending Requests": user.pendingRequests,

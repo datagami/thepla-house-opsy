@@ -207,11 +207,15 @@ export function LeaveReports({ userRole }: LeaveReportsProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">All Types</SelectItem>
-                <SelectItem value="CASUAL">Casual</SelectItem>
-                <SelectItem value="SICK">Sick</SelectItem>
+                <SelectItem value="EMERGENCY">Emergency</SelectItem>
                 <SelectItem value="ANNUAL">Annual</SelectItem>
-                <SelectItem value="UNPAID">Unpaid</SelectItem>
-                <SelectItem value="OTHER">Other</SelectItem>
+                {/* Legacy types — kept so reports can still filter on
+                    historical leave requests created before the leave-type
+                    list was narrowed. */}
+                <SelectItem value="CASUAL">Casual (legacy)</SelectItem>
+                <SelectItem value="SICK">Sick (legacy)</SelectItem>
+                <SelectItem value="UNPAID">Unpaid (legacy)</SelectItem>
+                <SelectItem value="OTHER">Other (legacy)</SelectItem>
               </SelectContent>
             </Select>
 

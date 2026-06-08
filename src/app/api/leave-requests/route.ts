@@ -26,6 +26,24 @@ export async function POST(req: Request) {
       );
     }
 
+    // Annual leave must be filed at least 15 days before the start date.
+    // Emergency leave bypasses this (short-notice is the whole point).
+    // The constant lives here AND in the form — kept in sync intentionally.
+    const ANNUAL_LEAVE_MIN_ADVANCE_DAYS = 15;
+    if (leaveType === "ANNUAL") {
+      const startMs = new Date(startDate).setHours(0, 0, 0, 0);
+      const todayMs = new Date().setHours(0, 0, 0, 0);
+      const advanceDays = Math.floor((startMs - todayMs) / 86_400_000);
+      if (advanceDays < ANNUAL_LEAVE_MIN_ADVANCE_DAYS) {
+        return NextResponse.json(
+          {
+            error: `Annual leave must be applied at least ${ANNUAL_LEAVE_MIN_ADVANCE_DAYS} days before the start date. For shorter notice, use Emergency leave.`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const sessionUserId = (session.user as { id?: string; role?: string; branchId?: string | null }).id;
     const role = (session.user as { role?: string }).role;
     const managerBranchId = (session.user as { branchId?: string | null }).branchId ?? null;
@@ -146,7 +164,7 @@ export async function POST(req: Request) {
         userId: targetUserId,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
-        leaveType: leaveType as "CASUAL" | "SICK" | "ANNUAL" | "UNPAID" | "OTHER",
+        leaveType: leaveType as "CASUAL" | "SICK" | "ANNUAL" | "UNPAID" | "OTHER" | "EMERGENCY",
         reason,
         status: "PENDING",
       },

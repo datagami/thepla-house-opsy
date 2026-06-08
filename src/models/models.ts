@@ -4,7 +4,7 @@ export type UserRole = "EMPLOYEE" | "BRANCH_MANAGER" | "HR" | "MANAGEMENT" | "SE
 // Added for mid-month leavers who should still be payroll-eligible.
 type UserStatus = "PENDING" | "ACTIVE" | "PARTIAL_INACTIVE" | "INACTIVE" | "JOB_OFFER";
 
-type LeaveType = "CASUAL" | "SICK" | "ANNUAL" | "UNPAID" | "OTHER";
+type LeaveType = "CASUAL" | "SICK" | "ANNUAL" | "UNPAID" | "OTHER" | "EMERGENCY";
 
 type AttendanceStatus = "PENDING_VERIFICATION" | "APPROVED" | "REJECTED";
 
