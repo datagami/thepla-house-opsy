@@ -72,11 +72,11 @@ export default async function LeaveRequestsPage() {
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Leave Requests</h2>
-        {["EMPLOYEE", "BRANCH_MANAGER"].includes(role) && (
+        {["EMPLOYEE", "BRANCH_MANAGER", "HR", "MANAGEMENT"].includes(role) && (
           <Button asChild>
             <Link href="/leave-requests/new">
               <Plus className="mr-2 h-4 w-4" />
-              {role === "BRANCH_MANAGER" ? "Create for Employee" : "New Request"}
+              {role === "EMPLOYEE" ? "New Request" : "Create Leave Request"}
             </Link>
           </Button>
         )}

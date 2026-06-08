@@ -419,7 +419,21 @@ export function LeaveRequestTable({
             {filteredRequests.map((request) => (
               <TableRow key={request.id}>
                 <TableCell>
-                  {request.user ? <EmployeeIdentity user={request.user} size="md" /> : "-"}
+                  <div
+                    className="w-[180px]"
+                    title={request.user?.name ?? ""}
+                  >
+                    {request.user ? (
+                      <EmployeeIdentity
+                        user={request.user}
+                        size="md"
+                        wrap
+                        className="flex w-full"
+                      />
+                    ) : (
+                      "-"
+                    )}
+                  </div>
                 </TableCell>
                 {showBranch && (
                   <TableCell>{request.user?.branch?.name || "-"}</TableCell>
@@ -430,14 +444,21 @@ export function LeaveRequestTable({
                 <TableCell>{request.leaveType}</TableCell>
                 <TableCell>{format(toDate(request.startDate), "PPP")}</TableCell>
                 <TableCell>{format(toDate(request.endDate), "PPP")}</TableCell>
-                <TableCell className="max-w-[320px] truncate">{request.reason}</TableCell>
+                <TableCell>
+                  <div
+                    className="max-w-[200px] whitespace-normal break-words text-sm leading-snug"
+                    title={request.reason}
+                  >
+                    {request.reason}
+                  </div>
+                </TableCell>
                 <TableCell>
                   <Badge className={statusColors[request.status as keyof typeof statusColors]}>
                     {request.status}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <Button
                       size="sm"
                       variant="outline"
@@ -447,7 +468,7 @@ export function LeaveRequestTable({
                       }
                     >
                       <FileText className="mr-1 h-4 w-4" />
-                      Download Form
+                      Form
                     </Button>
                     {canReview && request.status === "PENDING" && (
                       <>

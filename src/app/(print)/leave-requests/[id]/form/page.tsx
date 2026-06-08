@@ -106,7 +106,6 @@ export default async function LeaveApplicationPrintPage({ params }: PageProps) {
         <div className="to-block">
           <div className="to-lbl">To</div>
           <div className="recipient">The Human Resources Department</div>
-          <div className="org">Thepla House (a unit of Tejal&apos;s Kitchen Pvt. Ltd.)</div>
         </div>
 
         <div className="subject">
@@ -114,19 +113,19 @@ export default async function LeaveApplicationPrintPage({ params }: PageProps) {
         </div>
 
         <p className="body">
-          Dear Sir/Madam,
+          Sir / Madam,
         </p>
         <p className="body">
-          I, <strong>{salutation}</strong>, working as <strong>{employee?.title ?? '—'}</strong>
+          I am <strong>{salutation}</strong>
           {employee?.department?.name && (
-            <> in the <strong>{employee.department.name}</strong> department</>
+            <>, working in <strong>{employee.department.name}</strong></>
           )}
           {employee?.branch?.name && (
             <> at the <strong>{employee.branch.name}</strong> branch</>
           )}
-          , hereby request leave for <strong>{days}</strong> {days === 1 ? 'day' : 'days'} from{' '}
-          <strong>{startStr}</strong> to <strong>{endStr}</strong> (both dates inclusive) under the{' '}
-          <strong>{leaveRequest.leaveType}</strong> leave category, for the reason stated below.
+          . I am asking for <strong>{leaveRequest.leaveType}</strong> leave for{' '}
+          <strong>{days}</strong> {days === 1 ? 'day' : 'days'}, from <strong>{startStr}</strong> to{' '}
+          <strong>{endStr}</strong> (both days included). The reason is given below.
         </p>
 
         <div className="field-grid">
@@ -137,10 +136,6 @@ export default async function LeaveApplicationPrintPage({ params }: PageProps) {
           <div className="field-row">
             <span className="k">Employee ID</span>
             <span className="v num">{employee?.numId ?? '—'}</span>
-          </div>
-          <div className="field-row">
-            <span className="k">Designation</span>
-            <span className="v">{employee?.title ?? '—'}</span>
           </div>
           <div className="field-row">
             <span className="k">Department</span>
@@ -159,12 +154,6 @@ export default async function LeaveApplicationPrintPage({ params }: PageProps) {
           <div className="field-row">
             <span className="k">Leave Type</span>
             <span className="v">{leaveRequest.leaveType}</span>
-          </div>
-          <div className="field-row">
-            <span className="k">Status</span>
-            <span className="v">
-              <span className={`status-pill ${leaveRequest.status}`}>{leaveRequest.status}</span>
-            </span>
           </div>
           <div className="field-row">
             <span className="k">From</span>
@@ -190,9 +179,8 @@ export default async function LeaveApplicationPrintPage({ params }: PageProps) {
         </div>
 
         <p className="declaration">
-          I declare that the information furnished above is true to the best of my knowledge. I will ensure that my
-          responsibilities are handed over appropriately before my leave begins, and I will be reachable in case of any
-          urgent matter requiring my attention.
+          I confirm that the details given above are correct. I will inform my branch manager before my leave starts and
+          hand over my pending work. I will keep my phone on and answer if the office calls me during my leave.
         </p>
 
         <div className="signature-block">
@@ -238,7 +226,6 @@ export default async function LeaveApplicationPrintPage({ params }: PageProps) {
 
         <div className="page-foot">
           <span>Leave Application · {employee?.name ?? '—'} · Ref. {refNo}</span>
-          <span>System-generated · Submit a printed copy to HR at the head office.</span>
         </div>
       </div>
     </>

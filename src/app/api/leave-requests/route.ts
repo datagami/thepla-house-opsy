@@ -78,6 +78,27 @@ export async function POST(req: Request) {
           targetUserName = employee.name ?? null;
         }
       }
+    } else if (role === "HR" || role === "MANAGEMENT") {
+      // HR / Management may file leave for ANY active user (across branches),
+      // including themselves. If no userId is provided, default to self.
+      if (!requestedUserId || requestedUserId === sessionUserId) {
+        targetUserId = sessionUserId;
+      } else {
+        const target = await prisma.user.findFirst({
+          where: { id: requestedUserId, status: "ACTIVE" },
+          select: { id: true, name: true },
+        });
+
+        if (!target) {
+          return NextResponse.json(
+            { error: "Employee not found or inactive" },
+            { status: 404 }
+          );
+        }
+
+        targetUserId = target.id;
+        targetUserName = target.name ?? null;
+      }
     } else if (role === "EMPLOYEE") {
       targetUserId = sessionUserId;
     } else {
@@ -112,12 +133,9 @@ export async function POST(req: Request) {
       const isSelf = targetUserId === sessionUserId;
       return NextResponse.json(
         {
-          error:
-            role === "BRANCH_MANAGER"
-              ? isSelf
-                ? "You already have a leave request for these dates"
-                : "Employee already has a leave request for these dates"
-              : "You already have a leave request for these dates",
+          error: isSelf
+            ? "You already have a leave request for these dates"
+            : "Employee already has a leave request for these dates",
         },
         { status: 400 }
       );
@@ -140,11 +158,9 @@ export async function POST(req: Request) {
       sessionUserId,
       "LeaveRequest",
       leaveRequest.id,
-      role === "BRANCH_MANAGER"
-        ? targetUserId === sessionUserId
-          ? `Created leave request for self: ${leaveType} from ${startDate} to ${endDate}`
-          : `Created leave request for ${targetUserName ?? "employee"}: ${leaveType} from ${startDate} to ${endDate}`
-        : `Created leave request: ${leaveType} from ${startDate} to ${endDate}`,
+      targetUserId === sessionUserId
+        ? `Created leave request for self: ${leaveType} from ${startDate} to ${endDate}`
+        : `Created leave request for ${targetUserName ?? "employee"}: ${leaveType} from ${startDate} to ${endDate}`,
       {
         leaveRequestId: leaveRequest.id,
         userId: leaveRequest.userId,
