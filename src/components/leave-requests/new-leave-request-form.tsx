@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -25,9 +25,40 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format, differenceInDays, addDays, startOfDay } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Mic, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+// Minimal Web Speech API type — declared inline because lib.dom doesn't
+// expose `webkitSpeechRecognition` and adding it to a global .d.ts file
+// would be overkill for a single form. Only the bits we use are typed.
+interface SpeechRecognitionLike extends EventTarget {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+  onresult: ((this: SpeechRecognitionLike, ev: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((this: SpeechRecognitionLike, ev: { error: string }) => void) | null;
+  onend: ((this: SpeechRecognitionLike) => void) | null;
+}
+interface SpeechRecognitionEventLike {
+  resultIndex: number;
+  results: {
+    length: number;
+    [i: number]: {
+      isFinal: boolean;
+      [i: number]: { transcript: string };
+    };
+  };
+}
+type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
+
+const VOICE_LANGS = [
+  { value: "en-IN", label: "English" },
+  { value: "hi-IN", label: "हिन्दी" },
+];
 
 const LEAVE_TYPES = [
   { value: "EMERGENCY", label: "Emergency Leave" },
@@ -65,6 +96,88 @@ export function NewLeaveRequestForm({
   const [employeeId, setEmployeeId] = useState<string>(() =>
     canFileForOthers(userRole) ? "SELF" : ""
   );
+
+  // Voice-to-text for the Reason field. Uses the browser's Web Speech API
+  // (free, no backend) — works in Chrome/Edge/Safari. The mic button is
+  // hidden entirely on unsupported browsers.
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [voiceLang, setVoiceLang] = useState<string>("en-IN");
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  // Snapshot the reason text at the moment recording started; we append
+  // recognised transcript to this base so interim results don't pile up
+  // on top of each other.
+  const reasonBaseRef = useRef("");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const Ctor =
+      (window as unknown as { SpeechRecognition?: SpeechRecognitionCtor })
+        .SpeechRecognition ??
+      (window as unknown as { webkitSpeechRecognition?: SpeechRecognitionCtor })
+        .webkitSpeechRecognition;
+    if (Ctor) setVoiceSupported(true);
+    return () => {
+      recognitionRef.current?.abort();
+      recognitionRef.current = null;
+    };
+  }, []);
+
+  const startListening = () => {
+    const Ctor =
+      (window as unknown as { SpeechRecognition?: SpeechRecognitionCtor })
+        .SpeechRecognition ??
+      (window as unknown as { webkitSpeechRecognition?: SpeechRecognitionCtor })
+        .webkitSpeechRecognition;
+    if (!Ctor) {
+      toast.error("Voice input isn't supported on this browser. Please type the reason.");
+      return;
+    }
+    try {
+      const recog = new Ctor();
+      recog.lang = voiceLang;
+      recog.interimResults = true;
+      recog.continuous = true;
+      reasonBaseRef.current = reason ? reason.replace(/\s+$/, "") + " " : "";
+      recog.onresult = (event) => {
+        let interim = "";
+        let finalChunk = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          const transcript = result[0].transcript;
+          if (result.isFinal) finalChunk += transcript;
+          else interim += transcript;
+        }
+        if (finalChunk) {
+          reasonBaseRef.current = reasonBaseRef.current + finalChunk + " ";
+        }
+        setReason(reasonBaseRef.current + interim);
+      };
+      recog.onerror = (event) => {
+        if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+          toast.error("Microphone permission denied. Allow mic access and try again.");
+        } else if (event.error !== "aborted" && event.error !== "no-speech") {
+          toast.error(`Voice input error: ${event.error}`);
+        }
+        setListening(false);
+      };
+      recog.onend = () => {
+        setListening(false);
+      };
+      recognitionRef.current = recog;
+      recog.start();
+      setListening(true);
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not start voice input. Please try again or type the reason.");
+      setListening(false);
+    }
+  };
+
+  const stopListening = () => {
+    recognitionRef.current?.stop();
+    setListening(false);
+  };
 
   const handleSubmit = async () => {
     if (!startDate || !endDate || !leaveType || !reason) {
@@ -261,13 +374,61 @@ export function NewLeaveRequestForm({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Reason</label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Reason</label>
+              {voiceSupported && (
+                <div className="flex items-center gap-2">
+                  <Select value={voiceLang} onValueChange={setVoiceLang} disabled={listening}>
+                    <SelectTrigger className="h-8 w-[120px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {VOICE_LANGS.map((l) => (
+                        <SelectItem key={l.value} value={l.value} className="text-xs">
+                          {l.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={listening ? "destructive" : "outline"}
+                    onClick={listening ? stopListening : startListening}
+                    title={listening ? "Stop recording" : "Speak the reason instead of typing"}
+                    className="gap-1.5"
+                  >
+                    {listening ? (
+                      <>
+                        <Square className="h-4 w-4" />
+                        Stop
+                      </>
+                    ) : (
+                      <>
+                        <Mic className="h-4 w-4" />
+                        Speak
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
             <Textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Please provide a detailed reason for your leave request"
+              placeholder={
+                voiceSupported
+                  ? "Type, or tap Speak and dictate the reason"
+                  : "Please provide a detailed reason for your leave request"
+              }
               className="min-h-[100px]"
             />
+            {listening && (
+              <p className="text-xs text-red-600 flex items-center gap-1.5">
+                <span className="inline-block h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                Listening… tap Stop when you&apos;re done.
+              </p>
+            )}
           </div>
 
           <div className="flex justify-end space-x-4">
