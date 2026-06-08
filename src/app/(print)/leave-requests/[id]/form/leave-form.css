@@ -1,4 +1,14 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Epilogue:wght@600;700;800;900&family=Mouse+Memoirs&family=Aladin&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Epilogue:wght@600;700;800;900&family=Aladin&display=swap');
+
+/* Self-hosted licensed brand face. The .otf file lives in /public/fonts/
+   so Next serves it at /fonts/Mouser.otf with no extra config. */
+@font-face {
+  font-family: 'Mouser';
+  src: url('/fonts/Mouser.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 /* ============================================================
    Thepla House — Leave Application Form
    A4 portrait · single page.
@@ -42,11 +52,10 @@
 
   --font-body:    'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-display: 'Epilogue', 'Inter', system-ui, sans-serif;
-  /* Brand fonts: chunky all-caps for the wordmark, decorative script for
-     the "By Tejal's Kitchen" tagline. Mouse Memoirs is the closest free
-     Google Font to the licensed "Mouser" face we use elsewhere; swap to
-     a self-hosted .woff2 if HR has a paid Mouser licence. */
-  --font-brand:   'Mouse Memoirs', 'Epilogue', system-ui, sans-serif;
+  /* Brand fonts: chunky all-caps Mouser for the THEPLA HOUSE wordmark
+     (licensed OTF self-hosted at /fonts/Mouser.otf), decorative Aladin
+     script for the "By Tejal's Kitchen" tagline (Google Fonts). */
+  --font-brand:   'Mouser', 'Epilogue', system-ui, sans-serif;
   --font-script:  'Aladin', 'Georgia', cursive;
   /* Devanagari fallback chain — browsers ship at least one of these. */
   --font-hindi:   'Noto Sans Devanagari', 'Mangal', 'Kohinoor Devanagari',
