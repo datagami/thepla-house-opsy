@@ -78,6 +78,9 @@ export function buildMaintenanceReminderEmail(
 
 /** Fetch all active, non-snoozed items with a due date — partitioned in JS by per-item lead. */
 export async function getCandidateItems(today: Date): Promise<DueItem[]> {
+  // This SQL is a coarse prefilter (it excludes clearly-snoozed rows). The
+  // authoritative snooze/overdue/due-soon classification is done in JS by
+  // partitionDueItems -> getReminderState (start-of-day, per-item lead time).
   const rows = await prisma.equipment.findMany({
     where: {
       status: "ACTIVE",

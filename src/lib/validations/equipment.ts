@@ -22,9 +22,13 @@ export const equipmentCreateSchema = z.object({
   notes: z.string().trim().optional().nullable(),
 });
 
-export const equipmentUpdateSchema = equipmentCreateSchema.partial().extend({
-  status: z.enum(["ACTIVE", "RETIRED"]).optional(),
-});
+// Items cannot be moved between outlets, so branchId is not updatable.
+export const equipmentUpdateSchema = equipmentCreateSchema
+  .omit({ branchId: true })
+  .partial()
+  .extend({
+    status: z.enum(["ACTIVE", "RETIRED"]).optional(),
+  });
 
 export const maintenanceRecordCreateSchema = z.object({
   serviceDate: z.string().min(1),
