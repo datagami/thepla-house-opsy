@@ -89,10 +89,26 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     });
 
     if (d.status === "DONE") {
-      await prisma.equipment.update({
-        where: { id },
-        data: { lastServiceDate: serviceDate, nextDueDate, snoozedUntil: null },
+      // Recompute the schedule from the most recent COMPLETED service rather than
+      // blindly using the record we just created. Otherwise, logging records out of
+      // chronological order (e.g. backfilling an older service after a newer one)
+      // would let an older service overwrite the next-due date. The latest service
+      // by serviceDate (tie-broken by most-recently logged) is authoritative.
+      const latestDone = await prisma.maintenanceRecord.findFirst({
+        where: { equipmentId: id, status: "DONE" },
+        orderBy: [{ serviceDate: "desc" }, { createdAt: "desc" }],
+        select: { serviceDate: true, nextDueDate: true },
       });
+      if (latestDone) {
+        await prisma.equipment.update({
+          where: { id },
+          data: {
+            lastServiceDate: latestDone.serviceDate,
+            nextDueDate: latestDone.nextDueDate,
+            snoozedUntil: null,
+          },
+        });
+      }
     }
 
     await logEntityActivity(

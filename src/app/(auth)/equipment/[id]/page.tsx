@@ -16,7 +16,10 @@ import { format } from "date-fns";
 
 interface Props {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ page?: string }>;
 }
+
+const HISTORY_PAGE_SIZE = 25;
 
 function InfoCell({
   icon,
@@ -46,7 +49,7 @@ function InfoCell({
   );
 }
 
-export default async function EquipmentDetailPage({ params }: Props) {
+export default async function EquipmentDetailPage({ params, searchParams }: Props) {
   const session = await auth();
   if (!session) redirect("/login");
 
@@ -58,18 +61,11 @@ export default async function EquipmentDetailPage({ params }: Props) {
   if (!hasAccess(role, "equipment.view")) redirect("/dashboard");
 
   const { id } = await params;
+  const { page: pageParam } = await searchParams;
 
   const item = await prisma.equipment.findUnique({
     where: { id },
-    include: {
-      branch: { select: { id: true, name: true } },
-      records: {
-        orderBy: { serviceDate: "desc" },
-        include: {
-          loggedBy: { select: { name: true } },
-        },
-      },
-    },
+    include: { branch: { select: { id: true, name: true } } },
   });
 
   if (!item) notFound();
@@ -78,6 +74,27 @@ export default async function EquipmentDetailPage({ params }: Props) {
   if (role === "BRANCH_MANAGER" && item.branchId !== sessionBranchId) {
     redirect("/equipment");
   }
+
+  // ── Maintenance history: paginated 25/page, ?page= is reload-friendly ──────
+  const totalRecords = await prisma.maintenanceRecord.count({
+    where: { equipmentId: id },
+  });
+  const totalPages = Math.max(1, Math.ceil(totalRecords / HISTORY_PAGE_SIZE));
+  const requestedPage = Number(pageParam);
+  const page = Number.isFinite(requestedPage)
+    ? Math.min(Math.max(Math.trunc(requestedPage), 1), totalPages)
+    : 1;
+  const spendAgg = await prisma.maintenanceRecord.aggregate({
+    where: { equipmentId: id },
+    _sum: { cost: true },
+  });
+  const pageRecords = await prisma.maintenanceRecord.findMany({
+    where: { equipmentId: id },
+    orderBy: { serviceDate: "desc" },
+    include: { loggedBy: { select: { name: true } } },
+    skip: (page - 1) * HISTORY_PAGE_SIZE,
+    take: HISTORY_PAGE_SIZE,
+  });
 
   const canManage = hasAccess(role, "equipment.manage");
 
@@ -107,7 +124,7 @@ export default async function EquipmentDetailPage({ params }: Props) {
       : null;
 
   // Map records to serialisable shape (Decimal → number, Date → ISO string)
-  const historyRecords: HistoryRecord[] = item.records.map((r) => ({
+  const historyRecords: HistoryRecord[] = pageRecords.map((r) => ({
     id: r.id,
     serviceDate: r.serviceDate.toISOString(),
     maintenanceType: r.maintenanceType,
@@ -122,7 +139,7 @@ export default async function EquipmentDetailPage({ params }: Props) {
     loggedBy: r.loggedBy,
   }));
 
-  const totalSpend = historyRecords.reduce((sum, r) => sum + r.cost, 0);
+  const totalSpend = Number(spendAgg._sum.cost ?? 0);
 
   return (
     <div className="flex-1 space-y-6 p-4 pt-4 md:p-8 md:pt-6">
@@ -249,10 +266,10 @@ export default async function EquipmentDetailPage({ params }: Props) {
           <h2 className="text-[15.5px] font-bold">
             Maintenance History
             <span className="ml-1.5 font-[500] text-muted-foreground">
-              {historyRecords.length}
+              {totalRecords}
             </span>
           </h2>
-          {historyRecords.length > 0 && (
+          {totalRecords > 0 && (
             <span className="text-[12.5px] text-muted-foreground">
               Total spend{" "}
               <strong className="tabular-nums text-foreground">
@@ -262,7 +279,7 @@ export default async function EquipmentDetailPage({ params }: Props) {
           )}
         </div>
 
-        {historyRecords.length === 0 ? (
+        {totalRecords === 0 ? (
           <div className="rounded-xl border bg-card shadow-sm">
             <EquipmentEmptyState
               icon="wrench"
@@ -283,7 +300,48 @@ export default async function EquipmentDetailPage({ params }: Props) {
             />
           </div>
         ) : (
-          <MaintenanceHistory records={historyRecords} />
+          <>
+            <MaintenanceHistory records={historyRecords} />
+            {totalPages > 1 && (
+              <div className="mt-4 flex items-center justify-between">
+                <span className="text-[12.5px] text-muted-foreground">
+                  Page {page} of {totalPages} · {totalRecords} entries
+                </span>
+                <div className="flex items-center gap-2">
+                  {page > 1 ? (
+                    <Link
+                      href={`/equipment/${item.id}?page=${page - 1}`}
+                      scroll={false}
+                      className="inline-flex items-center gap-1 rounded-md border bg-card px-3 py-1.5 text-[13px] font-medium transition-colors hover:bg-accent"
+                    >
+                      <ArrowLeft size={14} />
+                      Previous
+                    </Link>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-[13px] font-medium text-muted-foreground opacity-50">
+                      <ArrowLeft size={14} />
+                      Previous
+                    </span>
+                  )}
+                  {page < totalPages ? (
+                    <Link
+                      href={`/equipment/${item.id}?page=${page + 1}`}
+                      scroll={false}
+                      className="inline-flex items-center gap-1 rounded-md border bg-card px-3 py-1.5 text-[13px] font-medium transition-colors hover:bg-accent"
+                    >
+                      Next
+                      <ArrowLeft size={14} className="rotate-180" />
+                    </Link>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-[13px] font-medium text-muted-foreground opacity-50">
+                      Next
+                      <ArrowLeft size={14} className="rotate-180" />
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
