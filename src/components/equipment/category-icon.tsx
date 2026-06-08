@@ -14,6 +14,8 @@ import {
   Check,
   Moon,
   Minus,
+  Wrench,
+  Search,
   type LucideIcon,
 } from "lucide-react";
 
@@ -31,6 +33,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   check: Check,
   moon: Moon,
   minus: Minus,
+  wrench: Wrench,
+  search: Search,
 };
 
 interface CategoryIconProps {
