@@ -171,7 +171,7 @@ export function StatCard({
     <button
       onClick={onClick}
       className={cn(
-        "relative overflow-hidden flex flex-1 rounded-xl border bg-white text-left transition-[border-color,box-shadow] duration-[140ms]",
+        "relative overflow-hidden flex flex-1 rounded-xl border bg-white text-left transition-[border-color,box-shadow] [transition-duration:140ms]",
         /* Mobile: compact vertical chip */
         "flex-col items-start px-3 py-[10px]",
         /* Desktop: horizontal with icon */

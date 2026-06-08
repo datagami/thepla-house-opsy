@@ -100,7 +100,7 @@ export function SnoozeDialog({
         key={days}
         type="button"
         onClick={() => setMode(days)}
-        className="w-full rounded-lg border p-3 text-left transition-[border-color,box-shadow] duration-[140ms] cursor-pointer flex items-center gap-3"
+        className="w-full rounded-lg border p-3 text-left transition-[border-color,box-shadow] [transition-duration:140ms] cursor-pointer flex items-center gap-3"
         style={{
           borderColor: isSelected ? "hsl(var(--primary))" : "hsl(var(--border))",
           boxShadow: isSelected

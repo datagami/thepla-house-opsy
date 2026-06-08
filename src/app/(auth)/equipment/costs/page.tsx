@@ -245,7 +245,7 @@ export default async function CostSummaryPage({ searchParams }: Props) {
                         {/* Bar track */}
                         <div className="h-[22px] flex-1 overflow-hidden rounded-[6px] bg-muted">
                           <div
-                            className="h-full rounded-[6px] transition-[width] duration-[400ms] ease-in-out"
+                            className="h-full rounded-[6px] transition-[width] [transition-duration:400ms] ease-in-out"
                             style={{
                               width: `${pct}%`,
                               background: cm.dot,
