@@ -166,43 +166,47 @@ export default async function EquipmentPage({ searchParams }: Props) {
   const isEmpty = equipment.length === 0;
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
+    <div className="flex-1 space-y-4 p-4 pt-4 md:p-8 md:pt-6">
       {/* Header */}
-      <div className="flex items-start gap-4">
-        <div className="flex-1">
+      <div className="flex flex-wrap items-start gap-3">
+        <div className="flex-1 min-w-0">
           <h1 className="text-[22px] font-bold tracking-[-0.02em] text-foreground">
             Maintenance
           </h1>
           <p className="mt-1 text-[13.5px] text-muted-foreground">{subtitle}</p>
         </div>
 
-        {/* Tabs */}
-        <div className="flex items-center rounded-lg border bg-muted p-0.5">
-          <span className="flex items-center gap-1.5 rounded-md bg-background px-3 py-1.5 text-[13px] font-semibold shadow-sm">
-            <List size={15} />
-            Items
-          </span>
-          <Link
-            href="/equipment/costs"
-            className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <BarChart2 size={15} />
-            Cost Summary
-          </Link>
-        </div>
-
-        {canManage && (
-          <Button asChild>
-            <Link href="/equipment/new">
-              <Plus size={16} className="mr-1.5" />
-              Add Item
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Tabs */}
+          <div className="flex items-center rounded-lg border bg-muted p-0.5">
+            <span className="flex items-center gap-1.5 rounded-md bg-background px-3 py-1.5 text-[13px] font-semibold shadow-sm">
+              <List size={15} />
+              Items
+            </span>
+            <Link
+              href="/equipment/costs"
+              className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <BarChart2 size={15} />
+              <span className="hidden sm:inline">Cost Summary</span>
+              <span className="sm:hidden">Costs</span>
             </Link>
-          </Button>
-        )}
+          </div>
+
+          {canManage && (
+            <Button asChild>
+              <Link href="/equipment/new">
+                <Plus size={16} className="mr-1.5" />
+                <span className="hidden sm:inline">Add Item</span>
+                <span className="sm:hidden">Add</span>
+              </Link>
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Stat cards */}
-      <div className="flex gap-3.5">
+      {/* Stat cards — 3-across compact grid on mobile, flex row on desktop */}
+      <div className="grid grid-cols-3 gap-2 md:flex md:gap-3.5">
         <Link
           href={buildStatusLink("overdue")}
           className="flex flex-1"

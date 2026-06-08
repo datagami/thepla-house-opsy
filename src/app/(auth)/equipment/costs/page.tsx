@@ -150,10 +150,10 @@ export default async function CostSummaryPage({ searchParams }: Props) {
   const lockedOutletId = lockedBranchId;
 
   return (
-    <div className="flex-1 space-y-6 p-8 pt-6">
+    <div className="flex-1 space-y-6 p-4 pt-4 md:p-8 md:pt-6">
       {/* Header */}
-      <div className="flex items-start gap-4">
-        <div className="flex-1">
+      <div className="flex flex-wrap items-start gap-3">
+        <div className="flex-1 min-w-0">
           <h2 className="text-[22px] font-bold tracking-[-0.02em] text-foreground">
             Maintenance
           </h2>
@@ -173,7 +173,8 @@ export default async function CostSummaryPage({ searchParams }: Props) {
           </Link>
           <span className="flex items-center gap-1.5 rounded-md bg-background px-3 py-1.5 text-[13px] font-semibold shadow-sm">
             <BarChart2 size={15} />
-            Cost Summary
+            <span className="hidden sm:inline">Cost Summary</span>
+            <span className="sm:hidden">Costs</span>
           </span>
         </div>
       </div>
@@ -185,7 +186,7 @@ export default async function CostSummaryPage({ searchParams }: Props) {
         </div>
 
         {/* Two-column grid: headline card + by-category card */}
-        <div className="grid grid-cols-[300px_1fr] gap-4 p-4">
+        <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-[300px_1fr]">
           {/* Total spend card */}
           <Card className="flex flex-col justify-center">
             <CardContent className="px-6 py-6">
@@ -267,7 +268,7 @@ export default async function CostSummaryPage({ searchParams }: Props) {
       </div>
 
       {/* Breakdown by item */}
-      <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+      <div className="overflow-hidden rounded-xl border bg-card shadow-sm overflow-x-auto">
         <div className="border-b px-4 py-3 text-[13px] font-[650]">
           Breakdown by item
         </div>

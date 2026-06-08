@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MapPin, MoreHorizontal } from "lucide-react";
+import { EquipmentCards } from "@/components/equipment/equipment-cards";
 import {
   Table,
   TableBody,
@@ -63,6 +64,13 @@ export function EquipmentTable({ rows, canManage }: EquipmentTableProps) {
 
   return (
     <>
+      {/* Mobile: card list */}
+      <div className="md:hidden">
+        <EquipmentCards rows={rows} canManage={canManage} />
+      </div>
+
+      {/* Desktop: table */}
+      <div className="hidden md:block">
       <Table>
         <TableHeader>
           <TableRow>
@@ -199,6 +207,8 @@ export function EquipmentTable({ rows, canManage }: EquipmentTableProps) {
           })}
         </TableBody>
       </Table>
+
+      </div>
 
       {snoozeId && (
         <SnoozeDialog

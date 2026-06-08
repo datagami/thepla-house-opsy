@@ -50,7 +50,7 @@ export function DetailActions({
 
   return (
     <>
-      <div className="flex items-center gap-[9px]">
+      <div className="flex flex-wrap items-center gap-[9px]">
         <Button
           variant="outline"
           type="button"

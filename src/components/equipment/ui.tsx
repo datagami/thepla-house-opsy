@@ -171,7 +171,11 @@ export function StatCard({
     <button
       onClick={onClick}
       className={cn(
-        "relative overflow-hidden flex flex-1 items-center gap-[14px] rounded-xl border bg-white px-4 py-[14px] text-left transition-[border-color,box-shadow] duration-[140ms]",
+        "relative overflow-hidden flex flex-1 rounded-xl border bg-white text-left transition-[border-color,box-shadow] duration-[140ms]",
+        /* Mobile: compact vertical chip */
+        "flex-col items-start px-3 py-[10px]",
+        /* Desktop: horizontal with icon */
+        "md:flex-row md:items-center md:gap-[14px] md:px-4 md:py-[14px]",
         onClick ? "cursor-pointer" : "cursor-default"
       )}
       style={{
@@ -182,9 +186,9 @@ export function StatCard({
       }}
       type="button"
     >
-      {/* Icon square */}
+      {/* Icon square — hidden on mobile, shown on md+ */}
       <div
-        className="flex h-10 w-10 flex-none items-center justify-center rounded-[10px]"
+        className="hidden md:flex h-10 w-10 flex-none items-center justify-center rounded-[10px]"
         style={{ background: t.bg, color: t.fg }}
       >
         <CategoryIcon name={icon} size={20} strokeWidth={2.2} />
@@ -193,12 +197,15 @@ export function StatCard({
       {/* Text */}
       <div className="min-w-0">
         <div
-          className="text-2xl font-bold leading-[1.1] tracking-[-0.02em] tabular-nums text-foreground"
-          style={{ fontVariantNumeric: "tabular-nums" }}
+          className="font-bold leading-[1.1] tracking-[-0.02em] tabular-nums text-foreground"
+          style={{
+            fontVariantNumeric: "tabular-nums",
+            fontSize: "clamp(18px, 5vw, 24px)",
+          }}
         >
-          {value}
+          <span style={{ color: t.fg }}>{value}</span>
         </div>
-        <div className="mt-[2px] text-[12.5px] font-[550] text-muted-foreground">
+        <div className="mt-[2px] text-[11px] font-[550] text-muted-foreground md:text-[12.5px]">
           {label}
         </div>
       </div>

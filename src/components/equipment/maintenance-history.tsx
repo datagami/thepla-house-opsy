@@ -82,13 +82,13 @@ function HistoryEntry({
 
   return (
     <div
-      className="flex gap-3.5"
+      className="flex gap-2.5 md:gap-3.5"
       style={{ paddingBottom: isLast ? 0 : 14, position: "relative" }}
     >
       {/* Timeline rail */}
       <div
         className="relative flex flex-none justify-center"
-        style={{ width: 28 }}
+        style={{ width: 24 }}
       >
         {/* Vertical line */}
         {!isLast && (

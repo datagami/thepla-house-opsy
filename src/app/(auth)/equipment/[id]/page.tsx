@@ -124,7 +124,7 @@ export default async function EquipmentDetailPage({ params }: Props) {
   const totalSpend = historyRecords.reduce((sum, r) => sum + r.cost, 0);
 
   return (
-    <div className="flex-1 space-y-6 p-8 pt-6">
+    <div className="flex-1 space-y-6 p-4 pt-4 md:p-8 md:pt-6">
       {/* Back link */}
       <div>
         <Link
@@ -138,21 +138,21 @@ export default async function EquipmentDetailPage({ params }: Props) {
       </div>
 
       {/* Info header card */}
-      <div className="rounded-xl border bg-card p-[22px] shadow-sm">
+      <div className="rounded-xl border bg-card p-4 md:p-[22px] shadow-sm">
         {/* Top row: icon + name/badges + actions */}
-        <div className="flex items-start gap-4">
+        <div className="flex items-start gap-3 md:gap-4">
           {/* Category icon tile */}
           <div
-            className="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-[11px]"
+            className="flex h-[44px] w-[44px] flex-none items-center justify-center rounded-[11px]"
             style={{ background: cm.bg, color: cm.fg }}
           >
-            <CategoryIcon name={cm.icon} size={23} strokeWidth={2.1} />
+            <CategoryIcon name={cm.icon} size={22} strokeWidth={2.1} />
           </div>
 
           {/* Name + category + location */}
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-[10px]">
-              <h1 className="text-[21px] font-bold tracking-[-0.02em]">
+              <h1 className="text-[19px] font-bold tracking-[-0.02em] md:text-[21px]">
                 {item.name}
               </h1>
               <StatusBadge state={reminderState} />
@@ -170,7 +170,18 @@ export default async function EquipmentDetailPage({ params }: Props) {
             </div>
           </div>
 
-          {/* Actions */}
+          {/* Actions — hidden on mobile, shown inline on sm+ */}
+          <div className="hidden sm:block">
+            <DetailActions
+              equipmentId={item.id}
+              equipmentName={item.name}
+              canManage={canManage}
+            />
+          </div>
+        </div>
+
+        {/* Mobile-only stacked actions */}
+        <div className="mt-3 sm:hidden">
           <DetailActions
             equipmentId={item.id}
             equipmentName={item.name}
@@ -179,10 +190,10 @@ export default async function EquipmentDetailPage({ params }: Props) {
         </div>
 
         {/* Divider */}
-        <div className="my-5 border-t" />
+        <div className="my-4 border-t md:my-5" />
 
-        {/* 4-col info grid */}
-        <div className="grid grid-cols-4 gap-5">
+        {/* Info grid — 2-col on mobile, 4-col on md+ */}
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
           <InfoCell icon="calendar" label="Frequency">
             {item.frequencyMonths
               ? `Every ${item.frequencyMonths} month${item.frequencyMonths === 1 ? "" : "s"}`
@@ -224,7 +235,7 @@ export default async function EquipmentDetailPage({ params }: Props) {
       </div>
 
       {/* History section */}
-      <div>
+      <div className="overflow-x-auto">
         {/* History heading */}
         <div className="mb-3.5 flex items-center justify-between">
           <h2 className="text-[15.5px] font-bold">
