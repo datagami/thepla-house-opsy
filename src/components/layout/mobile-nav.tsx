@@ -24,6 +24,7 @@ import {
   UserPlus,
   FileCheck,
   Wallet,
+  Wrench,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
@@ -210,6 +211,25 @@ const roleNavItems: Record<string, NavItem[]> = {
       ]
     },
     {
+      title: "Maintenance",
+      icon: <Wrench className="h-5 w-5" />,
+      feature: "equipment.view",
+      subItems: [
+        {
+          title: "Items",
+          href: "/equipment",
+          icon: <Wrench className="h-4 w-4" />,
+          feature: "equipment.view"
+        },
+        {
+          title: "Cost Summary",
+          href: "/equipment/costs",
+          icon: <FileText className="h-4 w-4" />,
+          feature: "equipment.view"
+        },
+      ]
+    },
+    {
       title: "Notes",
       href: "/notes",
       icon: <FileText className="h-5 w-5" />,
@@ -252,6 +272,12 @@ const roleNavItems: Record<string, NavItem[]> = {
       href: "/leave-requests/new", 
       icon: <Plus className="h-5 w-5" />,
       feature: "leave.request" 
+    },
+    {
+      title: "Maintenance",
+      href: "/equipment",
+      icon: <Wrench className="h-5 w-5" />,
+      feature: "equipment.view"
     },
     {
       title: "My Payslips",
@@ -426,6 +452,25 @@ const roleNavItems: Record<string, NavItem[]> = {
           href: "/activity-logs",
           icon: <History className="h-4 w-4" />,
           feature: "activity-logs.view"
+        },
+      ]
+    },
+    {
+      title: "Maintenance",
+      icon: <Wrench className="h-5 w-5" />,
+      feature: "equipment.view",
+      subItems: [
+        {
+          title: "Items",
+          href: "/equipment",
+          icon: <Wrench className="h-4 w-4" />,
+          feature: "equipment.view"
+        },
+        {
+          title: "Cost Summary",
+          href: "/equipment/costs",
+          icon: <FileText className="h-4 w-4" />,
+          feature: "equipment.view"
         },
       ]
     },
