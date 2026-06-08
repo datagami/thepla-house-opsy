@@ -1,7 +1,14 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { List, BarChart2 } from "lucide-react";
-import { subMonths } from "date-fns";
+import {
+  subMonths,
+  startOfMonth,
+  endOfMonth,
+  startOfDay,
+  endOfDay,
+  format,
+} from "date-fns";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { hasAccess } from "@/lib/access-control";
@@ -36,8 +43,19 @@ interface Props {
     outlet?: string;
     category?: string;
     range?: string;
+    from?: string;
+    to?: string;
   }>;
 }
+
+const RANGE_VALUES = [
+  "this-month",
+  "last-month",
+  "3m",
+  "6m",
+  "12m",
+  "custom",
+] as const;
 
 export default async function CostSummaryPage({ searchParams }: Props) {
   const session = await auth();
@@ -50,15 +68,47 @@ export default async function CostSummaryPage({ searchParams }: Props) {
 
   if (!hasAccess(role, "equipment.view")) redirect("/dashboard");
 
-  const { outlet, category, range } = await searchParams;
+  const { outlet, category, range, from, to } = await searchParams;
 
   // Validate range; default 12m
-  const rangeVal = range === "3m" || range === "6m" ? range : "12m";
-  const rangeMonths = rangeVal === "3m" ? 3 : rangeVal === "6m" ? 6 : 12;
-  const rangeLabel = rangeMonths.toString();
+  const rangeVal = (RANGE_VALUES as readonly string[]).includes(range ?? "")
+    ? (range as (typeof RANGE_VALUES)[number])
+    : "12m";
 
-  // Cutoff date
-  const cutoff = subMonths(new Date(), rangeMonths);
+  // Resolve the service-date window [gte, lte] for the selected range.
+  const now = new Date();
+  let gte: Date | null = null;
+  let lte: Date | null = null;
+  let rangeLabelText: string;
+
+  if (rangeVal === "this-month") {
+    gte = startOfMonth(now);
+    lte = endOfMonth(now);
+    rangeLabelText = "this month";
+  } else if (rangeVal === "last-month") {
+    const lastMonth = subMonths(now, 1);
+    gte = startOfMonth(lastMonth);
+    lte = endOfMonth(lastMonth);
+    rangeLabelText = "last month";
+  } else if (rangeVal === "custom") {
+    const fromD = from ? startOfDay(new Date(from)) : null;
+    const toD = to ? endOfDay(new Date(to)) : null;
+    gte = fromD && !Number.isNaN(fromD.getTime()) ? fromD : null;
+    lte = toD && !Number.isNaN(toD.getTime()) ? toD : null;
+    rangeLabelText =
+      gte || lte
+        ? `${gte ? format(gte, "d MMM yyyy") : "start"} – ${lte ? format(lte, "d MMM yyyy") : "today"}`
+        : "all time";
+  } else {
+    const months = rangeVal === "3m" ? 3 : rangeVal === "6m" ? 6 : 12;
+    gte = subMonths(now, months);
+    rangeLabelText = `last ${months} months`;
+  }
+
+  const serviceDateWhere =
+    gte || lte
+      ? { serviceDate: { ...(gte ? { gte } : {}), ...(lte ? { lte } : {}) } }
+      : {};
 
   // Determine branch scope
   const roleWhere = equipmentWhereForRole(role, branchId);
@@ -86,7 +136,7 @@ export default async function CostSummaryPage({ searchParams }: Props) {
   const records = await prisma.maintenanceRecord.findMany({
     where: {
       ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
-      serviceDate: { gte: cutoff },
+      ...serviceDateWhere,
       ...(equipmentWhere ? { equipment: equipmentWhere } : {}),
     },
     include: {
@@ -191,7 +241,7 @@ export default async function CostSummaryPage({ searchParams }: Props) {
           <Card className="flex flex-col justify-center">
             <CardContent className="px-6 py-6">
               <div className="text-[12.5px] font-[550] text-muted-foreground">
-                Total spend · last {rangeLabel} months
+                Total spend · {rangeLabelText}
               </div>
               <div
                 className="mt-1.5 text-[38px] font-[800] leading-[1] tracking-[-0.03em] tabular-nums text-foreground"
