@@ -177,11 +177,29 @@ export async function POST(req: Request) {
     // and `after()` keeps the work alive on serverless runtimes past the response.
     const employeeName =
       targetUserId === sessionUserId ? requesterName : targetUserName;
+    // Pull the employee's branch / department / doj / numId so the PDF
+    // attachment in the email can render the same fields as the on-screen
+    // form. Self-creation uses the session user; on-behalf uses the target.
+    const employeeForPdf = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: {
+        numId: true,
+        doj: true,
+        department: { select: { name: true } },
+        branch: { select: { name: true } },
+      },
+    });
     after(
       notifyNewLeaveRequest({
         leaveRequestId: leaveRequest.id,
+        leaveRequestNumId: leaveRequest.numId,
+        filedAt: leaveRequest.createdAt,
         requesterName,
         employeeName,
+        employeeNumId: employeeForPdf?.numId ?? null,
+        employeeDepartment: employeeForPdf?.department?.name ?? null,
+        employeeBranch: employeeForPdf?.branch?.name ?? null,
+        employeeDoj: employeeForPdf?.doj ?? null,
         leaveType: leaveType as LeaveType,
         startDate,
         endDate,

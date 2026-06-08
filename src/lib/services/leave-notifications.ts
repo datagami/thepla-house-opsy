@@ -1,10 +1,22 @@
 import type { LeaveType } from "@prisma/client";
-import { sendEmail } from "@/lib/services/email";
+import { differenceInCalendarDays, format } from "date-fns";
+import { sendEmail, type EmailAttachment } from "@/lib/services/email";
 
 export interface NewLeaveRequestNotification {
   leaveRequestId: string;
+  // Auto-incrementing numeric id used for the printable Ref. No. on the form.
+  leaveRequestNumId?: number | null;
+  // When the leave request was filed (DB createdAt). Used for the Ref. No.
+  // date segment and the "Filed on" field. Falls back to "now" if missing.
+  filedAt?: string | Date | null;
   requesterName: string | null;
   employeeName: string | null;
+  // Extra employee fields needed to render the attached PDF form. All optional
+  // — if missing, the PDF still renders with "—" placeholders.
+  employeeNumId?: number | null;
+  employeeDepartment?: string | null;
+  employeeBranch?: string | null;
+  employeeDoj?: string | Date | null;
   leaveType: LeaveType;
   startDate: string | Date;
   endDate: string | Date;
@@ -73,6 +85,63 @@ export function buildNewLeaveRequestEmail(
   return { subject, html };
 }
 
+// Build the printable Ref. No. used on the form: LR/YYMM/####.
+function buildReferenceNo(numId: number, filedAt: Date): string {
+  const yy = String(filedAt.getFullYear()).slice(-2);
+  const mm = String(filedAt.getMonth() + 1).padStart(2, "0");
+  return `LR/${yy}${mm}/${String(numId).padStart(4, "0")}`;
+}
+
+// Render the leave application PDF for attachment. Imported lazily so the
+// heavy @react-pdf/renderer module isn't pulled into every callsite that
+// imports this notifications module. Returns null on failure so the email
+// can still be sent without an attachment.
+async function buildLeaveApplicationAttachment(
+  input: NewLeaveRequestNotification
+): Promise<EmailAttachment | null> {
+  try {
+    const { renderLeaveApplicationPdf } = await import(
+      "@/lib/services/leave-application-pdf"
+    );
+    const filedAt = input.filedAt ? new Date(input.filedAt) : new Date();
+    const start = new Date(input.startDate);
+    const end = new Date(input.endDate);
+    const refNo =
+      input.leaveRequestNumId != null
+        ? buildReferenceNo(input.leaveRequestNumId, filedAt)
+        : `LR/${input.leaveRequestId.slice(-6).toUpperCase()}`;
+    const pdfBuffer = await renderLeaveApplicationPdf({
+      refNo,
+      filedOn: format(filedAt, "d MMMM yyyy"),
+      employeeName: input.employeeName ?? "An employee",
+      employeeNumId: input.employeeNumId ?? null,
+      departmentName: input.employeeDepartment ?? null,
+      branchName: input.employeeBranch ?? null,
+      doj: input.employeeDoj ? format(new Date(input.employeeDoj), "d MMMM yyyy") : null,
+      leaveType: input.leaveType,
+      startDate: format(start, "d MMMM yyyy"),
+      endDate: format(end, "d MMMM yyyy"),
+      totalDays: differenceInCalendarDays(end, start) + 1,
+      reason: input.reason,
+    });
+    // Safe filename: replace anything outside [\w.-] so SMTP / mail clients
+    // don't choke on names like "Sam & Co.".
+    const safeName = (input.employeeName ?? "employee").replace(/[^\w.-]+/g, "_");
+    return {
+      filename: `leave-application-${safeName}-${refNo.replace(/\//g, "-")}.pdf`,
+      content: pdfBuffer,
+      contentType: "application/pdf",
+    };
+  } catch (error) {
+    console.error(
+      "[leave-notifications] Failed to render leave application PDF; sending email without attachment for",
+      input.leaveRequestId,
+      error
+    );
+    return null;
+  }
+}
+
 export async function notifyNewLeaveRequest(
   input: NewLeaveRequestNotification
 ): Promise<void> {
@@ -87,7 +156,13 @@ export async function notifyNewLeaveRequest(
     }
 
     const { subject, html } = buildNewLeaveRequestEmail(input);
-    await sendEmail({ to, subject, html });
+    const attachment = await buildLeaveApplicationAttachment(input);
+    await sendEmail({
+      to,
+      subject,
+      html,
+      attachments: attachment ? [attachment] : undefined,
+    });
   } catch (error) {
     console.error(
       "[leave-notifications] Failed to send new-leave-request email for",

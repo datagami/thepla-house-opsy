@@ -1,12 +1,19 @@
 import nodemailer from "nodemailer";
 
+export interface EmailAttachment {
+    filename: string;
+    content: Buffer | string;
+    contentType?: string;
+}
+
 interface EmailOptions {
     to: string | string[];
     subject: string;
     html: string;
+    attachments?: EmailAttachment[];
 }
 
-export const sendEmail = async ({ to, subject, html }: EmailOptions) => {
+export const sendEmail = async ({ to, subject, html, attachments }: EmailOptions) => {
     const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: Number(process.env.SMTP_PORT) || 587,
@@ -24,6 +31,7 @@ export const sendEmail = async ({ to, subject, html }: EmailOptions) => {
         to: Array.isArray(to) ? to.join(", ") : to,
         subject,
         html,
+        ...(attachments && attachments.length > 0 ? { attachments } : {}),
     });
 
     console.log("Message sent: %s", info.messageId);
