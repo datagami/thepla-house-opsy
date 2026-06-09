@@ -5,6 +5,7 @@ import { hasAccess } from "@/lib/access-control";
 import { canManageBranch } from "@/lib/maintenance-access";
 import { equipmentUpdateSchema } from "@/lib/validations/equipment";
 import { logEntityActivity } from "@/lib/services/activity-log";
+import { deleteMaintenanceFiles } from "@/lib/maintenance-upload";
 import { ActivityType } from "@prisma/client";
 
 type SessionUser = { id?: string; role?: string; branchId?: string | null };
@@ -83,15 +84,40 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       },
     });
 
-    await logEntityActivity(
-      ActivityType.EQUIPMENT_UPDATED,
-      user.id,
-      "Equipment",
-      id,
-      `Updated maintenance item "${updated.name}"`,
-      { equipmentId: id },
-      req
-    );
+    const guardItem = guard.item!;
+    const archiving = guardItem.status !== "RETIRED" && d.status === "RETIRED";
+
+    if (archiving) {
+      const recs = await prisma.maintenanceRecord.findMany({
+        where: { equipmentId: id },
+        select: { billUrl: true, photoUrls: true },
+      });
+      const urls = recs.flatMap((r) => [r.billUrl, ...r.photoUrls]).filter((u): u is string => !!u);
+      const photoCount = recs.reduce((n, r) => n + r.photoUrls.length, 0);
+      const billCount = recs.filter((r) => !!r.billUrl).length;
+      // Clear the DB references first so the UI never points at deleted blobs...
+      await prisma.maintenanceRecord.updateMany({
+        where: { equipmentId: id },
+        data: { billUrl: null, photoUrls: [] },
+      });
+      // ...then best-effort delete the blobs (do not fail the archive if cleanup errors).
+      try { await deleteMaintenanceFiles(urls); } catch (e) { console.error("Archive blob cleanup failed for", id, e); }
+      await logEntityActivity(
+        ActivityType.EQUIPMENT_UPDATED, user.id!, "Equipment", id,
+        `Archived "${updated.name}" and deleted ${photoCount} photo(s) + ${billCount} bill(s) from storage`,
+        { equipmentId: id, archived: true, deletedPhotos: photoCount, deletedBills: billCount }, req
+      );
+    } else {
+      await logEntityActivity(
+        ActivityType.EQUIPMENT_UPDATED,
+        user.id,
+        "Equipment",
+        id,
+        `Updated maintenance item "${updated.name}"`,
+        { equipmentId: id },
+        req
+      );
+    }
     return NextResponse.json(updated);
   } catch (error) {
     console.error("Error in PATCH /api/equipment/[id]:", error);

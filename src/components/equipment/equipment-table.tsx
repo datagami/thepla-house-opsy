@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CategoryPill, StatusBadge } from "@/components/equipment/ui";
 import { SnoozeDialog } from "@/components/equipment/snooze-dialog";
+import { ArchiveDialog } from "@/components/equipment/archive-dialog";
 import { getReminderState } from "@/lib/services/maintenance-schedule";
 
 export interface EquipmentRow {
@@ -67,9 +68,11 @@ export function EquipmentTable({
 }: EquipmentTableProps) {
   const router = useRouter();
   const [snoozeId, setSnoozeId] = useState<string | null>(null);
+  const [archiveId, setArchiveId] = useState<string | null>(null);
 
   const today = new Date();
   const snoozeRow = rows.find((r) => r.id === snoozeId);
+  const archiveRow = rows.find((r) => r.id === archiveId);
   const hasAnyAction = canManage || canSnooze || canLog;
 
   return (
@@ -231,16 +234,13 @@ export function EquipmentTable({
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onSelect={async () => {
+                            if (row.status === "ACTIVE") {
+                              setArchiveId(row.id);
+                              return;
+                            }
                             try {
-                              await setEquipmentStatus(
-                                row.id,
-                                row.status === "ACTIVE" ? "RETIRED" : "ACTIVE"
-                              );
-                              toast.success(
-                                row.status === "ACTIVE"
-                                  ? "Item marked inactive"
-                                  : "Item marked active"
-                              );
+                              await setEquipmentStatus(row.id, "ACTIVE");
+                              toast.success("Item marked active");
                               router.refresh();
                             } catch (err) {
                               toast.error(
@@ -284,6 +284,17 @@ export function EquipmentTable({
           open={!!snoozeId}
           onOpenChange={(o) => {
             if (!o) setSnoozeId(null);
+          }}
+        />
+      )}
+
+      {archiveId && (
+        <ArchiveDialog
+          equipmentId={archiveId}
+          equipmentName={archiveRow?.name ?? "this item"}
+          open={!!archiveId}
+          onOpenChange={(o) => {
+            if (!o) setArchiveId(null);
           }}
         />
       )}

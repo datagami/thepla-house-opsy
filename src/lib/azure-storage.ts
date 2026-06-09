@@ -55,6 +55,22 @@ export class AzureStorageService {
     }
   }
 
+  async downloadByUrl(blobUrl: string): Promise<{ buffer: Buffer; blobName: string } | null> {
+    try {
+      const containerClient = this.blobServiceClient.getContainerClient(this.containerName);
+      const prefix = `/${this.containerName}/`;
+      const pathName = new URL(blobUrl).pathname;
+      const idx = pathName.indexOf(prefix);
+      if (idx === -1) return null;
+      const blobName = decodeURIComponent(pathName.slice(idx + prefix.length));
+      const buffer = await containerClient.getBlockBlobClient(blobName).downloadToBuffer();
+      return { buffer, blobName };
+    } catch (e) {
+      console.error("Failed to download blob by URL:", blobUrl, e);
+      return null;
+    }
+  }
+
   // Generate a SAS URL for temporary access
   async generateSasUrl(fileName: string, folder: string, expiresInHours: number = 1, contentType?: string): Promise<string> {
     const blobClient = await this.getBlobClient(fileName, folder);

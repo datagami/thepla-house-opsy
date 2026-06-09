@@ -7,6 +7,7 @@ import { BellOff, Pencil, Wrench, Archive, ArchiveRestore } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { SnoozeDialog } from "@/components/equipment/snooze-dialog";
+import { ArchiveDialog } from "@/components/equipment/archive-dialog";
 import { setEquipmentStatus } from "@/lib/equipment-actions";
 
 interface DetailActionsProps {
@@ -28,6 +29,7 @@ export function DetailActions({
 }: DetailActionsProps) {
   const router = useRouter();
   const [snoozeOpen, setSnoozeOpen] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
   const isRetired = status === "RETIRED";
 
   if (!canManage && !canSnooze && !canLog) {
@@ -87,14 +89,13 @@ export function DetailActions({
           variant="outline"
           type="button"
           onClick={async () => {
+            if (!isRetired) {
+              setArchiveOpen(true);
+              return;
+            }
             try {
-              await setEquipmentStatus(
-                equipmentId,
-                isRetired ? "ACTIVE" : "RETIRED"
-              );
-              toast.success(
-                isRetired ? "Item marked active" : "Item marked inactive"
-              );
+              await setEquipmentStatus(equipmentId, "ACTIVE");
+              toast.success("Item marked active");
               router.refresh();
             } catch (err) {
               toast.error(
@@ -134,6 +135,13 @@ export function DetailActions({
         equipmentName={equipmentName}
         open={snoozeOpen}
         onOpenChange={setSnoozeOpen}
+      />
+
+      <ArchiveDialog
+        equipmentId={equipmentId}
+        equipmentName={equipmentName ?? "this item"}
+        open={archiveOpen}
+        onOpenChange={setArchiveOpen}
       />
     </>
   );

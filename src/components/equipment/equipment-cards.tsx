@@ -18,6 +18,7 @@ import { setEquipmentStatus } from "@/lib/equipment-actions";
 import { CategoryPill, StatusBadge } from "@/components/equipment/ui";
 import { CategoryIcon } from "@/components/equipment/category-icon";
 import { SnoozeDialog } from "@/components/equipment/snooze-dialog";
+import { ArchiveDialog } from "@/components/equipment/archive-dialog";
 import { CATEGORY_META } from "@/lib/equipment-display";
 import { getReminderState } from "@/lib/services/maintenance-schedule";
 import type { EquipmentRow } from "@/components/equipment/equipment-table";
@@ -45,9 +46,10 @@ interface ItemCardProps {
   canSnooze: boolean;
   canLog: boolean;
   onSnooze: (id: string) => void;
+  onArchive: (id: string) => void;
 }
 
-function ItemCard({ row, canManage, canSnooze, canLog, onSnooze }: ItemCardProps) {
+function ItemCard({ row, canManage, canSnooze, canLog, onSnooze, onArchive }: ItemCardProps) {
   const router = useRouter();
   const today = new Date();
   const isRetired = row.status === "RETIRED";
@@ -175,16 +177,13 @@ function ItemCard({ row, canManage, canSnooze, canLog, onSnooze }: ItemCardProps
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onSelect={async () => {
+                    if (row.status === "ACTIVE") {
+                      onArchive(row.id);
+                      return;
+                    }
                     try {
-                      await setEquipmentStatus(
-                        row.id,
-                        row.status === "ACTIVE" ? "RETIRED" : "ACTIVE"
-                      );
-                      toast.success(
-                        row.status === "ACTIVE"
-                          ? "Item marked inactive"
-                          : "Item marked active"
-                      );
+                      await setEquipmentStatus(row.id, "ACTIVE");
+                      toast.success("Item marked active");
                       router.refresh();
                     } catch (err) {
                       toast.error(
@@ -225,7 +224,9 @@ export function EquipmentCards({
   canLog = false,
 }: EquipmentCardsProps) {
   const [snoozeId, setSnoozeId] = useState<string | null>(null);
+  const [archiveId, setArchiveId] = useState<string | null>(null);
   const snoozeRow = rows.find((r) => r.id === snoozeId);
+  const archiveRow = rows.find((r) => r.id === archiveId);
 
   return (
     <>
@@ -238,6 +239,7 @@ export function EquipmentCards({
             canSnooze={canSnooze}
             canLog={canLog}
             onSnooze={setSnoozeId}
+            onArchive={setArchiveId}
           />
         ))}
       </div>
@@ -249,6 +251,17 @@ export function EquipmentCards({
           open={!!snoozeId}
           onOpenChange={(o) => {
             if (!o) setSnoozeId(null);
+          }}
+        />
+      )}
+
+      {archiveId && (
+        <ArchiveDialog
+          equipmentId={archiveId}
+          equipmentName={archiveRow?.name ?? "this item"}
+          open={!!archiveId}
+          onOpenChange={(o) => {
+            if (!o) setArchiveId(null);
           }}
         />
       )}
