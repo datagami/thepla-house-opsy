@@ -280,7 +280,8 @@ export async function buildEquipmentWorkbook(
     "4. Do not edit the 'Item ID' or 'Last serviced' columns (they are locked).",
     "5. Category and Outlet are dropdowns — pick from the list.",
     "6. Status defaults to Active if the cell is left blank.",
-    "7. Save as .xlsx and upload on the Maintenance > Import page.",
+    "7. This export lists up to 200 most-recent active items per outlet (retired items are not included).",
+    "8. Save as .xlsx and upload on the Maintenance > Import page.",
   ];
   instructions.forEach((line, i) => { help.getCell(i + 3, 1).value = line; });
   help.getColumn(1).width = 80;
