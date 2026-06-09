@@ -50,7 +50,7 @@ export async function GET() {
 
   const exportItems: ExportItem[] = perOutlet
     .flat()
-    .sort((a, b) => a.branchName.localeCompare(b.branchName) || a.name.localeCompare(b.name))
+    .sort((a, b) => a.branchName.localeCompare(b.branchName, "en") || a.name.localeCompare(b.name, "en"))
     .map((i) => ({
       id: i.id, name: i.name, category: i.category, branchName: i.branchName,
       location: i.location, frequencyMonths: i.frequencyMonths, reminderLeadDays: i.reminderLeadDays,
