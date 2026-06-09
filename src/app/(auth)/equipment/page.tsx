@@ -12,6 +12,7 @@ import { EquipmentFilters } from "@/components/equipment/equipment-filters";
 import { EquipmentTable } from "@/components/equipment/equipment-table";
 import type { EquipmentRow } from "@/components/equipment/equipment-table";
 import { Button } from "@/components/ui/button";
+import { BulkImportExport } from "@/components/equipment/bulk-import-export";
 
 interface Props {
   searchParams: Promise<{
@@ -207,13 +208,16 @@ export default async function EquipmentPage({ searchParams }: Props) {
           </div>
 
           {canManage && (
-            <Button asChild>
-              <Link href="/equipment/new">
-                <Plus size={16} className="mr-1.5" />
-                <span className="hidden sm:inline">Add Item</span>
-                <span className="sm:hidden">Add</span>
-              </Link>
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <BulkImportExport />
+              <Button asChild>
+                <Link href="/equipment/new">
+                  <Plus size={16} className="mr-1.5" />
+                  <span className="hidden sm:inline">Add Item</span>
+                  <span className="sm:hidden">Add</span>
+                </Link>
+              </Button>
+            </div>
           )}
         </div>
       </div>
