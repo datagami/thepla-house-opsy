@@ -1,8 +1,23 @@
 import { describe, it, expect } from "vitest";
 import {
   categoryLabel, maintenanceTypeLabel, formatINR, stateBadge,
-  CATEGORY_META, TYPE_TINT, ALL_CATEGORIES,
+  CATEGORY_META, TYPE_TINT, ALL_CATEGORIES, formatDateIST,
 } from "@/lib/equipment-display";
+
+describe("formatDateIST", () => {
+  it("renders a UTC-midnight date as the correct IST calendar day", () => {
+    // 2026-06-09T00:00Z is 05:30 IST on 9 Jun → still 9 Jun
+    expect(formatDateIST(new Date("2026-06-09T00:00:00Z"))).toBe("9 Jun 2026");
+  });
+  it("rolls to the next IST day for late-UTC instants", () => {
+    // 2026-06-09T20:00Z is 01:30 IST on 10 Jun
+    expect(formatDateIST(new Date("2026-06-09T20:00:00Z"))).toBe("10 Jun 2026");
+  });
+  it("returns an em-dash for nullish input", () => {
+    expect(formatDateIST(null)).toBe("—");
+    expect(formatDateIST(undefined)).toBe("—");
+  });
+});
 
 describe("labels", () => {
   it("humanizes categories and types", () => {
