@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     const formData = await req.formData();
     const file = formData.get("file");
     if (!(file instanceof File)) return NextResponse.json({ ok: false, error: "Missing file field" }, { status: 400 });
-    if (file.size > 10 * 1024 * 1024) return NextResponse.json({ ok: false, error: "File too large (max 10MB)" }, { status: 400 });
+    if (file.size > 5 * 1024 * 1024) return NextResponse.json({ ok: false, error: "File too large (max 5MB)" }, { status: 400 });
     buffer = Buffer.from(await file.arrayBuffer());
   } catch {
     return NextResponse.json({ ok: false, error: "Invalid request body" }, { status: 400 });
