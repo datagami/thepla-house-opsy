@@ -4,6 +4,7 @@ import { Plus, List, BarChart2 } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { hasAccess } from "@/lib/access-control";
+import { ALL_CATEGORIES } from "@/lib/equipment-display";
 import { equipmentWhereForRole } from "@/lib/maintenance-access";
 import { getReminderState } from "@/lib/services/maintenance-schedule";
 import { StatCard, EquipmentEmptyState } from "@/components/equipment/ui";
@@ -53,7 +54,7 @@ export default async function EquipmentPage({ searchParams }: Props) {
 
   // Category filter — only add if it's a known key to prevent injection
   const categoryWhere =
-    category && category.length > 0 ? { category: category as never } : {};
+    category && ALL_CATEGORIES.includes(category) ? { category: category as never } : {};
 
   // Lifecycle param drives the DB-level status filter ("active" / absent = ACTIVE, "inactive" = RETIRED, "all" = no filter)
   const lifecycleWhere =
@@ -149,6 +150,8 @@ export default async function EquipmentPage({ searchParams }: Props) {
   }));
 
   const canManage = hasAccess(role, "equipment.manage");
+  const canSnooze = hasAccess(role, "equipment.snooze");
+  const canLog = hasAccess(role, "equipment.records.create");
   const lockedOutletId = role === "BRANCH_MANAGER" ? branchId : null;
 
   // ── Header subtitle ───────────────────────────────────────────────────────
@@ -292,7 +295,12 @@ export default async function EquipmentPage({ searchParams }: Props) {
             compact
           />
         ) : (
-          <EquipmentTable rows={tableRows} canManage={canManage} />
+          <EquipmentTable
+            rows={tableRows}
+            canManage={canManage}
+            canSnooze={canSnooze}
+            canLog={canLog}
+          />
         )}
       </div>
     </div>

@@ -2,8 +2,7 @@
 
 import { FileText, User, Phone } from "lucide-react";
 import { TypeBadge, DoneBadge } from "@/components/equipment/ui";
-import { formatINR } from "@/lib/equipment-display";
-import { format } from "date-fns";
+import { formatINR, formatDateIST } from "@/lib/equipment-display";
 
 export interface HistoryRecord {
   id: string;
@@ -78,7 +77,7 @@ function HistoryEntry({
   isLast: boolean;
 }) {
   const hasAttachments = record.billUrl || record.photoUrls.length > 0;
-  const formattedDate = format(new Date(record.serviceDate), "d MMM yyyy");
+  const formattedDate = formatDateIST(record.serviceDate);
 
   return (
     <div

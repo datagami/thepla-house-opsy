@@ -3,7 +3,7 @@ import { sendEmail } from "./email";
 import { logActivity } from "./activity-log";
 import { getReminderState, daysUntil } from "./maintenance-schedule";
 import { ActivityType } from "@prisma/client";
-import { format } from "date-fns";
+import { formatDateIST } from "@/lib/equipment-display";
 
 export interface DueItem {
   id: string;
@@ -44,7 +44,7 @@ function renderSection(title: string, items: DueItem[], color: string, today: Da
   for (const it of items) {
     const due = it.nextDueDate ? new Date(it.nextDueDate) : null;
     const when = due
-      ? `${format(due, "PPP")} (${daysUntil(due, today)} days)`
+      ? `${formatDateIST(due)} (${daysUntil(due, today)} days)`
       : "—";
     html += `
       <li style="margin-bottom:10px;padding:10px;background:#f9f9f9;border-left:4px solid ${color};">
@@ -124,6 +124,14 @@ export async function processEquipmentMaintenanceReminders() {
 
   const recipients = getEquipmentMaintenanceRecipients();
   let emailsSent = 0;
+
+  const explicitRecipients = !!process.env.EQUIPMENT_MAINTENANCE_EMAILS?.trim();
+  if (process.env.NODE_ENV !== "production" && !explicitRecipients) {
+    console.log(
+      `[maintenance-reminders] Skipping email in ${process.env.NODE_ENV ?? "non-prod"} (no explicit EQUIPMENT_MAINTENANCE_EMAILS). Would have notified ${recipients.join(", ")}: ${overdue.length} overdue, ${dueSoon.length} due soon.`
+    );
+    return { processed: total, emailsSent: 0, details: { overdue: overdue.length, dueSoon: dueSoon.length } };
+  }
 
   if (recipients.length > 0) {
     const { subject, html } = buildMaintenanceReminderEmail(overdue, dueSoon, today);

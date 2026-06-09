@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { hasAccess } from "@/lib/access-control";
 import { canManageBranch } from "@/lib/maintenance-access";
 import { maintenanceRecordCreateSchema } from "@/lib/validations/equipment";
-import { uploadMaintenanceFiles } from "@/lib/maintenance-upload";
+import { uploadMaintenanceFiles, deleteMaintenanceFiles } from "@/lib/maintenance-upload";
 import { computeNextDueDate } from "@/lib/services/maintenance-schedule";
 import { logEntityActivity } from "@/lib/services/activity-log";
 import { ActivityType } from "@prisma/client";
@@ -69,24 +69,33 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       ? new Date(d.nextDueDate)
       : computeNextDueDate(serviceDate, item.frequencyMonths);
 
-    const record = await prisma.maintenanceRecord.create({
-      data: {
-        equipmentId: id,
-        branchId: item.branchId,
-        serviceDate,
-        maintenanceType: d.maintenanceType,
-        issue: d.issue ?? null,
-        vendorName: d.vendorName ?? null,
-        vendorContact: d.vendorContact ?? null,
-        cost: d.cost,
-        status: d.status,
-        remarks: d.remarks ?? null,
-        billUrl,
-        photoUrls,
-        nextDueDate,
-        loggedById: user.id,
-      },
-    });
+    let record;
+    try {
+      record = await prisma.maintenanceRecord.create({
+        data: {
+          equipmentId: id,
+          branchId: item.branchId,
+          serviceDate,
+          maintenanceType: d.maintenanceType,
+          issue: d.issue ?? null,
+          vendorName: d.vendorName ?? null,
+          vendorContact: d.vendorContact ?? null,
+          cost: d.cost,
+          status: d.status,
+          remarks: d.remarks ?? null,
+          billUrl,
+          photoUrls,
+          nextDueDate,
+          loggedById: user.id,
+        },
+      });
+    } catch (e) {
+      // The blobs were uploaded before this insert; clean them up so a failed
+      // write doesn't leave orphaned files in Blob storage, then rethrow (the
+      // outer try/catch returns a 500).
+      await deleteMaintenanceFiles([billUrl, ...photoUrls]);
+      throw e;
+    }
 
     if (d.status === "DONE") {
       // Recompute the schedule from the most recent COMPLETED service rather than
@@ -104,7 +113,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           where: { id },
           data: {
             lastServiceDate: latestDone.serviceDate,
-            nextDueDate: latestDone.nextDueDate,
+            ...(latestDone.nextDueDate != null ? { nextDueDate: latestDone.nextDueDate } : {}),
             snoozedUntil: null,
           },
         });

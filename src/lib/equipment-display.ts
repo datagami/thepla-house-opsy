@@ -119,3 +119,30 @@ const STATE_BADGE_MAP: Record<ReminderState, StateBadge> = {
 export function stateBadge(state: ReminderState): StateBadge {
   return STATE_BADGE_MAP[state];
 }
+
+/**
+ * Formats a date as "9 Jun 2026" in IST (Asia/Kolkata), independent of the
+ * server's timezone. Maintenance dates are stored as UTC-midnight of the
+ * entered calendar day, so rendering them in a fixed zone (IST) keeps the
+ * displayed day correct on a UTC production server. Returns "—" for nullish.
+ */
+export function formatDateIST(
+  date: Date | string | number | null | undefined
+): string {
+  if (!date) return "—";
+  const opts: Intl.DateTimeFormatOptions = {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  };
+  try {
+    return new Intl.DateTimeFormat("en-GB", opts).format(new Date(date));
+  } catch {
+    return new Intl.DateTimeFormat("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }).format(new Date(date));
+  }
+}

@@ -72,3 +72,16 @@ export async function uploadMaintenanceFiles(
 
   return { billUrl, photoUrls };
 }
+
+/**
+ * Best-effort deletion of previously-uploaded maintenance blobs by URL.
+ * Used to clean up orphaned files when a subsequent DB write fails.
+ */
+export async function deleteMaintenanceFiles(
+  urls: Array<string | null | undefined>
+): Promise<void> {
+  const azure = new AzureStorageService();
+  await Promise.all(
+    urls.filter((u): u is string => !!u).map((u) => azure.deleteByUrl(u))
+  );
+}

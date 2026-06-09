@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+const parseableDate = (s: string) => !Number.isNaN(new Date(s).getTime());
+const dateStr = z.string().refine(parseableDate, "Invalid date");
+
 export const EQUIPMENT_CATEGORIES = [
   "FIRE_SAFETY", "REFRIGERATION", "KITCHEN_EQUIPMENT", "ELECTRICAL",
   "PLUMBING", "PEST_CONTROL", "CLEANING", "OTHER",
@@ -18,7 +21,7 @@ export const equipmentCreateSchema = z.object({
   location: z.string().trim().optional().nullable(),
   frequencyMonths: z.coerce.number().int().positive().nullable().optional(),
   reminderLeadDays: z.coerce.number().int().min(0).max(365).default(15),
-  nextDueDate: z.string().optional().nullable(),
+  nextDueDate: dateStr.optional().nullable(),
   notes: z.string().trim().optional().nullable(),
 });
 
@@ -31,7 +34,7 @@ export const equipmentUpdateSchema = equipmentCreateSchema
   });
 
 export const maintenanceRecordCreateSchema = z.object({
-  serviceDate: z.string().min(1),
+  serviceDate: dateStr,
   maintenanceType: z.enum(MAINTENANCE_TYPES),
   issue: z.string().trim().optional().nullable(),
   vendorName: z.string().trim().optional().nullable(),
@@ -39,7 +42,7 @@ export const maintenanceRecordCreateSchema = z.object({
   cost: z.coerce.number().min(0).default(0),
   status: z.enum(["PENDING", "DONE"]).default("DONE"),
   remarks: z.string().trim().optional().nullable(),
-  nextDueDate: z.string().optional().nullable(),
+  nextDueDate: dateStr.optional().nullable(),
   bill: uploadFile.optional().nullable(),
   photos: z.array(uploadFile).optional().default([]),
 });

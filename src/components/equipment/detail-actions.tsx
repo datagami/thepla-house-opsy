@@ -13,6 +13,8 @@ interface DetailActionsProps {
   equipmentId: string;
   equipmentName?: string;
   canManage: boolean;
+  canSnooze?: boolean;
+  canLog?: boolean;
   status: "ACTIVE" | "RETIRED";
 }
 
@@ -20,13 +22,15 @@ export function DetailActions({
   equipmentId,
   equipmentName,
   canManage,
+  canSnooze = false,
+  canLog = false,
   status,
 }: DetailActionsProps) {
   const router = useRouter();
   const [snoozeOpen, setSnoozeOpen] = useState(false);
   const isRetired = status === "RETIRED";
 
-  if (!canManage) {
+  if (!canManage && !canSnooze && !canLog) {
     return (
       <span
         className="inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold"
@@ -58,22 +62,27 @@ export function DetailActions({
   return (
     <>
       <div className="flex flex-wrap items-center gap-[9px]">
-        <Button
-          variant="outline"
-          type="button"
-          onClick={() => setSnoozeOpen(true)}
-        >
-          <BellOff size={15} className="mr-1.5" />
-          Snooze
-        </Button>
+        {canSnooze && (
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => setSnoozeOpen(true)}
+          >
+            <BellOff size={15} className="mr-1.5" />
+            Snooze
+          </Button>
+        )}
 
-        <Button variant="outline" asChild>
-          <Link href={`/equipment/${equipmentId}/edit`}>
-            <Pencil size={15} className="mr-1.5" />
-            Edit
-          </Link>
-        </Button>
+        {canManage && (
+          <Button variant="outline" asChild>
+            <Link href={`/equipment/${equipmentId}/edit`}>
+              <Pencil size={15} className="mr-1.5" />
+              Edit
+            </Link>
+          </Button>
+        )}
 
+        {canManage && (
         <Button
           variant="outline"
           type="button"
@@ -108,13 +117,16 @@ export function DetailActions({
             </>
           )}
         </Button>
+        )}
 
-        <Button asChild>
-          <Link href={`/equipment/${equipmentId}/records/new`}>
-            <Wrench size={15} className="mr-1.5" />
-            Log Maintenance
-          </Link>
-        </Button>
+        {canLog && (
+          <Button asChild>
+            <Link href={`/equipment/${equipmentId}/records/new`}>
+              <Wrench size={15} className="mr-1.5" />
+              Log Maintenance
+            </Link>
+          </Button>
+        )}
       </div>
 
       <SnoozeDialog

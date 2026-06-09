@@ -6,13 +6,12 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { hasAccess } from "@/lib/access-control";
 import { getReminderState } from "@/lib/services/maintenance-schedule";
-import { CATEGORY_META, formatINR } from "@/lib/equipment-display";
+import { CATEGORY_META, formatINR, formatDateIST } from "@/lib/equipment-display";
 import { CategoryPill, StatusBadge, EquipmentEmptyState } from "@/components/equipment/ui";
 import { CategoryIcon } from "@/components/equipment/category-icon";
 import { DetailActions } from "@/components/equipment/detail-actions";
 import { MaintenanceHistory } from "@/components/equipment/maintenance-history";
 import type { HistoryRecord } from "@/components/equipment/maintenance-history";
-import { format } from "date-fns";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -97,6 +96,8 @@ export default async function EquipmentDetailPage({ params, searchParams }: Prop
   });
 
   const canManage = hasAccess(role, "equipment.manage");
+  const canSnooze = hasAccess(role, "equipment.snooze");
+  const canLog = hasAccess(role, "equipment.records.create");
 
   const today = new Date();
   const reminderState = getReminderState(
@@ -111,16 +112,12 @@ export default async function EquipmentDetailPage({ params, searchParams }: Prop
 
   const cm = CATEGORY_META[item.category] ?? CATEGORY_META["OTHER"];
 
-  // Format dates
-  const lastServiced = item.lastServiceDate
-    ? format(item.lastServiceDate, "d MMM yyyy")
-    : "—";
-  const nextDue = item.nextDueDate
-    ? format(item.nextDueDate, "d MMM yyyy")
-    : "—";
+  // Format dates (IST, server-timezone independent)
+  const lastServiced = formatDateIST(item.lastServiceDate);
+  const nextDue = formatDateIST(item.nextDueDate);
   const snoozedUntilStr =
     item.snoozedUntil && item.snoozedUntil > today
-      ? format(item.snoozedUntil, "d MMM yyyy")
+      ? formatDateIST(item.snoozedUntil)
       : null;
 
   // Map records to serialisable shape (Decimal → number, Date → ISO string)
@@ -199,6 +196,8 @@ export default async function EquipmentDetailPage({ params, searchParams }: Prop
               equipmentId={item.id}
               equipmentName={item.name}
               canManage={canManage}
+              canSnooze={canSnooze}
+              canLog={canLog}
               status={item.status}
             />
           </div>
@@ -210,6 +209,8 @@ export default async function EquipmentDetailPage({ params, searchParams }: Prop
             equipmentId={item.id}
             equipmentName={item.name}
             canManage={canManage}
+            canSnooze={canSnooze}
+            canLog={canLog}
             status={item.status}
           />
         </div>

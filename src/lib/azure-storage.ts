@@ -41,6 +41,20 @@ export class AzureStorageService {
     await blobClient.deleteIfExists();
   }
 
+  async deleteByUrl(blobUrl: string): Promise<void> {
+    try {
+      const containerClient = this.blobServiceClient.getContainerClient(this.containerName);
+      const prefix = `/${this.containerName}/`;
+      const pathName = new URL(blobUrl).pathname;
+      const idx = pathName.indexOf(prefix);
+      if (idx === -1) return;
+      const blobName = decodeURIComponent(pathName.slice(idx + prefix.length));
+      await containerClient.getBlockBlobClient(blobName).deleteIfExists();
+    } catch (e) {
+      console.error("Failed to delete blob by URL:", blobUrl, e);
+    }
+  }
+
   // Generate a SAS URL for temporary access
   async generateSasUrl(fileName: string, folder: string, expiresInHours: number = 1, contentType?: string): Promise<string> {
     const blobClient = await this.getBlobClient(fileName, folder);

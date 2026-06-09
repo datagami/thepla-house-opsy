@@ -25,6 +25,8 @@ import type { EquipmentRow } from "@/components/equipment/equipment-table";
 interface EquipmentCardsProps {
   rows: EquipmentRow[];
   canManage: boolean;
+  canSnooze?: boolean;
+  canLog?: boolean;
 }
 
 function formatShortDate(iso: string | null): string {
@@ -40,10 +42,12 @@ function formatShortDate(iso: string | null): string {
 interface ItemCardProps {
   row: EquipmentRow;
   canManage: boolean;
+  canSnooze: boolean;
+  canLog: boolean;
   onSnooze: (id: string) => void;
 }
 
-function ItemCard({ row, canManage, onSnooze }: ItemCardProps) {
+function ItemCard({ row, canManage, canSnooze, canLog, onSnooze }: ItemCardProps) {
   const router = useRouter();
   const today = new Date();
   const isRetired = row.status === "RETIRED";
@@ -63,6 +67,7 @@ function ItemCard({ row, canManage, onSnooze }: ItemCardProps) {
       : undefined;
 
   const cm = CATEGORY_META[row.category] ?? CATEGORY_META["OTHER"];
+  const hasAnyAction = canManage || canSnooze || canLog;
 
   return (
     <div
@@ -111,7 +116,7 @@ function ItemCard({ row, canManage, onSnooze }: ItemCardProps) {
       <div className="flex items-center justify-between gap-2.5 border-t px-3.5 py-2.5">
         <StatusBadge state={reminderState} subLabel={snoozeSubLabel} size="sm" />
 
-        {!canManage ? (
+        {!hasAnyAction ? (
           <Badge
             variant="secondary"
             className="text-[11px] text-muted-foreground"
@@ -124,25 +129,29 @@ function ItemCard({ row, canManage, onSnooze }: ItemCardProps) {
             className="flex items-center gap-[7px]"
             onClick={(e) => e.stopPropagation()}
           >
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 gap-1.5 px-2.5 text-[12px]"
-              onClick={() => onSnooze(row.id)}
-            >
-              <BellOff size={13} />
-              Snooze
-            </Button>
-            <Button
-              size="sm"
-              className="h-7 gap-1.5 px-2.5 text-[12px]"
-              asChild
-            >
-              <Link href={`/equipment/${row.id}/records/new`}>
-                <Wrench size={13} />
-                Log
-              </Link>
-            </Button>
+            {canSnooze && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1.5 px-2.5 text-[12px]"
+                onClick={() => onSnooze(row.id)}
+              >
+                <BellOff size={13} />
+                Snooze
+              </Button>
+            )}
+            {canLog && (
+              <Button
+                size="sm"
+                className="h-7 gap-1.5 px-2.5 text-[12px]"
+                asChild
+              >
+                <Link href={`/equipment/${row.id}/records/new`}>
+                  <Wrench size={13} />
+                  Log
+                </Link>
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -158,6 +167,8 @@ function ItemCard({ row, canManage, onSnooze }: ItemCardProps) {
                 <DropdownMenuItem asChild>
                   <Link href={`/equipment/${row.id}`}>Open detail</Link>
                 </DropdownMenuItem>
+                {canManage && (
+                <>
                 <DropdownMenuItem asChild>
                   <Link href={`/equipment/${row.id}/edit`}>Edit item</Link>
                 </DropdownMenuItem>
@@ -196,6 +207,8 @@ function ItemCard({ row, canManage, onSnooze }: ItemCardProps) {
                     </>
                   )}
                 </DropdownMenuItem>
+                </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -205,7 +218,12 @@ function ItemCard({ row, canManage, onSnooze }: ItemCardProps) {
   );
 }
 
-export function EquipmentCards({ rows, canManage }: EquipmentCardsProps) {
+export function EquipmentCards({
+  rows,
+  canManage,
+  canSnooze = false,
+  canLog = false,
+}: EquipmentCardsProps) {
   const [snoozeId, setSnoozeId] = useState<string | null>(null);
   const snoozeRow = rows.find((r) => r.id === snoozeId);
 
@@ -217,6 +235,8 @@ export function EquipmentCards({ rows, canManage }: EquipmentCardsProps) {
             key={row.id}
             row={row}
             canManage={canManage}
+            canSnooze={canSnooze}
+            canLog={canLog}
             onSnooze={setSnoozeId}
           />
         ))}

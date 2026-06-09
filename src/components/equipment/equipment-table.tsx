@@ -45,6 +45,8 @@ export interface EquipmentRow {
 interface EquipmentTableProps {
   rows: EquipmentRow[];
   canManage: boolean;
+  canSnooze?: boolean;
+  canLog?: boolean;
 }
 
 function formatShortDate(iso: string | null): string {
@@ -57,18 +59,29 @@ function formatShortDate(iso: string | null): string {
   });
 }
 
-export function EquipmentTable({ rows, canManage }: EquipmentTableProps) {
+export function EquipmentTable({
+  rows,
+  canManage,
+  canSnooze = false,
+  canLog = false,
+}: EquipmentTableProps) {
   const router = useRouter();
   const [snoozeId, setSnoozeId] = useState<string | null>(null);
 
   const today = new Date();
   const snoozeRow = rows.find((r) => r.id === snoozeId);
+  const hasAnyAction = canManage || canSnooze || canLog;
 
   return (
     <>
       {/* Mobile: card list */}
       <div className="md:hidden">
-        <EquipmentCards rows={rows} canManage={canManage} />
+        <EquipmentCards
+          rows={rows}
+          canManage={canManage}
+          canSnooze={canSnooze}
+          canLog={canLog}
+        />
       </div>
 
       {/* Desktop: table */}
@@ -170,7 +183,7 @@ export function EquipmentTable({ rows, canManage }: EquipmentTableProps) {
                   className="text-right"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {!canManage ? (
+                  {!hasAnyAction ? (
                     <Badge
                       variant="secondary"
                       className="text-[11px] text-muted-foreground"
@@ -190,19 +203,25 @@ export function EquipmentTable({ rows, canManage }: EquipmentTableProps) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/equipment/${row.id}/records/new`}>
-                            Log maintenance
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={() => setSnoozeId(row.id)}
-                        >
-                          Snooze
-                        </DropdownMenuItem>
+                        {canLog && (
+                          <DropdownMenuItem asChild>
+                            <Link href={`/equipment/${row.id}/records/new`}>
+                              Log maintenance
+                            </Link>
+                          </DropdownMenuItem>
+                        )}
+                        {canSnooze && (
+                          <DropdownMenuItem
+                            onSelect={() => setSnoozeId(row.id)}
+                          >
+                            Snooze
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem asChild>
                           <Link href={`/equipment/${row.id}`}>Open detail</Link>
                         </DropdownMenuItem>
+                        {canManage && (
+                        <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
                           <Link href={`/equipment/${row.id}/edit`}>
@@ -244,6 +263,8 @@ export function EquipmentTable({ rows, canManage }: EquipmentTableProps) {
                             </>
                           )}
                         </DropdownMenuItem>
+                        </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}

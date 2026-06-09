@@ -1,14 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { List, BarChart2 } from "lucide-react";
-import {
-  subMonths,
-  startOfMonth,
-  endOfMonth,
-  startOfDay,
-  endOfDay,
-  format,
-} from "date-fns";
+import { subMonths } from "date-fns";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { hasAccess } from "@/lib/access-control";
@@ -19,6 +12,7 @@ import {
   ALL_CATEGORIES,
   categoryLabel,
   formatINR,
+  formatDateIST,
 } from "@/lib/equipment-display";
 import { CategoryPill, EquipmentEmptyState } from "@/components/equipment/ui";
 import { CostFilters } from "@/components/equipment/cost-filters";
@@ -57,6 +51,25 @@ const RANGE_VALUES = [
   "custom",
 ] as const;
 
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+function istTodayParts(): { y: number; m: number; d: number } {
+  const ist = new Date(Date.now() + IST_OFFSET_MS);
+  return { y: ist.getUTCFullYear(), m: ist.getUTCMonth(), d: ist.getUTCDate() };
+}
+// UTC instant of IST 00:00:00 on y-m-d (m is 0-based)
+function istStartOfDayUtc(y: number, m: number, d: number): Date {
+  return new Date(Date.UTC(y, m, d, 0, 0, 0, 0) - IST_OFFSET_MS);
+}
+// UTC instant of the last millisecond of the IST day y-m-d
+function istEndOfDayUtc(y: number, m: number, d: number): Date {
+  return new Date(Date.UTC(y, m, d + 1, 0, 0, 0, 0) - IST_OFFSET_MS - 1);
+}
+function parseYmd(s: string): { y: number; m: number; d: number } | null {
+  const parts = s.split("-").map(Number);
+  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return null;
+  return { y: parts[0], m: parts[1] - 1, d: parts[2] };
+}
+
 export default async function CostSummaryPage({ searchParams }: Props) {
   const session = await auth();
   if (!session) redirect("/login");
@@ -76,32 +89,35 @@ export default async function CostSummaryPage({ searchParams }: Props) {
     : "12m";
 
   // Resolve the service-date window [gte, lte] for the selected range.
-  const now = new Date();
+  // Calendar-month/day boundaries are computed in IST so month edges are correct
+  // regardless of the server's timezone (UTC in production).
   let gte: Date | null = null;
   let lte: Date | null = null;
   let rangeLabelText: string;
 
   if (rangeVal === "this-month") {
-    gte = startOfMonth(now);
-    lte = endOfMonth(now);
+    const { y, m } = istTodayParts();
+    gte = istStartOfDayUtc(y, m, 1);
+    lte = new Date(istStartOfDayUtc(y, m + 1, 1).getTime() - 1);
     rangeLabelText = "this month";
   } else if (rangeVal === "last-month") {
-    const lastMonth = subMonths(now, 1);
-    gte = startOfMonth(lastMonth);
-    lte = endOfMonth(lastMonth);
+    const { y, m } = istTodayParts();
+    gte = istStartOfDayUtc(y, m - 1, 1);
+    lte = new Date(istStartOfDayUtc(y, m, 1).getTime() - 1);
     rangeLabelText = "last month";
   } else if (rangeVal === "custom") {
-    const fromD = from ? startOfDay(new Date(from)) : null;
-    const toD = to ? endOfDay(new Date(to)) : null;
-    gte = fromD && !Number.isNaN(fromD.getTime()) ? fromD : null;
-    lte = toD && !Number.isNaN(toD.getTime()) ? toD : null;
+    const f = from ? parseYmd(from) : null;
+    const t = to ? parseYmd(to) : null;
+    gte = f ? istStartOfDayUtc(f.y, f.m, f.d) : null;
+    lte = t ? istEndOfDayUtc(t.y, t.m, t.d) : null;
     rangeLabelText =
       gte || lte
-        ? `${gte ? format(gte, "d MMM yyyy") : "start"} – ${lte ? format(lte, "d MMM yyyy") : "today"}`
+        ? `${gte ? formatDateIST(gte) : "start"} – ${lte ? formatDateIST(lte) : "today"}`
         : "all time";
   } else {
     const months = rangeVal === "3m" ? 3 : rangeVal === "6m" ? 6 : 12;
-    gte = subMonths(now, months);
+    gte = subMonths(new Date(), months);
+    lte = null;
     rangeLabelText = `last ${months} months`;
   }
 
