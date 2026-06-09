@@ -35,6 +35,25 @@ describe("workbook round-trip", () => {
     expect(r1.frequencyMonths).toBe(1);
   });
 
+  it("exports blank next-due for an item with null nextDueDate (round-trip stable for cleared schedule)", async () => {
+    // Item with nextDueDate: null but frequencyMonths set — export must write blank, not a computed date.
+    const itemWithNullNextDue = [
+      {
+        id: "eq-3", name: "AC Filter", category: "HVAC", branchName: "Andheri",
+        location: "Lobby", frequencyMonths: 12, reminderLeadDays: 15, status: "ACTIVE" as const,
+        nextDueDate: null, lastServiceDate: null, notes: null,
+      },
+    ];
+    const buf = await buildEquipmentWorkbook(itemWithNullNextDue, { branchNames: ["Andheri"] });
+    const parsed = await parseEquipmentWorkbook(Buffer.from(buf));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.rows).toHaveLength(1);
+    const r = parsed.rows[0];
+    // The next-due cell must be blank — not a computed date — so re-importing doesn't spuriously repopulate it.
+    expect(r.nextDueDate === null || r.nextDueDate === "").toBe(true);
+  });
+
   it("returns a file error for a workbook with no Items sheet", async () => {
     const ExcelJS = (await import("exceljs")).default;
     const wb = new ExcelJS.Workbook();

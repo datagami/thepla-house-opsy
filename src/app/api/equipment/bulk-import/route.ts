@@ -29,14 +29,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Invalid request body" }, { status: 400 });
   }
 
-  const parsed = await parseEquipmentWorkbook(buffer);
-  if (!parsed.ok) return NextResponse.json({ ok: false, error: parsed.fileError }, { status: 400 });
-
-  const summary = await applyBulkImport({
-    prisma,
-    user: { id: user.id, role: user.role ?? "", branchId: user.branchId ?? null },
-    rows: parsed.rows,
-    req,
-  });
-  return NextResponse.json(summary);
+  try {
+    const parsed = await parseEquipmentWorkbook(buffer);
+    if (!parsed.ok) return NextResponse.json({ ok: false, error: parsed.fileError }, { status: 400 });
+    const summary = await applyBulkImport({ prisma, user: { id: user.id, role: user.role ?? "", branchId: user.branchId ?? null }, rows: parsed.rows, req });
+    return NextResponse.json(summary);
+  } catch (error) {
+    console.error("Error in POST /api/equipment/bulk-import:", error);
+    return NextResponse.json({ ok: false, error: "Could not process the file" }, { status: 500 });
+  }
 }

@@ -67,6 +67,7 @@ export function BulkImportExport() {
       const res = await fetch("/api/equipment/bulk-import", { method: "POST", body: fd });
       const json: BulkSummary & { error?: string } = await res.json();
       if (!res.ok || !json.ok) {
+        setSummary(null);
         toast.error(json?.error ?? "Import failed");
         return;
       }

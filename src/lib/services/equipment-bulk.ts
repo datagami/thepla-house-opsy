@@ -258,6 +258,11 @@ export interface ExportItem {
   notes: string | null;
 }
 
+function csvSafe(s: string | null): string {
+  if (!s) return "";
+  return /^[=+\-@]/.test(s) ? `'${s}` : s;
+}
+
 const EXTRA_BLANK_ROWS = 50; // so dropdowns/validation cover newly added rows
 export const MAX_ROWS_PER_UPLOAD = 2000;
 
@@ -310,10 +315,10 @@ export async function buildEquipmentWorkbook(
 
   for (const it of items) {
     sheet.addRow([
-      it.id, it.name, categoryLabel(it.category), it.branchName, it.location ?? "",
+      it.id, csvSafe(it.name), categoryLabel(it.category), it.branchName, csvSafe(it.location),
       it.frequencyMonths ?? "", it.reminderLeadDays, it.status,
       it.nextDueDate ? it.nextDueDate.toISOString().slice(0, 10) : "",
-      it.notes ?? "", it.lastServiceDate ? formatDateIST(it.lastServiceDate) : "",
+      csvSafe(it.notes), it.lastServiceDate ? formatDateIST(it.lastServiceDate) : "",
     ]);
   }
 
@@ -427,7 +432,14 @@ export async function applyBulkImport(args: {
         if (user.role === "BRANCH_MANAGER" && existing.branchId !== user.branchId) {
           skipped.push({ row: row.rowNumber, name: row.name, errors: ["Item is not in your outlet"] }); continue;
         }
-        const nextDueDate = deriveNextDue(row.nextDueDate, row.nextDueProvided, existing.lastServiceDate, row.frequencyMonths, today);
+        let nextDueDate: Date | null;
+        if (row.nextDueProvided) {
+          nextDueDate = row.nextDueDate;                       // explicit override
+        } else if (row.frequencyMonths !== existing.frequencyMonths) {
+          nextDueDate = deriveNextDue(null, false, existing.lastServiceDate, row.frequencyMonths, today); // freq changed → recompute
+        } else {
+          nextDueDate = existing.nextDueDate;                  // blank + unchanged freq → preserve (round-trip stable)
+        }
         const incoming = {
           name: row.name, category: row.category, location: row.location,
           frequencyMonths: row.frequencyMonths, reminderLeadDays: row.reminderLeadDays,
