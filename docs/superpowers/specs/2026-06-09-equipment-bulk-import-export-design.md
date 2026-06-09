@@ -34,12 +34,12 @@ records (cost/vendor/bills/photos) are **out of scope** and stay managed in the 
 | A | `Item ID` | `Equipment.id` | Upsert key. Blank = create. Locked in export; never hand-edit. |
 | B | `Name` | `name` | **Required**, non-empty (trimmed). |
 | C | `Category` | `category` | **Required**. Cell dropdown of category labels; accepts the label ("Fire Safety") or the enum ("FIRE_SAFETY"), case-insensitive. |
-| D | `Outlet` | `branchId` (via `Branch.name`) | Branch **name** (unique). Manager: ignored — forced to their own outlet. Management: **required for new rows**; resolved to a real branch or the row is skipped. |
+| D | `Outlet` | `branchId` (via `Branch.name`) | Branch **name** (unique), chosen from a **cell dropdown** of outlet names (data-validation list). Manager: dropdown shows only their outlet and it's forced regardless. Management: dropdown lists all outlets; **required for new rows**; resolved to a real branch or the row is skipped. |
 | E | `Location` | `location` | Optional. |
 | F | `Service every (months)` | `frequencyMonths` | Optional. Blank or positive integer. |
 | G | `Reminder lead (days)` | `reminderLeadDays` | Optional. Integer 0–365. Default **15** when blank on a new row. |
 | H | `Status` | `status` | Optional. `ACTIVE` / `RETIRED` (case-insensitive). Default `ACTIVE` on new rows. |
-| I | `Next due date` | `nextDueDate` | Optional. Parseable date (treated as IST calendar day). Blank allowed. |
+| I | `Next due date` | `nextDueDate` | Optional **override**. **Blank → auto-set to `(Last serviced, or today if none) + Service-every-months`** (null if no frequency). Enter a date to override. Treated as an IST calendar day. |
 | J | `Notes` | `notes` | Optional. |
 | K | `Last serviced` | `lastServiceDate` | **Read-only reference.** Written on export, **ignored** on import (it is derived from maintenance records). |
 
@@ -77,12 +77,19 @@ records (cost/vendor/bills/photos) are **out of scope** and stay managed in the 
    - Apply outlet-scope checks (above).
    - Collect row-level errors into `skipped: [{ row, name, errors[] }]`.
 4. For valid rows:
-   - **Create** (no id): insert with `createdById = session user`, deriving
-     `nextDueDate` from the provided value or `frequencyMonths` (same rule as the
-     single-create API).
-   - **Update** (id): load the item (must be in the user's scope); **diff** the
-     importable fields against the DB. If nothing changed → count as **unchanged**
-     (no write). Otherwise update only the changed fields.
+   - **Next-due derivation (both create and update):** if the `Next due date` cell is
+     **blank**, auto-compute it as `computeNextDueDate(base, frequencyMonths)` where
+     `base = lastServiceDate ?? today` — i.e. the next due is `frequencyMonths` after the
+     last service (or after today if the item was never serviced). If `frequencyMonths`
+     is also blank, `nextDueDate` stays null. A non-blank cell is used verbatim as the
+     override. (On create, `lastServiceDate` is null, so the base is today — matching the
+     single-create API.)
+   - **Create** (no id): insert with `createdById = session user` and the derived
+     `nextDueDate`.
+   - **Update** (id): load the item (must be in the user's scope); recompute the derived
+     `nextDueDate` against the item's current `lastServiceDate`; **diff** the importable
+     fields against the DB. If nothing changed → count as **unchanged** (no write).
+     Otherwise update only the changed fields.
    - Status changes via bulk import set `ACTIVE`/`RETIRED` **but do NOT trigger the
      archive blob-deletion side effect** (that destructive flow stays behind the
      explicit Archive dialog only). A bulk `RETIRED` just flips the flag.
@@ -112,8 +119,10 @@ reported rows and re-uploads (re-importing unchanged rows is a no-op thanks to t
   (Manager = own outlet; Management = all), both ACTIVE and RETIRED, ordered by outlet
   then name.
 - Build with `exceljs`: bold header row, a frozen header, the **Item ID** column locked,
-  a **Category** dropdown (data-validation list of labels), sensible column widths, and a
-  short instructions note (e.g. in a header comment or a second tiny "How to use" sheet).
+  a **Category** dropdown and an **Outlet** dropdown (both data-validation list
+  dropdowns — Category = category labels; Outlet = branch names in scope), sensible
+  column widths, and a short instructions note (e.g. in a header comment or a second tiny
+  "How to use" sheet).
 - Dates (`Next due date`, `Last serviced`) rendered as IST calendar dates (matching
   `formatDateIST`).
 - Returns the buffer with:
