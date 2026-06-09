@@ -1,9 +1,11 @@
 // src/lib/services/equipment-bulk.ts
 import ExcelJS from "exceljs";
 import type { PrismaClient } from "@prisma/client";
+import { ActivityType } from "@prisma/client";
 import { EQUIPMENT_CATEGORIES } from "@/lib/validations/equipment";
 import { categoryLabel, ALL_CATEGORIES, formatDateIST } from "@/lib/equipment-display";
 import { computeNextDueDate } from "@/lib/services/maintenance-schedule";
+import { logEntityActivity } from "@/lib/services/activity-log";
 
 export type EquipmentCategory = (typeof EQUIPMENT_CATEGORIES)[number];
 
@@ -359,4 +361,91 @@ export async function parseEquipmentWorkbook(buffer: Buffer): Promise<ParseResul
   }
 
   return { ok: true, rows };
+}
+
+// ── DB Upsert Orchestration ───────────────────────────────────────────────────
+
+export interface BulkUser { id: string; role: string; branchId: string | null; }
+
+export interface BulkSummary {
+  ok: true;
+  created: number;
+  updated: number;
+  unchanged: number;
+  skipped: { row: number; name: string; errors: string[] }[];
+}
+
+export async function applyBulkImport(args: {
+  prisma: PrismaClient;
+  user: BulkUser;
+  rows: RawRow[];
+  req?: Request;
+}): Promise<BulkSummary> {
+  const { prisma, user, rows } = args;
+
+  // Build the branch-name → id map (all branches; manager rows are forced anyway).
+  const branches = await prisma.branch.findMany({ select: { id: true, name: true } });
+  const branchByName = new Map(branches.map((b) => [b.name.trim().toLowerCase(), b.id]));
+
+  const ctx: ValidateCtx = {
+    role: user.role,
+    scopedBranchId: user.role === "BRANCH_MANAGER" ? user.branchId : null,
+    branchByName,
+  };
+
+  let created = 0, updated = 0, unchanged = 0;
+  const skipped: { row: number; name: string; errors: string[] }[] = [];
+  const today = new Date();
+
+  for (const raw of rows) {
+    const v = validateRow(raw, ctx);
+    if (!v.ok) { skipped.push({ row: raw.rowNumber, name: raw.name ?? "", errors: v.errors }); continue; }
+    const row = v.value;
+
+    if (row.id) {
+      // UPDATE path
+      const existing = await prisma.equipment.findUnique({ where: { id: row.id } });
+      if (!existing) { skipped.push({ row: row.rowNumber, name: row.name, errors: ["Item ID not found"] }); continue; }
+      if (user.role === "BRANCH_MANAGER" && existing.branchId !== user.branchId) {
+        skipped.push({ row: row.rowNumber, name: row.name, errors: ["Item is not in your outlet"] }); continue;
+      }
+      const nextDueDate = deriveNextDue(row.nextDueDate, row.nextDueProvided, existing.lastServiceDate, row.frequencyMonths, today);
+      const incoming = {
+        name: row.name, category: row.category, location: row.location,
+        frequencyMonths: row.frequencyMonths, reminderLeadDays: row.reminderLeadDays,
+        status: row.status, notes: row.notes, nextDueDate,
+      };
+      const changes = diffEquipment(
+        {
+          name: existing.name, category: existing.category, location: existing.location,
+          frequencyMonths: existing.frequencyMonths, reminderLeadDays: existing.reminderLeadDays,
+          status: existing.status, notes: existing.notes, nextDueDate: existing.nextDueDate,
+        },
+        incoming
+      );
+      if (Object.keys(changes).length === 0) { unchanged++; continue; }
+      await prisma.equipment.update({ where: { id: row.id }, data: changes as never });
+      updated++;
+    } else {
+      // CREATE path (branchId resolved in validateRow)
+      const nextDueDate = deriveNextDue(row.nextDueDate, row.nextDueProvided, null, row.frequencyMonths, today);
+      await prisma.equipment.create({
+        data: {
+          name: row.name, category: row.category, branchId: row.branchId!,
+          location: row.location, frequencyMonths: row.frequencyMonths,
+          reminderLeadDays: row.reminderLeadDays, status: row.status,
+          nextDueDate, notes: row.notes, createdById: user.id,
+        },
+      });
+      created++;
+    }
+  }
+
+  await logEntityActivity(
+    ActivityType.EQUIPMENT_UPDATED, user.id, "Equipment", "bulk",
+    `Bulk import: ${created} created, ${updated} updated, ${unchanged} unchanged, ${skipped.length} skipped`,
+    { bulk: true, created, updated, unchanged, skipped: skipped.length }, args.req
+  );
+
+  return { ok: true, created, updated, unchanged, skipped };
 }
