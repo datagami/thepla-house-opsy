@@ -195,3 +195,47 @@ export function validateRow(r: RawRow, ctx: ValidateCtx): ValidateResult {
     },
   };
 }
+
+/** Next due = explicit override, else computeNextDueDate(lastService ?? today, freq). */
+export function deriveNextDue(
+  explicit: Date | null,
+  hasExplicit: boolean,
+  lastService: Date | null,
+  frequencyMonths: number | null,
+  today: Date = new Date()
+): Date | null {
+  if (hasExplicit) return explicit;
+  const base = lastService ?? today;
+  return computeNextDueDate(base, frequencyMonths);
+}
+
+export interface EquipmentDiffShape {
+  name: string;
+  category: string;
+  location: string | null;
+  frequencyMonths: number | null;
+  reminderLeadDays: number;
+  status: string;
+  notes: string | null;
+  nextDueDate: Date | null;
+}
+
+/** Returns only the changed importable fields (for unchanged-detection). */
+export function diffEquipment(
+  existing: EquipmentDiffShape,
+  incoming: EquipmentDiffShape
+): Partial<EquipmentDiffShape> {
+  const out: Partial<EquipmentDiffShape> = {};
+  const keys: (keyof EquipmentDiffShape)[] = [
+    "name", "category", "location", "frequencyMonths", "reminderLeadDays", "status", "notes",
+  ];
+  for (const k of keys) {
+    if (existing[k] !== incoming[k]) {
+      (out as Record<string, unknown>)[k] = incoming[k];
+    }
+  }
+  const a = existing.nextDueDate ? existing.nextDueDate.getTime() : null;
+  const b = incoming.nextDueDate ? incoming.nextDueDate.getTime() : null;
+  if (a !== b) out.nextDueDate = incoming.nextDueDate;
+  return out;
+}

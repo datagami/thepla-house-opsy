@@ -1,6 +1,6 @@
 // src/lib/services/__tests__/equipment-bulk-validate.test.ts
 import { describe, it, expect } from "vitest";
-import { normalizeCategory, normalizeStatus, validateRow, type RawRow, type ValidateCtx } from "@/lib/services/equipment-bulk";
+import { normalizeCategory, normalizeStatus, validateRow, deriveNextDue, diffEquipment, type RawRow, type ValidateCtx } from "@/lib/services/equipment-bulk";
 
 describe("normalizeCategory", () => {
   it("accepts a label (case-insensitive)", () => {
@@ -78,5 +78,41 @@ describe("validateRow", () => {
   it("rejects an unparseable next due date but accepts blank", () => {
     expect(validateRow(raw({ nextDueDate: "not-a-date" }), mgmtCtx).ok).toBe(false);
     expect(validateRow(raw({ nextDueDate: null }), mgmtCtx).ok).toBe(true);
+  });
+});
+
+describe("deriveNextDue", () => {
+  it("uses the explicit date when provided", () => {
+    const explicit = new Date("2027-01-01");
+    expect(deriveNextDue(explicit, true, new Date("2026-01-01"), 12)).toEqual(explicit);
+  });
+  it("computes lastService + frequency when blank", () => {
+    const d = deriveNextDue(null, false, new Date("2026-06-09T00:00:00Z"), 12);
+    expect(d?.toISOString().slice(0, 10)).toBe("2027-06-09");
+  });
+  it("falls back to today when there is no last service", () => {
+    const today = new Date("2026-06-09T00:00:00Z");
+    const d = deriveNextDue(null, false, null, 6, today);
+    expect(d?.toISOString().slice(0, 10)).toBe("2026-12-09");
+  });
+  it("is null when blank and no frequency", () => {
+    expect(deriveNextDue(null, false, new Date("2026-01-01"), null)).toBeNull();
+  });
+});
+
+describe("diffEquipment", () => {
+  const existing = {
+    name: "A", category: "OTHER", location: null, frequencyMonths: 12,
+    reminderLeadDays: 15, status: "ACTIVE", notes: null, nextDueDate: new Date("2027-01-01"),
+  };
+  it("detects no change", () => {
+    expect(diffEquipment(existing, { ...existing })).toEqual({});
+  });
+  it("detects changed fields only", () => {
+    const d = diffEquipment(existing, { ...existing, name: "B", reminderLeadDays: 30 });
+    expect(Object.keys(d).sort()).toEqual(["name", "reminderLeadDays"]);
+  });
+  it("treats nextDueDate equal by timestamp", () => {
+    expect(diffEquipment(existing, { ...existing, nextDueDate: new Date("2027-01-01") })).toEqual({});
   });
 });
