@@ -36,7 +36,11 @@ export type Feature =
   | "warnings.view"
   | "warnings.manage"
   | "activity-logs.view"
-  | "notes.view";
+  | "notes.view"
+  | "equipment.view"
+  | "equipment.manage"
+  | "equipment.records.create"
+  | "equipment.snooze";
 
 type RolePermissions = {
   [key in Feature]: string[];
@@ -104,6 +108,12 @@ const permissions: RolePermissions = {
 
   // Notes
   "notes.view": ["HR", "MANAGEMENT", "BRANCH_MANAGER", "EMPLOYEE"],
+
+  // Maintenance (Equipment & Services)
+  "equipment.view": ["BRANCH_MANAGER", "HR", "MANAGEMENT"],
+  "equipment.manage": ["BRANCH_MANAGER", "MANAGEMENT"],
+  "equipment.records.create": ["BRANCH_MANAGER", "MANAGEMENT"],
+  "equipment.snooze": ["BRANCH_MANAGER", "MANAGEMENT"],
 };
 
 export function hasAccess(userRole: string, feature: Feature): boolean {

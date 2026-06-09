@@ -94,6 +94,12 @@ const activityTypeLabels: Record<ActivityType, string> = {
   PASSWORD_CHANGED: "Password Changed",
   SALARY_APPRAISAL: "Salary Appraisal",
   DAILY_ATTENDANCE_REPORT: "Daily Attendance Report",
+  EQUIPMENT_CREATED: "Equipment Created",
+  EQUIPMENT_UPDATED: "Equipment Updated",
+  EQUIPMENT_DELETED: "Equipment Deleted",
+  EQUIPMENT_MAINTENANCE_LOGGED: "Maintenance Logged",
+  EQUIPMENT_MAINTENANCE_ALERT: "Maintenance Alert",
+  EQUIPMENT_SNOOZED: "Maintenance Snoozed",
   OTHER: "Other",
 };
 

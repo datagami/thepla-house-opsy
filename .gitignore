@@ -47,3 +47,6 @@ azure-functions/.venv
 
 # graphify
 graphify-out/
+
+# Local design hand-off reference (not committed)
+.design-ref/
