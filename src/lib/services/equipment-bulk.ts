@@ -88,3 +88,110 @@ export function normalizeStatus(raw: string | null): "ACTIVE" | "RETIRED" | null
   if (s === "ACTIVE" || s === "RETIRED") return s;
   return null;
 }
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+export interface RawRow {
+  rowNumber: number;
+  id: string | null;
+  name: string | null;
+  category: string | null;
+  outlet: string | null;
+  location: string | null;
+  frequencyMonths: number | null; // NaN if a non-numeric value was present
+  reminderLeadDays: number | null;
+  status: string | null;
+  nextDueDate: string | null;
+  notes: string | null;
+}
+
+export interface NormalizedRow {
+  rowNumber: number;
+  id: string | null;
+  name: string;
+  category: EquipmentCategory;
+  branchId: string | null; // resolved for new rows; null for id rows (resolved in apply)
+  location: string | null;
+  frequencyMonths: number | null;
+  reminderLeadDays: number;
+  status: "ACTIVE" | "RETIRED";
+  nextDueDate: Date | null; // explicit override; null when the cell was blank
+  nextDueProvided: boolean;
+  notes: string | null;
+}
+
+export interface ValidateCtx {
+  role: string;
+  scopedBranchId: string | null; // BRANCH_MANAGER's branchId; null for MANAGEMENT
+  branchByName: Map<string, string>; // lowercased branch name -> branchId
+}
+
+export type ValidateResult =
+  | { ok: true; value: NormalizedRow }
+  | { ok: false; errors: string[] };
+
+const DEFAULT_LEAD_DAYS = 15;
+
+export function validateRow(r: RawRow, ctx: ValidateCtx): ValidateResult {
+  const errors: string[] = [];
+
+  const name = (r.name ?? "").trim();
+  if (!name) errors.push("Name is required");
+
+  const category = normalizeCategory(r.category);
+  if (!category) errors.push(`Unknown category "${r.category ?? ""}"`);
+
+  const status = normalizeStatus(r.status);
+  if (!status) errors.push(`Unknown status "${r.status ?? ""}" (use ACTIVE or RETIRED)`);
+
+  // frequency: blank -> null; NaN -> error; must be a positive integer
+  let frequencyMonths: number | null = null;
+  if (r.frequencyMonths !== null) {
+    if (Number.isNaN(r.frequencyMonths) || !Number.isInteger(r.frequencyMonths) || r.frequencyMonths <= 0) {
+      errors.push("Service every (months) must be a positive whole number");
+    } else {
+      frequencyMonths = r.frequencyMonths;
+    }
+  }
+
+  // reminder lead: blank -> default; else integer 0..365
+  let reminderLeadDays = DEFAULT_LEAD_DAYS;
+  if (r.reminderLeadDays !== null) {
+    if (Number.isNaN(r.reminderLeadDays) || !Number.isInteger(r.reminderLeadDays) || r.reminderLeadDays < 0 || r.reminderLeadDays > 365) {
+      errors.push("Reminder lead (days) must be a whole number 0–365");
+    } else {
+      reminderLeadDays = r.reminderLeadDays;
+    }
+  }
+
+  // next due: blank -> not provided; else must parse
+  let nextDueDate: Date | null = null;
+  let nextDueProvided = false;
+  if (r.nextDueDate !== null && r.nextDueDate.trim() !== "") {
+    const d = new Date(r.nextDueDate);
+    if (Number.isNaN(d.getTime())) errors.push(`Invalid next due date "${r.nextDueDate}"`);
+    else { nextDueDate = d; nextDueProvided = true; }
+  }
+
+  // branch resolution — only for NEW rows (no id). id rows resolve in apply.
+  let branchId: string | null = null;
+  if (!r.id) {
+    if (ctx.role === "BRANCH_MANAGER") {
+      branchId = ctx.scopedBranchId; // forced; Outlet cell ignored
+      if (!branchId) errors.push("Your account has no outlet assigned");
+    } else {
+      const resolved = r.outlet ? ctx.branchByName.get(r.outlet.trim().toLowerCase()) : undefined;
+      if (!resolved) errors.push(`Unknown outlet "${r.outlet ?? ""}"`);
+      else branchId = resolved;
+    }
+  }
+
+  if (errors.length > 0) return { ok: false, errors };
+  return {
+    ok: true,
+    value: {
+      rowNumber: r.rowNumber, id: r.id, name, category: category!, branchId,
+      location: r.location?.trim() || null, frequencyMonths, reminderLeadDays,
+      status: status!, nextDueDate, nextDueProvided, notes: r.notes?.trim() || null,
+    },
+  };
+}
