@@ -79,6 +79,15 @@ describe("validateRow", () => {
     expect(validateRow(raw({ nextDueDate: "not-a-date" }), mgmtCtx).ok).toBe(false);
     expect(validateRow(raw({ nextDueDate: null }), mgmtCtx).ok).toBe(true);
   });
+
+  it("flags statusProvided: false when the Status cell is blank, true when set", () => {
+    const blank = validateRow(raw({ status: null }), mgmtCtx);
+    expect(blank.ok && blank.value.statusProvided).toBe(false);
+    expect(blank.ok && blank.value.status).toBe("ACTIVE"); // still defaults for new rows
+    const set = validateRow(raw({ status: "RETIRED" }), mgmtCtx);
+    expect(set.ok && set.value.statusProvided).toBe(true);
+    expect(set.ok && set.value.status).toBe("RETIRED");
+  });
 });
 
 describe("deriveNextDue", () => {

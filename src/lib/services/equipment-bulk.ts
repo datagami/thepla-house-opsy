@@ -116,6 +116,7 @@ export interface NormalizedRow {
   frequencyMonths: number | null;
   reminderLeadDays: number;
   status: "ACTIVE" | "RETIRED";
+  statusProvided: boolean; // false when the Status cell was blank
   nextDueDate: Date | null; // explicit override; null when the cell was blank
   nextDueProvided: boolean;
   notes: string | null;
@@ -144,6 +145,7 @@ export function validateRow(r: RawRow, ctx: ValidateCtx): ValidateResult {
 
   const status = normalizeStatus(r.status);
   if (!status) errors.push(`Unknown status "${r.status ?? ""}" (use ACTIVE or RETIRED)`);
+  const statusProvided = r.status !== null && r.status.trim() !== "";
 
   // frequency: blank -> null; NaN -> error; must be a positive integer
   let frequencyMonths: number | null = null;
@@ -193,7 +195,7 @@ export function validateRow(r: RawRow, ctx: ValidateCtx): ValidateResult {
     value: {
       rowNumber: r.rowNumber, id: r.id, name, category: category!, branchId,
       location: r.location?.trim() || null, frequencyMonths, reminderLeadDays,
-      status: status!, nextDueDate, nextDueProvided, notes: r.notes?.trim() || null,
+      status: status!, statusProvided, nextDueDate, nextDueProvided, notes: r.notes?.trim() || null,
     },
   };
 }
@@ -349,6 +351,12 @@ export async function parseEquipmentWorkbook(buffer: Buffer): Promise<ParseResul
   const sheet = wb.getWorksheet(SHEET_ITEMS);
   if (!sheet) return { ok: false, fileError: `Missing "${SHEET_ITEMS}" sheet — use the exported template.` };
 
+  // Fast-fail an absurdly large sheet before iterating every cell (coarse DoS guard;
+  // the precise per-data-row cap is enforced below). A legit export is ~items+51 rows.
+  if (sheet.rowCount > MAX_ROWS_PER_UPLOAD * 10) {
+    return { ok: false, fileError: `Too many rows (max ${MAX_ROWS_PER_UPLOAD}).` };
+  }
+
   const rows: RawRow[] = [];
   try {
     sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
@@ -439,7 +447,9 @@ export async function applyBulkImport(args: {
         const incoming = {
           name: row.name, category: row.category, location: row.location,
           frequencyMonths: row.frequencyMonths, reminderLeadDays: row.reminderLeadDays,
-          status: row.status, notes: row.notes, nextDueDate,
+          // Blank Status on an UPDATE row preserves the existing status (so clearing
+          // the cell can't silently un-retire an item); explicit value overrides.
+          status: row.statusProvided ? row.status : existing.status, notes: row.notes, nextDueDate,
         };
         const changes = diffEquipment(
           {
