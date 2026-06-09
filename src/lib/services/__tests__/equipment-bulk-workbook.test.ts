@@ -27,6 +27,9 @@ describe("workbook round-trip", () => {
     expect(r0.name).toBe("Fire Extinguisher");
     expect(r0.outlet).toBe("Andheri");
     expect(r0.frequencyMonths).toBe(12);
+    // FIX 1: nextDueDate round-trip — must be ISO date-only string, no IST drift
+    expect(r0.nextDueDate).toBe("2027-06-09");
+    expect(new Date(r0.nextDueDate!).toISOString()).toBe("2027-06-09T00:00:00.000Z");
     const r1 = parsed.rows.find((r) => r.id === "eq-2")!;
     expect(r1.name).toBe("Pest Control");
     expect(r1.frequencyMonths).toBe(1);

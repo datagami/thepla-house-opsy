@@ -1,7 +1,7 @@
 // src/lib/services/equipment-bulk.ts
 import ExcelJS from "exceljs";
 import type { PrismaClient } from "@prisma/client";
-import { ActivityType } from "@prisma/client";
+import { ActivityType, Prisma } from "@prisma/client";
 import { EQUIPMENT_CATEGORIES } from "@/lib/validations/equipment";
 import { categoryLabel, ALL_CATEGORIES, formatDateIST } from "@/lib/equipment-display";
 import { computeNextDueDate } from "@/lib/services/maintenance-schedule";
@@ -259,12 +259,29 @@ export interface ExportItem {
 }
 
 const EXTRA_BLANK_ROWS = 50; // so dropdowns/validation cover newly added rows
+export const MAX_ROWS_PER_UPLOAD = 2000;
 
 export async function buildEquipmentWorkbook(
   items: ExportItem[],
   opts: { branchNames: string[] }
 ): Promise<ArrayBuffer> {
   const wb = new ExcelJS.Workbook();
+
+  // FIX 6: "How to use" sheet — must be added FIRST so it's the active tab on open.
+  const help = wb.addWorksheet("How to use");
+  help.getCell("A1").value = "How to use this workbook";
+  help.getCell("A1").font = { bold: true, size: 14 };
+  const instructions = [
+    "1. Rows with an Item ID update the existing item.",
+    "2. Rows without an Item ID create a new item.",
+    "3. Leave 'Next due date' blank to auto-calculate from last service (or today) + frequency.",
+    "4. Do not edit the 'Item ID' or 'Last serviced' columns (they are locked).",
+    "5. Category and Outlet are dropdowns — pick from the list.",
+    "6. Save as .xlsx and upload on the Maintenance > Import page.",
+  ];
+  instructions.forEach((line, i) => { help.getCell(i + 3, 1).value = line; });
+  help.getColumn(1).width = 80;
+
   const sheet = wb.addWorksheet(SHEET_ITEMS);
 
   // Hidden lists sheet backing the Category + Outlet dropdowns (avoids inline-list
@@ -295,7 +312,7 @@ export async function buildEquipmentWorkbook(
     sheet.addRow([
       it.id, it.name, categoryLabel(it.category), it.branchName, it.location ?? "",
       it.frequencyMonths ?? "", it.reminderLeadDays, it.status,
-      it.nextDueDate ? formatDateIST(it.nextDueDate) : "",
+      it.nextDueDate ? it.nextDueDate.toISOString().slice(0, 10) : "",
       it.notes ?? "", it.lastServiceDate ? formatDateIST(it.lastServiceDate) : "",
     ]);
   }
@@ -305,7 +322,7 @@ export async function buildEquipmentWorkbook(
   const lastRow = items.length + EXTRA_BLANK_ROWS;
   const catRef = `${SHEET_LISTS}!$A$1:$A$${catLabels.length}`;
   const outletRef = `${SHEET_LISTS}!$B$1:$B$${Math.max(1, opts.branchNames.length)}`;
-  for (let r = 2; r <= lastRow + 1; r++) {
+  for (let r = 2; r <= lastRow; r++) {
     sheet.getCell(r, COL.id).protection = { locked: true };
     sheet.getCell(r, COL.lastServiced).protection = { locked: true };
     sheet.getCell(r, COL.category).dataValidation = { type: "list", allowBlank: true, formulae: [catRef] };
@@ -352,11 +369,11 @@ export async function parseEquipmentWorkbook(buffer: Buffer): Promise<ParseResul
         nextDueDate: readCellString(row.getCell(COL.nextDueDate)),
         notes: readCellString(row.getCell(COL.notes)),
       });
-      if (rows.length > 2000) throw new Error("ROW_CAP");
+      if (rows.length > MAX_ROWS_PER_UPLOAD) throw new Error("ROW_CAP");
     });
   } catch (e) {
     if (e instanceof Error && e.message === "ROW_CAP")
-      return { ok: false, fileError: "Too many rows (max 2000)." };
+      return { ok: false, fileError: `Too many rows (max ${MAX_ROWS_PER_UPLOAD}).` };
     throw e;
   }
 
@@ -402,42 +419,47 @@ export async function applyBulkImport(args: {
     if (!v.ok) { skipped.push({ row: raw.rowNumber, name: raw.name ?? "", errors: v.errors }); continue; }
     const row = v.value;
 
-    if (row.id) {
-      // UPDATE path
-      const existing = await prisma.equipment.findUnique({ where: { id: row.id } });
-      if (!existing) { skipped.push({ row: row.rowNumber, name: row.name, errors: ["Item ID not found"] }); continue; }
-      if (user.role === "BRANCH_MANAGER" && existing.branchId !== user.branchId) {
-        skipped.push({ row: row.rowNumber, name: row.name, errors: ["Item is not in your outlet"] }); continue;
+    try {
+      if (row.id) {
+        // UPDATE path
+        const existing = await prisma.equipment.findUnique({ where: { id: row.id } });
+        if (!existing) { skipped.push({ row: row.rowNumber, name: row.name, errors: ["Item ID not found"] }); continue; }
+        if (user.role === "BRANCH_MANAGER" && existing.branchId !== user.branchId) {
+          skipped.push({ row: row.rowNumber, name: row.name, errors: ["Item is not in your outlet"] }); continue;
+        }
+        const nextDueDate = deriveNextDue(row.nextDueDate, row.nextDueProvided, existing.lastServiceDate, row.frequencyMonths, today);
+        const incoming = {
+          name: row.name, category: row.category, location: row.location,
+          frequencyMonths: row.frequencyMonths, reminderLeadDays: row.reminderLeadDays,
+          status: row.status, notes: row.notes, nextDueDate,
+        };
+        const changes = diffEquipment(
+          {
+            name: existing.name, category: existing.category, location: existing.location,
+            frequencyMonths: existing.frequencyMonths, reminderLeadDays: existing.reminderLeadDays,
+            status: existing.status, notes: existing.notes, nextDueDate: existing.nextDueDate,
+          },
+          incoming
+        );
+        if (Object.keys(changes).length === 0) { unchanged++; continue; }
+        await prisma.equipment.update({ where: { id: row.id }, data: changes as Prisma.EquipmentUpdateInput });
+        updated++;
+      } else {
+        // CREATE path (branchId resolved in validateRow)
+        const nextDueDate = deriveNextDue(row.nextDueDate, row.nextDueProvided, null, row.frequencyMonths, today);
+        await prisma.equipment.create({
+          data: {
+            name: row.name, category: row.category, branchId: row.branchId!,
+            location: row.location, frequencyMonths: row.frequencyMonths,
+            reminderLeadDays: row.reminderLeadDays, status: row.status,
+            nextDueDate, notes: row.notes, createdById: user.id,
+          },
+        });
+        created++;
       }
-      const nextDueDate = deriveNextDue(row.nextDueDate, row.nextDueProvided, existing.lastServiceDate, row.frequencyMonths, today);
-      const incoming = {
-        name: row.name, category: row.category, location: row.location,
-        frequencyMonths: row.frequencyMonths, reminderLeadDays: row.reminderLeadDays,
-        status: row.status, notes: row.notes, nextDueDate,
-      };
-      const changes = diffEquipment(
-        {
-          name: existing.name, category: existing.category, location: existing.location,
-          frequencyMonths: existing.frequencyMonths, reminderLeadDays: existing.reminderLeadDays,
-          status: existing.status, notes: existing.notes, nextDueDate: existing.nextDueDate,
-        },
-        incoming
-      );
-      if (Object.keys(changes).length === 0) { unchanged++; continue; }
-      await prisma.equipment.update({ where: { id: row.id }, data: changes as never });
-      updated++;
-    } else {
-      // CREATE path (branchId resolved in validateRow)
-      const nextDueDate = deriveNextDue(row.nextDueDate, row.nextDueProvided, null, row.frequencyMonths, today);
-      await prisma.equipment.create({
-        data: {
-          name: row.name, category: row.category, branchId: row.branchId!,
-          location: row.location, frequencyMonths: row.frequencyMonths,
-          reminderLeadDays: row.reminderLeadDays, status: row.status,
-          nextDueDate, notes: row.notes, createdById: user.id,
-        },
-      });
-      created++;
+    } catch (e) {
+      skipped.push({ row: row.rowNumber, name: row.name, errors: ["Could not save: " + (e instanceof Error ? e.message : "database error")] });
+      continue;
     }
   }
 
