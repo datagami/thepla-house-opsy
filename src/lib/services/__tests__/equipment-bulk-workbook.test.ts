@@ -54,6 +54,27 @@ describe("workbook round-trip", () => {
     expect(r.nextDueDate === null || r.nextDueDate === "").toBe(true);
   });
 
+  it("round-trips free-text values starting with formula chars without mutating them", async () => {
+    // No csvSafe apostrophe: a value like "-1 Basement" must come back EXACTLY, so a
+    // re-import of an unchanged export stays a 0-updated no-op (xlsx string cells are
+    // never evaluated as formulas).
+    const tricky = [
+      {
+        id: "eq-9", name: "=SUM scale", category: "OTHER", branchName: "Andheri",
+        location: "-1 Basement", frequencyMonths: null, reminderLeadDays: 15, status: "ACTIVE" as const,
+        nextDueDate: null, lastServiceDate: null, notes: "+check filter",
+      },
+    ];
+    const buf = await buildEquipmentWorkbook(tricky, { branchNames: ["Andheri"] });
+    const parsed = await parseEquipmentWorkbook(Buffer.from(buf));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    const r = parsed.rows[0];
+    expect(r.name).toBe("=SUM scale");
+    expect(r.location).toBe("-1 Basement");
+    expect(r.notes).toBe("+check filter");
+  });
+
   it("returns a file error for a workbook with no Items sheet", async () => {
     const ExcelJS = (await import("exceljs")).default;
     const wb = new ExcelJS.Workbook();

@@ -258,11 +258,6 @@ export interface ExportItem {
   notes: string | null;
 }
 
-function csvSafe(s: string | null): string {
-  if (!s) return "";
-  return /^[=+\-@]/.test(s) ? `'${s}` : s;
-}
-
 const EXTRA_BLANK_ROWS = 50; // so dropdowns/validation cover newly added rows
 export const MAX_ROWS_PER_UPLOAD = 2000;
 
@@ -282,7 +277,8 @@ export async function buildEquipmentWorkbook(
     "3. Leave 'Next due date' blank to auto-calculate from last service (or today) + frequency.",
     "4. Do not edit the 'Item ID' or 'Last serviced' columns (they are locked).",
     "5. Category and Outlet are dropdowns — pick from the list.",
-    "6. Save as .xlsx and upload on the Maintenance > Import page.",
+    "6. Status defaults to Active if the cell is left blank.",
+    "7. Save as .xlsx and upload on the Maintenance > Import page.",
   ];
   instructions.forEach((line, i) => { help.getCell(i + 3, 1).value = line; });
   help.getColumn(1).width = 80;
@@ -315,10 +311,10 @@ export async function buildEquipmentWorkbook(
 
   for (const it of items) {
     sheet.addRow([
-      it.id, csvSafe(it.name), categoryLabel(it.category), it.branchName, csvSafe(it.location),
+      it.id, it.name, categoryLabel(it.category), it.branchName, it.location ?? "",
       it.frequencyMonths ?? "", it.reminderLeadDays, it.status,
       it.nextDueDate ? it.nextDueDate.toISOString().slice(0, 10) : "",
-      csvSafe(it.notes), it.lastServiceDate ? formatDateIST(it.lastServiceDate) : "",
+      it.notes ?? "", it.lastServiceDate ? formatDateIST(it.lastServiceDate) : "",
     ]);
   }
 
