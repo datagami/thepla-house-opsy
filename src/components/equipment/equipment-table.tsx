@@ -41,6 +41,7 @@ export interface EquipmentRow {
   lastServiceDate: string | null;
   snoozedUntil: string | null;
   branch: { id: string; name: string };
+  imageUrl: string | null;
 }
 
 interface EquipmentTableProps {
@@ -129,6 +130,10 @@ export function EquipmentTable({
                 {/* Item */}
                 <TableCell>
                   <div className="flex items-center gap-2">
+                    {row.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={row.imageUrl} alt="" className="h-8 w-8 flex-none rounded object-cover" />
+                    ) : null}
                     <span className="font-semibold text-foreground">{row.name}</span>
                     {isRetired && (
                       <Badge variant="secondary" className="text-[11px] text-muted-foreground">
@@ -292,6 +297,7 @@ export function EquipmentTable({
         <ArchiveDialog
           equipmentId={archiveId}
           equipmentName={archiveRow?.name ?? "this item"}
+          hasImage={archiveRow?.imageUrl != null}
           open={!!archiveId}
           onOpenChange={(o) => {
             if (!o) setArchiveId(null);

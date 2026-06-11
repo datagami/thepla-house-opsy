@@ -8,8 +8,8 @@ import { Download, Archive } from "lucide-react";
 import { setEquipmentStatus } from "@/lib/equipment-actions";
 
 export function ArchiveDialog({
-  equipmentId, equipmentName, open, onOpenChange,
-}: { equipmentId: string; equipmentName: string; open: boolean; onOpenChange: (o: boolean) => void; }) {
+  equipmentId, equipmentName, hasImage = false, open, onOpenChange,
+}: { equipmentId: string; equipmentName: string; hasImage?: boolean; open: boolean; onOpenChange: (o: boolean) => void; }) {
   const router = useRouter();
   const [counts, setCounts] = useState<{ photos: number; bills: number } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -53,7 +53,9 @@ export function ArchiveDialog({
           <DialogTitle>Archive “{equipmentName}”?</DialogTitle>
           <DialogDescription>
             Archiving will mark this item inactive and <strong>permanently delete</strong>{" "}
-            {counts ? `${counts.photos} photo(s) and ${counts.bills} bill(s)` : "all attached photos and bills"}{" "}
+            {counts
+              ? `${counts.photos} photo(s) and ${counts.bills} bill(s)${hasImage ? ", and the asset photo" : ""}`
+              : `all attached photos and bills${hasImage ? ", and the asset photo" : ""}`}{" "}
             from storage to free space. This cannot be undone — restoring the item later will not recover the files.
           </DialogDescription>
         </DialogHeader>

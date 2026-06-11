@@ -17,6 +17,7 @@ interface DetailActionsProps {
   canSnooze?: boolean;
   canLog?: boolean;
   status: "ACTIVE" | "RETIRED";
+  hasImage?: boolean;
 }
 
 export function DetailActions({
@@ -26,6 +27,7 @@ export function DetailActions({
   canSnooze = false,
   canLog = false,
   status,
+  hasImage = false,
 }: DetailActionsProps) {
   const router = useRouter();
   const [snoozeOpen, setSnoozeOpen] = useState(false);
@@ -140,6 +142,7 @@ export function DetailActions({
       <ArchiveDialog
         equipmentId={equipmentId}
         equipmentName={equipmentName ?? "this item"}
+        hasImage={hasImage}
         open={archiveOpen}
         onOpenChange={setArchiveOpen}
       />

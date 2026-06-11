@@ -148,6 +148,7 @@ export default async function EquipmentPage({ searchParams }: Props) {
       : null,
     snoozedUntil: item.snoozedUntil ? item.snoozedUntil.toISOString() : null,
     branch: item.branch,
+    imageUrl: item.imageUrl,
   }));
 
   const canManage = hasAccess(role, "equipment.manage");

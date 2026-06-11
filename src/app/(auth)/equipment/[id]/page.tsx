@@ -156,13 +156,22 @@ export default async function EquipmentDetailPage({ params, searchParams }: Prop
       <div className="rounded-xl border bg-card p-4 md:p-[22px] shadow-sm">
         {/* Top row: icon + name/badges + actions */}
         <div className="flex items-start gap-3 md:gap-4">
-          {/* Category icon tile */}
-          <div
-            className="flex h-[44px] w-[44px] flex-none items-center justify-center rounded-[11px]"
-            style={{ background: cm.bg, color: cm.fg }}
-          >
-            <CategoryIcon name={cm.icon} size={22} strokeWidth={2.1} />
-          </div>
+          {/* Category icon tile or asset photo */}
+          {item.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={item.imageUrl}
+              alt={item.name}
+              className="h-[44px] w-[44px] flex-none rounded-[11px] object-cover"
+            />
+          ) : (
+            <div
+              className="flex h-[44px] w-[44px] flex-none items-center justify-center rounded-[11px]"
+              style={{ background: cm.bg, color: cm.fg }}
+            >
+              <CategoryIcon name={cm.icon} size={22} strokeWidth={2.1} />
+            </div>
+          )}
 
           {/* Name + category + location */}
           <div className="min-w-0 flex-1">
@@ -199,6 +208,7 @@ export default async function EquipmentDetailPage({ params, searchParams }: Prop
               canSnooze={canSnooze}
               canLog={canLog}
               status={item.status}
+              hasImage={item.imageUrl != null}
             />
           </div>
         </div>
@@ -212,6 +222,7 @@ export default async function EquipmentDetailPage({ params, searchParams }: Prop
             canSnooze={canSnooze}
             canLog={canLog}
             status={item.status}
+            hasImage={item.imageUrl != null}
           />
         </div>
 

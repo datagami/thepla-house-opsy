@@ -78,13 +78,18 @@ function ItemCard({ row, canManage, canSnooze, canLog, onSnooze, onArchive }: It
     >
       {/* Top row: icon + name/category/outlet + chevron */}
       <div className="flex items-start gap-[11px] p-3.5">
-        {/* Category icon tile */}
-        <div
-          className="flex h-[38px] w-[38px] flex-none items-center justify-center rounded-[9px]"
-          style={{ background: cm.bg, color: cm.fg }}
-        >
-          <CategoryIcon name={cm.icon} size={19} strokeWidth={2.1} />
-        </div>
+        {/* Category icon tile or asset photo */}
+        {row.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={row.imageUrl} alt="" className="h-8 w-8 flex-none rounded object-cover" />
+        ) : (
+          <div
+            className="flex h-[38px] w-[38px] flex-none items-center justify-center rounded-[9px]"
+            style={{ background: cm.bg, color: cm.fg }}
+          >
+            <CategoryIcon name={cm.icon} size={19} strokeWidth={2.1} />
+          </div>
+        )}
 
         {/* Name + pills */}
         <div className="min-w-0 flex-1">
@@ -259,6 +264,7 @@ export function EquipmentCards({
         <ArchiveDialog
           equipmentId={archiveId}
           equipmentName={archiveRow?.name ?? "this item"}
+          hasImage={archiveRow?.imageUrl != null}
           open={!!archiveId}
           onOpenChange={(o) => {
             if (!o) setArchiveId(null);
