@@ -43,16 +43,24 @@ interface StatusBadgeProps {
   state: ReminderState;
   subLabel?: string;
   size?: "sm" | "md";
-  /** Whole days until next due; when provided, DUE_SOON shows "Due in N days". */
+  /**
+   * Whole days until next due (negative when past due). When provided, DUE_SOON
+   * shows "Due in N days" and OVERDUE shows "Overdue by N days".
+   */
   dueInDays?: number | null;
 }
 
 export function StatusBadge({ state, subLabel, size = "md", dueInDays }: StatusBadgeProps) {
   const badge = stateBadge(state);
-  const label =
-    state === "DUE_SOON" && typeof dueInDays === "number"
-      ? `Due in ${dueInDays} day${dueInDays === 1 ? "" : "s"}`
-      : badge.label;
+  let label = badge.label;
+  if (typeof dueInDays === "number") {
+    if (state === "DUE_SOON") {
+      label = `Due in ${dueInDays} day${dueInDays === 1 ? "" : "s"}`;
+    } else if (state === "OVERDUE") {
+      const od = Math.abs(dueInDays);
+      if (od >= 1) label = `Overdue by ${od} day${od === 1 ? "" : "s"}`;
+    }
+  }
   const fontSize = size === "sm" ? 11 : 12;
   const iconSize = size === "sm" ? 11 : 12.5;
   const padding = size === "sm" ? "3px 8px" : "4px 9px";
