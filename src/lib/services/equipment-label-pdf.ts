@@ -72,29 +72,51 @@ async function drawCell(
   // Text column to the right of the QR.
   const textX = xOffset + PAD + QR + 4;
   const maxW = xOffset + LABEL_W - PAD - textX;
+  const LEAD = 1.5; // extra leading between lines
 
-  // pdf-lib Y origin is bottom-left; lay lines out from the top down.
-  let y = LABEL_H - PAD - 8;
-  drawLine(page, fontBold, fit(fontBold, item.tag, 9, maxW), textX, y, 9, INK);
-  y -= 9;
-  drawLine(page, font, fit(font, item.name, 7, maxW), textX, y, 7, INK);
-  y -= 8;
-  drawLine(page, font, fit(font, item.outlet, 6, maxW), textX, y, 6, MUTED);
-  y -= 7;
-  drawLine(page, font, fit(font, item.category, 6, maxW), textX, y, 6, MUTED);
+  // Lines: tag (1, bold), name (wrapped to ≤2 lines), outlet (1), category (1).
+  const lines: { text: string; size: number; font: PDFFont; color: ReturnType<typeof rgb> }[] = [
+    { text: fit(fontBold, item.tag, 9, maxW), size: 9, font: fontBold, color: INK },
+    ...wrapLines(font, item.name, 7, maxW, 2).map((t) => ({ text: t, size: 7, font, color: INK })),
+    { text: fit(font, item.outlet, 6, maxW), size: 6, font, color: MUTED },
+    { text: fit(font, item.category, 6, maxW), size: 6, font, color: MUTED },
+  ];
+
+  // Vertically center the whole text block against the label height.
+  // pdf-lib's Y origin is bottom-left; drawText y is the baseline.
+  const blockH = lines.reduce((h, ln) => h + ln.size + LEAD, 0) - LEAD;
+  let y = (LABEL_H + blockH) / 2 - lines[0].size;
+  for (const ln of lines) {
+    if (ln.text) page.drawText(ln.text, { x: textX, y, size: ln.size, font: ln.font, color: ln.color });
+    y -= ln.size + LEAD;
+  }
 }
 
-function drawLine(
-  page: PDFPage,
-  font: PDFFont,
-  text: string,
-  x: number,
-  y: number,
-  size: number,
-  color: ReturnType<typeof rgb>
-): void {
-  if (!text) return;
-  page.drawText(text, { x, y, size, font, color });
+/**
+ * Greedy word-wrap to fit maxWidth, capped at maxLines. A single word wider than
+ * the column is ellipsis-truncated; overflow past maxLines ellipsizes the last line.
+ */
+function wrapLines(font: PDFFont, raw: string, size: number, maxWidth: number, maxLines: number): string[] {
+  const s = sanitize(raw);
+  if (!s) return [];
+  const out: string[] = [];
+  let cur = "";
+  for (const word of s.split(" ")) {
+    const w = font.widthOfTextAtSize(word, size) > maxWidth ? fit(font, word, size, maxWidth) : word;
+    const test = cur ? `${cur} ${w}` : w;
+    if (font.widthOfTextAtSize(test, size) <= maxWidth) {
+      cur = test;
+    } else {
+      if (cur) out.push(cur);
+      cur = w;
+    }
+  }
+  if (cur) out.push(cur);
+  if (out.length <= maxLines) return out;
+  // Overflow: keep the first maxLines, ellipsizing the last to signal truncation.
+  const kept = out.slice(0, maxLines);
+  kept[maxLines - 1] = fit(font, `${kept[maxLines - 1]} ${out.slice(maxLines).join(" ")}`, size, maxWidth);
+  return kept;
 }
 
 /** Strip characters the WinAnsi-encoded StandardFonts can't render, then trim. */
