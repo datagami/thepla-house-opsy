@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MapPin, MoreHorizontal, Archive, ArchiveRestore, Printer, Search } from "lucide-react";
+import { MapPin, MoreHorizontal, Archive, ArchiveRestore, Printer, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { setEquipmentStatus } from "@/lib/equipment-actions";
 import { EquipmentCards } from "@/components/equipment/equipment-cards";
@@ -117,7 +117,7 @@ export function EquipmentTable({
   return (
     <>
       {/* Search by name / asset ID / location */}
-      <div className="relative mb-3">
+      <div className="relative mb-2">
         <Search
           size={15}
           className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
@@ -127,14 +127,41 @@ export function EquipmentTable({
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by name, asset ID, or location…"
           aria-label="Search items by name, asset ID, or location"
-          className="h-9 pl-8 text-[13px]"
+          className="h-9 pl-8 pr-9 text-[13px]"
         />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            aria-label="Clear search"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <X size={15} />
+          </button>
+        )}
       </div>
 
-      {query && visibleRows.length === 0 && (
-        <p className="rounded-lg border border-dashed px-3 py-6 text-center text-[13px] text-muted-foreground">
-          No items match &ldquo;{query}&rdquo;.
-        </p>
+      {/* Filtered-result summary + clear (shown whenever a search is active) */}
+      {query.trim() && (
+        <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-muted-foreground">
+          {visibleRows.length === 0 ? (
+            <span>
+              No items match &ldquo;<span className="text-foreground">{query.trim()}</span>&rdquo;.
+            </span>
+          ) : (
+            <span>
+              Showing <strong className="text-foreground">{visibleRows.length}</strong> of{" "}
+              {rows.length} item{rows.length === 1 ? "" : "s"}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            className="font-medium text-primary hover:underline"
+          >
+            Clear search
+          </button>
+        </div>
       )}
 
       {/* Selection bar */}
