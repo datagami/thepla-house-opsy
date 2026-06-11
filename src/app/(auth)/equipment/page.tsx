@@ -321,12 +321,14 @@ export default async function EquipmentPage({ searchParams }: Props) {
             compact
           />
         ) : (
-          <EquipmentTable
-            rows={tableRows}
-            canManage={canManage}
-            canSnooze={canSnooze}
-            canLog={canLog}
-          />
+          <div className="px-4 py-3">
+            <EquipmentTable
+              rows={tableRows}
+              canManage={canManage}
+              canSnooze={canSnooze}
+              canLog={canLog}
+            />
+          </div>
         )}
       </div>
     </div>
