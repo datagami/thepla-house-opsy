@@ -80,6 +80,13 @@ export default async function EquipmentPage({ searchParams }: Props) {
     orderBy: [{ nextDueDate: "asc" }, { name: "asc" }],
   });
 
+  // Grand total in the user's scope for the current lifecycle — ignores the
+  // outlet/category/status filters and the search. Used to show "Showing N of M"
+  // whenever any filter (dropdown or search) narrows the list.
+  const totalCount = await prisma.equipment.count({
+    where: { ...roleWhere, ...lifecycleWhere },
+  });
+
   // ── Fetch all branches for filter dropdown ───────────────────────────────
   const branches = await prisma.branch.findMany({
     select: { id: true, name: true },
@@ -321,12 +328,16 @@ export default async function EquipmentPage({ searchParams }: Props) {
             compact
           />
         ) : (
-          <EquipmentTable
-            rows={tableRows}
-            canManage={canManage}
-            canSnooze={canSnooze}
-            canLog={canLog}
-          />
+          <div className="px-4 py-3">
+            <EquipmentTable
+              rows={tableRows}
+              canManage={canManage}
+              canSnooze={canSnooze}
+              canLog={canLog}
+              totalCount={totalCount}
+              lockedOutletId={lockedOutletId}
+            />
+          </div>
         )}
       </div>
     </div>

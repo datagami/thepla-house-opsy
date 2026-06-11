@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo, useEffect } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { MapPin, MoreHorizontal, Archive, ArchiveRestore, Printer, Search } from "lucide-react";
+import { MapPin, MoreHorizontal, Archive, ArchiveRestore, Printer, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { setEquipmentStatus } from "@/lib/equipment-actions";
 import { EquipmentCards } from "@/components/equipment/equipment-cards";
@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Pagination } from "@/components/ui/pagination";
 import { CategoryPill, StatusBadge } from "@/components/equipment/ui";
 import { SnoozeDialog } from "@/components/equipment/snooze-dialog";
 import { ArchiveDialog } from "@/components/equipment/archive-dialog";
@@ -52,6 +53,10 @@ interface EquipmentTableProps {
   canManage: boolean;
   canSnooze?: boolean;
   canLog?: boolean;
+  /** Grand total in scope (ignores the dropdown filters + search) — for the "N of M" summary. */
+  totalCount: number;
+  /** Branch managers have a locked outlet — Reset preserves it. */
+  lockedOutletId?: string | null;
 }
 
 function formatShortDate(iso: string | null): string {
@@ -69,12 +74,30 @@ export function EquipmentTable({
   canManage,
   canSnooze = false,
   canLog = false,
+  totalCount,
+  lockedOutletId,
 }: EquipmentTableProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [snoozeId, setSnoozeId] = useState<string | null>(null);
   const [archiveId, setArchiveId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [query, setQuery] = useState("");
+  // Seed the search from the URL (?q=) so it persists on reload and is shareable.
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
+  const [page, setPage] = useState(1);
+
+  // Clear the search AND the dropdown filter params (q/outlet/category/status/lifecycle),
+  // preserving a branch manager's locked outlet.
+  const resetAll = () => {
+    setQuery("");
+    setPage(1);
+    const params = new URLSearchParams(searchParams.toString());
+    ["q", "category", "status", "lifecycle"].forEach((k) => params.delete(k));
+    if (!lockedOutletId) params.delete("outlet");
+    const qs = params.toString();
+    router.push(qs ? `${pathname}?${qs}` : pathname);
+  };
 
   // Client-side search by item name, asset ID (label tag), or location.
   const visibleRows = useMemo(() => {
@@ -84,6 +107,31 @@ export function EquipmentTable({
       [r.name, r.assetTag, r.location].some((v) => v?.toLowerCase().includes(q))
     );
   }, [rows, query]);
+
+  // Client-side pagination over the searched rows.
+  const PAGE_SIZE = 25;
+  const totalPages = Math.max(1, Math.ceil(visibleRows.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageRows = visibleRows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  // Jump back to the first page whenever the search changes.
+  useEffect(() => {
+    setPage(1);
+  }, [query]);
+
+  // Persist the search to the URL (?q=), debounced — so it survives reloads and is
+  // shareable like the dropdown filters. Filtering itself stays instant/client-side.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      const trimmed = query.trim();
+      if ((params.get("q") ?? "") === trimmed) return;
+      if (trimmed) params.set("q", trimmed);
+      else params.delete("q");
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    }, 350);
+    return () => clearTimeout(t);
+  }, [query, searchParams, pathname, router]);
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -105,7 +153,7 @@ export function EquipmentTable({
   return (
     <>
       {/* Search by name / asset ID / location */}
-      <div className="relative mb-3">
+      <div className="relative mb-2">
         <Search
           size={15}
           className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
@@ -115,14 +163,47 @@ export function EquipmentTable({
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by name, asset ID, or location…"
           aria-label="Search items by name, asset ID, or location"
-          className="h-9 pl-8 text-[13px]"
+          className="h-9 pl-8 pr-9 text-[13px]"
         />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            aria-label="Clear search"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <X size={15} />
+          </button>
+        )}
       </div>
 
-      {query && visibleRows.length === 0 && (
-        <p className="rounded-lg border border-dashed px-3 py-6 text-center text-[13px] text-muted-foreground">
-          No items match &ldquo;{query}&rdquo;.
-        </p>
+      {/* Result summary — shown whenever ANY filter (search OR dropdown) narrows the list */}
+      {(query.trim().length > 0 || visibleRows.length < totalCount) && (
+        <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-muted-foreground">
+          {visibleRows.length === 0 ? (
+            <span>
+              No items match{" "}
+              {query.trim() ? (
+                <>&ldquo;<span className="text-foreground">{query.trim()}</span>&rdquo;</>
+              ) : (
+                "the current filters"
+              )}
+              .
+            </span>
+          ) : (
+            <span>
+              Showing <strong className="text-foreground">{visibleRows.length}</strong> of{" "}
+              {totalCount} item{totalCount === 1 ? "" : "s"}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={resetAll}
+            className="font-medium text-primary hover:underline"
+          >
+            Reset
+          </button>
+        </div>
       )}
 
       {/* Selection bar */}
@@ -150,7 +231,7 @@ export function EquipmentTable({
       {/* Mobile: card list */}
       <div className="md:hidden">
         <EquipmentCards
-          rows={visibleRows}
+          rows={pageRows}
           canManage={canManage}
           canSnooze={canSnooze}
           canLog={canLog}
@@ -189,7 +270,7 @@ export function EquipmentTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {visibleRows.map((row) => {
+          {pageRows.map((row) => {
             const reminderState = getReminderState(
               {
                 nextDueDate: row.nextDueDate ? new Date(row.nextDueDate) : null,
@@ -390,6 +471,18 @@ export function EquipmentTable({
       </Table>
 
       </div>
+
+      {/* Pagination — applies to both the desktop table and mobile cards */}
+      {totalPages > 1 && (
+        <div className="mt-4 border-t pt-4">
+          <Pagination
+            currentPage={safePage}
+            totalPages={totalPages}
+            totalItems={visibleRows.length}
+            onPageChange={(p) => setPage(p)}
+          />
+        </div>
+      )}
 
       {snoozeId && (
         <SnoozeDialog
