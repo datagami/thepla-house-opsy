@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { ALL_CATEGORIES, categoryLabel } from "@/lib/equipment-display";
+import { fileToBase64 } from "@/lib/file-to-base64";
 
 interface BranchOption {
   id: string;
@@ -31,6 +32,7 @@ interface EquipmentFormValues {
   frequencyMonths?: number | null;
   reminderLeadDays?: number;
   notes?: string | null;
+  imageUrl?: string | null;
 }
 
 interface EquipmentFormState {
@@ -71,6 +73,9 @@ export function EquipmentForm({
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [removeImage, setRemoveImage] = useState(false);
+  const existingImageUrl = initial?.imageUrl ?? null;
 
   const set = (k: keyof EquipmentFormState, v: string) =>
     setForm((s) => ({ ...s, [k]: v }));
@@ -89,6 +94,8 @@ export function EquipmentForm({
           : Number(form.frequencyMonths);
       const reminderLeadDays = Number(form.reminderLeadDays) || 15;
 
+      const imagePayload = imageFile ? await fileToBase64(imageFile) : null;
+
       const body = {
         name: form.name.trim(),
         category: form.category,
@@ -97,6 +104,8 @@ export function EquipmentForm({
         frequencyMonths: frequencyMonths ?? undefined,
         reminderLeadDays,
         notes: form.notes.trim() || undefined,
+        image: imagePayload,
+        removeImage,
       };
 
       const url = isEdit
@@ -248,6 +257,25 @@ export function EquipmentForm({
                 How many days before the due date to start reminding
               </p>
             </div>
+          </div>
+
+          {/* Asset photo */}
+          <div className="space-y-2">
+            <Label htmlFor="asset-image">Asset photo (optional)</Label>
+            {existingImageUrl && !imageFile && !removeImage && (
+              <div className="flex items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={existingImageUrl} alt="Asset" className="h-16 w-16 rounded object-cover" />
+                <Button type="button" variant="ghost" size="sm" onClick={() => setRemoveImage(true)}>Remove</Button>
+              </div>
+            )}
+            <Input
+              id="asset-image"
+              type="file"
+              accept="image/*"
+              onChange={(e) => { setImageFile(e.target.files?.[0] ?? null); setRemoveImage(false); }}
+            />
+            {imageFile && <p className="text-xs text-muted-foreground">{imageFile.name}</p>}
           </div>
 
           {/* Notes */}
