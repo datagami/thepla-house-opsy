@@ -23,6 +23,7 @@ export const equipmentCreateSchema = z.object({
   reminderLeadDays: z.coerce.number().int().min(0).max(365).default(15),
   nextDueDate: dateStr.optional().nullable(),
   notes: z.string().trim().optional().nullable(),
+  image: uploadFile.optional().nullable(),
 });
 
 // Items cannot be moved between outlets, so branchId is not updatable.
@@ -31,6 +32,7 @@ export const equipmentUpdateSchema = equipmentCreateSchema
   .partial()
   .extend({
     status: z.enum(["ACTIVE", "RETIRED"]).optional(),
+    removeImage: z.boolean().optional(),
   });
 
 export const maintenanceRecordCreateSchema = z.object({
