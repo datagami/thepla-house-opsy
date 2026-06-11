@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { FileDropzone } from "@/components/ui/file-dropzone";
 import {
   Dialog,
   DialogContent,
@@ -49,6 +49,7 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
   const [isUploading, setIsUploading] = useState(false);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [file, setFile] = useState<File | null>(null);
 
   const handleDownload = async () => {
     try {
@@ -183,12 +184,11 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
     return errors;
   };
 
-  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = async () => {
+    if (!file) return;
     try {
       setIsUploading(true);
       setValidationErrors([]);
-      const file = event.target.files?.[0];
-      if (!file) return;
 
       const reader = new FileReader();
       reader.onload = async (e) => {
@@ -274,6 +274,7 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
 
           toast.success('Users imported successfully');
           setShowUploadDialog(false);
+          setFile(null);
           onImportComplete?.();
         } catch (error) {
           console.error('Import failed:', error);
@@ -297,7 +298,7 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
         Upload Users
       </Button>
 
-      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+      <Dialog open={showUploadDialog} onOpenChange={(open) => { setShowUploadDialog(open); if (!open) { setFile(null); setValidationErrors([]); } }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Upload Users Data</DialogTitle>
@@ -321,16 +322,24 @@ export function UserDataImportExport({ onImportComplete }: UserDataImportExportP
               </Alert>
             )}
 
-            <div className="grid w-full max-w-sm items-center gap-1.5">
-              <Input
-                type="file"
+            <div className="space-y-3">
+              <FileDropzone
                 accept=".xlsx,.xls"
-                onChange={handleUpload}
+                variant="file"
+                value={file ? [file] : []}
+                onFiles={(fs) => setFile(fs[0] ?? null)}
+                onRemoveFile={() => setFile(null)}
+                idleText="Drag & drop an Excel file, or click to browse"
+                hint=".xlsx or .xls"
                 disabled={isUploading}
               />
-              <p className="text-sm text-muted-foreground">
-                Only Excel files (.xlsx, .xls) are supported
-              </p>
+              <Button
+                onClick={handleUpload}
+                disabled={!file || isUploading}
+                className="w-full"
+              >
+                {isUploading ? 'Uploading...' : 'Upload'}
+              </Button>
             </div>
           </div>
         </DialogContent>

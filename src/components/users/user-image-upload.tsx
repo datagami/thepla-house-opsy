@@ -21,12 +21,10 @@ export function UserImageUpload({userId, currentImage, onImageUpdate, userName}:
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImage || null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const processFile = async (file: File) => {
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('File size must be less than 5MB');
@@ -76,6 +74,11 @@ export function UserImageUpload({userId, currentImage, onImageUpdate, userName}:
     }
   };
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) processFile(file);
+  };
+
   const handleButtonClick = () => {
     fileInputRef.current?.click();
   };
@@ -86,7 +89,12 @@ export function UserImageUpload({userId, currentImage, onImageUpdate, userName}:
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="relative">
+      <div
+        className={`relative rounded-full transition-all duration-150 ${dragActive ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+        onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+        onDragLeave={(e) => { e.preventDefault(); setDragActive(false); }}
+        onDrop={(e) => { e.preventDefault(); setDragActive(false); const f = e.dataTransfer.files?.[0]; if (f) processFile(f); }}
+      >
         <button
           type="button"
           onClick={handleAvatarClick}
@@ -101,6 +109,11 @@ export function UserImageUpload({userId, currentImage, onImageUpdate, userName}:
             </AvatarFallback>
           </Avatar>
         </button>
+        {dragActive && (
+          <div className="absolute inset-0 flex items-center justify-center rounded-full bg-primary/20 pointer-events-none">
+            <span className="text-xs font-medium text-primary">Drop</span>
+          </div>
+        )}
         <Button
           size="icon"
           variant="secondary"
@@ -124,7 +137,7 @@ export function UserImageUpload({userId, currentImage, onImageUpdate, userName}:
         disabled={isUploading}
       />
       <p className="text-sm text-muted-foreground">
-        Supported formats: JPG, PNG, GIF. Max size: 5MB
+        Click the camera or drag a photo here · JPG/PNG/GIF, max 5MB
       </p>
 
       <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>

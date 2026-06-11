@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState, useRef, type ChangeEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import { FileDropzone } from '@/components/ui/file-dropzone'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -81,7 +82,6 @@ export function BulkImportExport({
   const [summary, setSummary] = useState<BulkImportSummary | null>(null)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [showConfirm, setShowConfirm] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -162,14 +162,6 @@ export function BulkImportExport({
     }
   }
 
-  function handlePickFile(e: ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0]
-    if (!f) return
-    setPendingFile(f)
-    setShowConfirm(true)
-    e.target.value = ''
-  }
-
   async function handleConfirmUpload() {
     if (!pendingFile) return
     setShowConfirm(false)
@@ -198,14 +190,6 @@ export function BulkImportExport({
 
   return (
     <>
-      <input
-        type="file"
-        accept=".xlsx"
-        ref={fileInputRef}
-        onChange={handlePickFile}
-        className="hidden"
-      />
-
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="gap-2">
@@ -258,7 +242,7 @@ export function BulkImportExport({
             disabled={isUploading}
             onSelect={(event) => {
               event.preventDefault()
-              fileInputRef.current?.click()
+              setShowConfirm(true)
             }}
           >
             <Upload className="h-4 w-4" />
@@ -318,18 +302,29 @@ export function BulkImportExport({
         </Card>
       )}
 
-      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+      <AlertDialog open={showConfirm} onOpenChange={(open) => { setShowConfirm(open); if (!open) setPendingFile(null) }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Apply bulk salary changes?</AlertDialogTitle>
             <AlertDialogDescription>
-              Upload <span className="font-medium">{pendingFile?.name}</span> and apply
-              changes for {monthLabels[month - 1]} {year}? Paid salaries will be skipped.
+              {pendingFile
+                ? <>Upload <span className="font-medium">{pendingFile.name}</span> and apply changes for {monthLabels[month - 1]} {year}? Paid salaries will be skipped.</>
+                : <>Choose an .xlsx file to import salaries for {monthLabels[month - 1]} {year}. Paid salaries will be skipped.</>
+              }
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <FileDropzone
+            accept=".xlsx"
+            variant="file"
+            value={pendingFile ? [pendingFile] : []}
+            onFiles={(fs) => setPendingFile(fs[0] ?? null)}
+            onRemoveFile={() => setPendingFile(null)}
+            idleText="Drag & drop an .xlsx, or click to browse"
+            hint="Excel .xlsx file"
+          />
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setPendingFile(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmUpload}>Upload</AlertDialogAction>
+            <AlertDialogAction onClick={handleConfirmUpload} disabled={!pendingFile}>Upload</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
