@@ -122,7 +122,9 @@ export function EquipmentTable({
   // shareable like the dropdown filters. Filtering itself stays instant/client-side.
   useEffect(() => {
     const t = setTimeout(() => {
-      const params = new URLSearchParams(searchParams.toString());
+      // Read the LIVE URL (not the captured searchParams) — otherwise a Reset or filter
+      // change that navigates during the debounce gets undone by a stale snapshot.
+      const params = new URLSearchParams(window.location.search);
       const trimmed = query.trim();
       if ((params.get("q") ?? "") === trimmed) return;
       if (trimmed) params.set("q", trimmed);
@@ -131,7 +133,7 @@ export function EquipmentTable({
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     }, 350);
     return () => clearTimeout(t);
-  }, [query, searchParams, pathname, router]);
+  }, [query, pathname, router]);
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -201,7 +203,7 @@ export function EquipmentTable({
             onClick={resetAll}
             className="font-medium text-primary hover:underline"
           >
-            Reset
+            Clear all
           </button>
         </div>
       )}
