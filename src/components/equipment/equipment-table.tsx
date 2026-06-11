@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { CategoryPill, StatusBadge } from "@/components/equipment/ui";
 import { SnoozeDialog } from "@/components/equipment/snooze-dialog";
 import { ArchiveDialog } from "@/components/equipment/archive-dialog";
@@ -70,6 +71,18 @@ export function EquipmentTable({
   const router = useRouter();
   const [snoozeId, setSnoozeId] = useState<string | null>(null);
   const [archiveId, setArchiveId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const toggle = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const clear = () => setSelected(new Set());
+  const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.id));
+  const someSelected = selected.size > 0 && !allSelected;
 
   const today = new Date();
   const snoozeRow = rows.find((r) => r.id === snoozeId);
@@ -78,6 +91,28 @@ export function EquipmentTable({
 
   return (
     <>
+      {/* Selection bar */}
+      {canManage && selected.size > 0 && (
+        <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-[13px] mb-3">
+          <span className="text-muted-foreground">{selected.size} selected</span>
+          <div className="flex items-center gap-2">
+            <Button variant="default" size="sm" asChild>
+              <a
+                href={`/api/equipment/labels?ids=${[...selected].join(",")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Printer size={15} className="mr-1.5" />
+                Print labels
+              </a>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={clear}>
+              Clear
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Mobile: card list */}
       <div className="md:hidden">
         <EquipmentCards
@@ -85,6 +120,8 @@ export function EquipmentTable({
           canManage={canManage}
           canSnooze={canSnooze}
           canLog={canLog}
+          selected={selected}
+          onToggle={toggle}
         />
       </div>
 
@@ -93,6 +130,21 @@ export function EquipmentTable({
       <Table>
         <TableHeader>
           <TableRow>
+            {canManage && (
+              <TableHead className="w-[36px]">
+                <Checkbox
+                  checked={someSelected ? "indeterminate" : allSelected}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setSelected(new Set(rows.map((r) => r.id)));
+                    } else {
+                      clear();
+                    }
+                  }}
+                  aria-label="Select all items"
+                />
+              </TableHead>
+            )}
             <TableHead>Item</TableHead>
             <TableHead>Category</TableHead>
             <TableHead>Outlet</TableHead>
@@ -127,6 +179,18 @@ export function EquipmentTable({
                 className={`cursor-pointer hover:bg-muted/50${isRetired ? " opacity-60" : ""}`}
                 onClick={() => router.push(`/equipment/${row.id}`)}
               >
+                {canManage && (
+                  <TableCell
+                    className="w-[36px]"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Checkbox
+                      checked={selected.has(row.id)}
+                      onCheckedChange={() => toggle(row.id)}
+                      aria-label="Select item"
+                    />
+                  </TableCell>
+                )}
                 {/* Item */}
                 <TableCell>
                   <div className="flex items-center gap-2">

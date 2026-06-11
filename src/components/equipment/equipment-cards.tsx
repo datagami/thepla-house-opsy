@@ -7,6 +7,7 @@ import { MapPin, ChevronRight, BellOff, Wrench, MoreVertical, Archive, ArchiveRe
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +29,8 @@ interface EquipmentCardsProps {
   canManage: boolean;
   canSnooze?: boolean;
   canLog?: boolean;
+  selected?: Set<string>;
+  onToggle?: (id: string) => void;
 }
 
 function formatShortDate(iso: string | null): string {
@@ -47,9 +50,11 @@ interface ItemCardProps {
   canLog: boolean;
   onSnooze: (id: string) => void;
   onArchive: (id: string) => void;
+  selected?: Set<string>;
+  onToggle?: (id: string) => void;
 }
 
-function ItemCard({ row, canManage, canSnooze, canLog, onSnooze, onArchive }: ItemCardProps) {
+function ItemCard({ row, canManage, canSnooze, canLog, onSnooze, onArchive, selected, onToggle }: ItemCardProps) {
   const router = useRouter();
   const today = new Date();
   const isRetired = row.status === "RETIRED";
@@ -78,6 +83,19 @@ function ItemCard({ row, canManage, canSnooze, canLog, onSnooze, onArchive }: It
     >
       {/* Top row: icon + name/category/outlet + chevron */}
       <div className="flex items-start gap-[11px] p-3.5">
+        {/* Selection checkbox (manage-gated) */}
+        {canManage && onToggle && (
+          <div
+            className="mt-[2px] flex-none"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Checkbox
+              checked={selected?.has(row.id) ?? false}
+              onCheckedChange={() => onToggle(row.id)}
+              aria-label="Select item"
+            />
+          </div>
+        )}
         {/* Category icon tile or asset photo */}
         {row.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -233,6 +251,8 @@ export function EquipmentCards({
   canManage,
   canSnooze = false,
   canLog = false,
+  selected,
+  onToggle,
 }: EquipmentCardsProps) {
   const [snoozeId, setSnoozeId] = useState<string | null>(null);
   const [archiveId, setArchiveId] = useState<string | null>(null);
@@ -251,6 +271,8 @@ export function EquipmentCards({
             canLog={canLog}
             onSnooze={setSnoozeId}
             onArchive={setArchiveId}
+            selected={selected}
+            onToggle={onToggle}
           />
         ))}
       </div>
