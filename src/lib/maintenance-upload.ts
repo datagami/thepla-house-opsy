@@ -74,6 +74,27 @@ export async function uploadMaintenanceFiles(
 }
 
 /**
+ * Uploads a single primary asset image to Azure Blob and returns its URL,
+ * or null when no image is provided. Folder: equipment/{branchId}/asset-images.
+ */
+export async function uploadAssetImage(
+  image: UploadFile | null | undefined,
+  equipmentId: string,
+  branchId: string
+): Promise<string | null> {
+  if (!image) return null;
+  const azure = new AzureStorageService();
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const fileName = `asset-${equipmentId}-${stamp}.${extFor(image.contentType)}`;
+  return azure.uploadImage(
+    decodeBase64(image.base64),
+    fileName,
+    `equipment/${branchId}/asset-images`,
+    image.contentType
+  );
+}
+
+/**
  * Best-effort deletion of previously-uploaded maintenance blobs by URL.
  * Used to clean up orphaned files when a subsequent DB write fails.
  */
