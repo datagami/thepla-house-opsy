@@ -83,16 +83,17 @@ export function EquipmentTable({
   const [snoozeId, setSnoozeId] = useState<string | null>(null);
   const [archiveId, setArchiveId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [query, setQuery] = useState("");
+  // Seed the search from the URL (?q=) so it persists on reload and is shareable.
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [page, setPage] = useState(1);
 
-  // Clear the search AND the dropdown filter params (outlet/category/status/lifecycle),
+  // Clear the search AND the dropdown filter params (q/outlet/category/status/lifecycle),
   // preserving a branch manager's locked outlet.
   const resetAll = () => {
     setQuery("");
     setPage(1);
     const params = new URLSearchParams(searchParams.toString());
-    ["category", "status", "lifecycle"].forEach((k) => params.delete(k));
+    ["q", "category", "status", "lifecycle"].forEach((k) => params.delete(k));
     if (!lockedOutletId) params.delete("outlet");
     const qs = params.toString();
     router.push(qs ? `${pathname}?${qs}` : pathname);
@@ -116,6 +117,21 @@ export function EquipmentTable({
   useEffect(() => {
     setPage(1);
   }, [query]);
+
+  // Persist the search to the URL (?q=), debounced — so it survives reloads and is
+  // shareable like the dropdown filters. Filtering itself stays instant/client-side.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      const trimmed = query.trim();
+      if ((params.get("q") ?? "") === trimmed) return;
+      if (trimmed) params.set("q", trimmed);
+      else params.delete("q");
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    }, 350);
+    return () => clearTimeout(t);
+  }, [query, searchParams, pathname, router]);
 
   const toggle = (id: string) => {
     setSelected((prev) => {
