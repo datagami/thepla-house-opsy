@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { X, UploadCloud, Image as ImageIcon, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FileDropzone } from "@/components/ui/file-dropzone";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -47,10 +47,6 @@ export function MaintenanceRecordForm({ equipmentId }: Props) {
   const [photos, setPhotos] = useState<File[]>([]);
 
   const [saving, setSaving] = useState(false);
-
-  function removePhoto(index: number) {
-    setPhotos((prev) => prev.filter((_, i) => i !== index));
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -242,113 +238,32 @@ export function MaintenanceRecordForm({ equipmentId }: Props) {
           {/* Bill / invoice upload */}
           <div className="flex flex-col gap-1.5">
             <Label>Bill / invoice</Label>
-            {bill ? (
-              <div className="flex items-center gap-3 rounded-lg border bg-muted/40 px-3 py-2.5">
-                <div className="flex h-10 w-10 flex-none items-center justify-center rounded-lg border bg-card text-muted-foreground">
-                  <FileText size={18} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13px] font-semibold">{bill.name}</p>
-                  <p className="text-[11.5px] text-muted-foreground">
-                    {(bill.size / 1024).toFixed(0)} KB · uploaded
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setBill(null)}
-                  className="flex h-7 w-7 flex-none items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                  aria-label="Remove bill"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            ) : (
-              <label className="flex cursor-pointer items-center gap-3.5 rounded-lg border border-dashed bg-muted/20 px-4 py-4 transition-colors hover:bg-muted/40">
-                <div className="flex h-10 w-10 flex-none items-center justify-center rounded-lg border bg-card text-muted-foreground">
-                  <UploadCloud size={18} />
-                </div>
-                <div>
-                  <p className="text-[13px] font-semibold">
-                    Drop bill / invoice, or{" "}
-                    <span className="text-primary">browse</span>
-                  </p>
-                  <p className="text-[11.5px] text-muted-foreground">
-                    Single PDF or image · max 10 MB
-                  </p>
-                </div>
-                <input
-                  type="file"
-                  accept="application/pdf,image/*"
-                  className="sr-only"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0] ?? null;
-                    setBill(f);
-                    e.target.value = "";
-                  }}
-                />
-              </label>
-            )}
+            <FileDropzone
+              variant="auto"
+              accept="application/pdf,image/*"
+              maxSizeMB={10}
+              value={bill ? [bill] : []}
+              onFiles={(fs) => setBill(fs[0] ?? null)}
+              onRemoveFile={() => setBill(null)}
+              idleText={<>Drop bill / invoice, or <span className="text-primary">browse</span></>}
+              hint="PDF or image, up to 10MB"
+            />
           </div>
 
           {/* Service photos upload */}
           <div className="flex flex-col gap-1.5">
             <Label>Service photos</Label>
-
-            {/* Photo thumbnails */}
-            {photos.length > 0 && (
-              <div className="mb-2 flex flex-wrap gap-2">
-                {photos.map((photo, i) => (
-                  <div key={i} className="relative">
-                    <div className="flex h-[64px] w-[64px] items-center justify-center rounded-lg border bg-muted text-[11px] text-muted-foreground overflow-hidden">
-                      <span className="truncate px-1 text-center leading-tight">
-                        {photo.name.length > 10
-                          ? photo.name.slice(0, 9) + "…"
-                          : photo.name}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removePhoto(i)}
-                      className="absolute -right-1.5 -top-1.5 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-foreground/70 text-background transition-colors hover:bg-foreground"
-                      aria-label={`Remove photo ${photo.name}`}
-                    >
-                      <X size={11} strokeWidth={2.5} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <label className="flex cursor-pointer items-center gap-3.5 rounded-lg border border-dashed bg-muted/20 px-4 py-4 transition-colors hover:bg-muted/40">
-              <div className="flex h-10 w-10 flex-none items-center justify-center rounded-lg border bg-card text-muted-foreground">
-                <ImageIcon size={18} />
-              </div>
-              <div>
-                <p className="text-[13px] font-semibold">
-                  Add service photos, or{" "}
-                  <span className="text-primary">browse</span>
-                </p>
-                <p className="text-[11.5px] text-muted-foreground">
-                  Multiple JPG/PNG · before &amp; after
-                  {photos.length > 0 && (
-                    <span className="ml-1 font-medium text-foreground">
-                      ({photos.length} selected)
-                    </span>
-                  )}
-                </p>
-              </div>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                className="sr-only"
-                onChange={(e) => {
-                  const files = Array.from(e.target.files ?? []);
-                  if (files.length) setPhotos((prev) => [...prev, ...files]);
-                  e.target.value = "";
-                }}
-              />
-            </label>
+            <FileDropzone
+              variant="image"
+              accept="image/*"
+              multiple
+              maxSizeMB={10}
+              value={photos}
+              onFiles={(fs) => setPhotos((p) => [...p, ...fs])}
+              onRemoveFile={(i) => setPhotos((p) => p.filter((_, idx) => idx !== i))}
+              idleText={<>Add service photos, or <span className="text-primary">browse</span></>}
+              hint="Add one or more photos"
+            />
           </div>
 
           {/* Footer actions */}

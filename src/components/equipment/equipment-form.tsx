@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FileDropzone } from "@/components/ui/file-dropzone";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -278,21 +279,19 @@ export function EquipmentForm({
 
           {/* Asset photo */}
           <div className="space-y-2">
-            <Label htmlFor="asset-image">Asset photo (optional)</Label>
-            {existingImageUrl && !imageFile && !removeImage && (
-              <div className="flex items-center gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={existingImageUrl} alt="Asset" className="h-16 w-16 rounded object-cover" />
-                <Button type="button" variant="ghost" size="sm" onClick={() => setRemoveImage(true)}>Remove</Button>
-              </div>
-            )}
-            <Input
-              id="asset-image"
-              type="file"
+            <Label>Asset photo (optional)</Label>
+            <FileDropzone
+              variant="image"
               accept="image/*"
-              onChange={(e) => { setImageFile(e.target.files?.[0] ?? null); setRemoveImage(false); }}
+              maxSizeMB={10}
+              value={imageFile ? [imageFile] : []}
+              onFiles={(fs) => { setImageFile(fs[0] ?? null); setRemoveImage(false); }}
+              onRemoveFile={() => setImageFile(null)}
+              existingUrl={!imageFile && !removeImage ? existingImageUrl : null}
+              onRemoveExisting={() => setRemoveImage(true)}
+              idleText={<>Drag & drop a photo, or <span className="text-primary">browse</span></>}
+              hint="PNG or JPG, up to 10MB"
             />
-            {imageFile && <p className="text-xs text-muted-foreground">{imageFile.name}</p>}
           </div>
 
           {/* Notes */}

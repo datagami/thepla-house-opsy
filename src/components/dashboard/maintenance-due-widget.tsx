@@ -57,7 +57,7 @@ export async function MaintenanceDueWidget({
   const canLog = hasAccess(role, "equipment.records.create");
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="min-w-0 overflow-hidden">
       {/* Header */}
       <CardHeader className="flex flex-row items-center gap-3 border-b px-[18px] py-[15px] space-y-0">
         <div
@@ -95,33 +95,34 @@ export async function MaintenanceDueWidget({
               return (
                 <div
                   key={item.id}
-                  className="flex items-center gap-[11px] rounded-lg px-[10px] py-[9px] hover:bg-muted/60 transition-colors"
+                  className="flex items-start gap-[10px] rounded-lg px-[10px] py-[9px] hover:bg-muted/60 transition-colors"
                 >
                   {/* Status dot */}
                   <span
-                    className="h-2 w-2 flex-none rounded-full"
+                    className="mt-[6px] h-2 w-2 flex-none rounded-full"
                     style={{ background: badge.fg }}
                   />
 
-                  {/* Name + outlet · category */}
-                  <Link
-                    href={`/equipment/${item.id}`}
-                    className="flex-1 min-w-0 block"
-                  >
-                    <div className="truncate text-[13px] font-semibold text-foreground">
-                      {item.name}
+                  {/* Name + outlet·category + status badge — stacked so the
+                      day-count badge ("Overdue by N days") has its own full-width
+                      line and can't crush the name in this narrow card. */}
+                  <div className="min-w-0 flex-1">
+                    <Link href={`/equipment/${item.id}`} className="block">
+                      <div className="truncate text-[13px] font-semibold text-foreground">
+                        {item.name}
+                      </div>
+                      <div className="mt-[1px] truncate text-[11.5px] text-muted-foreground">
+                        {item.branch.name}&nbsp;·&nbsp;{categoryLabel(item.category)}
+                      </div>
+                    </Link>
+                    <div className="mt-[6px]">
+                      <StatusBadge
+                        state={state}
+                        size="sm"
+                        dueInDays={item.nextDueDate ? daysUntil(item.nextDueDate, today) : null}
+                      />
                     </div>
-                    <div className="text-[11.5px] text-muted-foreground">
-                      {item.branch.name}&nbsp;·&nbsp;{categoryLabel(item.category)}
-                    </div>
-                  </Link>
-
-                  {/* Status badge */}
-                  <StatusBadge
-                    state={state}
-                    size="sm"
-                    dueInDays={item.nextDueDate ? daysUntil(item.nextDueDate, today) : null}
-                  />
+                  </div>
 
                   {/* Log button — only when user can create records */}
                   {canLog && (
@@ -129,7 +130,7 @@ export async function MaintenanceDueWidget({
                       variant="outline"
                       size="sm"
                       asChild
-                      className="h-7 px-2 text-xs flex-none"
+                      className="mt-[1px] h-7 flex-none px-2 text-xs"
                     >
                       <Link href={`/equipment/${item.id}/records/new`}>
                         Log

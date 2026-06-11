@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import * as XLSX from 'xlsx'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Download, Upload, AlertCircle } from 'lucide-react'
+import { FileDropzone } from '@/components/ui/file-dropzone'
+import { Download, AlertCircle } from 'lucide-react'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
@@ -35,6 +36,7 @@ export function DeductionSettingsPage() {
   const [uploading, setUploading] = useState(false)
   const [importErrors, setImportErrors] = useState<ImportError[]>([])
   const [showErrorDialog, setShowErrorDialog] = useState(false)
+  const [file, setFile] = useState<File | null>(null)
 
   async function load() {
     setLoading(true)
@@ -73,13 +75,11 @@ export function DeductionSettingsPage() {
     XLSX.writeFile(wb, `deduction-settings-${new Date().toISOString().slice(0, 10)}.xlsx`)
   }
 
-  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+  async function handleUpload(uploadFile: File) {
     setUploading(true)
     setImportErrors([])
     try {
-      const buf = await file.arrayBuffer()
+      const buf = await uploadFile.arrayBuffer()
       const wb = XLSX.read(buf)
       const sheet = wb.Sheets[wb.SheetNames[0]]
       const parsed = XLSX.utils.sheet_to_json(sheet) as Array<Record<string, unknown>>
@@ -95,13 +95,13 @@ export function DeductionSettingsPage() {
         return
       }
       toast.success(`Updated ${result.updated} users`)
+      setFile(null)
       await load()
     } catch (err) {
       toast.error('Upload failed')
       console.error(err)
     } finally {
       setUploading(false)
-      e.target.value = ''
     }
   }
 
@@ -115,22 +115,29 @@ export function DeductionSettingsPage() {
             PF is not yet active.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-end gap-2">
           <Button onClick={handleDownload} variant="outline">
             <Download className="w-4 h-4 mr-2" />Download Excel
           </Button>
-          <label className="inline-flex">
-            <input
-              type="file"
+          <div className="flex flex-col gap-2">
+            <FileDropzone
               accept=".xlsx,.xls"
-              className="hidden"
-              onChange={handleUpload}
+              variant="file"
+              value={file ? [file] : []}
+              onFiles={(fs) => setFile(fs[0] ?? null)}
+              onRemoveFile={() => setFile(null)}
+              idleText="Drag & drop an Excel file, or click to browse"
+              hint=".xlsx or .xls"
               disabled={uploading}
             />
-            <Button asChild disabled={uploading}>
-              <span><Upload className="w-4 h-4 mr-2" />{uploading ? 'Uploading…' : 'Upload Excel'}</span>
+            <Button
+              onClick={() => { if (file) handleUpload(file) }}
+              disabled={!file || uploading}
+              variant="outline"
+            >
+              {uploading ? 'Uploading…' : 'Import Excel'}
             </Button>
-          </label>
+          </div>
         </div>
       </div>
 

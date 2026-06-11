@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -30,7 +30,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload, Loader2, FileText } from "lucide-react";
+import { FileDropzone } from "@/components/ui/file-dropzone";
+import { Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { DocumentType } from "@/models/models";
 
@@ -50,7 +51,6 @@ export function UserDocumentUpload({ userId, documentTypes = [] }: UserDocumentU
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof documentFormSchema>>({
     resolver: zodResolver(documentFormSchema),
@@ -59,33 +59,6 @@ export function UserDocumentUpload({ userId, documentTypes = [] }: UserDocumentU
       description: "",
     },
   });
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const allowedTypes = [
-      'application/pdf',
-      'image/jpeg',
-      'image/jpg',
-      'image/png',
-      'image/gif',
-      'application/zip',
-      'application/x-zip-compressed'
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
-      toast.error('Invalid file type. Only PDF, images, and ZIP files are allowed');
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('File size must be less than 10MB');
-      return;
-    }
-
-    setSelectedFile(file);
-  };
 
   const onSubmit = async (values: z.infer<typeof documentFormSchema>) => {
     if (!selectedFile) {
@@ -123,10 +96,6 @@ export function UserDocumentUpload({ userId, documentTypes = [] }: UserDocumentU
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleButtonClick = () => {
-    fileInputRef.current?.click();
   };
 
   return (
@@ -204,36 +173,17 @@ export function UserDocumentUpload({ userId, documentTypes = [] }: UserDocumentU
 
             <div>
               <label className="block text-sm font-medium mb-2">File</label>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={handleButtonClick}
-                disabled={isLoading}
-              >
-                {selectedFile ? (
-                  <>
-                    <FileText className="mr-2 h-4 w-4" />
-                    {selectedFile.name}
-                  </>
-                ) : (
-                  <>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Select File
-                  </>
-                )}
-              </Button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
+              <FileDropzone
+                variant="file"
                 accept=".pdf,.jpg,.jpeg,.png,.gif,.zip"
-                onChange={handleFileChange}
+                maxSizeMB={10}
+                value={selectedFile ? [selectedFile] : []}
+                onFiles={(fs) => setSelectedFile(fs[0] ?? null)}
+                onRemoveFile={() => setSelectedFile(null)}
+                idleText="Drag & drop a file, or click to browse"
+                hint="PDF, image, or ZIP — up to 10MB"
                 disabled={isLoading}
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Supported: PDF, Images, ZIP. Max size: 10MB
-              </p>
             </div>
 
             <div className="flex gap-2 pt-4">
