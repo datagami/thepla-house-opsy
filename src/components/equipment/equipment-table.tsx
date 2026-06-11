@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MapPin, MoreHorizontal, Archive, ArchiveRestore, Printer, Search } from "lucide-react";
@@ -75,6 +75,7 @@ export function EquipmentTable({
   const [archiveId, setArchiveId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
 
   // Client-side search by item name, asset ID (label tag), or location.
   const visibleRows = useMemo(() => {
@@ -84,6 +85,16 @@ export function EquipmentTable({
       [r.name, r.assetTag, r.location].some((v) => v?.toLowerCase().includes(q))
     );
   }, [rows, query]);
+
+  // Client-side pagination over the searched rows.
+  const PAGE_SIZE = 25;
+  const totalPages = Math.max(1, Math.ceil(visibleRows.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageRows = visibleRows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  // Jump back to the first page whenever the search changes.
+  useEffect(() => {
+    setPage(1);
+  }, [query]);
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -150,7 +161,7 @@ export function EquipmentTable({
       {/* Mobile: card list */}
       <div className="md:hidden">
         <EquipmentCards
-          rows={visibleRows}
+          rows={pageRows}
           canManage={canManage}
           canSnooze={canSnooze}
           canLog={canLog}
@@ -189,7 +200,7 @@ export function EquipmentTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {visibleRows.map((row) => {
+          {pageRows.map((row) => {
             const reminderState = getReminderState(
               {
                 nextDueDate: row.nextDueDate ? new Date(row.nextDueDate) : null,
@@ -390,6 +401,34 @@ export function EquipmentTable({
       </Table>
 
       </div>
+
+      {/* Pagination — applies to both the desktop table and mobile cards */}
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between gap-2">
+          <span className="text-[12.5px] text-muted-foreground">
+            Page {safePage} of {totalPages} · {visibleRows.length} item
+            {visibleRows.length === 1 ? "" : "s"}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={safePage <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={safePage >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
 
       {snoozeId && (
         <SnoozeDialog
