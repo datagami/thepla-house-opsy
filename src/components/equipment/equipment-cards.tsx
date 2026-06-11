@@ -127,6 +127,7 @@ function ItemCard({ row, canManage, canSnooze, canLog, onSnooze, onArchive, sele
               <MapPin size={12} className="flex-none" />
               {row.branch.name}
             </span>
+            <span className="font-mono text-[11px] text-muted-foreground">{row.assetTag}</span>
           </div>
         </div>
 
