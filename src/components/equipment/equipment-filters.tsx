@@ -81,6 +81,7 @@ export function EquipmentFilters({
     params.delete("category");
     params.delete("status");
     params.delete("lifecycle");
+    params.delete("q"); // also clear the search so "Clear all" matches the table's Reset
     router.push(`${pathname}?${params.toString()}`);
   }
 
@@ -201,7 +202,7 @@ export function EquipmentFilters({
             className="h-[34px] flex-none gap-1.5 text-[13px]"
           >
             <X size={13} />
-            Clear
+            Clear all
           </Button>
         )}
       </div>
@@ -333,7 +334,7 @@ export function EquipmentFilters({
                 className="flex-1"
                 onClick={clearAll}
               >
-                Clear
+                Clear all
               </Button>
               <SheetTrigger asChild>
                 <Button className="flex-1">Show results</Button>
@@ -351,7 +352,7 @@ export function EquipmentFilters({
             className="h-8 gap-1 text-[12px] text-muted-foreground"
           >
             <X size={12} />
-            Clear
+            Clear all
           </Button>
         )}
       </div>
