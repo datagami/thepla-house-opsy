@@ -268,11 +268,11 @@ export default async function CostSummaryPage({ searchParams }: Props) {
               <div className="mt-2.5 flex gap-3.5 text-[12.5px] text-muted-foreground">
                 <span>
                   <strong className="text-foreground">{totalEntries}</strong>{" "}
-                  entries
+                  {totalEntries === 1 ? "entry" : "entries"}
                 </span>
                 <span>
                   <strong className="text-foreground">{totalItems}</strong>{" "}
-                  items
+                  {totalItems === 1 ? "item" : "items"}
                 </span>
               </div>
             </CardContent>
