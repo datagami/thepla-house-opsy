@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { hasAccess } from "@/lib/access-control";
 import { ALL_CATEGORIES } from "@/lib/equipment-display";
 import { equipmentWhereForRole } from "@/lib/maintenance-access";
+import { assetTag } from "@/lib/asset-tag";
 import { getReminderState } from "@/lib/services/maintenance-schedule";
 import { StatCard, EquipmentEmptyState } from "@/components/equipment/ui";
 import { EquipmentFilters } from "@/components/equipment/equipment-filters";
@@ -75,7 +76,7 @@ export default async function EquipmentPage({ searchParams }: Props) {
   // ── Query equipment ──────────────────────────────────────────────────────
   const equipment = await prisma.equipment.findMany({
     where: dbWhere,
-    include: { branch: { select: { id: true, name: true } } },
+    include: { branch: { select: { id: true, name: true, code: true } } },
     orderBy: [{ nextDueDate: "asc" }, { name: "asc" }],
   });
 
@@ -136,6 +137,7 @@ export default async function EquipmentPage({ searchParams }: Props) {
   // ── Map to EquipmentRow (Date → ISO string) ──────────────────────────────
   const tableRows: EquipmentRow[] = sorted.map(({ item }) => ({
     id: item.id,
+    assetTag: assetTag(item.branch.code, item.numId, item.branch.name),
     name: item.name,
     category: item.category,
     location: item.location,

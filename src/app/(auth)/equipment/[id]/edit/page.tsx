@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { hasAccess } from "@/lib/access-control";
 import { canManageBranch } from "@/lib/maintenance-access";
+import { assetTag } from "@/lib/asset-tag";
 import { EquipmentForm } from "@/components/equipment/equipment-form";
 
 interface Props {
@@ -26,6 +27,7 @@ export default async function EditEquipmentPage({ params }: Props) {
     where: { id },
     select: {
       id: true,
+      numId: true,
       name: true,
       category: true,
       branchId: true,
@@ -34,6 +36,7 @@ export default async function EditEquipmentPage({ params }: Props) {
       reminderLeadDays: true,
       notes: true,
       imageUrl: true,
+      branch: { select: { name: true, code: true } },
     },
   });
 
@@ -56,6 +59,7 @@ export default async function EditEquipmentPage({ params }: Props) {
           branches={branches}
           initial={{
             id: item.id,
+            assetTag: assetTag(item.branch.code, item.numId, item.branch.name),
             name: item.name,
             category: item.category,
             branchId: item.branchId,

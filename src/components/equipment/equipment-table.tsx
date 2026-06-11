@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MapPin, MoreHorizontal, Archive, ArchiveRestore, Printer } from "lucide-react";
+import { MapPin, MoreHorizontal, Archive, ArchiveRestore, Printer, Search } from "lucide-react";
 import { toast } from "sonner";
 import { setEquipmentStatus } from "@/lib/equipment-actions";
 import { EquipmentCards } from "@/components/equipment/equipment-cards";
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CategoryPill, StatusBadge } from "@/components/equipment/ui";
 import { SnoozeDialog } from "@/components/equipment/snooze-dialog";
@@ -32,6 +33,7 @@ import { getReminderState, daysUntil } from "@/lib/services/maintenance-schedule
 
 export interface EquipmentRow {
   id: string;
+  assetTag: string;
   name: string;
   category: string;
   location: string | null;
@@ -72,6 +74,16 @@ export function EquipmentTable({
   const [snoozeId, setSnoozeId] = useState<string | null>(null);
   const [archiveId, setArchiveId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState("");
+
+  // Client-side search by item name, asset ID (label tag), or location.
+  const visibleRows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((r) =>
+      [r.name, r.assetTag, r.location].some((v) => v?.toLowerCase().includes(q))
+    );
+  }, [rows, query]);
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -81,7 +93,8 @@ export function EquipmentTable({
     });
   };
   const clear = () => setSelected(new Set());
-  const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.id));
+  const allSelected =
+    visibleRows.length > 0 && visibleRows.every((r) => selected.has(r.id));
   const someSelected = selected.size > 0 && !allSelected;
 
   const today = new Date();
@@ -91,6 +104,27 @@ export function EquipmentTable({
 
   return (
     <>
+      {/* Search by name / asset ID / location */}
+      <div className="relative mb-3">
+        <Search
+          size={15}
+          className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+        />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by name, asset ID, or location…"
+          aria-label="Search items by name, asset ID, or location"
+          className="h-9 pl-8 text-[13px]"
+        />
+      </div>
+
+      {query && visibleRows.length === 0 && (
+        <p className="rounded-lg border border-dashed px-3 py-6 text-center text-[13px] text-muted-foreground">
+          No items match &ldquo;{query}&rdquo;.
+        </p>
+      )}
+
       {/* Selection bar */}
       {canManage && selected.size > 0 && (
         <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-[13px] mb-3">
@@ -116,7 +150,7 @@ export function EquipmentTable({
       {/* Mobile: card list */}
       <div className="md:hidden">
         <EquipmentCards
-          rows={rows}
+          rows={visibleRows}
           canManage={canManage}
           canSnooze={canSnooze}
           canLog={canLog}
@@ -136,7 +170,7 @@ export function EquipmentTable({
                   checked={someSelected ? "indeterminate" : allSelected}
                   onCheckedChange={(checked) => {
                     if (checked) {
-                      setSelected(new Set(rows.map((r) => r.id)));
+                      setSelected(new Set(visibleRows.map((r) => r.id)));
                     } else {
                       clear();
                     }
@@ -155,7 +189,7 @@ export function EquipmentTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((row) => {
+          {visibleRows.map((row) => {
             const reminderState = getReminderState(
               {
                 nextDueDate: row.nextDueDate ? new Date(row.nextDueDate) : null,
@@ -205,10 +239,14 @@ export function EquipmentTable({
                       </Badge>
                     )}
                   </div>
-                  <div className="mt-[2px] text-[11.5px] text-muted-foreground">
-                    {row.frequencyMonths
-                      ? `Every ${row.frequencyMonths} months`
-                      : "One-off"}
+                  <div className="mt-[2px] flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
+                    <span className="font-mono">{row.assetTag}</span>
+                    <span aria-hidden>·</span>
+                    <span>
+                      {row.frequencyMonths
+                        ? `Every ${row.frequencyMonths} months`
+                        : "One-off"}
+                    </span>
                   </div>
                 </TableCell>
 

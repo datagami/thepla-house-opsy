@@ -26,6 +26,7 @@ interface BranchOption {
 
 interface EquipmentFormValues {
   id?: string;
+  assetTag?: string | null;
   name?: string;
   category?: string;
   branchId?: string;
@@ -139,6 +140,22 @@ export function EquipmentForm({
     <Card>
       <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Asset ID — read-only; auto-generated, printed on the label */}
+          <div className="space-y-1.5">
+            <Label htmlFor="asset-id">Asset ID</Label>
+            <Input
+              id="asset-id"
+              value={initial?.assetTag ?? "— (assigned on save)"}
+              readOnly
+              tabIndex={-1}
+              aria-readonly="true"
+              className="cursor-default bg-muted font-mono text-muted-foreground focus-visible:ring-0"
+            />
+            <p className="text-[11.5px] text-muted-foreground">
+              Auto-generated from the outlet code + item number. This is the code on the printed label.
+            </p>
+          </div>
+
           {/* Name */}
           <div className="space-y-1.5">
             <Label htmlFor="name">
