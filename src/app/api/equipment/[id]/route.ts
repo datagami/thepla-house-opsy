@@ -112,12 +112,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const archiving = guardItem.status !== "RETIRED" && d.status === "RETIRED";
 
     if (archiving) {
+      // The image currently on the row (a just-uploaded replacement, or the existing
+      // one if unchanged) — NOT the pre-update value, so a combined replace+archive
+      // can't orphan the newly-uploaded blob.
+      const effectiveImageUrl = imageUrlUpdate ? imageUrlUpdate.imageUrl : guardItem.imageUrl;
       const recs = await prisma.maintenanceRecord.findMany({
         where: { equipmentId: id },
         select: { billUrl: true, photoUrls: true },
       });
       const urls = recs.flatMap((r) => [r.billUrl, ...r.photoUrls]).filter((u): u is string => !!u);
-      if (guardItem.imageUrl) urls.push(guardItem.imageUrl);
+      if (effectiveImageUrl) urls.push(effectiveImageUrl);
       const photoCount = recs.reduce((n, r) => n + r.photoUrls.length, 0);
       const billCount = recs.filter((r) => !!r.billUrl).length;
       // Clear the DB references first so the UI never points at deleted blobs...
@@ -127,7 +131,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       });
       // ...then best-effort delete the blobs (do not fail the archive if cleanup errors).
       try { await deleteMaintenanceFiles(urls); } catch (e) { console.error("Archive blob cleanup failed for", id, e); }
-      if (guardItem.imageUrl) {
+      if (effectiveImageUrl) {
         await prisma.equipment.update({ where: { id }, data: { imageUrl: null } });
       }
       await logEntityActivity(
