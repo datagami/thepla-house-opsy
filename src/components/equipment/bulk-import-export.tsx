@@ -127,12 +127,12 @@ export function BulkImportExport() {
           <FileDropzone
             accept=".xlsx"
             variant="file"
-            maxSizeMB={10}
+            maxSizeMB={5}
             value={pendingFile ? [pendingFile] : []}
             onFiles={(fs) => setPendingFile(fs[0] ?? null)}
             onRemoveFile={() => setPendingFile(null)}
             idleText="Drag & drop an .xlsx, or click to browse"
-            hint="Excel .xlsx export file"
+            hint="Excel .xlsx export file (max 5MB)"
           />
           <DialogFooter className="gap-2">
             <Button variant="outline" disabled={uploading} onClick={() => { setShowConfirm(false); setPendingFile(null); }}>
