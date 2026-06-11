@@ -10,6 +10,7 @@ import { assetTag } from "@/lib/asset-tag";
 import { CATEGORY_META, formatINR, formatDateIST } from "@/lib/equipment-display";
 import { CategoryPill, StatusBadge, EquipmentEmptyState } from "@/components/equipment/ui";
 import { CategoryIcon } from "@/components/equipment/category-icon";
+import { AssetImageViewer } from "@/components/equipment/asset-image-viewer";
 import { DetailActions } from "@/components/equipment/detail-actions";
 import { MaintenanceHistory } from "@/components/equipment/maintenance-history";
 import type { HistoryRecord } from "@/components/equipment/maintenance-history";
@@ -158,13 +159,12 @@ export default async function EquipmentDetailPage({ params, searchParams }: Prop
       <div className="rounded-xl border bg-card p-4 md:p-[22px] shadow-sm">
         {/* Top row: icon + name/badges + actions */}
         <div className="flex items-start gap-3 md:gap-4">
-          {/* Category icon tile or asset photo */}
+          {/* Category icon tile or asset photo (click to view full size) */}
           {item.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <AssetImageViewer
               src={item.imageUrl}
               alt={item.name}
-              className="h-[44px] w-[44px] flex-none rounded-[11px] object-cover"
+              className="h-[44px] w-[44px] flex-none rounded-[11px]"
             />
           ) : (
             <div
