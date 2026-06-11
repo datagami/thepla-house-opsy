@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Pagination } from "@/components/ui/pagination";
 import { CategoryPill, StatusBadge } from "@/components/equipment/ui";
 import { SnoozeDialog } from "@/components/equipment/snooze-dialog";
 import { ArchiveDialog } from "@/components/equipment/archive-dialog";
@@ -404,29 +405,13 @@ export function EquipmentTable({
 
       {/* Pagination — applies to both the desktop table and mobile cards */}
       {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between gap-2">
-          <span className="text-[12.5px] text-muted-foreground">
-            Page {safePage} of {totalPages} · {visibleRows.length} item
-            {visibleRows.length === 1 ? "" : "s"}
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={safePage <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={safePage >= totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            >
-              Next
-            </Button>
-          </div>
+        <div className="mt-4 border-t pt-4">
+          <Pagination
+            currentPage={safePage}
+            totalPages={totalPages}
+            totalItems={visibleRows.length}
+            onPageChange={(p) => setPage(p)}
+          />
         </div>
       )}
 
