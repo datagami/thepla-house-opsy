@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { MapPin, MoreHorizontal, Archive, ArchiveRestore, Printer, Search, X } from "lucide-react";
 import { toast } from "sonner";
@@ -53,6 +53,10 @@ interface EquipmentTableProps {
   canManage: boolean;
   canSnooze?: boolean;
   canLog?: boolean;
+  /** Grand total in scope (ignores the dropdown filters + search) — for the "N of M" summary. */
+  totalCount: number;
+  /** Branch managers have a locked outlet — Reset preserves it. */
+  lockedOutletId?: string | null;
 }
 
 function formatShortDate(iso: string | null): string {
@@ -70,13 +74,29 @@ export function EquipmentTable({
   canManage,
   canSnooze = false,
   canLog = false,
+  totalCount,
+  lockedOutletId,
 }: EquipmentTableProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [snoozeId, setSnoozeId] = useState<string | null>(null);
   const [archiveId, setArchiveId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+
+  // Clear the search AND the dropdown filter params (outlet/category/status/lifecycle),
+  // preserving a branch manager's locked outlet.
+  const resetAll = () => {
+    setQuery("");
+    setPage(1);
+    const params = new URLSearchParams(searchParams.toString());
+    ["category", "status", "lifecycle"].forEach((k) => params.delete(k));
+    if (!lockedOutletId) params.delete("outlet");
+    const qs = params.toString();
+    router.push(qs ? `${pathname}?${qs}` : pathname);
+  };
 
   // Client-side search by item name, asset ID (label tag), or location.
   const visibleRows = useMemo(() => {
@@ -141,25 +161,31 @@ export function EquipmentTable({
         )}
       </div>
 
-      {/* Filtered-result summary + clear (shown whenever a search is active) */}
-      {query.trim() && (
+      {/* Result summary — shown whenever ANY filter (search OR dropdown) narrows the list */}
+      {(query.trim().length > 0 || visibleRows.length < totalCount) && (
         <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-muted-foreground">
           {visibleRows.length === 0 ? (
             <span>
-              No items match &ldquo;<span className="text-foreground">{query.trim()}</span>&rdquo;.
+              No items match{" "}
+              {query.trim() ? (
+                <>&ldquo;<span className="text-foreground">{query.trim()}</span>&rdquo;</>
+              ) : (
+                "the current filters"
+              )}
+              .
             </span>
           ) : (
             <span>
               Showing <strong className="text-foreground">{visibleRows.length}</strong> of{" "}
-              {rows.length} item{rows.length === 1 ? "" : "s"}
+              {totalCount} item{totalCount === 1 ? "" : "s"}
             </span>
           )}
           <button
             type="button"
-            onClick={() => setQuery("")}
+            onClick={resetAll}
             className="font-medium text-primary hover:underline"
           >
-            Clear search
+            Reset
           </button>
         </div>
       )}
