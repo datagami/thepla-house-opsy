@@ -87,7 +87,7 @@ export async function PUT(
       );
     }
 
-    const normalizedCode = code?.trim().toUpperCase() || null;
+    const normalizedCode = code?.trim().toUpperCase().slice(0, 5) || null;
 
     // Check if branch exists
     const existingBranch = await prisma.branch.findUnique({

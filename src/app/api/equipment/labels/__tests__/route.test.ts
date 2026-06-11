@@ -41,4 +41,11 @@ describe("GET /api/equipment/labels", () => {
     const res = await GET(new Request(`http://t/api/equipment/labels?ids=${itemA}`));
     expect(res.status).toBe(403);
   });
+  it("ignores an invalid category param instead of 500ing", async () => {
+    asManager();
+    const res = await GET(new Request(`http://t/api/equipment/labels?ids=${itemA}&category=NOT_A_CATEGORY`));
+    // category is dropped → the item still matches → 200 PDF (not a Prisma-validation 500).
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("application/pdf");
+  });
 });
