@@ -41,7 +41,7 @@ export function PendingSignaturesWidget({ pendingUsers, currentUserRole }: Pendi
               <div className="flex min-w-0 flex-1 items-center gap-3">
                 <EmployeeIdentity
                   user={user}
-                  size="sm"
+                  size="md"
                   subtitle={
                     <>
                       {user.numId !== null && user.numId !== undefined ? `#${user.numId} · ` : ''}
