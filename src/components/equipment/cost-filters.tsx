@@ -58,48 +58,55 @@ export function CostFilters({ outlets, lockedOutletId }: CostFiltersProps) {
     <div className="flex flex-col gap-2.5">
       <div className="flex flex-wrap items-center gap-2.5">
         {/* Label */}
-        <span className="inline-flex items-center gap-1.5 text-[12.5px] font-[550] text-muted-foreground">
+        <span className="inline-flex flex-none items-center gap-1.5 text-[12.5px] font-[550] text-muted-foreground">
           <Filter size={14} />
           Filter
         </span>
 
-        {/* Outlet — only for HR/MANAGEMENT (branch managers have one outlet) */}
+        {/* Outlet — only for HR/MANAGEMENT (branch managers have one outlet).
+            Wrapped in a fixed-width flex-none box: shadcn's SelectTrigger is
+            `w-full`, so without a sized wrapper each select stretches to 100% and
+            stacks onto its own line. */}
         {showOutlet && (
+          <div className="w-[180px] flex-none">
+            <Select
+              value={currentOutlet || "ALL"}
+              onValueChange={(v) => setParams({ outlet: v === "ALL" ? null : v })}
+            >
+              <SelectTrigger className="h-[34px] text-[13px]">
+                <SelectValue placeholder="All outlets" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All outlets</SelectItem>
+                {outlets.map((o) => (
+                  <SelectItem key={o.id} value={o.id}>
+                    {o.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Category */}
+        <div className="w-[180px] flex-none">
           <Select
-            value={currentOutlet || "ALL"}
-            onValueChange={(v) => setParams({ outlet: v === "ALL" ? null : v })}
+            value={currentCategory || "ALL"}
+            onValueChange={(v) => setParams({ category: v === "ALL" ? null : v })}
           >
-            <SelectTrigger className="h-[34px] min-w-[140px] text-[13px]">
-              <SelectValue placeholder="All outlets" />
+            <SelectTrigger className="h-[34px] text-[13px]">
+              <SelectValue placeholder="All categories" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">All outlets</SelectItem>
-              {outlets.map((o) => (
-                <SelectItem key={o.id} value={o.id}>
-                  {o.name}
+              <SelectItem value="ALL">All categories</SelectItem>
+              {ALL_CATEGORIES.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {categoryLabel(c)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        )}
-
-        {/* Category */}
-        <Select
-          value={currentCategory || "ALL"}
-          onValueChange={(v) => setParams({ category: v === "ALL" ? null : v })}
-        >
-          <SelectTrigger className="h-[34px] min-w-[168px] text-[13px]">
-            <SelectValue placeholder="All categories" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All categories</SelectItem>
-            {ALL_CATEGORIES.map((c) => (
-              <SelectItem key={c} value={c}>
-                {categoryLabel(c)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        </div>
 
         {/* Range presets */}
         <div className="flex flex-wrap items-center gap-0.5 rounded-lg border bg-muted p-0.5 md:ml-auto">
