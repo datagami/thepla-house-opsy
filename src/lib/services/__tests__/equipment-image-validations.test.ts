@@ -16,4 +16,12 @@ describe("equipment image validation", () => {
   it("rejects a malformed image object", () => {
     expect(equipmentCreateSchema.safeParse({ name: "X", category: "OTHER", branchId: "b", image: { base64: "" } }).success).toBe(false);
   });
+  it("rejects an image larger than the 10MB cap, accepts one under it", () => {
+    // ~10.5MB decoded (14M base64 chars * 3/4) → over the cap.
+    const tooBig = { base64: "A".repeat(14 * 1024 * 1024), contentType: "image/png" };
+    expect(equipmentCreateSchema.safeParse({ name: "X", category: "OTHER", branchId: "b", image: tooBig }).success).toBe(false);
+    // ~1.5MB decoded → under the cap.
+    const ok = { base64: "A".repeat(2 * 1024 * 1024), contentType: "image/png" };
+    expect(equipmentCreateSchema.safeParse({ name: "X", category: "OTHER", branchId: "b", image: ok }).success).toBe(true);
+  });
 });

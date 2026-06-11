@@ -12,7 +12,23 @@ export const MAINTENANCE_TYPES = [
   "REPAIR", "SERVICE", "AMC", "INSPECTION", "REPLACEMENT", "OTHER",
 ] as const;
 
-const uploadFile = z.object({ base64: z.string().min(1), contentType: z.string().min(1) });
+// Server-side upload size cap (bytes), shared by asset image + bill + service photos.
+// Bounds memory: a base64 body is decoded straight into a Buffer, so reject oversized
+// payloads as a clean 400 instead of allocating. ~10MB matches the form's stated limit.
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+function approxBase64Bytes(s: string): number {
+  const b64 = s.replace(/^data:[^;]+;base64,/, "");
+  const padding = b64.endsWith("==") ? 2 : b64.endsWith("=") ? 1 : 0;
+  return Math.floor((b64.length * 3) / 4) - padding;
+}
+
+const uploadFile = z.object({
+  base64: z
+    .string()
+    .min(1)
+    .refine((s) => approxBase64Bytes(s) <= MAX_UPLOAD_BYTES, "File too large (max 10MB)"),
+  contentType: z.string().min(1),
+});
 
 export const equipmentCreateSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
