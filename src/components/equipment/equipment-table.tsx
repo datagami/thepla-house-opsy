@@ -114,6 +114,7 @@ export function EquipmentTable({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by name, asset ID, or location…"
+          aria-label="Search items by name, asset ID, or location"
           className="h-9 pl-8 text-[13px]"
         />
       </div>
