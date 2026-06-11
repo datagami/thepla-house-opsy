@@ -20,7 +20,7 @@ import { CategoryIcon } from "@/components/equipment/category-icon";
 import { SnoozeDialog } from "@/components/equipment/snooze-dialog";
 import { ArchiveDialog } from "@/components/equipment/archive-dialog";
 import { CATEGORY_META } from "@/lib/equipment-display";
-import { getReminderState } from "@/lib/services/maintenance-schedule";
+import { getReminderState, daysUntil } from "@/lib/services/maintenance-schedule";
 import type { EquipmentRow } from "@/components/equipment/equipment-table";
 
 interface EquipmentCardsProps {
@@ -121,7 +121,7 @@ function ItemCard({ row, canManage, canSnooze, canLog, onSnooze, onArchive }: It
 
       {/* Bottom row: status badge + actions */}
       <div className="flex items-center justify-between gap-2.5 border-t px-3.5 py-2.5">
-        <StatusBadge state={reminderState} subLabel={snoozeSubLabel} size="sm" />
+        <StatusBadge state={reminderState} subLabel={snoozeSubLabel} size="sm" dueInDays={row.nextDueDate ? daysUntil(new Date(row.nextDueDate), today) : null} />
 
         {!hasAnyAction ? (
           <Badge

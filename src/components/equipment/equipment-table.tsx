@@ -27,7 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { CategoryPill, StatusBadge } from "@/components/equipment/ui";
 import { SnoozeDialog } from "@/components/equipment/snooze-dialog";
 import { ArchiveDialog } from "@/components/equipment/archive-dialog";
-import { getReminderState } from "@/lib/services/maintenance-schedule";
+import { getReminderState, daysUntil } from "@/lib/services/maintenance-schedule";
 
 export interface EquipmentRow {
   id: string;
@@ -183,6 +183,7 @@ export function EquipmentTable({
                     state={reminderState}
                     subLabel={snoozeSubLabel}
                     size="sm"
+                    dueInDays={row.nextDueDate ? daysUntil(new Date(row.nextDueDate), today) : null}
                   />
                 </TableCell>
 
