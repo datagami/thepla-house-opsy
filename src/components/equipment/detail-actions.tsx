@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { BellOff, Pencil, Wrench, Archive, ArchiveRestore } from "lucide-react";
+import { BellOff, Pencil, Wrench, Archive, ArchiveRestore, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { SnoozeDialog } from "@/components/equipment/snooze-dialog";
@@ -83,6 +83,15 @@ export function DetailActions({
               <Pencil size={15} className="mr-1.5" />
               Edit
             </Link>
+          </Button>
+        )}
+
+        {canManage && (
+          <Button variant="outline" size="sm" asChild>
+            <a href={`/api/equipment/labels?ids=${equipmentId}`} target="_blank" rel="noopener noreferrer">
+              <Printer size={15} className="mr-1.5" />
+              Print label
+            </a>
           </Button>
         )}
 

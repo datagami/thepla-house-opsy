@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MapPin, MoreHorizontal, Archive, ArchiveRestore } from "lucide-react";
+import { MapPin, MoreHorizontal, Archive, ArchiveRestore, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { setEquipmentStatus } from "@/lib/equipment-actions";
 import { EquipmentCards } from "@/components/equipment/equipment-cards";
@@ -235,6 +235,12 @@ export function EquipmentTable({
                           <Link href={`/equipment/${row.id}/edit`}>
                             Edit item
                           </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <a href={`/api/equipment/labels?ids=${row.id}`} target="_blank" rel="noopener noreferrer">
+                            <Printer size={14} className="mr-2 text-muted-foreground" />
+                            Print label
+                          </a>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem

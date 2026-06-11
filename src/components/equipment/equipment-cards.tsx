@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MapPin, ChevronRight, BellOff, Wrench, MoreVertical, Archive, ArchiveRestore } from "lucide-react";
+import { MapPin, ChevronRight, BellOff, Wrench, MoreVertical, Archive, ArchiveRestore, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -178,6 +178,12 @@ function ItemCard({ row, canManage, canSnooze, canLog, onSnooze, onArchive }: It
                 <>
                 <DropdownMenuItem asChild>
                   <Link href={`/equipment/${row.id}/edit`}>Edit item</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <a href={`/api/equipment/labels?ids=${row.id}`} target="_blank" rel="noopener noreferrer">
+                    <Printer size={14} className="mr-2 text-muted-foreground" />
+                    Print label
+                  </a>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
