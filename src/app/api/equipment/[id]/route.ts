@@ -5,7 +5,7 @@ import { hasAccess } from "@/lib/access-control";
 import { canManageBranch } from "@/lib/maintenance-access";
 import { equipmentUpdateSchema } from "@/lib/validations/equipment";
 import { logEntityActivity } from "@/lib/services/activity-log";
-import { deleteMaintenanceFiles } from "@/lib/maintenance-upload";
+import { uploadAssetImage, deleteMaintenanceFiles } from "@/lib/maintenance-upload";
 import { ActivityType } from "@prisma/client";
 
 type SessionUser = { id?: string; role?: string; branchId?: string | null };
@@ -70,6 +70,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ error: "Invalid input", issues: parsed.error.flatten() }, { status: 400 });
     const d = parsed.data;
 
+    const guardItem = guard.item!;
+
+    // Asset image: explicit new image replaces (and deletes old); removeImage clears it.
+    let imageUrlUpdate: { imageUrl: string | null } | null = null;
+    if (d.image) {
+      const newUrl = await uploadAssetImage(d.image, id, guardItem.branchId);
+      imageUrlUpdate = { imageUrl: newUrl };
+      if (guardItem.imageUrl) await deleteMaintenanceFiles([guardItem.imageUrl]);
+    } else if (d.removeImage) {
+      imageUrlUpdate = { imageUrl: null };
+      if (guardItem.imageUrl) await deleteMaintenanceFiles([guardItem.imageUrl]);
+    }
+
     const updated = await prisma.equipment.update({
       where: { id },
       data: {
@@ -81,10 +94,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         ...(d.nextDueDate !== undefined ? { nextDueDate: d.nextDueDate ? new Date(d.nextDueDate) : null } : {}),
         ...(d.notes !== undefined ? { notes: d.notes ?? null } : {}),
         ...(d.status !== undefined ? { status: d.status } : {}),
+        ...(imageUrlUpdate ?? {}),
       },
     });
 
-    const guardItem = guard.item!;
     const archiving = guardItem.status !== "RETIRED" && d.status === "RETIRED";
 
     if (archiving) {
@@ -93,6 +106,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         select: { billUrl: true, photoUrls: true },
       });
       const urls = recs.flatMap((r) => [r.billUrl, ...r.photoUrls]).filter((u): u is string => !!u);
+      if (guardItem.imageUrl) urls.push(guardItem.imageUrl);
       const photoCount = recs.reduce((n, r) => n + r.photoUrls.length, 0);
       const billCount = recs.filter((r) => !!r.billUrl).length;
       // Clear the DB references first so the UI never points at deleted blobs...
@@ -102,6 +116,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       });
       // ...then best-effort delete the blobs (do not fail the archive if cleanup errors).
       try { await deleteMaintenanceFiles(urls); } catch (e) { console.error("Archive blob cleanup failed for", id, e); }
+      if (guardItem.imageUrl) {
+        await prisma.equipment.update({ where: { id }, data: { imageUrl: null } });
+      }
       await logEntityActivity(
         ActivityType.EQUIPMENT_UPDATED, user.id!, "Equipment", id,
         `Archived "${updated.name}" and deleted ${photoCount} photo(s) + ${billCount} bill(s) from storage`,
