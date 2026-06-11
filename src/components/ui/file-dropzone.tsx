@@ -26,7 +26,7 @@ export interface FileDropzoneProps {
   variant?: "image" | "file" | "auto";
   disabled?: boolean;
   /** Primary call-to-action line. */
-  idleText?: string;
+  idleText?: React.ReactNode;
   /** Secondary hint line (e.g. "PNG/JPG up to 5MB"). */
   hint?: string;
   className?: string;
@@ -79,7 +79,7 @@ export function FileDropzone({
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = React.useState(false);
 
-  const files = value ?? [];
+  const files = React.useMemo(() => value ?? [], [value]);
 
   // Object URLs for image previews — created in a memo and revoked on change/unmount.
   const previews = React.useMemo(

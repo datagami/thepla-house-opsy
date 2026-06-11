@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { FileDropzone } from "@/components/ui/file-dropzone";
 import {
   Select,
   SelectContent,
@@ -42,7 +42,7 @@ export function WarningForm({ userId, userName, onSuccess, trigger, open: extern
   const [loadingTypes, setLoadingTypes] = useState(false);
   const [warningTypes, setWarningTypes] = useState<WarningType[]>([]);
   const [selectedType, setSelectedType] = useState<string>("");
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [photo, setPhoto] = useState<File | null>(null);
 
   // Use external control if provided, otherwise use internal state
   const isControlled = externalOpen !== undefined;
@@ -80,7 +80,6 @@ export function WarningForm({ userId, userName, onSuccess, trigger, open: extern
     try {
       const formData = new FormData(formEl);
       const reason = (formData.get("reason") as string | null)?.trim();
-      const file = fileRef.current?.files?.[0];
 
       if (!selectedType) {
         toast.error("Warning type is required");
@@ -91,16 +90,8 @@ export function WarningForm({ userId, userName, onSuccess, trigger, open: extern
       payload.append("warningTypeId", selectedType);
       payload.append("reason", reason || "");
 
-      if (file) {
-        if (file.size > 5 * 1024 * 1024) {
-          toast.error("Photo size must be less than 5MB");
-          return;
-        }
-        if (!file.type.startsWith("image/")) {
-          toast.error("Photo must be an image");
-          return;
-        }
-        payload.append("file", file);
+      if (photo) {
+        payload.append("file", photo);
       }
 
       const response = await fetch(`/api/users/${userId}/warnings`, {
@@ -115,7 +106,7 @@ export function WarningForm({ userId, userName, onSuccess, trigger, open: extern
 
       toast.success("Warning registered");
       formEl.reset();
-      if (fileRef.current) fileRef.current.value = "";
+      setPhoto(null);
       setSelectedType("");
       setOpen(false);
       onSuccess?.();
@@ -170,9 +161,17 @@ export function WarningForm({ userId, userName, onSuccess, trigger, open: extern
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="file">Photo (optional)</Label>
-            <Input id="file" name="file" type="file" accept="image/*" ref={fileRef} />
-            <p className="text-xs text-muted-foreground">Supported formats: JPG/PNG/GIF. Max size: 5MB</p>
+            <Label>Photo (optional)</Label>
+            <FileDropzone
+              variant="image"
+              accept="image/*"
+              maxSizeMB={5}
+              value={photo ? [photo] : []}
+              onFiles={(fs) => setPhoto(fs[0] ?? null)}
+              onRemoveFile={() => setPhoto(null)}
+              idleText="Drag & drop a photo, or click to browse"
+              hint="Image up to 5MB"
+            />
           </div>
           <Button type="submit" disabled={loading}>
             {loading ? "Saving..." : "Save Warning"}

@@ -1,7 +1,7 @@
 // src/components/equipment/bulk-import-export.tsx
 "use client";
 
-import { useRef, useState, type ChangeEvent } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Download, Upload } from "lucide-react";
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { FileDropzone } from "@/components/ui/file-dropzone";
 
 interface BulkSummary {
   ok: boolean;
@@ -22,7 +23,6 @@ interface BulkSummary {
 
 export function BulkImportExport() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [exporting, setExporting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
@@ -48,14 +48,6 @@ export function BulkImportExport() {
     } finally {
       setExporting(false);
     }
-  }
-
-  function handlePickFile(e: ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    e.target.value = ""; // allow re-picking the same file
-    if (!f) return;
-    setPendingFile(f);
-    setShowConfirm(true);
   }
 
   async function handleConfirmUpload() {
@@ -90,11 +82,10 @@ export function BulkImportExport() {
           <Download size={15} className="mr-1.5" />
           {exporting ? "Exporting…" : "Export"}
         </Button>
-        <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+        <Button variant="outline" size="sm" onClick={() => setShowConfirm(true)} disabled={uploading}>
           <Upload size={15} className="mr-1.5" />
           Import
         </Button>
-        <input ref={fileInputRef} type="file" accept=".xlsx" onChange={handlePickFile} className="hidden" />
       </div>
 
       {summary && (
@@ -133,11 +124,21 @@ export function BulkImportExport() {
               Invalid rows are skipped and reported. This does not delete anything.
             </DialogDescription>
           </DialogHeader>
+          <FileDropzone
+            accept=".xlsx"
+            variant="file"
+            maxSizeMB={10}
+            value={pendingFile ? [pendingFile] : []}
+            onFiles={(fs) => setPendingFile(fs[0] ?? null)}
+            onRemoveFile={() => setPendingFile(null)}
+            idleText="Drag & drop an .xlsx, or click to browse"
+            hint="Excel .xlsx export file"
+          />
           <DialogFooter className="gap-2">
             <Button variant="outline" disabled={uploading} onClick={() => { setShowConfirm(false); setPendingFile(null); }}>
               Cancel
             </Button>
-            <Button disabled={uploading} onClick={handleConfirmUpload}>
+            <Button disabled={uploading || !pendingFile} onClick={handleConfirmUpload}>
               {uploading ? "Importing…" : "Import"}
             </Button>
           </DialogFooter>
