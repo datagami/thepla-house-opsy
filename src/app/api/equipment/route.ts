@@ -6,6 +6,7 @@ import { equipmentWhereForRole, canManageBranch } from "@/lib/maintenance-access
 import { equipmentCreateSchema, EQUIPMENT_CATEGORIES } from "@/lib/validations/equipment";
 import { logEntityActivity } from "@/lib/services/activity-log";
 import { computeNextDueDate } from "@/lib/services/maintenance-schedule";
+import { uploadAssetImage } from "@/lib/maintenance-upload";
 import { ActivityType } from "@prisma/client";
 
 type SessionUser = { id?: string; role?: string; branchId?: string | null };
@@ -73,6 +74,8 @@ export async function POST(req: Request) {
       ? new Date(data.nextDueDate)
       : computeNextDueDate(new Date(), data.frequencyMonths ?? null);
 
+    const imageUrl = await uploadAssetImage(data.image ?? null, "new", data.branchId);
+
     const created = await prisma.equipment.create({
       data: {
         name: data.name,
@@ -83,6 +86,7 @@ export async function POST(req: Request) {
         reminderLeadDays: data.reminderLeadDays,
         nextDueDate,
         notes: data.notes ?? null,
+        imageUrl,
         createdById: user.id,
       },
     });
