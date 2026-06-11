@@ -6,6 +6,7 @@ import { equipmentWhereForRole, canManageBranch } from "@/lib/maintenance-access
 import { equipmentCreateSchema, EQUIPMENT_CATEGORIES } from "@/lib/validations/equipment";
 import { logEntityActivity } from "@/lib/services/activity-log";
 import { computeNextDueDate } from "@/lib/services/maintenance-schedule";
+import { uploadAssetImage, deleteMaintenanceFiles } from "@/lib/maintenance-upload";
 import { ActivityType } from "@prisma/client";
 
 type SessionUser = { id?: string; role?: string; branchId?: string | null };
@@ -73,19 +74,28 @@ export async function POST(req: Request) {
       ? new Date(data.nextDueDate)
       : computeNextDueDate(new Date(), data.frequencyMonths ?? null);
 
-    const created = await prisma.equipment.create({
-      data: {
-        name: data.name,
-        category: data.category,
-        branchId: data.branchId,
-        location: data.location ?? null,
-        frequencyMonths: data.frequencyMonths ?? null,
-        reminderLeadDays: data.reminderLeadDays,
-        nextDueDate,
-        notes: data.notes ?? null,
-        createdById: user.id,
-      },
-    });
+    const imageUrl = await uploadAssetImage(data.image ?? null, "new", data.branchId);
+
+    let created;
+    try {
+      created = await prisma.equipment.create({
+        data: {
+          name: data.name,
+          category: data.category,
+          branchId: data.branchId,
+          location: data.location ?? null,
+          frequencyMonths: data.frequencyMonths ?? null,
+          reminderLeadDays: data.reminderLeadDays,
+          nextDueDate,
+          notes: data.notes ?? null,
+          imageUrl,
+          createdById: user.id,
+        },
+      });
+    } catch (e) {
+      if (imageUrl) await deleteMaintenanceFiles([imageUrl]);
+      throw e;
+    }
 
     await logEntityActivity(
       ActivityType.EQUIPMENT_CREATED,

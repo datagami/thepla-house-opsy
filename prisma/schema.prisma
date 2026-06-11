@@ -800,6 +800,7 @@ model Equipment {
   snoozedUntil     DateTime?         @map("snoozed_until")
   status           EquipmentStatus   @default(ACTIVE)
   notes            String?
+  imageUrl         String?           @map("image_url")
   branchId         String            @map("branch_id")
   createdById      String            @map("created_by_id")
   createdAt        DateTime          @default(now()) @map("created_at")

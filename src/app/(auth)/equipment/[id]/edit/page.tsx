@@ -33,6 +33,7 @@ export default async function EditEquipmentPage({ params }: Props) {
       frequencyMonths: true,
       reminderLeadDays: true,
       notes: true,
+      imageUrl: true,
     },
   });
 
@@ -62,6 +63,7 @@ export default async function EditEquipmentPage({ params }: Props) {
             frequencyMonths: item.frequencyMonths,
             reminderLeadDays: item.reminderLeadDays,
             notes: item.notes,
+            imageUrl: item.imageUrl,
           }}
         />
       </div>
