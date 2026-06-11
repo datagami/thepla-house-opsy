@@ -36,9 +36,9 @@ export function PendingSignaturesWidget({ pendingUsers, currentUserRole }: Pendi
           {pendingUsers.slice(0, 5).map((user) => (
             <div
               key={user.id}
-              className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center justify-between gap-2 p-3 border rounded-lg hover:bg-gray-50 transition-colors"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
                 <EmployeeIdentity
                   user={user}
                   size="sm"
@@ -54,6 +54,7 @@ export function PendingSignaturesWidget({ pendingUsers, currentUserRole }: Pendi
               <Button
                 size="sm"
                 variant="outline"
+                className="flex-none whitespace-nowrap"
                 onClick={() => window.open(`/users/${user.id}/joining-form-signature`, '_blank')}
               >
                 Sign Letter
