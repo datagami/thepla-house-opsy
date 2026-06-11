@@ -74,29 +74,40 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     // Asset image: explicit new image replaces (and deletes old); removeImage clears it.
     let imageUrlUpdate: { imageUrl: string | null } | null = null;
+    let newlyUploadedImage: string | null = null;
     if (d.image) {
-      const newUrl = await uploadAssetImage(d.image, id, guardItem.branchId);
-      imageUrlUpdate = { imageUrl: newUrl };
-      if (guardItem.imageUrl) await deleteMaintenanceFiles([guardItem.imageUrl]);
+      newlyUploadedImage = await uploadAssetImage(d.image, id, guardItem.branchId);
+      imageUrlUpdate = { imageUrl: newlyUploadedImage };
     } else if (d.removeImage) {
       imageUrlUpdate = { imageUrl: null };
-      if (guardItem.imageUrl) await deleteMaintenanceFiles([guardItem.imageUrl]);
     }
 
-    const updated = await prisma.equipment.update({
-      where: { id },
-      data: {
-        ...(d.name !== undefined ? { name: d.name } : {}),
-        ...(d.category !== undefined ? { category: d.category } : {}),
-        ...(d.location !== undefined ? { location: d.location ?? null } : {}),
-        ...(d.frequencyMonths !== undefined ? { frequencyMonths: d.frequencyMonths ?? null } : {}),
-        ...(d.reminderLeadDays !== undefined ? { reminderLeadDays: d.reminderLeadDays } : {}),
-        ...(d.nextDueDate !== undefined ? { nextDueDate: d.nextDueDate ? new Date(d.nextDueDate) : null } : {}),
-        ...(d.notes !== undefined ? { notes: d.notes ?? null } : {}),
-        ...(d.status !== undefined ? { status: d.status } : {}),
-        ...(imageUrlUpdate ?? {}),
-      },
-    });
+    let updated;
+    try {
+      updated = await prisma.equipment.update({
+        where: { id },
+        data: {
+          ...(d.name !== undefined ? { name: d.name } : {}),
+          ...(d.category !== undefined ? { category: d.category } : {}),
+          ...(d.location !== undefined ? { location: d.location ?? null } : {}),
+          ...(d.frequencyMonths !== undefined ? { frequencyMonths: d.frequencyMonths ?? null } : {}),
+          ...(d.reminderLeadDays !== undefined ? { reminderLeadDays: d.reminderLeadDays } : {}),
+          ...(d.nextDueDate !== undefined ? { nextDueDate: d.nextDueDate ? new Date(d.nextDueDate) : null } : {}),
+          ...(d.notes !== undefined ? { notes: d.notes ?? null } : {}),
+          ...(d.status !== undefined ? { status: d.status } : {}),
+          ...(imageUrlUpdate ?? {}),
+        },
+      });
+    } catch (e) {
+      if (newlyUploadedImage) await deleteMaintenanceFiles([newlyUploadedImage]);
+      throw e;
+    }
+
+    // Best-effort delete the OLD blob now that the update has committed successfully.
+    if ((d.image || d.removeImage) && guardItem.imageUrl) {
+      try { await deleteMaintenanceFiles([guardItem.imageUrl]); }
+      catch (e) { console.error("Old asset image cleanup failed for", id, e); }
+    }
 
     const archiving = guardItem.status !== "RETIRED" && d.status === "RETIRED";
 
