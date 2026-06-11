@@ -98,88 +98,99 @@ export function EquipmentFilters({
 
   return (
     <>
-      {/* ── Desktop: inline selects (md and up) ─────────────────────────── */}
+      {/* ── Desktop: inline selects in a single row (md and up) ─────────────
+          Each Select sits in a fixed-width box: the shadcn SelectTrigger is
+          `w-full`, so without a sized wrapper every trigger stretches to 100%
+          and wraps onto its own line. `flex-none` keeps them on one row. */}
       <div className="hidden md:flex flex-wrap items-center gap-2.5">
         {/* Label */}
-        <span className="inline-flex items-center gap-1.5 text-[12.5px] font-[550] text-muted-foreground">
+        <span className="inline-flex flex-none items-center gap-1.5 text-[12.5px] font-[550] text-muted-foreground">
           <Filter size={14} />
           Filter
         </span>
 
         {/* Outlet */}
-        <Select
-          value={lockedOutletId ? lockedOutletId : currentOutlet || "ALL"}
-          disabled={!!lockedOutletId}
-          onValueChange={(v) => setParam("outlet", v === "ALL" ? "" : v)}
-        >
-          <SelectTrigger
-            className="h-[34px] min-w-[140px] text-[13px]"
-            style={{ opacity: lockedOutletId ? 0.65 : 1 }}
+        <div className="w-[180px] flex-none">
+          <Select
+            value={lockedOutletId ? lockedOutletId : currentOutlet || "ALL"}
+            disabled={!!lockedOutletId}
+            onValueChange={(v) => setParam("outlet", v === "ALL" ? "" : v)}
           >
-            <SelectValue placeholder="All outlets" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All outlets</SelectItem>
-            {outlets.map((o) => (
-              <SelectItem key={o.id} value={o.id}>
-                {o.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            <SelectTrigger
+              className="h-[34px] text-[13px]"
+              style={{ opacity: lockedOutletId ? 0.65 : 1 }}
+            >
+              <SelectValue placeholder="All outlets" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All outlets</SelectItem>
+              {outlets.map((o) => (
+                <SelectItem key={o.id} value={o.id}>
+                  {o.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Category */}
-        <Select
-          value={currentCategory || "ALL"}
-          onValueChange={(v) => setParam("category", v === "ALL" ? "" : v)}
-        >
-          <SelectTrigger className="h-[34px] min-w-[168px] text-[13px]">
-            <SelectValue placeholder="All categories" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All categories</SelectItem>
-            {ALL_CATEGORIES.map((c) => (
-              <SelectItem key={c} value={c}>
-                {categoryLabel(c)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="w-[180px] flex-none">
+          <Select
+            value={currentCategory || "ALL"}
+            onValueChange={(v) => setParam("category", v === "ALL" ? "" : v)}
+          >
+            <SelectTrigger className="h-[34px] text-[13px]">
+              <SelectValue placeholder="All categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All categories</SelectItem>
+              {ALL_CATEGORIES.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {categoryLabel(c)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Status */}
-        <Select
-          value={currentStatus || "ALL"}
-          onValueChange={(v) => setParam("status", v === "ALL" ? "" : v)}
-        >
-          <SelectTrigger className="h-[34px] min-w-[140px] text-[13px]">
-            <SelectValue placeholder="Any status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Any status</SelectItem>
-            {STATUS_OPTIONS.map((s) => (
-              <SelectItem key={s.value} value={s.value}>
-                {s.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="w-[150px] flex-none">
+          <Select
+            value={currentStatus || "ALL"}
+            onValueChange={(v) => setParam("status", v === "ALL" ? "" : v)}
+          >
+            <SelectTrigger className="h-[34px] text-[13px]">
+              <SelectValue placeholder="Any status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Any status</SelectItem>
+              {STATUS_OPTIONS.map((s) => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Lifecycle */}
-        <Select
-          value={currentLifecycle || "active"}
-          onValueChange={(v) => setLifecycle(v)}
-        >
-          <SelectTrigger className="h-[34px] min-w-[120px] text-[13px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {LIFECYCLE_OPTIONS.map((l) => (
-              <SelectItem key={l.value} value={l.value}>
-                {l.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="w-[130px] flex-none">
+          <Select
+            value={currentLifecycle || "active"}
+            onValueChange={(v) => setLifecycle(v)}
+          >
+            <SelectTrigger className="h-[34px] text-[13px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LIFECYCLE_OPTIONS.map((l) => (
+                <SelectItem key={l.value} value={l.value}>
+                  {l.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Clear */}
         {hasActiveFilter && (
@@ -187,7 +198,7 @@ export function EquipmentFilters({
             variant="ghost"
             size="sm"
             onClick={clearAll}
-            className="h-[34px] gap-1.5 text-[13px]"
+            className="h-[34px] flex-none gap-1.5 text-[13px]"
           >
             <X size={13} />
             Clear
