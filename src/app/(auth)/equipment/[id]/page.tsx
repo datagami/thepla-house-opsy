@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { hasAccess } from "@/lib/access-control";
 import { getReminderState, daysUntil } from "@/lib/services/maintenance-schedule";
+import { assetTag } from "@/lib/asset-tag";
 import { CATEGORY_META, formatINR, formatDateIST } from "@/lib/equipment-display";
 import { CategoryPill, StatusBadge, EquipmentEmptyState } from "@/components/equipment/ui";
 import { CategoryIcon } from "@/components/equipment/category-icon";
@@ -64,7 +65,7 @@ export default async function EquipmentDetailPage({ params, searchParams }: Prop
 
   const item = await prisma.equipment.findUnique({
     where: { id },
-    include: { branch: { select: { id: true, name: true } } },
+    include: { branch: { select: { id: true, name: true, code: true } } },
   });
 
   if (!item) notFound();
@@ -111,6 +112,7 @@ export default async function EquipmentDetailPage({ params, searchParams }: Prop
   );
 
   const cm = CATEGORY_META[item.category] ?? CATEGORY_META["OTHER"];
+  const tag = assetTag(item.branch.code, item.numId, item.branch.name);
 
   // Format dates (IST, server-timezone independent)
   const lastServiced = formatDateIST(item.lastServiceDate);
@@ -179,6 +181,12 @@ export default async function EquipmentDetailPage({ params, searchParams }: Prop
               <h1 className="text-[19px] font-bold tracking-[-0.02em] md:text-[21px]">
                 {item.name}
               </h1>
+              <span
+                title="Asset ID (printed on the label)"
+                className="rounded-md border bg-muted px-1.5 py-0.5 font-mono text-[12px] font-medium text-muted-foreground"
+              >
+                {tag}
+              </span>
               <StatusBadge
                 state={reminderState}
                 dueInDays={item.nextDueDate ? daysUntil(item.nextDueDate, today) : null}
