@@ -25,7 +25,11 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const idsParam = searchParams.get("ids");
-  const ids = idsParam ? idsParam.split(",").map((s) => s.trim()).filter(Boolean) : null;
+  // Cap the ids list (results are capped at MAX_LABELS anyway) so a pathologically
+  // large list can't hit Postgres bind-parameter limits and surface as a 500.
+  const ids = idsParam
+    ? idsParam.split(",").map((s) => s.trim()).filter(Boolean).slice(0, MAX_LABELS)
+    : null;
   const category = searchParams.get("category") ?? undefined;
   const outlet = searchParams.get("outlet") ?? undefined;
   const lifecycle = searchParams.get("lifecycle") ?? "active";

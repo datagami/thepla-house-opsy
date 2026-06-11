@@ -24,7 +24,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const normalizedCode = code?.trim().toUpperCase() || null;
+    const normalizedCode = code?.trim().toUpperCase().slice(0, 5) || null;
 
     const branch = await prisma.branch.create({
       data: {
