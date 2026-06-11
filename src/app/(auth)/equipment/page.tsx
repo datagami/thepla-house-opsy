@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Plus, List, BarChart2 } from "lucide-react";
+import { Plus, List, BarChart2, Printer } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { hasAccess } from "@/lib/access-control";
@@ -156,6 +156,15 @@ export default async function EquipmentPage({ searchParams }: Props) {
   const canLog = hasAccess(role, "equipment.records.create");
   const lockedOutletId = role === "BRANCH_MANAGER" ? branchId : null;
 
+  // Build label query string from current filter params (outlet/category/lifecycle)
+  const labelQs = new URLSearchParams(
+    (
+      Object.entries({ outlet, category, lifecycle }).filter(
+        ([, v]) => !!v
+      ) as [string, string][]
+    )
+  ).toString();
+
   // ── Header subtitle ───────────────────────────────────────────────────────
   const outletBranch = outlet
     ? branches.find((b) => b.id === outlet)?.name
@@ -211,6 +220,16 @@ export default async function EquipmentPage({ searchParams }: Props) {
           {canManage && (
             <div className="flex flex-wrap items-center gap-2">
               <BulkImportExport />
+              <Button variant="outline" size="sm" asChild>
+                <a
+                  href={`/api/equipment/labels${labelQs ? `?${labelQs}` : ""}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Printer size={15} className="mr-1.5" />
+                  Print labels
+                </a>
+              </Button>
               <Button asChild>
                 <Link href="/equipment/new">
                   <Plus size={16} className="mr-1.5" />

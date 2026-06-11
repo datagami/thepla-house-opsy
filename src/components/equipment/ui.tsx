@@ -43,10 +43,24 @@ interface StatusBadgeProps {
   state: ReminderState;
   subLabel?: string;
   size?: "sm" | "md";
+  /**
+   * Whole days until next due (negative when past due). When provided, DUE_SOON
+   * shows "Due in N days" and OVERDUE shows "Overdue by N days".
+   */
+  dueInDays?: number | null;
 }
 
-export function StatusBadge({ state, subLabel, size = "md" }: StatusBadgeProps) {
+export function StatusBadge({ state, subLabel, size = "md", dueInDays }: StatusBadgeProps) {
   const badge = stateBadge(state);
+  let label = badge.label;
+  if (typeof dueInDays === "number") {
+    if (state === "DUE_SOON") {
+      label = `Due in ${dueInDays} day${dueInDays === 1 ? "" : "s"}`;
+    } else if (state === "OVERDUE") {
+      const od = Math.abs(dueInDays);
+      if (od >= 1) label = `Overdue by ${od} day${od === 1 ? "" : "s"}`;
+    }
+  }
   const fontSize = size === "sm" ? 11 : 12;
   const iconSize = size === "sm" ? 11 : 12.5;
   const padding = size === "sm" ? "3px 8px" : "4px 9px";
@@ -63,7 +77,7 @@ export function StatusBadge({ state, subLabel, size = "md" }: StatusBadgeProps) 
       }}
     >
       <CategoryIcon name={badge.icon} size={iconSize} strokeWidth={2.3} />
-      <span>{badge.label}</span>
+      <span>{label}</span>
       {subLabel && (
         <span style={{ opacity: 0.7, fontWeight: 500 }}>{subLabel}</span>
       )}

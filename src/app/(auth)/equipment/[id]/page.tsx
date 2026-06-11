@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { hasAccess } from "@/lib/access-control";
-import { getReminderState } from "@/lib/services/maintenance-schedule";
+import { getReminderState, daysUntil } from "@/lib/services/maintenance-schedule";
 import { CATEGORY_META, formatINR, formatDateIST } from "@/lib/equipment-display";
 import { CategoryPill, StatusBadge, EquipmentEmptyState } from "@/components/equipment/ui";
 import { CategoryIcon } from "@/components/equipment/category-icon";
@@ -179,7 +179,10 @@ export default async function EquipmentDetailPage({ params, searchParams }: Prop
               <h1 className="text-[19px] font-bold tracking-[-0.02em] md:text-[21px]">
                 {item.name}
               </h1>
-              <StatusBadge state={reminderState} />
+              <StatusBadge
+                state={reminderState}
+                dueInDays={item.nextDueDate ? daysUntil(item.nextDueDate, today) : null}
+              />
               {item.status === "RETIRED" && (
                 <Badge variant="secondary" className="text-[12px] text-muted-foreground">
                   Inactive

@@ -11,4 +11,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  oxc: {
+    // Transform TSX files so react-pdf JSX works in Vitest (tsconfig sets
+    // jsx: preserve for Next.js, which Vite/OXC can't handle directly).
+    jsx: { runtime: 'automatic' },
+  },
 })

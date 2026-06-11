@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/equipment/ui";
 import { EquipmentEmptyState } from "@/components/equipment/ui";
 import { stateBadge, categoryLabel } from "@/lib/equipment-display";
-import { getReminderState } from "@/lib/services/maintenance-schedule";
+import { getReminderState, daysUntil } from "@/lib/services/maintenance-schedule";
 import { equipmentWhereForRole } from "@/lib/maintenance-access";
 import { hasAccess } from "@/lib/access-control";
 import { prisma } from "@/lib/prisma";
@@ -117,7 +117,11 @@ export async function MaintenanceDueWidget({
                   </Link>
 
                   {/* Status badge */}
-                  <StatusBadge state={state} size="sm" />
+                  <StatusBadge
+                    state={state}
+                    size="sm"
+                    dueInDays={item.nextDueDate ? daysUntil(item.nextDueDate, today) : null}
+                  />
 
                   {/* Log button — only when user can create records */}
                   {canLog && (

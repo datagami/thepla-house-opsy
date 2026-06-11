@@ -14,6 +14,7 @@ import { formatDate } from "@/lib/utils";
 interface Branch {
   id: string;
   name: string;
+  code?: string | null;
   city: string;
   state: string;
   address: string | null;
@@ -45,7 +46,14 @@ export function BranchTable({ branches }: BranchTableProps) {
         <TableBody>
           {branches.map((branch) => (
             <TableRow key={branch.id}>
-              <TableCell className="font-medium">{branch.name}</TableCell>
+              <TableCell className="font-medium">
+                <span>{branch.name}</span>
+                {branch.code && (
+                  <span className="ml-2 inline-flex items-center rounded-md border px-1.5 py-0.5 text-xs font-mono font-medium text-muted-foreground">
+                    {branch.code}
+                  </span>
+                )}
+              </TableCell>
               <TableCell>{`${branch.city}, ${branch.state}`}</TableCell>
               <TableCell>{branch._count.users}</TableCell>
               <TableCell>{branch._count.managers}</TableCell>

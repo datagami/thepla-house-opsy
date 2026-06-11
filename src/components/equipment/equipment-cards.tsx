@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MapPin, ChevronRight, BellOff, Wrench, MoreVertical, Archive, ArchiveRestore } from "lucide-react";
+import { MapPin, ChevronRight, BellOff, Wrench, MoreVertical, Archive, ArchiveRestore, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +21,7 @@ import { CategoryIcon } from "@/components/equipment/category-icon";
 import { SnoozeDialog } from "@/components/equipment/snooze-dialog";
 import { ArchiveDialog } from "@/components/equipment/archive-dialog";
 import { CATEGORY_META } from "@/lib/equipment-display";
-import { getReminderState } from "@/lib/services/maintenance-schedule";
+import { getReminderState, daysUntil } from "@/lib/services/maintenance-schedule";
 import type { EquipmentRow } from "@/components/equipment/equipment-table";
 
 interface EquipmentCardsProps {
@@ -28,6 +29,8 @@ interface EquipmentCardsProps {
   canManage: boolean;
   canSnooze?: boolean;
   canLog?: boolean;
+  selected?: Set<string>;
+  onToggle?: (id: string) => void;
 }
 
 function formatShortDate(iso: string | null): string {
@@ -47,9 +50,11 @@ interface ItemCardProps {
   canLog: boolean;
   onSnooze: (id: string) => void;
   onArchive: (id: string) => void;
+  selected?: Set<string>;
+  onToggle?: (id: string) => void;
 }
 
-function ItemCard({ row, canManage, canSnooze, canLog, onSnooze, onArchive }: ItemCardProps) {
+function ItemCard({ row, canManage, canSnooze, canLog, onSnooze, onArchive, selected, onToggle }: ItemCardProps) {
   const router = useRouter();
   const today = new Date();
   const isRetired = row.status === "RETIRED";
@@ -78,6 +83,19 @@ function ItemCard({ row, canManage, canSnooze, canLog, onSnooze, onArchive }: It
     >
       {/* Top row: icon + name/category/outlet + chevron */}
       <div className="flex items-start gap-[11px] p-3.5">
+        {/* Selection checkbox (manage-gated) */}
+        {canManage && onToggle && (
+          <div
+            className="mt-[2px] flex-none"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Checkbox
+              checked={selected?.has(row.id) ?? false}
+              onCheckedChange={() => onToggle(row.id)}
+              aria-label="Select item"
+            />
+          </div>
+        )}
         {/* Category icon tile or asset photo */}
         {row.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -121,7 +139,7 @@ function ItemCard({ row, canManage, canSnooze, canLog, onSnooze, onArchive }: It
 
       {/* Bottom row: status badge + actions */}
       <div className="flex items-center justify-between gap-2.5 border-t px-3.5 py-2.5">
-        <StatusBadge state={reminderState} subLabel={snoozeSubLabel} size="sm" />
+        <StatusBadge state={reminderState} subLabel={snoozeSubLabel} size="sm" dueInDays={row.nextDueDate ? daysUntil(new Date(row.nextDueDate), today) : null} />
 
         {!hasAnyAction ? (
           <Badge
@@ -179,6 +197,12 @@ function ItemCard({ row, canManage, canSnooze, canLog, onSnooze, onArchive }: It
                 <DropdownMenuItem asChild>
                   <Link href={`/equipment/${row.id}/edit`}>Edit item</Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <a href={`/api/equipment/labels?ids=${row.id}`} target="_blank" rel="noopener noreferrer">
+                    <Printer size={14} className="mr-2 text-muted-foreground" />
+                    Print label
+                  </a>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onSelect={async () => {
@@ -227,6 +251,8 @@ export function EquipmentCards({
   canManage,
   canSnooze = false,
   canLog = false,
+  selected,
+  onToggle,
 }: EquipmentCardsProps) {
   const [snoozeId, setSnoozeId] = useState<string | null>(null);
   const [archiveId, setArchiveId] = useState<string | null>(null);
@@ -245,6 +271,8 @@ export function EquipmentCards({
             canLog={canLog}
             onSnooze={setSnoozeId}
             onArchive={setArchiveId}
+            selected={selected}
+            onToggle={onToggle}
           />
         ))}
       </div>
