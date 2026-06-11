@@ -164,6 +164,7 @@ export interface Branch {
   id: string;
   numId: number;
   name: string;
+  code?: string | null;
   address?: string | null;
   city: string;
   state: string;
