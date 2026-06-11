@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export async function POST(req: Request) {
   try {
@@ -14,7 +15,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { name, city, state, address } = await req.json();
+    const { name, city, state, address, code } = await req.json();
 
     if (!name || !city || !state) {
       return NextResponse.json(
@@ -23,17 +24,35 @@ export async function POST(req: Request) {
       );
     }
 
+    const normalizedCode = code?.trim().toUpperCase() || null;
+
     const branch = await prisma.branch.create({
       data: {
         name,
         city,
         state,
         address,
+        code: normalizedCode,
       },
     });
 
     return NextResponse.json(branch, { status: 201 });
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      const fields = (error.meta?.target as string[]) ?? [];
+      if (fields.includes("code")) {
+        return NextResponse.json(
+          { error: "That outlet code is already in use" },
+          { status: 409 }
+        );
+      }
+      if (fields.includes("name")) {
+        return NextResponse.json(
+          { error: "Branch name already exists" },
+          { status: 409 }
+        );
+      }
+    }
     console.error("Error creating branch:", error);
     return NextResponse.json(
       { error: "Failed to create branch" },

@@ -34,11 +34,13 @@ export function CreateBranchButton() {
           city: formData.get("city"),
           state: formData.get("state"),
           address: formData.get("address"),
+          code: formData.get("code"),
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create branch");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create branch");
       }
 
       toast.success("Branch created successfully");
@@ -46,7 +48,7 @@ export function CreateBranchButton() {
       router.refresh();
     } catch (error) {
       console.error(error);
-      toast.error("Failed to create branch");
+      toast.error(error instanceof Error ? error.message : "Failed to create branch");
     } finally {
       setIsLoading(false);
     }
@@ -108,6 +110,21 @@ export function CreateBranchButton() {
               className="mt-1"
               placeholder="123 Main Street"
             />
+          </div>
+          <div>
+            <label htmlFor="code" className="block text-sm font-medium">
+              Outlet code
+            </label>
+            <Input
+              id="code"
+              name="code"
+              className="mt-1"
+              placeholder="e.g. CHD"
+              maxLength={5}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Short code used on asset labels (e.g. CHD-0042)
+            </p>
           </div>
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "Creating..." : "Create Branch"}

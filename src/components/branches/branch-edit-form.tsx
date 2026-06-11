@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -23,6 +24,7 @@ const branchFormSchema = z.object({
   city: z.string().min(2, "City must be at least 2 characters"),
   state: z.string().min(2, "State must be at least 2 characters"),
   address: z.string().optional(),
+  code: z.string().trim().toUpperCase().max(5, "Outlet code must be at most 5 characters").optional().nullable(),
 });
 
 interface BranchEditFormProps {
@@ -40,6 +42,7 @@ export function BranchEditForm({ branch }: BranchEditFormProps) {
       city: branch.city || "",
       state: branch.state || "",
       address: branch.address || "",
+      code: branch.code || "",
     },
   });
 
@@ -133,6 +136,28 @@ export function BranchEditForm({ branch }: BranchEditFormProps) {
                 <FormControl>
                   <Input {...field} placeholder="123 Main Street" />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="code"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Outlet code</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="e.g. CHD"
+                    maxLength={5}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Short code used on asset labels (e.g. CHD-0042)
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

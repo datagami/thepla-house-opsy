@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export async function DELETE(
   req: Request,
@@ -77,7 +78,7 @@ export async function PUT(
     }
 
     const { branchId } = await params;
-    const { name, city, state, address } = await req.json();
+    const { name, city, state, address, code } = await req.json();
 
     if (!name || !city || !state) {
       return NextResponse.json(
@@ -85,6 +86,8 @@ export async function PUT(
         { status: 400 }
       );
     }
+
+    const normalizedCode = code?.trim().toUpperCase() || null;
 
     // Check if branch exists
     const existingBranch = await prisma.branch.findUnique({
@@ -113,6 +116,23 @@ export async function PUT(
       );
     }
 
+    // Check if code is already taken by another branch
+    if (normalizedCode) {
+      const codeExists = await prisma.branch.findFirst({
+        where: {
+          code: normalizedCode,
+          id: { not: branchId },
+        },
+      });
+
+      if (codeExists) {
+        return NextResponse.json(
+          { error: "That outlet code is already in use" },
+          { status: 409 }
+        );
+      }
+    }
+
     const updatedBranch = await prisma.branch.update({
       where: { id: branchId },
       data: {
@@ -120,11 +140,27 @@ export async function PUT(
         city,
         state,
         address,
+        code: normalizedCode,
       },
     });
 
     return NextResponse.json(updatedBranch);
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      const fields = (error.meta?.target as string[]) ?? [];
+      if (fields.includes("code")) {
+        return NextResponse.json(
+          { error: "That outlet code is already in use" },
+          { status: 409 }
+        );
+      }
+      if (fields.includes("name")) {
+        return NextResponse.json(
+          { error: "Branch name already exists" },
+          { status: 409 }
+        );
+      }
+    }
     console.error("Error updating branch:", error);
     return NextResponse.json(
       { error: "Failed to update branch" },
