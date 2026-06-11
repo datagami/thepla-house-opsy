@@ -78,22 +78,44 @@ export function FileDropzone({
 }: FileDropzoneProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = React.useState(false);
+  const dragDepthRef = React.useRef(0);
 
   const files = React.useMemo(() => value ?? [], [value]);
 
-  // Object URLs for image previews — created in a memo and revoked on change/unmount.
-  const previews = React.useMemo(
-    () =>
-      files.map((f) => {
-        const image = isImageFile(f);
-        return { file: f, image, url: image ? URL.createObjectURL(f) : null };
-      }),
-    [files]
-  );
-  React.useEffect(
-    () => () => previews.forEach((p) => p.url && URL.revokeObjectURL(p.url)),
-    [previews]
-  );
+  // Object URLs for image previews, cached per File so the same file keeps its URL
+  // across renders. Call sites often pass a fresh array each render (e.g.
+  // `value={f ? [f] : []}`); keying the cache on the File object (not the array
+  // reference) avoids churning create/revoke — and the flicker — on every keystroke.
+  const urlCacheRef = React.useRef<Map<File, string>>(new Map());
+  const previews = files.map((f) => {
+    const image = isImageFile(f);
+    if (!image) return { file: f, image, url: null as string | null };
+    let url = urlCacheRef.current.get(f);
+    if (!url) {
+      url = URL.createObjectURL(f);
+      urlCacheRef.current.set(f, url);
+    }
+    return { file: f, image, url };
+  });
+  // Revoke URLs for files no longer present.
+  React.useEffect(() => {
+    const cache = urlCacheRef.current;
+    const present = new Set(files);
+    for (const [f, url] of cache) {
+      if (!present.has(f)) {
+        URL.revokeObjectURL(url);
+        cache.delete(f);
+      }
+    }
+  }, [files]);
+  // Revoke everything on unmount.
+  React.useEffect(() => {
+    const cache = urlCacheRef.current;
+    return () => {
+      for (const url of cache.values()) URL.revokeObjectURL(url);
+      cache.clear();
+    };
+  }, []);
 
   const validate = React.useCallback(
     (incoming: File[]): File[] => {
@@ -145,18 +167,27 @@ export function FileDropzone({
             openPicker();
           }
         }}
-        onDragOver={(e) => {
+        onDragEnter={(e) => {
           if (disabled) return;
           e.preventDefault();
+          dragDepthRef.current += 1;
           setDragActive(true);
+        }}
+        onDragOver={(e) => {
+          if (disabled) return;
+          e.preventDefault(); // required so the drop event fires
         }}
         onDragLeave={(e) => {
           e.preventDefault();
-          setDragActive(false);
+          // Only deactivate when the cursor truly leaves the dropzone, not when it
+          // moves over a child element (which also fires dragleave).
+          dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+          if (dragDepthRef.current === 0) setDragActive(false);
         }}
         onDrop={(e) => {
           if (disabled) return;
           e.preventDefault();
+          dragDepthRef.current = 0;
           setDragActive(false);
           handleIncoming(e.dataTransfer.files);
         }}
