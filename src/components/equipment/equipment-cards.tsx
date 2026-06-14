@@ -18,6 +18,7 @@ import {
 import { setEquipmentStatus } from "@/lib/equipment-actions";
 import { CategoryPill, StatusBadge } from "@/components/equipment/ui";
 import { CategoryIcon } from "@/components/equipment/category-icon";
+import { AssetImageViewer } from "@/components/equipment/asset-image-viewer";
 import { SnoozeDialog } from "@/components/equipment/snooze-dialog";
 import { ArchiveDialog } from "@/components/equipment/archive-dialog";
 import { CATEGORY_META } from "@/lib/equipment-display";
@@ -98,8 +99,13 @@ function ItemCard({ row, canManage, canSnooze, canLog, onSnooze, onArchive, sele
         )}
         {/* Category icon tile or asset photo */}
         {row.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={row.imageUrl} alt="" className="h-8 w-8 flex-none rounded object-cover" />
+          <span className="flex-none" onClick={(e) => e.stopPropagation()}>
+            <AssetImageViewer
+              src={row.imageUrl}
+              alt={row.name}
+              className="h-8 w-8 rounded"
+            />
+          </span>
         ) : (
           <div
             className="flex h-[38px] w-[38px] flex-none items-center justify-center rounded-[9px]"
