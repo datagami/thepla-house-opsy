@@ -158,7 +158,7 @@ export default async function EquipmentDetailPage({ params, searchParams }: Prop
       {/* Info header card */}
       <div className="rounded-xl border bg-card p-4 md:p-[22px] shadow-sm">
         {/* Top row: icon + name/badges + actions */}
-        <div className="flex items-start gap-3 md:gap-4">
+        <div className="flex flex-wrap items-start gap-3 md:gap-4">
           {/* Category icon tile or asset photo (click to view full size) */}
           {item.imageUrl ? (
             <AssetImageViewer
@@ -176,7 +176,7 @@ export default async function EquipmentDetailPage({ params, searchParams }: Prop
           )}
 
           {/* Name + category + location */}
-          <div className="min-w-0 flex-1">
+          <div className="flex-1 min-w-[240px]">
             <div className="flex flex-wrap items-center gap-[10px]">
               <h1 className="text-[19px] font-bold tracking-[-0.02em] md:text-[21px]">
                 {item.name}
@@ -211,7 +211,7 @@ export default async function EquipmentDetailPage({ params, searchParams }: Prop
           </div>
 
           {/* Actions — hidden on mobile, shown inline on sm+ */}
-          <div className="hidden sm:block">
+          <div className="hidden shrink-0 sm:block">
             <DetailActions
               equipmentId={item.id}
               equipmentName={item.name}
