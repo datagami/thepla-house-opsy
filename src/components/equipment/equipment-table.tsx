@@ -7,6 +7,7 @@ import { MapPin, MoreHorizontal, Archive, ArchiveRestore, Printer, Search, X } f
 import { toast } from "sonner";
 import { setEquipmentStatus } from "@/lib/equipment-actions";
 import { EquipmentCards } from "@/components/equipment/equipment-cards";
+import { AssetImageViewer } from "@/components/equipment/asset-image-viewer";
 import {
   Table,
   TableBody,
@@ -312,8 +313,13 @@ export function EquipmentTable({
                 <TableCell>
                   <div className="flex items-center gap-2">
                     {row.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={row.imageUrl} alt="" className="h-8 w-8 flex-none rounded object-cover" />
+                      <span className="flex-none" onClick={(e) => e.stopPropagation()}>
+                        <AssetImageViewer
+                          src={row.imageUrl}
+                          alt={row.name}
+                          className="h-8 w-8 rounded"
+                        />
+                      </span>
                     ) : null}
                     <span className="font-semibold text-foreground">{row.name}</span>
                     {isRetired && (
