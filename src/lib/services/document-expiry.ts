@@ -24,7 +24,7 @@ export async function processDocumentExpiries() {
   `);
 
   // Target Recipients
-  const recipient = ["kunal.sharma@datagami.in", "dhaval@datagami.in"];
+  const recipient = ["kunal.sharma@datagami.in", "dhaval@datagami.in", "management@theplahouse.com"];
 
   // Find 30 days
   const expiringIn30Days = await prisma.branchDocument.findMany({
