@@ -13,9 +13,13 @@ export async function processDocumentExpiries() {
   const in15DaysStart = addDays(today, 15);
   const in15DaysEnd = endOfDay(in15DaysStart);
 
+  const in7DaysStart = addDays(today, 7);
+  const in7DaysEnd = endOfDay(in7DaysStart);
+
   console.log(`Checking document expiries for:
     30 Days: ${format(in30DaysStart, "yyyy-MM-dd")}
     15 Days: ${format(in15DaysStart, "yyyy-MM-dd")}
+    7 Days: ${format(in7DaysStart, "yyyy-MM-dd")}
     Expired: Before ${format(today, "yyyy-MM-dd")}
   `);
 
@@ -50,6 +54,20 @@ export async function processDocumentExpiries() {
     },
   });
 
+  // Find 7 days
+  const expiringIn7Days = await prisma.branchDocument.findMany({
+    where: {
+      renewalDate: {
+        gte: in7DaysStart,
+        lte: in7DaysEnd,
+      },
+    },
+    include: {
+      branch: true,
+      documentType: true,
+    },
+  });
+
   // Find already expired
   const alreadyExpired = await prisma.branchDocument.findMany({
     where: {
@@ -63,14 +81,14 @@ export async function processDocumentExpiries() {
     },
   });
 
-  const totalFound = expiringIn30Days.length + expiringIn15Days.length + alreadyExpired.length;
+  const totalFound = expiringIn30Days.length + expiringIn15Days.length + expiringIn7Days.length + alreadyExpired.length;
 
   if (totalFound === 0) {
-    console.log("No documents found expiring in 30 days, 15 days, or already expired.");
+    console.log("No documents found expiring in 30 days, 15 days, 7 days, or already expired.");
     return {
       processed: 0,
       emailsSent: 0,
-      details: { expired: 0, in15Days: 0, in30Days: 0 }
+      details: { expired: 0, in7Days: 0, in15Days: 0, in30Days: 0 }
     };
   }
 
@@ -107,6 +125,11 @@ export async function processDocumentExpiries() {
     emailHtml += renderDocList("🚨 Already Expired (Action Required!)", alreadyExpired, "#dc2626");
   }
 
+  if (expiringIn7Days.length > 0) {
+    hasContent = true;
+    emailHtml += renderDocList("⏰ Expiring in 7 Days", expiringIn7Days, "#f97316");
+  }
+
   if (expiringIn15Days.length > 0) {
     hasContent = true;
     emailHtml += renderDocList("⚠️ Expiring in 15 Days", expiringIn15Days, "#ea580c");
@@ -130,7 +153,7 @@ export async function processDocumentExpiries() {
     try {
       await sendEmail({
         to: recipient,
-        subject: `Opsy Alert: ${alreadyExpired.length} Expired, ${expiringIn15Days.length + expiringIn30Days.length} Expiring Outlet Documents`,
+        subject: `Opsy Alert: ${alreadyExpired.length} Expired, ${expiringIn7Days.length + expiringIn15Days.length + expiringIn30Days.length} Expiring Outlet Documents`,
         html: emailHtml,
       });
       emailsSent++;
@@ -139,11 +162,12 @@ export async function processDocumentExpiries() {
       // Log system activity for the overall report
       await logActivity({
         activityType: ActivityType.DOCUMENT_EXPIRY_ALERT,
-        description: `Daily document expiry report sent. Found ${alreadyExpired.length} expired, ${expiringIn15Days.length} in 15 days, ${expiringIn30Days.length} in 30 days.`,
+        description: `Daily document expiry report sent. Found ${alreadyExpired.length} expired, ${expiringIn7Days.length} in 7 days, ${expiringIn15Days.length} in 15 days, ${expiringIn30Days.length} in 30 days.`,
         metadata: {
           recipient,
           counts: {
             expired: alreadyExpired.length,
+            in7Days: expiringIn7Days.length,
             in15Days: expiringIn15Days.length,
             in30Days: expiringIn30Days.length
           },
@@ -176,6 +200,7 @@ export async function processDocumentExpiries() {
     emailsSent,
     details: {
       expired: alreadyExpired.length,
+      in7Days: expiringIn7Days.length,
       in15Days: expiringIn15Days.length,
       in30Days: expiringIn30Days.length,
     }
