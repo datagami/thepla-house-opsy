@@ -282,7 +282,10 @@ export function BranchDocumentsList({ branchId, canUpload = false, showHeading =
                         </div>
                       </TableCell>
                       <TableCell>
-                        <DropdownMenu>
+                        {/* modal={false}: a modal dropdown locks body pointer-events;
+                            opening a Dialog from a menu item then captures that locked
+                            state and leaves the page frozen after the dialog closes. */}
+                        <DropdownMenu modal={false}>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">
                               <span className="sr-only">Open menu</span>
