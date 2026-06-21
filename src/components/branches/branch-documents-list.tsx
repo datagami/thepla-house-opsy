@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -24,7 +24,7 @@ import {
   Download,
   Trash,
   FileText,
-  Image,
+  Image as ImageIcon,
   Archive,
   AlertTriangle,
   Calendar,
@@ -42,7 +42,7 @@ import {
 import { toast } from "sonner";
 import { BranchDocument, DocumentType } from "@/models/models";
 import { formatDateOnly } from "@/lib/utils";
-import { BranchDocumentFormDialog } from "@/components/branches/branch-document-form-dialog";
+import { BranchDocumentFormDialog, BRANCH_DOCUMENTS_CHANGED } from "@/components/branches/branch-document-form-dialog";
 import { BranchDocumentHistoryDialog } from "@/components/branches/branch-document-history-dialog";
 
 interface BranchDocumentsListProps {
@@ -64,11 +64,7 @@ export function BranchDocumentsList({ branchId, canUpload = false, showHeading =
   const [historyDocument, setHistoryDocument] = useState<BranchDocument | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
 
-  useEffect(() => {
-    fetchDocuments();
-  }, [branchId]);
-
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async () => {
     try {
       const response = await fetch(`/api/branches/${branchId}/documents`);
       if (!response.ok) {
@@ -82,7 +78,23 @@ export function BranchDocumentsList({ branchId, canUpload = false, showHeading =
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [branchId]);
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
+
+  // Refetch when a create/edit (e.g. the separate Upload button) changes this
+  // branch's documents — the list is client-fetched, so router.refresh() alone
+  // wouldn't update it.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ branchId?: string }>).detail;
+      if (!detail?.branchId || detail.branchId === branchId) fetchDocuments();
+    };
+    window.addEventListener(BRANCH_DOCUMENTS_CHANGED, handler);
+    return () => window.removeEventListener(BRANCH_DOCUMENTS_CHANGED, handler);
+  }, [branchId, fetchDocuments]);
 
   const handleDelete = async (document: BranchDocument) => {
     setDocumentToDelete(document);
@@ -123,7 +135,7 @@ export function BranchDocumentsList({ branchId, canUpload = false, showHeading =
 
   const getFileIcon = (fileType: string) => {
     if (fileType.startsWith('image/')) {
-      return <Image className="h-4 w-4" />;
+      return <ImageIcon className="h-4 w-4" />;
     } else if (fileType === 'application/pdf') {
       return <FileText className="h-4 w-4" />;
     } else if (fileType.includes('zip')) {
@@ -355,7 +367,6 @@ export function BranchDocumentsList({ branchId, canUpload = false, showHeading =
         document={editDocument ?? undefined}
         open={editOpen}
         onOpenChange={setEditOpen}
-        onSaved={fetchDocuments}
       />
 
       {/* History Dialog */}

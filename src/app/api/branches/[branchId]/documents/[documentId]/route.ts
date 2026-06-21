@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { AzureStorageService } from "@/lib/azure-storage";
 import { logActivity } from "@/lib/services/activity-log";
-import { ActivityType } from "@prisma/client";
+import { ActivityType, Prisma } from "@prisma/client";
 import {
   computeDocumentChanges,
   describeDocumentChanges,
@@ -186,6 +186,13 @@ export async function PATCH(
       } catch (e) {
         console.error("Failed to clean up orphaned upload:", e);
       }
+    }
+    // Unique violation on (documentId, versionNumber) => a concurrent edit raced us.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return NextResponse.json(
+        { error: "This document was just modified by someone else. Please reopen and try again." },
+        { status: 409 }
+      );
     }
     return NextResponse.json({ error: "Failed to update document" }, { status: 500 });
   }

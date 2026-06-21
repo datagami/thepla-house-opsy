@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -37,6 +38,9 @@ import { BranchDocument, DocumentType } from "@/models/models";
 
 const NO_TYPE = "__none__";
 
+/** Fired after a successful create/edit so the (client-fetched) documents list refetches. */
+export const BRANCH_DOCUMENTS_CHANGED = "branch-documents:changed";
+
 const documentFormSchema = z.object({
   name: z.string().min(2, "Document name must be at least 2 characters"),
   description: z.string().optional(),
@@ -55,8 +59,6 @@ interface BranchDocumentFormDialogProps {
   document?: BranchDocument;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Called after a successful save (e.g. to refetch the list). Falls back to router.refresh(). */
-  onSaved?: () => void;
 }
 
 export function BranchDocumentFormDialog({
@@ -66,7 +68,6 @@ export function BranchDocumentFormDialog({
   document,
   open,
   onOpenChange,
-  onSaved,
 }: BranchDocumentFormDialogProps) {
   const router = useRouter();
   const isEdit = mode === "edit";
@@ -129,8 +130,10 @@ export function BranchDocumentFormDialog({
       onOpenChange(false);
       setSelectedFile(null);
       form.reset();
-      if (onSaved) onSaved();
-      else router.refresh();
+      // Refresh the client-fetched documents list, and any server-rendered
+      // document-dependent UI (reminder banners, dashboard counts).
+      window.dispatchEvent(new CustomEvent(BRANCH_DOCUMENTS_CHANGED, { detail: { branchId } }));
+      router.refresh();
     } catch (error) {
       console.error(error);
       toast.error(error instanceof Error ? error.message : "Failed to save document");
@@ -144,6 +147,11 @@ export function BranchDocumentFormDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Document" : "Upload Branch Document"}</DialogTitle>
+          <DialogDescription>
+            {isEdit
+              ? "Update the document details, or replace the file to record a new version."
+              : "Add a document with its renewal and reminder dates."}
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

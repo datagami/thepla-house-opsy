@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
 import { DocumentType } from "@/models/models";
@@ -14,7 +13,6 @@ interface BranchDocumentUploadProps {
 }
 
 export function BranchDocumentUpload({ branchId, documentTypes = [] }: BranchDocumentUploadProps) {
-  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -29,7 +27,6 @@ export function BranchDocumentUpload({ branchId, documentTypes = [] }: BranchDoc
         documentTypes={documentTypes}
         open={isOpen}
         onOpenChange={setIsOpen}
-        onSaved={() => router.refresh()}
       />
     </>
   );
