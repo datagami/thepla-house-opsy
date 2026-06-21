@@ -209,6 +209,27 @@ export interface BranchDocument {
   uploadedBy: User;
   branch: Branch;
   documentType?: DocumentType | null;
+  versions?: BranchDocumentVersion[];
+  _count?: { versions: number };
+}
+
+export interface BranchDocumentVersion {
+  id: string;
+  documentId: string;
+  versionNumber: number;
+  fileName: string;
+  fileUrl: string | null;
+  fileSize: number;
+  fileType: string;
+  filePruned: boolean;
+  name: string;
+  description?: string | null;
+  renewalDate: Date;
+  reminderDate: Date;
+  documentTypeId?: string | null;
+  changedById: string;
+  createdAt: Date;
+  changedBy?: { id: string; name: string } | null;
 }
 
 export type DocumentScope = "BRANCH" | "USER";

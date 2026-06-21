@@ -189,6 +189,7 @@ export async function GET(
             mandatory: true,
           },
         },
+        _count: { select: { versions: true } },
       },
       orderBy: {
         createdAt: "desc",

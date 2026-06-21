@@ -223,6 +223,7 @@ model User {
 
   // --- Branch Document Relations ---
   uploadedBranchDocuments BranchDocument[] @relation("BranchDocumentUploads")
+  changedBranchDocumentVersions BranchDocumentVersion[] @relation("BranchDocumentVersionChangedBy")
 
   // --- User Document Relations ---
   userDocuments         UserDocument[]
@@ -402,6 +403,7 @@ model BranchDocument {
   uploadedBy   User          @relation("BranchDocumentUploads", fields: [uploadedById], references: [id])
   branch       Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
   documentType DocumentType? @relation(fields: [documentTypeId], references: [id])
+  versions     BranchDocumentVersion[]
 
   @@index([branchId])
   @@index([uploadedById])
@@ -409,6 +411,38 @@ model BranchDocument {
   @@index([reminderDate])
   @@index([documentTypeId])
   @@map("branch_documents")
+}
+
+// A historical snapshot of a branch document's FILE, captured each time the file
+// is replaced via edit. Older blobs are pruned past MAX_DOCUMENT_VERSION_FILES,
+// but the audit record (who/when/which dates) is retained.
+model BranchDocumentVersion {
+  id             String   @id @default(cuid())
+  numId          Int      @default(autoincrement()) @map("num_id")
+  documentId     String   @map("document_id")
+  versionNumber  Int      @map("version_number")
+  // Superseded file (fileUrl null once the blob is pruned by retention):
+  fileName       String   @map("file_name")
+  fileUrl        String?  @map("file_url")
+  fileSize       Int      @map("file_size")
+  fileType       String   @map("file_type")
+  filePruned     Boolean  @default(false) @map("file_pruned")
+  // Document metadata at the time this file was active:
+  name           String
+  description    String?
+  renewalDate    DateTime @map("renewal_date")
+  reminderDate   DateTime @map("reminder_date")
+  documentTypeId String?  @map("document_type_id")
+  // Audit:
+  changedById    String   @map("changed_by_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  document  BranchDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  changedBy User           @relation("BranchDocumentVersionChangedBy", fields: [changedById], references: [id])
+
+  @@unique([documentId, versionNumber])
+  @@index([documentId])
+  @@map("branch_document_versions")
 }
 
 // --- User Documents ---
@@ -763,6 +797,7 @@ enum ActivityType {
   UNIFORM_RETURNED
   DOCUMENT_UPLOADED
   DOCUMENT_DELETED
+  DOCUMENT_UPDATED
   DOCUMENT_EXPIRY_ALERT
   BRANCH_CREATED
   BRANCH_UPDATED
