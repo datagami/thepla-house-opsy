@@ -85,7 +85,7 @@ export default async function BranchDocumentsPage({ params }: Props) {
           </div>
         )}
         
-        <BranchDocumentsList branchId={branch.id} canUpload={canUpload} branchName={branch.name} />
+        <BranchDocumentsList branchId={branch.id} canUpload={canUpload} branchName={branch.name} documentTypes={documentTypes} />
       </div>
     </div>
   );

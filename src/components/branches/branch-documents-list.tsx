@@ -19,15 +19,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  MoreHorizontal, 
-  Download, 
-  Trash, 
-  FileText, 
-  Image, 
+import {
+  MoreHorizontal,
+  Download,
+  Trash,
+  FileText,
+  Image,
   Archive,
   AlertTriangle,
-  Calendar
+  Calendar,
+  Pencil,
+  History
 } from "lucide-react";
 import {
   Dialog,
@@ -38,22 +40,29 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { BranchDocument } from "@/models/models";
+import { BranchDocument, DocumentType } from "@/models/models";
 import { formatDateOnly } from "@/lib/utils";
+import { BranchDocumentFormDialog } from "@/components/branches/branch-document-form-dialog";
+import { BranchDocumentHistoryDialog } from "@/components/branches/branch-document-history-dialog";
 
 interface BranchDocumentsListProps {
   branchId: string;
   canUpload?: boolean;
   showHeading?: boolean;
   branchName?: string;
+  documentTypes?: DocumentType[];
 }
 
-export function BranchDocumentsList({ branchId, canUpload = false, showHeading = true, branchName }: BranchDocumentsListProps) {
+export function BranchDocumentsList({ branchId, canUpload = false, showHeading = true, branchName, documentTypes = [] }: BranchDocumentsListProps) {
   const [documents, setDocuments] = useState<BranchDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<BranchDocument | null>(null);
+  const [editDocument, setEditDocument] = useState<BranchDocument | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [historyDocument, setHistoryDocument] = useState<BranchDocument | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   useEffect(() => {
     fetchDocuments();
@@ -288,6 +297,31 @@ export function BranchDocumentsList({ branchId, canUpload = false, showHeading =
                               <Download className="mr-2 h-4 w-4" />
                               Download
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setHistoryDocument(document);
+                                setHistoryOpen(true);
+                              }}
+                            >
+                              <History className="mr-2 h-4 w-4" />
+                              History
+                              {document.versions && document.versions.length > 0 && (
+                                <Badge variant="secondary" className="ml-auto text-xs">
+                                  {document.versions.length}
+                                </Badge>
+                              )}
+                            </DropdownMenuItem>
+                            {canUpload && (
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setEditDocument(document);
+                                  setEditOpen(true);
+                                }}
+                              >
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                            )}
                             {canUpload && (
                               <DropdownMenuItem
                                 onClick={() => handleDelete(document)}
@@ -309,6 +343,24 @@ export function BranchDocumentsList({ branchId, canUpload = false, showHeading =
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <BranchDocumentFormDialog
+        mode="edit"
+        branchId={branchId}
+        documentTypes={documentTypes}
+        document={editDocument ?? undefined}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        onSaved={fetchDocuments}
+      />
+
+      {/* History Dialog */}
+      <BranchDocumentHistoryDialog
+        document={historyDocument}
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

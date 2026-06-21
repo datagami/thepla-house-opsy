@@ -189,6 +189,10 @@ export async function GET(
             mandatory: true,
           },
         },
+        versions: {
+          orderBy: { versionNumber: "desc" },
+          include: { changedBy: { select: { id: true, name: true } } },
+        },
       },
       orderBy: {
         createdAt: "desc",
