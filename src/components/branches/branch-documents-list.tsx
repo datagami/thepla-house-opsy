@@ -305,9 +305,9 @@ export function BranchDocumentsList({ branchId, canUpload = false, showHeading =
                             >
                               <History className="mr-2 h-4 w-4" />
                               History
-                              {document.versions && document.versions.length > 0 && (
+                              {document._count && document._count.versions > 0 && (
                                 <Badge variant="secondary" className="ml-auto text-xs">
-                                  {document.versions.length}
+                                  {document._count.versions}
                                 </Badge>
                               )}
                             </DropdownMenuItem>
@@ -357,6 +357,7 @@ export function BranchDocumentsList({ branchId, canUpload = false, showHeading =
 
       {/* History Dialog */}
       <BranchDocumentHistoryDialog
+        branchId={branchId}
         document={historyDocument}
         open={historyOpen}
         onOpenChange={setHistoryOpen}

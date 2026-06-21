@@ -74,7 +74,7 @@ export default async function EditBranchPage({ params }: Props) {
           <h3 className="text-2xl font-bold">Upload Documents</h3>
           <BranchDocumentUpload branchId={branch.id} branchName={branch.name} documentTypes={documentTypes} />
         </div>
-        <BranchDocumentsList branchId={branch.id} canUpload={true} branchName={branch.name} />
+        <BranchDocumentsList branchId={branch.id} canUpload={true} branchName={branch.name} documentTypes={documentTypes} />
       </div>
     </div>
   );

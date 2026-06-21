@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,42 +10,76 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, History, FileX } from "lucide-react";
+import { Download, History, FileX, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { BranchDocument, BranchDocumentVersion } from "@/models/models";
 import { formatDateOnly } from "@/lib/utils";
-import { computeDocumentChanges } from "@/lib/services/branch-document-versions";
 
 interface BranchDocumentHistoryDialogProps {
+  branchId: string;
   document: BranchDocument | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-function toSnapshot(d: BranchDocument | BranchDocumentVersion) {
-  return {
-    name: d.name,
-    description: d.description ?? null,
-    documentTypeId: d.documentTypeId ?? null,
-    renewalDate: new Date(d.renewalDate),
-    reminderDate: new Date(d.reminderDate),
-  };
+type Snapshot = Pick<
+  BranchDocument | BranchDocumentVersion,
+  "name" | "description" | "documentTypeId" | "renewalDate" | "reminderDate"
+>;
+
+/** Human-readable old→new transitions between a version and the state it became. */
+function describeTransition(older: Snapshot, newer: Snapshot, fileReplaced: boolean): string[] {
+  const out: string[] = [];
+  if (fileReplaced) out.push("file replaced");
+  if (older.name !== newer.name) out.push(`name: “${older.name}” → “${newer.name}”`);
+  if (
+    new Date(older.renewalDate).getTime() !== new Date(newer.renewalDate).getTime()
+  )
+    out.push(`renewal ${formatDateOnly(older.renewalDate)} → ${formatDateOnly(newer.renewalDate)}`);
+  if (
+    new Date(older.reminderDate).getTime() !== new Date(newer.reminderDate).getTime()
+  )
+    out.push(`reminder ${formatDateOnly(older.reminderDate)} → ${formatDateOnly(newer.reminderDate)}`);
+  if ((older.description ?? null) !== (newer.description ?? null)) out.push("description updated");
+  if ((older.documentTypeId ?? null) !== (newer.documentTypeId ?? null)) out.push("document type changed");
+  return out;
 }
 
-const FIELD_LABELS: Record<string, string> = {
-  name: "name",
-  description: "description",
-  documentType: "document type",
-  renewalDate: "renewal date",
-  reminderDate: "reminder date",
-  file: "file",
-};
-
 export function BranchDocumentHistoryDialog({
+  branchId,
   document,
   open,
   onOpenChange,
 }: BranchDocumentHistoryDialogProps) {
-  const versions = document?.versions ?? [];
+  const [versions, setVersions] = useState<BranchDocumentVersion[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!open || !document) return;
+    let cancelled = false;
+    setIsLoading(true);
+    fetch(`/api/branches/${branchId}/documents/${document.id}/versions`)
+      .then((r) => {
+        if (!r.ok) throw new Error("Failed to load history");
+        return r.json();
+      })
+      .then((data: BranchDocumentVersion[]) => {
+        if (!cancelled) setVersions(data);
+      })
+      .catch((e) => {
+        console.error(e);
+        if (!cancelled) {
+          setVersions([]);
+          toast.error("Failed to load version history");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, branchId, document]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -84,52 +119,61 @@ export function BranchDocumentHistoryDialog({
             </div>
           )}
 
-          {versions.length === 0 && (
+          {isLoading && (
+            <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading history…
+            </div>
+          )}
+
+          {!isLoading && versions.length === 0 && (
             <p className="py-4 text-center text-sm text-muted-foreground">
               No previous versions yet. A version is recorded each time the file is replaced.
             </p>
           )}
 
-          {versions.map((version, i) => {
-            // The state this version became: the next-newer snapshot (current doc for i=0).
-            const newer = i === 0 ? document! : versions[i - 1];
-            const changed = computeDocumentChanges(toSnapshot(version), toSnapshot(newer), true);
-            const summary = changed.map((f) => FIELD_LABELS[f]).join(", ");
-            return (
-              <div key={version.id} className="rounded-lg border p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary">v{version.versionNumber}</Badge>
-                    <span className="text-sm font-medium">{version.fileName}</span>
+          {!isLoading &&
+            versions.map((version, i) => {
+              // The state this version became: the next-newer snapshot (current doc for i=0).
+              const newer = i === 0 ? document! : versions[i - 1];
+              const transitions = describeTransition(version, newer, true);
+              return (
+                <div key={version.id} className="rounded-lg border p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">v{version.versionNumber}</Badge>
+                      <span className="text-sm font-medium">{version.fileName}</span>
+                    </div>
+                    {version.filePruned || !version.fileUrl ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        <FileX className="h-3.5 w-3.5" />
+                        File no longer retained
+                      </span>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(version.fileUrl!, "_blank")}
+                      >
+                        <Download className="mr-1.5 h-3.5 w-3.5" />
+                        Download
+                      </Button>
+                    )}
                   </div>
-                  {version.filePruned || !version.fileUrl ? (
-                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                      <FileX className="h-3.5 w-3.5" />
-                      File no longer retained
-                    </span>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.open(version.fileUrl!, "_blank")}
-                    >
-                      <Download className="mr-1.5 h-3.5 w-3.5" />
-                      Download
-                    </Button>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    Replaced by {version.changedBy?.name ?? "Unknown"} on{" "}
+                    {formatDateOnly(version.createdAt)}
+                  </div>
+                  {transitions.length > 0 && (
+                    <ul className="mt-1 list-disc pl-4 text-xs text-muted-foreground">
+                      {transitions.map((t, idx) => (
+                        <li key={idx}>{t}</li>
+                      ))}
+                    </ul>
                   )}
                 </div>
-                <div className="mt-1 text-xs text-muted-foreground">
-                  Replaced by {version.changedBy?.name ?? "Unknown"} on{" "}
-                  {formatDateOnly(version.createdAt)}
-                  {summary ? ` · changed: ${summary}` : ""}
-                </div>
-                <div className="mt-0.5 text-xs text-muted-foreground">
-                  Held renewal {formatDateOnly(version.renewalDate)} · reminder{" "}
-                  {formatDateOnly(version.reminderDate)}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       </DialogContent>
     </Dialog>

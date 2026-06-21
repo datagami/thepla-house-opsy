@@ -210,6 +210,7 @@ export interface BranchDocument {
   branch: Branch;
   documentType?: DocumentType | null;
   versions?: BranchDocumentVersion[];
+  _count?: { versions: number };
 }
 
 export interface BranchDocumentVersion {

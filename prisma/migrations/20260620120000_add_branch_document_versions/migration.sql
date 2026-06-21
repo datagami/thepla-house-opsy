@@ -24,6 +24,9 @@ CREATE TABLE "branch_document_versions" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "branch_document_versions_document_id_version_number_key" ON "branch_document_versions"("document_id", "version_number");
+
+-- CreateIndex
 CREATE INDEX "branch_document_versions_document_id_idx" ON "branch_document_versions"("document_id");
 
 -- AddForeignKey

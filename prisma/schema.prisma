@@ -440,6 +440,7 @@ model BranchDocumentVersion {
   document  BranchDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
   changedBy User           @relation("BranchDocumentVersionChangedBy", fields: [changedById], references: [id])
 
+  @@unique([documentId, versionNumber])
   @@index([documentId])
   @@map("branch_document_versions")
 }
